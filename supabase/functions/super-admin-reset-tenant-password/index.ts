@@ -133,12 +133,12 @@ Deno.serve(async (req) => {
     // Política do produto: super admin pode definir qualquer senha, inclusive
     // fracas/vazadas. Se o Auth bloquear por HIBP, devolvemos 400 amigável.
     if (name === "AuthWeakPasswordError" || /weak|pwned|known to be/i.test(msg)) {
+      log.warn("weak_password_blocked_by_hibp", { target_user_id: userId });
       return errorResponse(
         400,
-        "A proteção de senhas vazadas (HIBP) está ativa no projeto e bloqueou esta senha. Desative em Auth → Providers → Email para permitir senhas fracas.",
+        "Esta senha foi bloqueada pela proteção de senhas vazadas (HIBP). Use uma senha mais forte ou desative HIBP em Auth → Providers → Email.",
         requestId,
         log,
-        uErr,
       );
     }
     return errorResponse(500, "Erro ao atualizar senha", requestId, log, uErr);
