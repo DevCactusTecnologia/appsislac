@@ -140,7 +140,7 @@ const AppTopbar = ({ onLogout }: AppTopbarProps) => {
                 <p className="text-[13px] font-semibold text-foreground">{user?.nome || "Usuário"}</p>
                 <p className="text-[11px] text-muted-foreground capitalize">{user?.perfil || "Perfil"}</p>
               </div>
-              <ThemeToggle />
+              
               <MenuLayoutToggle onSelect={() => setUserMenuOpen(false)} />
               <div className="h-px bg-border/40 mx-3 my-1" />
               <button
