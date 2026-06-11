@@ -180,34 +180,8 @@ const AppTopbar = ({ onLogout }: AppTopbarProps) => {
   );
 };
 
-export function ThemeToggle({ onSelect }: { onSelect?: () => void }) {
-  const { theme, setTheme } = useTheme();
-  return (
-    <div className="px-2 pt-1 pb-1">
-      <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tema</p>
-      <div className="flex gap-1 p-1 bg-accent/40 rounded-xl">
-        <button
-          onClick={() => { setTheme("light"); onSelect?.(); }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-colors",
-            theme === "light" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Sun className="w-3.5 h-3.5" /> Claro
-        </button>
-        <button
-          onClick={() => { setTheme("dark"); onSelect?.(); }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-colors",
-            theme === "dark" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Moon className="w-3.5 h-3.5" /> Escuro
-        </button>
-      </div>
-    </div>
-  );
-}
+
+
 
 export function MenuLayoutToggle({ onSelect }: { onSelect?: () => void }) {
   const { mode, setMode } = useMenuLayout();
