@@ -570,15 +570,7 @@ const NovoAtendimento = () => {
           .map(n => getConvenios().find(c => c.nome === n)?.id)
           .filter((id): id is number => typeof id === "number"),
       );
-      let mudou = false;
-      const next = prev.map(e => {
-        if (e.cobrancaDestino === "convenio" && (e.convenioCobrancaId == null || !naoParticularesIds.has(e.convenioCobrancaId))) {
-          mudou = true;
-          return { ...e, cobrancaDestino: "paciente" as const, convenioCobrancaId: null };
-        }
-        return e;
-      });
-      return mudou ? next : prev;
+      return resyncCobrancaConvenios(prev, naoParticularesIds);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convenios.join("|")]);
