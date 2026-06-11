@@ -278,31 +278,17 @@ const ResultadoDetalhe = () => {
     return () => { cancel = true; };
   }, [paciente.exames]);
 
-  /**
-   * Avalia o nível crítico de um parâmetro de exame consultando a configuração
-   * (critico_min/critico_max) cadastrada em ParametrosDialog. Faz match por
-   * rótulo OU chave (case-insensitive).
-   */
-  const avaliarNivelCritico = useCallback((exameNome: string, paramNome: string, valor: string): NivelCritico => {
-    if (!valor) return "normal";
-    const lista = parametrosConfigPorExame[exameNome];
-    if (!lista || lista.length === 0) return "normal";
-    const k = paramNome.trim().toLowerCase();
-    const cfg = lista.find(p => p.rotulo.trim().toLowerCase() === k || p.chave.trim().toLowerCase() === k);
-    if (!cfg) return "normal";
-    return avaliarCritico(valor, cfg.criticoMin, cfg.criticoMax);
-  }, [parametrosConfigPorExame]);
-
-  /** Lista todos os parâmetros críticos do exame selecionado. */
-  const getParametrosCriticosDoExame = useCallback((exame: { nome: string; parametros: Array<{ nome: string; valor: string }> } | undefined) => {
-    if (!exame) return [] as Array<{ nome: string; valor: string; nivel: NivelCritico }>;
-    const out: Array<{ nome: string; valor: string; nivel: NivelCritico }> = [];
-    for (const p of exame.parametros) {
-      const nivel = avaliarNivelCritico(exame.nome, p.nome, p.valor);
-      if (nivel !== "normal") out.push({ nome: p.nome, valor: p.valor, nivel });
-    }
-    return out;
-  }, [avaliarNivelCritico]);
+  // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts
+  const avaliarNivelCritico = useCallback(
+    (exameNome: string, paramNome: string, valor: string): NivelCritico =>
+      avaliarNivelCriticoPure(parametrosConfigPorExame, exameNome, paramNome, valor),
+    [parametrosConfigPorExame],
+  );
+  const getParametrosCriticosDoExame = useCallback(
+    (exame: { nome: string; parametros: Array<{ nome: string; valor: string }> } | undefined) =>
+      getParametrosCriticosDoExamePure(parametrosConfigPorExame, exame),
+    [parametrosConfigPorExame],
+  );
 
   const addAuditEntry = (exameId: number, acao: string, dados?: string) => {
     const now = new Date();
