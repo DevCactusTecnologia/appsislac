@@ -130,7 +130,7 @@ export default function MapaPreviewDialog({
             </div>
           ) : (
             <iframe
-              key={`${orientation}-${theme}`}
+              key={orientation}
               title="Pré-visualização"
               srcDoc={previewHtml}
               className="w-full h-full border-0 bg-background"
