@@ -91,6 +91,12 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // P0 #3 — rate-limit por usuário autenticado
+  const rl = await checkRateLimit(admin, "comprovante-shortlink", `user:${userId}`, { windowSec: 60, max: 20 });
+  if (!rl.allowed) {
+    return errorResponse(429, "Muitas criações de link. Aguarde alguns instantes.", requestId, log);
+  }
+
   const { data: profile, error: profileErr } = await admin
     .from("profiles")
     .select("tenant_id")
