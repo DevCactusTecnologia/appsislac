@@ -445,7 +445,7 @@ const GatewayPagamentoTab = () => {
     return (
       <p
         className={`mt-2 flex items-center gap-2 text-[12px] font-medium ${
-          ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+          ok ? "text-emerald-600" : "text-destructive"
         }`}
       >
         {ok ? <Check className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
@@ -463,7 +463,7 @@ const GatewayPagamentoTab = () => {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 flex items-start gap-3">
-        <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+        <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
         <div className="text-[12px] text-foreground/80 leading-relaxed">
           <strong className="text-foreground">Segurança Nível P0:</strong> Suas credenciais agora são armazenadas 
           exclusivamente no servidor com Row Level Security (RLS) habilitado. O armazenamento local foi descontinuado.
@@ -511,7 +511,7 @@ const GatewayPagamentoTab = () => {
                         <span
                           className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${
                             cp.ativo
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                               : "bg-muted text-muted-foreground border-border"
                           }`}
                         >
@@ -523,7 +523,7 @@ const GatewayPagamentoTab = () => {
                         <p
                           className={`text-[10px] mt-1 ${
                             lastEv.status === "success"
-                              ? "text-emerald-600 dark:text-emerald-400"
+                              ? "text-emerald-600"
                               : "text-destructive"
                           }`}
                         >
@@ -813,7 +813,7 @@ const GatewayPagamentoTab = () => {
             <div className="flex items-center justify-between gap-3 pt-1">
               <div className="text-[11px] text-muted-foreground">
                 {currHook.status === "ok" && (
-                  <span className="text-emerald-600 dark:text-emerald-400">
+                  <span className="text-emerald-600">
                     ● Pronto para receber eventos
                   </span>
                 )}
@@ -918,7 +918,7 @@ const GatewayPagamentoTab = () => {
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${
                           ok
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                             : "bg-destructive/10 text-destructive border-destructive/20"
                         }`}
                       >

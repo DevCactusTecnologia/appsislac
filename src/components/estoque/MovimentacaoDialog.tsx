@@ -32,10 +32,10 @@ const TIPOS: {
   icon: React.ComponentType<{ className?: string }>;
   tone: string;
 }[] = [
-  { value: "saida", label: "Saída", hint: "Reduz a quantidade do lote (consumo)", icon: ArrowDown, tone: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20" },
-  { value: "entrada", label: "Entrada extra", hint: "Adiciona quantidade ao lote existente", icon: ArrowUp, tone: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
-  { value: "descarte", label: "Descarte", hint: "Remove material vencido/contaminado", icon: Trash2, tone: "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20" },
-  { value: "ajuste", label: "Ajuste", hint: "Diferença encontrada na contagem (positiva ou negativa)", icon: SlidersHorizontal, tone: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20" },
+  { value: "saida", label: "Saída", hint: "Reduz a quantidade do lote (consumo)", icon: ArrowDown, tone: "text-blue-600 bg-blue-500/10 border-blue-500/20" },
+  { value: "entrada", label: "Entrada extra", hint: "Adiciona quantidade ao lote existente", icon: ArrowUp, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" },
+  { value: "descarte", label: "Descarte", hint: "Remove material vencido/contaminado", icon: Trash2, tone: "text-red-600 bg-red-500/10 border-red-500/20" },
+  { value: "ajuste", label: "Ajuste", hint: "Diferença encontrada na contagem (positiva ou negativa)", icon: SlidersHorizontal, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
 ];
 
 export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insumoIdInicial, loteIdInicial, onSaved }: Props) {

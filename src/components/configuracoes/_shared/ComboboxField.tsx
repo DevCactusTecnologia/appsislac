@@ -201,7 +201,7 @@ export function ComboboxField({
                   opt.badgeTone === "primary"
                     ? "bg-primary/10 text-primary border-primary/20"
                     : opt.badgeTone === "success"
-                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                       : opt.badgeTone === "muted"
                         ? "bg-muted text-muted-foreground border-border/60"
                         : "bg-foreground/5 text-foreground/70 border-border/60";

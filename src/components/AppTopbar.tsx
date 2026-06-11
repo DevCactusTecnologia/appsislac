@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ChevronDown, LogOut, UserCog, Settings, Building2, Sun, Moon, LayoutGrid, PanelLeft,
+  ChevronDown, LogOut, UserCog, Settings, Building2, LayoutGrid, PanelLeft,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useMenuLayout } from "@/contexts/MenuLayoutContext";
 import { cn } from "@/lib/utils";
 import { navItems, filterNavByPermissions, type NavItem } from "./AppSidebar";
@@ -141,7 +140,7 @@ const AppTopbar = ({ onLogout }: AppTopbarProps) => {
                 <p className="text-[13px] font-semibold text-foreground">{user?.nome || "Usuário"}</p>
                 <p className="text-[11px] text-muted-foreground capitalize">{user?.perfil || "Perfil"}</p>
               </div>
-              <ThemeToggle />
+              
               <MenuLayoutToggle onSelect={() => setUserMenuOpen(false)} />
               <div className="h-px bg-border/40 mx-3 my-1" />
               <button
@@ -181,34 +180,8 @@ const AppTopbar = ({ onLogout }: AppTopbarProps) => {
   );
 };
 
-export function ThemeToggle({ onSelect }: { onSelect?: () => void }) {
-  const { theme, setTheme } = useTheme();
-  return (
-    <div className="px-2 pt-1 pb-1">
-      <p className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tema</p>
-      <div className="flex gap-1 p-1 bg-accent/40 rounded-xl">
-        <button
-          onClick={() => { setTheme("light"); onSelect?.(); }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-colors",
-            theme === "light" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Sun className="w-3.5 h-3.5" /> Claro
-        </button>
-        <button
-          onClick={() => { setTheme("dark"); onSelect?.(); }}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-colors",
-            theme === "dark" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Moon className="w-3.5 h-3.5" /> Escuro
-        </button>
-      </div>
-    </div>
-  );
-}
+
+
 
 export function MenuLayoutToggle({ onSelect }: { onSelect?: () => void }) {
   const { mode, setMode } = useMenuLayout();

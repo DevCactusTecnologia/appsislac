@@ -48,7 +48,7 @@ function getPreviewThemeSnapshot() {
     .join("");
 
   return {
-    rootClassName: root.classList.contains("dark") ? "dark" : "",
+    rootClassName: "",
     fontFamily: window.getComputedStyle(document.body).fontFamily || "Inter, system-ui, sans-serif",
     cssVars,
   };
@@ -97,7 +97,7 @@ export function wrapHtmlAsA4Preview(
       padding: 0;
       background: hsl(var(--muted));
       color: hsl(var(--foreground));
-      color-scheme: ${themeSnapshot.rootClassName === "dark" ? "dark" : "light"};
+      color-scheme: light;
     }
     body {
       padding: 24px 0;

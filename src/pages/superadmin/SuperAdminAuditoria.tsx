@@ -286,9 +286,9 @@ function Stat({
 }) {
   const toneMap = {
     primary: "bg-primary/10 text-primary",
-    emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    emerald: "bg-emerald-500/10 text-emerald-600",
+    amber: "bg-amber-500/10 text-amber-600",
+    violet: "bg-violet-500/10 text-violet-600",
   };
   return (
     <div className="rounded-2xl border border-border/60 bg-card/70 backdrop-blur-sm p-3 flex items-center gap-3">
@@ -305,8 +305,8 @@ function Stat({
 
 function FlagPill({ tone, children }: { tone: "amber" | "rose"; children: React.ReactNode }) {
   const map = {
-    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-    rose: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
+    amber: "bg-amber-500/10 text-amber-700 border-amber-500/20",
+    rose: "bg-rose-500/10 text-rose-700 border-rose-500/20",
   };
   return (
     <span className={cn(

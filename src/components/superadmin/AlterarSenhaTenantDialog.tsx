@@ -246,7 +246,7 @@ export function AlterarSenhaTenantDialog({ open, onOpenChange, tenantId, tenantN
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando...
             </div>
           ) : admins.length === 0 ? (
-            <div className="text-sm text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex gap-2">
+            <div className="text-sm text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>Este laboratório não tem nenhum administrador elegível para alteração.</span>
             </div>
@@ -293,7 +293,7 @@ export function AlterarSenhaTenantDialog({ open, onOpenChange, tenantId, tenantN
               )}
             />
             {emailMudou && (
-              <p className="text-[11px] text-amber-700 dark:text-amber-400">
+              <p className="text-[11px] text-amber-700">
                 ⚠️ O e-mail de login será alterado para <strong>{emailNormalized || "—"}</strong>.
               </p>
             )}
@@ -356,7 +356,7 @@ export function AlterarSenhaTenantDialog({ open, onOpenChange, tenantId, tenantN
 
           {/* Aviso de senha fraca (não bloqueia) */}
           {password.length > 0 && strength.acceptable && !strength.strong && (
-            <div className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-2 flex gap-1.5">
+            <div className="text-[11px] text-amber-700 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-2 flex gap-1.5">
               <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
               <span>
                 Senha fraca. Será aceita, mas é facilmente descoberta. Para mais
@@ -415,7 +415,7 @@ export function AlterarSenhaTenantDialog({ open, onOpenChange, tenantId, tenantN
 
 function Req({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <li className={cn("flex items-center gap-1.5", ok && "text-emerald-600 dark:text-emerald-400")}>
+    <li className={cn("flex items-center gap-1.5", ok && "text-emerald-600")}>
       <span className={cn(
         "h-1.5 w-1.5 rounded-full",
         ok ? "bg-emerald-500" : "bg-muted-foreground/40"
@@ -454,7 +454,7 @@ function ConfirmAlteracaoDialog({
       onClose={onClose}
       icon={
         senhaFraca
-          ? <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          ? <ShieldAlert className="h-4 w-4 text-amber-600" />
           : <ShieldCheck className="h-4 w-4 text-primary" />
       }
       title={senhaFraca ? "Atenção: senha fraca" : "Confirmar alteração de credenciais"}
@@ -486,8 +486,8 @@ function ConfirmAlteracaoDialog({
       <div className="px-6 py-5 space-y-4">
         {senhaFraca && (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 flex gap-2.5">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-800 leading-relaxed">
               A senha definida é considerada <strong>fraca</strong> e pode ser
               facilmente descoberta por ataques automatizados. Recomendamos usar
               senhas com 8+ caracteres, misturando maiúsculas, números e símbolos.
@@ -526,8 +526,8 @@ function ConfirmAlteracaoDialog({
               <span className={cn(
                 "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border",
                 senhaFraca
-                  ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
-                  : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-700"
+                  : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700"
               )}>
                 <span className={cn(
                   "h-1.5 w-1.5 rounded-full",
@@ -579,7 +579,7 @@ function ResumoRow({
         {value}
       </div>
       {changed && (
-        <span className="text-[9px] uppercase tracking-wider font-bold text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+        <span className="text-[9px] uppercase tracking-wider font-bold text-amber-600 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
           Alterado
         </span>
       )}

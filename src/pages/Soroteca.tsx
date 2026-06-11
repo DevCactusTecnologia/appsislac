@@ -120,9 +120,9 @@ function avaliarVencimento(amostra: Amostra): {
 
 function statusBadge(status: AmostraStatus) {
   const map: Record<AmostraStatus, string> = {
-    DISPONIVEL: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-    UTILIZADA: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-    VENCIDA: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    DISPONIVEL: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    UTILIZADA: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    VENCIDA: "bg-red-500/10 text-red-600 border-red-500/20",
     DESCARTADA: "bg-muted text-muted-foreground border-border",
   };
   return map[status];
@@ -346,7 +346,7 @@ export default function Soroteca() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <ClipboardCheck className="w-4 h-4 text-emerald-600" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">1. Coleta</h3>
               </div>
@@ -361,7 +361,7 @@ export default function Soroteca() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <RefreshCw className="w-4 h-4 text-blue-600" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">2. Reutilização</h3>
               </div>
@@ -369,26 +369,26 @@ export default function Soroteca() {
                 Uma amostra <span className="font-medium text-foreground">DISPONIVEL</span> dentro
                 da validade pode ser reaproveitada por outro exame compatível. A amostra física não é
                 duplicada — só ganha mais um exame vinculado, marcado com o badge{" "}
-                <span className="font-medium text-blue-600 dark:text-blue-400">Reuso</span>.
+                <span className="font-medium text-blue-600">Reuso</span>.
               </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                  <Send className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <Send className="w-4 h-4 text-violet-600" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">3. Terceirizado</h3>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Exames com destino a um <span className="font-medium text-foreground">laboratório de apoio</span>{" "}
                 geram a amostra do mesmo modo, mas ela fica{" "}
-                <span className="font-medium text-violet-600 dark:text-violet-400">reservada para envio</span>.
+                <span className="font-medium text-violet-600">reservada para envio</span>.
                 O detalhe da amostra mostra o lab destino e as datas de envio/retorno.
               </p>
             </div>
           </div>
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 flex items-start gap-2">
-            <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <Layers className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <p className="text-xs text-foreground/80">
               <span className="font-semibold">Mesmo tubo, múltiplos exames:</span> exames do mesmo
               atendimento que compartilham material/recipiente são agrupados automaticamente em uma
@@ -400,7 +400,7 @@ export default function Soroteca() {
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Timer className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <Timer className="w-4 h-4 text-amber-600" />
               </div>
               <h3 className="text-sm font-semibold text-foreground">
                 Como o prazo de validade é calculado
@@ -474,7 +474,7 @@ export default function Soroteca() {
       {/* Banner global de vencimento próximo */}
       {totalProximasVencimento > 0 && statusFiltro !== "VENCIDA" && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
           <div className="flex-1 text-sm">
             <span className="font-semibold text-foreground">
               {totalProximasVencimento} amostra{totalProximasVencimento !== 1 ? "s" : ""}
@@ -609,7 +609,7 @@ export default function Soroteca() {
                       </span>
                       {tamanhoGrupo > 1 && (
                         <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center gap-1"
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-blue-500/10 text-blue-600 border border-blue-500/30 flex items-center gap-1"
                           title={`Mesmo tubo atende ${tamanhoGrupo} exames do atendimento`}
                         >
                           <Layers className="w-2.5 h-2.5" />
@@ -633,8 +633,8 @@ export default function Soroteca() {
                         className={cn(
                           "mt-2 inline-flex items-start gap-1.5 px-2 py-1 rounded-md text-[11px] border",
                           venc.nivel === "critico"
-                            ? "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/30"
-                            : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
+                            ? "bg-red-500/10 text-red-700 border-red-500/30"
+                            : "bg-amber-500/10 text-amber-700 border-amber-500/30",
                         )}
                       >
                         <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />

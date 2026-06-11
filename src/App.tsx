@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { MenuLayoutProvider } from "@/contexts/MenuLayoutContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+
 import ChunkErrorBoundary from "@/components/ChunkErrorBoundary";
 
 
@@ -377,9 +377,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <MenuLayoutProvider>
-              <ThemeProvider>
-                <AppRoutes />
-              </ThemeProvider>
+              <AppRoutes />
             </MenuLayoutProvider>
           </AuthProvider>
         </BrowserRouter>

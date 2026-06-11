@@ -51,7 +51,7 @@ const VerificarComprovante = () => {
     "text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block ml-1";
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center py-10 px-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4">
       <SEO
         title={`Verificação de Autenticidade — ${lab.nome || "Laboratório"}`}
         description="Portal de verificação de documentos emitidos eletronicamente."
@@ -63,14 +63,14 @@ const VerificarComprovante = () => {
             to="/"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6 group"
           >
-            <div className="h-8 w-8 rounded-full bg-white dark:bg-slate-900 border border-border flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary/20">
+            <div className="h-8 w-8 rounded-full bg-white border border-border flex items-center justify-center group-hover:bg-primary/5 group-hover:border-primary/20">
               <ArrowLeft className="h-4 w-4" />
             </div>
             Voltar ao início
           </Link>
 
           <div className="flex flex-col items-center">
-            <div className="h-20 w-20 rounded-2xl bg-white dark:bg-slate-900 border border-border shadow-sm flex items-center justify-center overflow-hidden mb-4 p-2">
+            <div className="h-20 w-20 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center overflow-hidden mb-4 p-2">
               {lab.logo ? (
                 <img src={lab.logo} alt="Logo" className="max-h-full max-w-full object-contain" />
               ) : (
@@ -88,7 +88,7 @@ const VerificarComprovante = () => {
 
         <main className="space-y-6">
           {/* Card de Código */}
-          <div className="bg-white dark:bg-slate-900 border border-border rounded-3xl p-8 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative">
+          <div className="bg-white border border-border rounded-3xl p-8 shadow-xl shadow-slate-200/50 overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
               <QrCode className="h-32 w-32" />
             </div>
@@ -100,7 +100,7 @@ const VerificarComprovante = () => {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
                 Código de verificação
               </p>
-              <div className="mt-2 py-4 px-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-primary/20 inline-block mx-auto">
+              <div className="mt-2 py-4 px-6 bg-slate-50 rounded-2xl border border-dashed border-primary/20 inline-block mx-auto">
                 <p className="font-mono text-3xl font-black text-primary tracking-widest">
                   {codigoNormalizado || "—"}
                 </p>
@@ -112,8 +112,8 @@ const VerificarComprovante = () => {
               <div
                 className={`mt-8 rounded-2xl border p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500 ${
                   resultado.ok
-                    ? "border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5"
-                    : "border-rose-500/30 bg-rose-50 dark:bg-rose-500/5"
+                    ? "border-emerald-500/30 bg-emerald-50"
+                    : "border-rose-500/30 bg-rose-50"
                 }`}
               >
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
@@ -126,7 +126,7 @@ const VerificarComprovante = () => {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-base font-bold ${resultado.ok ? "text-emerald-800 dark:text-emerald-400" : "text-rose-800 dark:text-rose-400"}`}>
+                  <p className={`text-base font-bold ${resultado.ok ? "text-emerald-800" : "text-rose-800"}`}>
                     {resultado.ok ? "Documento Autêntico" : "Dados Inválidos"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
@@ -140,7 +140,7 @@ const VerificarComprovante = () => {
           </div>
 
           {/* Card do Formulário */}
-          <div className="bg-white dark:bg-slate-900 border border-border rounded-3xl p-8 shadow-sm">
+          <div className="bg-white border border-border rounded-3xl p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-8">
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <FileText className="h-5 w-5 text-primary" />
@@ -230,7 +230,7 @@ const VerificarComprovante = () => {
 
           {/* Rodapé de Informações */}
           <footer className="flex flex-col gap-6 pt-4">
-            <div className="bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-5 border border-border/50 flex items-start gap-4">
+            <div className="bg-slate-100 rounded-2xl p-5 border border-border/50 flex items-start gap-4">
               <HelpCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <p className="text-xs font-bold text-foreground">Como funciona?</p>

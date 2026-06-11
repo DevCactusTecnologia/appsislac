@@ -68,9 +68,9 @@ function Kpi({ label, value, hint, icon: Icon, to, badge, accent = "default" }: 
       : "ring-primary/10";
   const accentBg =
     accent === "warning"
-      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      ? "bg-amber-500/10 text-amber-600"
       : accent === "success"
-      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      ? "bg-emerald-500/10 text-emerald-600"
       : "bg-primary/10 text-primary";
 
   const inner = (
@@ -129,10 +129,10 @@ function Quick({ label, icon: Icon, to }: QuickProps) {
 function StatusPill({ label }: { label: string }) {
   const l = label.toLowerCase();
   let cls = "bg-muted text-muted-foreground";
-  if (l.includes("liber") || l.includes("entreg")) cls = "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
-  else if (l.includes("cancel")) cls = "bg-rose-500/15 text-rose-700 dark:text-rose-300";
-  else if (l.includes("aguard") && l.includes("colet")) cls = "bg-amber-500/15 text-amber-700 dark:text-amber-300";
-  else if (l.includes("anal")) cls = "bg-sky-500/15 text-sky-700 dark:text-sky-300";
+  if (l.includes("liber") || l.includes("entreg")) cls = "bg-emerald-500/15 text-emerald-700";
+  else if (l.includes("cancel")) cls = "bg-rose-500/15 text-rose-700";
+  else if (l.includes("aguard") && l.includes("colet")) cls = "bg-amber-500/15 text-amber-700";
+  else if (l.includes("anal")) cls = "bg-sky-500/15 text-sky-700";
   else if (l.includes("realiz") || l.includes("pedido")) cls = "bg-primary/15 text-primary";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>
@@ -381,7 +381,7 @@ const RecepcionistaDashboard = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <UserPlus className="h-4 w-4" /> Novos (30d)
                   </div>
-                  <span className="text-base font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <span className="text-base font-semibold tabular-nums text-emerald-600">
                     +{kpis.novos30d}
                   </span>
                 </div>

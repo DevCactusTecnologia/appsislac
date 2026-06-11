@@ -228,11 +228,11 @@ function MiniStat({ label, value, icon: Icon, to, accent = "default" }: MiniStat
       : "Aguardando";
   const badgeCls =
     accent === "success"
-      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+      ? "bg-emerald-100 text-emerald-700"
       : accent === "warning"
-      ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+      ? "bg-amber-100 text-amber-700"
       : accent === "danger"
-      ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+      ? "bg-rose-100 text-rose-700"
       : "bg-muted text-muted-foreground";
   const markerCls = accent === "success" ? "bg-foreground text-background" : accent === "warning" ? "ring-primary/35 bg-lavender/20 text-primary" : "border-border bg-background text-muted-foreground";
 
@@ -272,7 +272,7 @@ interface PanelProps {
 function Panel({ title, hint, action, children, className = "" }: PanelProps) {
   return (
     <div className={`relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft animate-fade-in-up ${className}`}>
-      <div className="relative flex items-center justify-between gap-3 border-b border-border/60 bg-lavender/40 dark:bg-primary/10 px-5 py-4">
+      <div className="relative flex items-center justify-between gap-3 border-b border-border/60 bg-lavender/40 px-5 py-4">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
@@ -670,7 +670,7 @@ const Dashboard = () => {
                     <UserPlus className="h-4 w-4" />
                     Novos (30d)
                   </div>
-                  <span className="text-base font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <span className="text-base font-semibold tabular-nums text-emerald-600">
                     +{pacientesInsight.novos30d}
                   </span>
                 </div>
@@ -746,7 +746,7 @@ const Dashboard = () => {
                   <span
                     className={`font-semibold tabular-nums ${
                       produtividade.taxaCancelamento > 5
-                        ? "text-rose-600 dark:text-rose-400"
+                        ? "text-rose-600"
                         : "text-foreground"
                     }`}
                   >

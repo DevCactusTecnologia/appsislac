@@ -21,7 +21,7 @@ import { renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
 import { buildLotePreviewBlock } from "@/lib/mapaLotePreview";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/contexts/ThemeContext";
+
 
 interface Props {
   open: boolean;
@@ -83,7 +83,6 @@ const labelClass = "text-[11px] font-semibold uppercase tracking-wide text-muted
 
 const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Props) => {
   const { toast } = useToast();
-  const { theme } = useTheme();
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [tipo, setTipo] = useState<MapaTipo>("LOTE");
@@ -126,7 +125,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   );
   const previewA4Html = useMemo(
     () => wrapHtmlAsA4Preview(previewHtml, previewOrientation),
-    [previewHtml, previewOrientation, theme]
+    [previewHtml, previewOrientation]
   );
 
   // Templates filtrados pelo tipo selecionado
@@ -474,7 +473,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 <div className="bg-muted/30 h-[520px] overflow-auto">
                   {previewHtml ? (
                     <iframe
-                        key={`${previewOrientation}-${theme}`}
+                        key={previewOrientation}
                       title="Pré-visualização A4 do mapa"
                       srcDoc={previewA4Html}
                       className="w-full h-full border-0 bg-background"

@@ -5,7 +5,7 @@ import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
-import { useTheme } from "@/contexts/ThemeContext";
+
 
 export type { MapaOrientation };
 
@@ -32,11 +32,10 @@ export default function MapaPreviewDialog({
   orientation = "portrait",
   onOrientationChange,
 }: MapaPreviewDialogProps) {
-  const { theme } = useTheme();
   const [maximized, setMaximized] = useState(false);
   const previewHtml = useMemo(
     () => wrapHtmlAsA4Preview(html, orientation),
-    [html, orientation, theme],
+    [html, orientation],
   );
 
   const handlePrint = () => {
@@ -131,7 +130,7 @@ export default function MapaPreviewDialog({
             </div>
           ) : (
             <iframe
-              key={`${orientation}-${theme}`}
+              key={orientation}
               title="Pré-visualização"
               srcDoc={previewHtml}
               className="w-full h-full border-0 bg-background"
