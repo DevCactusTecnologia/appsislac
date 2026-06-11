@@ -1,0 +1,1 @@
+ALTER TABLE public.inscricoes ALTER COLUMN quantidade_unidades DROP NOT NULL;

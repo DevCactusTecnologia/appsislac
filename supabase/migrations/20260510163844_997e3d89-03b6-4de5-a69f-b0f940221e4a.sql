@@ -1,0 +1,1 @@
+DELETE FROM public.documento_templates WHERE padrao = false;

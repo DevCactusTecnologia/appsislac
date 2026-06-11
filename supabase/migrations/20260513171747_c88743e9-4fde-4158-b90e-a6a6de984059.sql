@@ -1,0 +1,5 @@
+ALTER TABLE public.especialistas
+  ADD COLUMN IF NOT EXISTS conselho_classe text NOT NULL DEFAULT 'CRM',
+  ADD COLUMN IF NOT EXISTS estado_emissor text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS cpf text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS sexo text NOT NULL DEFAULT '';

@@ -1,0 +1,1121 @@
+// ----------------------------------------------------------------------------
+// SISLAC Document Ownership (IA-first semantics) — RECEIPTS LAYER
+//   Lab Data  = institutional identity  (labConfigStore — SINGLE SOURCE)
+//   Documents = reusable templates      (documentoTemplatesStore)
+//   Receipts  = OPERATIONAL INSTANCES   (this file — single render pipeline)
+//
+// This file is the ONLY entrypoint for receipt HTML/PDF generation.
+// Pipeline: buildComprovanteHtml() → renderDocumentoTemplate() (template if
+// active) → fallback hardcoded layout. Branding ALWAYS via getLabConfig().
+// Never duplicate institutional data here.
+// ----------------------------------------------------------------------------
+//
+// Generates branded receipt PDFs (Pagamento, Atendimento, Comparecimento)
+// and orçamentos using html2pdf.js. The HTML is built off-screen, converted,
+// then cleaned up. Branding (logo + lab data) comes from labConfigStore.
+//
+// WhatsApp sharing uploads the PDF to a public Cloud Storage bucket
+// (via the `upload-pdf` edge function) and shares the public link in the
+// message — no manual attachment required.
+
+import { getLabConfig, ensureLabLogoLoaded } from "@/data/labConfigStore";
+import { supabase } from "@/integrations/supabase/client";
+import QRCode from "qrcode";
+
+import { fmtBRL } from "@/lib/utils";
+import { escapeHtml as esc } from "@/lib/escapeHtml";
+import {
+  renderDocumentoTemplate,
+  type DocumentoRenderContext,
+} from "@/lib/documentoRenderer";
+import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplatesStore";
+
+/** Margens default (mm) — usadas quando o template não define margens próprias. */
+const DEFAULT_MARGINS_MM: [number, number, number, number] = [18, 18, 22, 18];
+
+/**
+ * Resolve as margens de impressão (em mm) configuradas no template padrão
+ * do tipo de documento informado. Cada documento tem suas próprias margens,
+ * editadas em Configurações → Documentos → editor de template.
+ */
+export function getDocumentoMarginsMm(
+  tipo?: DocumentoTipo,
+): [number, number, number, number] {
+  if (!tipo) return [...DEFAULT_MARGINS_MM];
+  const tpl = getTemplatePadrao(tipo);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const m = (tpl?.config as any)?.margins as
+    | { top?: number; right?: number; bottom?: number; left?: number }
+    | undefined;
+  if (!m) return [...DEFAULT_MARGINS_MM];
+  const pick = (v: unknown, fb: number) => (Number.isFinite(Number(v)) ? Number(v) : fb);
+  return [
+    pick(m.top, DEFAULT_MARGINS_MM[0]),
+    pick(m.right, DEFAULT_MARGINS_MM[1]),
+    pick(m.bottom, DEFAULT_MARGINS_MM[2]),
+    pick(m.left, DEFAULT_MARGINS_MM[3]),
+  ];
+}
+
+// html2pdf.js (~370 KB minificado) é caro para entrar no chunk inicial — só é
+// necessário quando o usuário efetivamente gera/imprime/baixa um PDF. Carregamos
+// dinamicamente e cacheamos a Promise para não duplicar requisições.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let html2pdfPromise: Promise<any> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function loadHtml2Pdf(): Promise<any> {
+  if (!html2pdfPromise) {
+    html2pdfPromise = import("html2pdf.js").then((m) => (m as { default: unknown }).default ?? m);
+  }
+  return html2pdfPromise;
+}
+export type ComprovanteTipo = "pagamento" | "atendimento" | "comparecimento";
+
+interface ComprovanteData {
+  tipo: ComprovanteTipo;
+  protocolo: string;
+  data: string;
+  paciente: { nome: string; cpf?: string; nascimento?: string; idade?: string };
+  convenio?: string;
+  solicitante?: string;
+  unidade?: { nome: string; endereco?: string; cidade?: string; estado?: string };
+  exames?: { nome: string; material?: string; valor?: number }[];
+  pagamentos?: { tipo: string; data: string; valor: number }[];
+  totais?: { subtotal: number; desconto: number; pago: number; total: number; saldo: number };
+}
+
+const tipoConfig: Record<ComprovanteTipo, { label: string; accent: string }> = {
+  pagamento: { label: "RECIBO DE PAGAMENTO", accent: "#111111" },
+  atendimento: { label: "COMPROVANTE DE ATENDIMENTO", accent: "#111111" },
+  comparecimento: { label: "DECLARAÇÃO DE COMPARECIMENTO", accent: "#111111" },
+};
+
+/** Mapeia o tipo de comprovante para o tipo de template de documento. */
+const COMPROVANTE_TO_DOCUMENTO_TIPO: Record<ComprovanteTipo, DocumentoTipo> = {
+  pagamento: "comprovante_pagamento",
+  atendimento: "comprovante_atendimento",
+  comparecimento: "declaracao_comparecimento",
+};
+
+// ===== Helpers legais =====
+
+/** Converte um número (até bilhões) em extenso, em pt-BR — para recibos. */
+function valorPorExtenso(valor: number): string {
+  if (!isFinite(valor) || valor < 0) return "";
+  const inteiros = Math.floor(valor);
+  const centavos = Math.round((valor - inteiros) * 100);
+  const parteInt = numeroPorExtenso(inteiros);
+  const moeda = inteiros === 1 ? "real" : "reais";
+  if (centavos === 0) {
+    return `${parteInt} ${moeda}`;
+  }
+  const parteCent = numeroPorExtenso(centavos);
+  const cent = centavos === 1 ? "centavo" : "centavos";
+  if (inteiros === 0) return `${parteCent} ${cent}`;
+  return `${parteInt} ${moeda} e ${parteCent} ${cent}`;
+}
+
+function numeroPorExtenso(n: number): string {
+  if (n === 0) return "zero";
+  const unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+  const dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+  const centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+  function ate999(num: number): string {
+    if (num === 0) return "";
+    if (num === 100) return "cem";
+    const c = Math.floor(num / 100);
+    const resto = num % 100;
+    const partes: string[] = [];
+    if (c > 0) partes.push(centenas[c]);
+    if (resto > 0) {
+      if (resto < 20) partes.push(unidades[resto]);
+      else {
+        const d = Math.floor(resto / 10);
+        const u = resto % 10;
+        partes.push(u === 0 ? dezenas[d] : `${dezenas[d]} e ${unidades[u]}`);
+      }
+    }
+    return partes.join(" e ");
+  }
+
+  const partes: string[] = [];
+  const milhoes = Math.floor(n / 1_000_000);
+  const milhares = Math.floor((n % 1_000_000) / 1_000);
+  const resto = n % 1_000;
+
+  if (milhoes > 0) {
+    partes.push(milhoes === 1 ? "um milhão" : `${ate999(milhoes)} milhões`);
+  }
+  if (milhares > 0) {
+    partes.push(milhares === 1 ? "mil" : `${ate999(milhares)} mil`);
+  }
+  if (resto > 0) {
+    partes.push(ate999(resto));
+  }
+  return partes.join(" e ");
+}
+
+/** Gera código curto e determinístico (FNV-1a hex, 10 chars) para verificação. */
+export function codigoVerificacao(input: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  const hex = (h >>> 0).toString(16).padStart(8, "0").toUpperCase();
+  return `${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
+}
+
+/**
+ * Recompute the verification code for a given comprovante. Used by the
+ * /verificar/:codigo page to confirm that a code matches a document the
+ * user types in (deterministic FNV-1a, no DB lookup needed).
+ */
+export function codigoVerificacaoDeComprovante(d: {
+  tipo: ComprovanteTipo;
+  protocolo: string;
+  paciente: { nome: string };
+  data: string;
+  totais?: { total: number };
+}): string {
+  return codigoVerificacao(
+    `${d.tipo}|${d.protocolo}|${d.paciente.nome}|${d.data}|${d.totais?.total ?? ""}`,
+  );
+}
+
+// ===== Validações legais antes de emitir comprovante / WhatsApp =====
+
+const UFS_VALIDAS = new Set([
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI",
+  "RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+]);
+const CONSELHOS_VALIDOS = new Set(["CRBM","CRF","CRM","CRBIO","CRO","CRN","CRBQ"]);
+
+function _validarCnpj(cnpj: string): boolean {
+  const d = cnpj.replace(/\D/g, "");
+  if (d.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(d)) return false;
+  const calc = (base: string, pesos: number[]) => {
+    const soma = base.split("").reduce((s, n, i) => s + Number(n) * pesos[i], 0);
+    const r = soma % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  const dv1 = calc(d.slice(0, 12), [5,4,3,2,9,8,7,6,5,4,3,2]);
+  const dv2 = calc(d.slice(0, 13), [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+  return dv1 === Number(d[12]) && dv2 === Number(d[13]);
+}
+
+/**
+ * Verifica se a configuração legal do laboratório está completa e
+ * consistente para emitir um comprovante específico.
+ *
+ * Regras:
+ * - Pagamento (recibo): exige CNPJ válido + CNES + RT completo (RDC ANVISA 302/2005)
+ * - Atendimento / Comparecimento: exige ao menos CNES + RT completo
+ */
+export function validarLaboratorioParaComprovante(
+  tipo: ComprovanteTipo,
+): { ok: true } | { ok: false; erros: string[] } {
+  const lab = getLabConfig();
+  const erros: string[] = [];
+
+  if (!lab.nome?.trim()) erros.push("Nome do laboratório não cadastrado.");
+
+  // CNPJ é obrigatório para recibo de pagamento (valor fiscal/contábil).
+  if (tipo === "pagamento") {
+    if (!lab.cnpj?.trim()) {
+      erros.push("CNPJ é obrigatório para emitir recibo de pagamento.");
+    } else if (!_validarCnpj(lab.cnpj)) {
+      erros.push("CNPJ cadastrado é inválido (verifique os dígitos).");
+    }
+  } else if (lab.cnpj && !_validarCnpj(lab.cnpj)) {
+    erros.push("CNPJ cadastrado é inválido (verifique os dígitos).");
+  }
+
+  // CNES é obrigatório para qualquer documento clínico (ANVISA).
+  const cnes = (lab.cnes ?? "").replace(/\D/g, "");
+  if (!cnes) erros.push("CNES não cadastrado (obrigatório para documentos clínicos).");
+  else if (cnes.length !== 7) erros.push("CNES deve ter exatamente 7 dígitos.");
+
+  // Responsável Técnico — tudo-ou-nada e completo.
+  const rtNome = lab.responsavelTecnico?.trim() ?? "";
+  const rtConselho = lab.responsavelTecnicoConselho?.trim() ?? "";
+  const rtNumero = lab.responsavelTecnicoNumero?.trim() ?? "";
+  const rtUf = lab.responsavelTecnicoUf?.trim() ?? "";
+
+  if (!rtNome) erros.push("Nome do Responsável Técnico não cadastrado.");
+  if (!rtConselho) erros.push("Conselho do RT não cadastrado (CRBM, CRF, CRM…).");
+  else if (!CONSELHOS_VALIDOS.has(rtConselho))
+    erros.push(`Conselho '${rtConselho}' não é reconhecido.`);
+  if (!rtNumero) erros.push("Número de registro do RT não cadastrado.");
+  if (!rtUf) erros.push("UF do conselho do RT não cadastrada.");
+  else if (!UFS_VALIDAS.has(rtUf)) erros.push(`UF '${rtUf}' do RT é inválida.`);
+
+  return erros.length === 0 ? { ok: true } : { ok: false, erros };
+}
+
+/** Gera vCard 3.0 com dados do laboratório + código de verificação no campo NOTE. */
+function buildVCard(codigo: string, tipoLabel: string): string {
+  const lab = getLabConfig();
+  const nome = (lab.nome && lab.nome.trim()) || "SISLAC";
+  const linhas = [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${nome}`,
+    `ORG:${(lab.razaoSocial?.trim() || nome).replace(/\n/g, " ")}`,
+  ];
+  if (lab.telefone) linhas.push(`TEL;TYPE=WORK,VOICE:${lab.telefone}`);
+  if (lab.email) linhas.push(`EMAIL;TYPE=WORK:${lab.email}`);
+  // URL pública de verificação — escaneando o QR a câmera abre a página
+  // /verificar/<codigo> além de salvar o vCard.
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "";
+  if (origin) linhas.push(`URL:${origin}/verificar/${codigo}`);
+  const adr = [lab.endereco, lab.cidade, lab.estado].filter(Boolean).join(", ");
+  if (adr) linhas.push(`ADR;TYPE=WORK:;;${lab.endereco ?? ""};${lab.cidade ?? ""};${lab.estado ?? ""};;`);
+  const notaPartes = [
+    `${tipoLabel} - cod. verificacao ${codigo}`,
+    lab.cnpj ? `CNPJ ${lab.cnpj}` : "",
+    lab.cnes ? `CNES ${lab.cnes}` : "",
+  ].filter(Boolean);
+  linhas.push(`NOTE:${notaPartes.join(" | ")}`);
+  linhas.push("END:VCARD");
+  return linhas.join("\n");
+}
+
+/**
+ * Gera QR Code como string SVG otimizada com design moderno.
+ * Reduzimos a densidade visual usando correção 'L' (mais que suficiente para links curtos)
+ * e arredondamos os cantos dos módulos para um visual mais limpo e "premium",
+ * similar aos padrões modernos de UX.
+ */
+function gerarQrSvg(payload: string): string {
+  try {
+    // Usamos 'L' (7%) para links, o que gera menos módulos e traços mais grossos.
+    // Isso melhora drasticamente a leitura em telas e impressões térmicas.
+    const qr = QRCode.create(payload, { errorCorrectionLevel: "L" });
+    const size = qr.modules.size;
+    const cells: string[] = [];
+    
+    // Raio para arredondamento dos módulos (estilo moderno)
+    const r = 0.35; 
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        if (qr.modules.get(x, y)) {
+          // Desenhamos retângulos com cantos levemente arredondados
+          cells.push(`<rect x="${x}" y="${y}" width="1" height="1" rx="${r}" ry="${r}"/>`);
+        }
+      }
+    }
+    const total = size + 2; // Margem de 1 módulo
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 ${total} ${total}" shape-rendering="geometricPrecision" width="128" height="128" style="display:block;background:#fff;border:1px solid #f0f0f0;"><g fill="#000">${cells.join("")}</g></svg>`;
+  } catch {
+    return "";
+  }
+}
+
+function dataAtualPorExtenso(): string {
+  const hoje = new Date();
+  const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  return `${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`;
+}
+
+function buildEmitenteHeader(badgeLabel: string): string {
+  const lab = getLabConfig();
+  const labName = (lab.nome && lab.nome.trim()) || "SISLAC";
+  const razao = lab.razaoSocial?.trim() && lab.razaoSocial.trim() !== labName
+    ? lab.razaoSocial.trim()
+    : "";
+  const enderecoLinha = [lab.endereco, [lab.cidade, lab.estado].filter(Boolean).join("/")]
+    .filter(Boolean)
+    .join(" — ");
+  const contactLine = [lab.telefone, lab.email].filter(Boolean).join(" · ");
+  const docLine = [
+    lab.cnpj ? `CNPJ ${lab.cnpj}` : "",
+    lab.inscricaoMunicipal ? `IM ${lab.inscricaoMunicipal}` : "",
+    lab.cnes ? `CNES ${lab.cnes}` : "",
+  ].filter(Boolean).join(" · ");
+  const logoBlock = lab.logo
+    ? `<img src="${esc(lab.logo)}" alt="Logo" style="max-height:60px;max-width:170px;object-fit:contain;margin:0 0 10px 0;display:block;" />`
+    : "";
+  return `
+  <div style="border-bottom:1.5px solid #111;padding-bottom:14px;margin-bottom:18px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        <td style="vertical-align:top;width:170px;">${logoBlock}</td>
+        <td style="vertical-align:top;text-align:left;padding-left:${lab.logo ? "16" : "0"}px;">
+          <p style="font-size:15px;font-weight:700;color:#111;margin:0;letter-spacing:.2px;">${esc(labName)}</p>
+          ${razao ? `<p style="font-size:10.5px;color:#444;margin:2px 0 0 0;">${esc(razao)}</p>` : ""}
+          ${enderecoLinha ? `<p style="font-size:10px;color:#555;margin:3px 0 0 0;">${esc(enderecoLinha)}</p>` : ""}
+          ${contactLine ? `<p style="font-size:10px;color:#555;margin:1px 0 0 0;">${esc(contactLine)}</p>` : ""}
+          ${docLine ? `<p style="font-size:10px;color:#555;margin:1px 0 0 0;">${esc(docLine)}</p>` : ""}
+        </td>
+      </tr>
+    </table>
+    <p style="text-align:center;font-size:13px;font-weight:700;letter-spacing:3px;color:#111;margin:14px 0 0 0;text-transform:uppercase;">${esc(badgeLabel)}</p>
+  </div>`;
+}
+
+function buildAssinaturaRodape(codigo: string, qrSvg: string): string {
+  const lab = getLabConfig();
+  const cidadeUf = [lab.cidade, lab.estado].filter(Boolean).join("/");
+  const local = cidadeUf ? `${cidadeUf}, ${dataAtualPorExtenso()}.` : `${dataAtualPorExtenso()}.`;
+  // Documento é assinado eletronicamente — não exibimos bloco de assinatura
+  // física. Mantemos apenas o local/data + rodapé de verificação (QR + código).
+  return `
+  <div class="no-break" style="margin-top:24px;page-break-inside:avoid;break-inside:avoid;">
+    <p style="font-size:11px;color:#333;margin:0;">${esc(local)}</p>
+    <table style="width:100%;margin-top:14px;padding-top:10px;border-collapse:collapse;">
+      <tr>
+        <td style="vertical-align:top;width:74px;padding-right:10px;">${qrSvg}</td>
+        <td style="vertical-align:top;font-size:9px;color:#777;line-height:1.5;">
+          <p style="margin:0;">Documento emitido eletronicamente em <strong style="color:#333;">${esc(new Date().toLocaleString("pt-BR"))}</strong>.</p>
+          <p style="margin:3px 0 0 0;">Cód. verificação: <strong style="color:#111;font-family:'Courier New',monospace;font-variant-numeric:tabular-nums;">${esc(codigo)}</strong></p>
+          <p style="margin:3px 0 0 0;color:#999;">Aponte a câmera no QR para abrir a página de verificação on-line deste documento.</p>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+export function buildComprovanteHtml(d: ComprovanteData): string {
+  return buildHtml(d);
+}
+
+/**
+ * Constrói o rodapé padrão (assinatura RT + QR code de verificação + cód.)
+ * usado nos comprovantes legados, exposto para que documentos gerados
+ * via templates personalizados (Modelos de impressão) também o exibam.
+ */
+export function buildDocumentoFooterHtml(d: ComprovanteData): string {
+  const cfg = tipoConfig[d.tipo];
+  const codigo = codigoVerificacao(
+    `${d.tipo}|${d.protocolo}|${d.paciente.nome}|${d.data}|${d.totais?.total ?? ""}`,
+  );
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "";
+  const verificationLink = origin ? `${origin}/verificar/${codigo}` : codigo;
+  const qrSvg = gerarQrSvg(verificationLink);
+  return buildAssinaturaRodape(codigo, qrSvg);
+}
+
+export function buildOrcamentoHtmlPublic(o: OrcamentoPDFData): string {
+  return buildOrcamentoHtml(o);
+}
+
+function buildHtml(d: ComprovanteData): string {
+  // 1) Se houver template configurado em Configurações → Documentos, usa-o.
+  const tipoMap: Record<ComprovanteTipo, DocumentoTipo> = {
+    pagamento: "comprovante_pagamento",
+    atendimento: "comprovante_atendimento",
+    comparecimento: "declaracao_comparecimento",
+  };
+  const ctx: DocumentoRenderContext = {
+    paciente: d.paciente,
+    atendimento: {
+      protocolo: d.protocolo,
+      data: d.data,
+      convenio: d.convenio,
+      solicitante: d.solicitante,
+    },
+    unidade: d.unidade,
+    exames: d.exames,
+    pagamentos: d.pagamentos,
+    totais: d.totais,
+  };
+  const fromTemplate = renderDocumentoTemplate(tipoMap[d.tipo], ctx);
+  if (fromTemplate) return fromTemplate;
+
+  // 2) Fallback: layout legado hardcoded.
+  const cfg = tipoConfig[d.tipo];
+  // Código de verificação determinístico (mesmo input → mesmo código)
+  const codigo = codigoVerificacao(`${d.tipo}|${d.protocolo}|${d.paciente.nome}|${d.data}|${d.totais?.total ?? ""}`);
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "";
+  const verificationLink = origin ? `${origin}/verificar/${codigo}` : codigo;
+  const qrSvg = gerarQrSvg(verificationLink);
+
+  // Bloco padrão: identificação do paciente
+  const idPaciente = `
+  <div style="margin-bottom:14px;">
+    <p style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#666;margin:0 0 6px 0;text-transform:uppercase;">Identificação do paciente</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr>
+        <td style="padding:3px 0;color:#555;width:90px;">Nome</td>
+        <td style="padding:3px 0;color:#111;font-weight:600;">${esc(d.paciente.nome)}</td>
+      </tr>
+      ${d.paciente.cpf ? `<tr><td style="padding:3px 0;color:#555;">CPF</td><td style="padding:3px 0;color:#111;">${esc(d.paciente.cpf)}</td></tr>` : ""}
+      ${d.paciente.nascimento ? `<tr><td style="padding:3px 0;color:#555;">Nascimento</td><td style="padding:3px 0;color:#111;">${esc(d.paciente.nascimento)}${d.paciente.idade ? ` (${esc(d.paciente.idade)})` : ""}</td></tr>` : ""}
+    </table>
+  </div>`;
+
+  // Bloco padrão: identificação do atendimento
+  const idAtendimento = `
+  <div style="margin-bottom:18px;">
+    <p style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#666;margin:0 0 6px 0;text-transform:uppercase;">Identificação do atendimento</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr>
+        <td style="padding:3px 0;color:#555;width:90px;">Protocolo</td>
+        <td style="padding:3px 0;color:#111;font-family:'Courier New',monospace;font-weight:700;">${esc(d.protocolo)}</td>
+      </tr>
+      <tr>
+        <td style="padding:3px 0;color:#555;">Data</td>
+        <td style="padding:3px 0;color:#111;">${esc(d.data)}</td>
+      </tr>
+      ${d.convenio ? `<tr><td style="padding:3px 0;color:#555;">Convênio</td><td style="padding:3px 0;color:#111;">${esc(d.convenio)}</td></tr>` : ""}
+      ${d.solicitante ? `<tr><td style="padding:3px 0;color:#555;">Solicitante</td><td style="padding:3px 0;color:#111;">${esc(d.solicitante)}</td></tr>` : ""}
+      ${d.unidade ? `<tr><td style="padding:3px 0;color:#555;">Unidade</td><td style="padding:3px 0;color:#111;">${esc(d.unidade.nome)}${d.unidade.cidade ? ` — ${esc(d.unidade.cidade)}${d.unidade.estado ? `/${esc(d.unidade.estado)}` : ""}` : ""}</td></tr>` : ""}
+    </table>
+  </div>`;
+
+  // ===== Conteúdo específico por tipo =====
+  let corpoEspecifico = "";
+
+  if (d.tipo === "pagamento") {
+    const total = d.totais?.total ?? 0;
+    const pago = d.totais?.pago ?? 0;
+    const saldo = d.totais?.saldo ?? 0;
+    const subtotal = d.totais?.subtotal ?? 0;
+    const desconto = d.totais?.desconto ?? 0;
+    const isParcial = saldo > 0.005;
+    const valorRecebido = pago > 0 ? pago : total;
+    const extenso = valorPorExtenso(valorRecebido);
+    const formaPagto = (d.pagamentos ?? []).map(p => p.tipo).filter(Boolean);
+    const formaTxt = formaPagto.length > 0 ? formaPagto.join(", ") : "—";
+
+    const declaracao = isParcial
+      ? `Recebemos de <strong>${esc(d.paciente.nome)}</strong>${d.paciente.cpf ? `, CPF ${esc(d.paciente.cpf)}` : ""}, a importância de <strong>${fmtBRL(valorRecebido)}</strong> (${esc(extenso)}), referente a pagamento <strong>parcial</strong> dos serviços laboratoriais identificados sob o protocolo nº ${esc(d.protocolo)}, restando saldo devedor de <strong>${fmtBRL(saldo)}</strong>. Este recibo refere-se exclusivamente ao valor efetivamente recebido nesta data e <strong>não constitui quitação total da obrigação</strong>.`
+      : `Recebemos de <strong>${esc(d.paciente.nome)}</strong>${d.paciente.cpf ? `, CPF ${esc(d.paciente.cpf)}` : ""}, a importância de <strong>${fmtBRL(valorRecebido)}</strong> (${esc(extenso)}), referente ao pagamento integral dos serviços laboratoriais identificados sob o protocolo nº ${esc(d.protocolo)}, dando ao pagador, por este recibo, <strong>plena, geral e irrevogável quitação</strong> da obrigação.`;
+
+    const exames = (d.exames ?? []).filter(e => e?.nome);
+    const tabelaExames = exames.length > 0 ? `
+    <div style="margin-top:6px;">
+      <p style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#666;margin:0 0 6px 0;text-transform:uppercase;">Discriminação dos serviços</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;border-top:1px solid #111;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;">Exame</th>
+            <th style="text-align:left;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;">Material</th>
+            <th style="text-align:right;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${exames.map(e => `<tr>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;">${esc(e.nome)}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;color:#555;">${esc(e.material ?? "—")}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;text-align:right;font-variant-numeric:tabular-nums;">${fmtBRL(e.valor ?? 0)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>` : "";
+
+    const tabelaPagamentos = (d.pagamentos ?? []).length > 0 ? `
+    <div style="margin-top:14px;">
+      <p style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#666;margin:0 0 6px 0;text-transform:uppercase;">Pagamentos recebidos</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;border-top:1px solid #111;">
+        <tbody>
+          ${d.pagamentos!.map(p => `<tr>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;">${esc(p.tipo)}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;color:#555;">${esc(p.data)}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;">${fmtBRL(p.valor)}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>` : "";
+
+    const totaisBox = d.totais ? `
+    <div style="margin-top:14px;border:1px solid #111;padding:12px 14px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <tr><td style="padding:3px 0;color:#555;">Subtotal</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;">${fmtBRL(subtotal)}</td></tr>
+        ${desconto > 0 ? `<tr><td style="padding:3px 0;color:#555;">Desconto</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;">- ${fmtBRL(desconto)}</td></tr>` : ""}
+        <tr><td style="padding:6px 0 3px 0;color:#555;border-top:1px solid #ddd;">Total dos serviços</td><td style="padding:6px 0 3px 0;text-align:right;font-variant-numeric:tabular-nums;border-top:1px solid #ddd;">${fmtBRL(total)}</td></tr>
+        <tr><td style="padding:3px 0;color:#555;">Valor recebido</td><td style="padding:3px 0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(pago)}</td></tr>
+        ${isParcial ? `<tr><td style="padding:3px 0;color:#a02020;font-weight:600;">Saldo devedor</td><td style="padding:3px 0;text-align:right;color:#a02020;font-weight:700;font-variant-numeric:tabular-nums;">${fmtBRL(saldo)}</td></tr>` : ""}
+      </table>
+    </div>` : "";
+
+    corpoEspecifico = `
+    <div style="margin-bottom:14px;padding:14px 16px;background:#fafafa;border-left:3px solid #111;">
+      <p style="font-size:11.5px;line-height:1.65;color:#111;margin:0;text-align:justify;">${declaracao}</p>
+      <p style="font-size:10.5px;color:#555;margin:8px 0 0 0;"><strong>Forma de pagamento:</strong> ${esc(formaTxt)}</p>
+      ${isParcial ? `<p style="font-size:10px;color:#a02020;margin:6px 0 0 0;font-weight:600;">⚠ Recibo parcial — não dá quitação total da obrigação.</p>` : ""}
+    </div>
+    ${tabelaExames}
+    ${tabelaPagamentos}
+    ${totaisBox}`;
+  } else if (d.tipo === "atendimento") {
+    const exames = (d.exames ?? []).filter(e => e?.nome);
+    const declaracao = `Declaramos para os devidos fins que o(a) Sr(a). <strong>${esc(d.paciente.nome)}</strong>${d.paciente.cpf ? `, portador(a) do CPF ${esc(d.paciente.cpf)}` : ""}, foi atendido(a) por este laboratório na data <strong>${esc(d.data)}</strong>${d.unidade ? `, na unidade <strong>${esc(d.unidade.nome)}</strong>` : ""}, sob o protocolo nº <strong>${esc(d.protocolo)}</strong>, para realização dos exames laboratoriais abaixo discriminados.`;
+
+    const tabelaExames = exames.length > 0 ? `
+    <div style="margin-top:6px;">
+      <p style="font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:#666;margin:0 0 6px 0;text-transform:uppercase;">Exames solicitados (${exames.length})</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;border-top:1px solid #111;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;width:30px;">#</th>
+            <th style="text-align:left;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;">Exame</th>
+            <th style="text-align:left;padding:6px 4px;border-bottom:1px solid #111;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:#444;font-weight:700;">Material</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${exames.map((e, i) => `<tr>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;color:#777;font-variant-numeric:tabular-nums;">${i + 1}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;">${esc(e.nome)}</td>
+            <td style="padding:6px 4px;border-bottom:1px solid #ececec;color:#555;">${esc(e.material ?? "—")}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>` : "";
+
+    corpoEspecifico = `
+    <div style="margin-bottom:14px;padding:14px 16px;background:#fafafa;border-left:3px solid #111;">
+      <p style="font-size:11.5px;line-height:1.65;color:#111;margin:0;text-align:justify;">${declaracao}</p>
+    </div>
+    ${tabelaExames}
+    <p style="font-size:10px;color:#777;font-style:italic;margin:14px 0 0 0;">Este documento comprova o atendimento e a solicitação dos exames listados, <strong>não substitui o laudo</strong> e <strong>não contém resultados</strong>. O laudo, quando liberado, será emitido em documento próprio assinado pelo responsável técnico.</p>`;
+  } else {
+    // comparecimento
+    const declaracao = `Declaramos, para os devidos fins de direito, que o(a) Sr(a). <strong>${esc(d.paciente.nome)}</strong>${d.paciente.cpf ? `, portador(a) do CPF ${esc(d.paciente.cpf)}` : ""}, compareceu a esta unidade${d.unidade ? ` (<strong>${esc(d.unidade.nome)}</strong>)` : ""} na data <strong>${esc(d.data)}</strong>, no horário aproximado das <strong>______</strong> às <strong>______</strong>, para realização de exames laboratoriais sob o protocolo nº <strong>${esc(d.protocolo)}</strong>.`;
+
+    corpoEspecifico = `
+    <div style="margin-bottom:14px;padding:14px 16px;background:#fafafa;border-left:3px solid #111;">
+      <p style="font-size:11.5px;line-height:1.65;color:#111;margin:0;text-align:justify;">${declaracao}</p>
+      <p style="font-size:11.5px;line-height:1.65;color:#111;margin:10px 0 0 0;text-align:justify;">Por ser expressão da verdade, firmamos a presente declaração.</p>
+    </div>`;
+  }
+
+  return `
+<div id="comprovante-print" style="font-family:'Inter','Segoe UI',Helvetica,Arial,sans-serif;color:#111;padding:0;max-width:680px;margin:0 auto;background:#fff;line-height:1.5;font-size:11px;font-variant-numeric:tabular-nums;word-wrap:break-word;overflow-wrap:break-word;">
+  ${buildEmitenteHeader(cfg.label)}
+  <div style="page-break-inside:avoid;">${idPaciente}${idAtendimento}</div>
+  <div>${corpoEspecifico}</div>
+  ${buildAssinaturaRodape(codigo, qrSvg)}
+</div>`;
+}
+
+// ===== Orçamento PDF =====
+export interface OrcamentoPDFData {
+  id: string;
+  data: string;
+  paciente: string;
+  convenio: string;
+  solicitante?: string;
+  exames: string[];
+  subtotal: number;
+  desconto: number;
+  total: number;
+}
+
+function buildOrcamentoHtml(o: OrcamentoPDFData): string {
+  return `
+<div id="orcamento-print" style="font-family:'Inter','Segoe UI',system-ui,sans-serif;color:#1a1a2e;padding:32px 28px;max-width:640px;margin:0 auto;background:#fff;">
+  ${buildEmitenteHeader("ORÇAMENTO")}
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:18px;">
+    <div><p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0;">Código</p><p style="font-size:13px;font-weight:600;margin:2px 0 0 0;">${esc(o.id)}</p></div>
+    <div><p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0;">Data</p><p style="font-size:13px;font-weight:600;margin:2px 0 0 0;">${esc(o.data)}</p></div>
+    <div style="grid-column:1 / span 2"><p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0;">Paciente</p><p style="font-size:13px;font-weight:600;margin:2px 0 0 0;">${esc(o.paciente)}</p></div>
+    <div><p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0;">Convênio</p><p style="font-size:13px;margin:2px 0 0 0;">${esc(o.convenio)}</p></div>
+    ${o.solicitante ? `<div><p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0;">Solicitante</p><p style="font-size:13px;margin:2px 0 0 0;">${esc(o.solicitante)}</p></div>` : ""}
+  </div>
+
+  <div style="margin-bottom:18px;">
+    <p style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px 0;font-weight:700;">Exames (${o.exames.length})</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr>
+        <th style="background:#f5f5f8;text-align:left;padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#666;font-weight:700;">Exame</th>
+        <th style="background:#f5f5f8;text-align:right;padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#666;font-weight:700;width:48px;">Nº</th>
+      </tr></thead>
+      <tbody>
+        ${o.exames.map((e, i) => `<tr>
+          <td style="padding:9px 12px;border-bottom:1px solid #eee;">${esc(e)}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid #eee;text-align:right;color:#666;">${i + 1}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="background:#f8f8fb;border-radius:10px;padding:14px 16px;margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#666;">Subtotal</span><span>${fmtBRL(o.subtotal)}</span></div>
+    ${o.desconto > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:#16a34a;"><span>Desconto</span><span>- ${fmtBRL(o.desconto)}</span></div>` : ""}
+    <div style="display:flex;justify-content:space-between;border-top:2px solid #1a1a2e;margin-top:8px;padding-top:10px;font-size:18px;font-weight:800;"><span>Total</span><span>${fmtBRL(o.total)}</span></div>
+  </div>
+
+  <div style="text-align:center;margin-top:14px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#92400e;font-weight:600;">
+    ⏳ Orçamento válido por 30 dias a partir da data de emissão
+  </div>
+
+  <div style="text-align:center;margin-top:24px;padding-top:14px;border-top:1px dashed #ccc;">
+    <p style="font-size:11px;color:#999;line-height:1.6;margin:0;">Este documento é um orçamento e não possui valor fiscal.</p>
+    <p style="font-size:10px;color:#bbb;margin:4px 0 0 0;">${esc(getLabConfig().nome || "SISLAC")} · documento gerado eletronicamente</p>
+  </div>
+</div>`;
+}
+
+async function renderAndSave(
+  html: string,
+  filename: string,
+  tipo?: DocumentoTipo,
+): Promise<void> {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "640px";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+  try {
+    const html2pdf = await loadHtml2Pdf();
+    await html2pdf()
+      .set({
+        margin: getDocumentoMarginsMm(tipo),
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "table", ".no-break"] },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      .from(wrapper.firstElementChild as HTMLElement)
+      .save();
+  } finally {
+    wrapper.remove();
+  }
+}
+
+// Same as renderAndSave but returns the PDF as a Blob (no auto-download).
+export async function renderToBlob(html: string, tipo?: DocumentoTipo): Promise<Blob> {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "640px";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+  try {
+    const html2pdf = await loadHtml2Pdf();
+    const blob: Blob = await html2pdf()
+      .set({
+        margin: getDocumentoMarginsMm(tipo),
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "table", ".no-break"] },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      .from(wrapper.firstElementChild as HTMLElement)
+      .outputPdf("blob");
+    return blob;
+  } finally {
+    wrapper.remove();
+  }
+}
+
+// ===== Cancellable + progress-aware PDF rendering with module-level cache =====
+
+export type RenderStage =
+  | "preparing"
+  | "rendering"   // html2canvas
+  | "converting"  // jsPDF
+  | "finalizing"
+  | "done";
+
+export interface RenderProgress {
+  stage: RenderStage;
+  /** 0..1 estimate based on current stage. */
+  progress: number;
+  label: string;
+}
+
+export class RenderCancelledError extends Error {
+  constructor() {
+    super("PDF generation cancelled");
+    this.name = "RenderCancelledError";
+  }
+}
+
+export interface RenderOptions {
+  signal?: AbortSignal;
+  onProgress?: (p: RenderProgress) => void;
+}
+
+const stageMeta: Record<RenderStage, { progress: number; label: string }> = {
+  preparing:  { progress: 0.05, label: "Preparando documento..." },
+  rendering:  { progress: 0.25, label: "Renderizando layout (html2canvas)..." },
+  converting: { progress: 0.7,  label: "Convertendo para PDF (jsPDF)..." },
+  finalizing: { progress: 0.92, label: "Finalizando arquivo..." },
+  done:       { progress: 1,    label: "Concluído" },
+};
+
+function emit(opts: RenderOptions | undefined, stage: RenderStage) {
+  const m = stageMeta[stage];
+  opts?.onProgress?.({ stage, progress: m.progress, label: m.label });
+}
+
+function checkCancel(opts: RenderOptions | undefined) {
+  if (opts?.signal?.aborted) throw new RenderCancelledError();
+}
+
+// FNV-1a 32-bit hash — leve e suficiente para chave de cache do HTML.
+function hashHtml(html: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < html.length; i++) {
+    h ^= html.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(16);
+}
+
+/** Cache LRU simples (até 8 PDFs) por (chave do consumidor + hash do HTML). */
+const PDF_CACHE_MAX = 8;
+const pdfBlobCache = new Map<string, Blob>();
+
+function cacheKey(scope: string | undefined, html: string): string {
+  return `${scope ?? "default"}::${hashHtml(html)}`;
+}
+
+export function getCachedPdfBlob(scope: string | undefined, html: string): Blob | null {
+  const key = cacheKey(scope, html);
+  const blob = pdfBlobCache.get(key);
+  if (!blob) return null;
+  // Touch — move ao final (LRU)
+  pdfBlobCache.delete(key);
+  pdfBlobCache.set(key, blob);
+  return blob;
+}
+
+function setCachedPdfBlob(scope: string | undefined, html: string, blob: Blob) {
+  const key = cacheKey(scope, html);
+  pdfBlobCache.delete(key);
+  pdfBlobCache.set(key, blob);
+  while (pdfBlobCache.size > PDF_CACHE_MAX) {
+    const first = pdfBlobCache.keys().next().value;
+    if (first === undefined) break;
+    pdfBlobCache.delete(first);
+  }
+}
+
+export function clearPdfBlobCache(scope?: string) {
+  if (!scope) {
+    pdfBlobCache.clear();
+    return;
+  }
+  const prefix = `${scope}::`;
+  for (const k of [...pdfBlobCache.keys()]) {
+    if (k.startsWith(prefix)) pdfBlobCache.delete(k);
+  }
+}
+
+/**
+ * Geração de PDF com etapas observáveis e cancelamento cooperativo.
+ * - `signal`: AbortSignal para cancelar (aborta nos pontos entre etapas).
+ * - `onProgress`: callback de progresso por estágio.
+ * - `cacheScope`: chave estável (ex.: protocolo) para cache compartilhado entre aberturas.
+ */
+export async function renderToBlobAdvanced(
+  html: string,
+  opts: RenderOptions & { cacheScope?: string; tipo?: DocumentoTipo } = {},
+): Promise<Blob> {
+  // 1) Cache hit — devolve sem trabalho.
+  const cached = getCachedPdfBlob(opts.cacheScope, html);
+  if (cached) {
+    emit(opts, "done");
+    return cached;
+  }
+
+  checkCancel(opts);
+  emit(opts, "preparing");
+
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "640px";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+
+  try {
+    checkCancel(opts);
+
+    // html2pdf expõe um worker com etapas encadeáveis: toContainer → toCanvas → toPdf → output.
+    // Isso permite emitir progresso real entre etapas e checar cancelamento.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const html2pdf = await loadHtml2Pdf();
+    const worker: any = html2pdf()
+      .set({
+        margin: getDocumentoMarginsMm(opts.tipo),
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "table", ".no-break"] },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      .from(wrapper.firstElementChild as HTMLElement);
+
+    emit(opts, "rendering");
+    await worker.toContainer();
+    checkCancel(opts);
+    await worker.toCanvas();
+    checkCancel(opts);
+
+    emit(opts, "converting");
+    await worker.toPdf();
+    checkCancel(opts);
+
+    emit(opts, "finalizing");
+    const blob: Blob = await worker.output("blob");
+    checkCancel(opts);
+
+    setCachedPdfBlob(opts.cacheScope, html, blob);
+    emit(opts, "done");
+    return blob;
+  } finally {
+    wrapper.remove();
+  }
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("read error"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-");
+}
+
+/**
+ * Uploads a generated PDF (as Blob) to the public `comprovantes` bucket
+ * via the `upload-pdf` edge function and returns the resulting public URL.
+ */
+export async function uploadPdfAndGetUrl(
+  blob: Blob,
+  filename: string,
+  options?: {
+    pacienteId?: number | null;
+    pacienteCpf?: string | null;
+    category?: "comprovantes" | "documentos" | "laudos";
+  },
+): Promise<string> {
+  const base64 = await blobToBase64(blob);
+  const safeName = sanitizeFilename(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+  const { data, error } = await supabase.functions.invoke("upload-pdf", {
+    body: {
+      filename: safeName,
+      contentBase64: base64,
+      pacienteId: options?.pacienteId ?? null,
+      pacienteCpf: options?.pacienteCpf ?? null,
+      category: options?.category ?? "comprovantes",
+    },
+  });
+  if (error) throw new Error(error.message || "Falha ao enviar PDF");
+  const url = (data as { url?: string } | null)?.url;
+  if (!url) throw new Error("URL pública não retornada pelo servidor");
+  return url;
+}
+
+/**
+ * Cria um link curto (`/p/:codigo`) que aponta para o PDF assinado.
+ * Use depois de `uploadPdfAndGetUrl` para encurtar a URL antes de mandar
+ * pelo WhatsApp / e-mail. TTL padrão: 24h.
+ */
+export async function criarShortlinkPdf(params: {
+  pdfUrl: string;
+  protocolo: string;
+  tipo: ComprovanteTipo;
+  ttlHours?: number;
+}): Promise<{ shortUrl: string; codigo: string; expiraEm: string } | null> {
+  try {
+    const origin =
+      typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
+    const { data, error } = await supabase.functions.invoke("comprovante-shortlink", {
+      body: {
+        url: params.pdfUrl,
+        protocolo: params.protocolo,
+        tipo: params.tipo,
+        ttlHours: params.ttlHours ?? 24,
+        hostHint: origin,
+      },
+    });
+    if (error) return null;
+    const d = data as { shortUrl?: string; codigo?: string; expiraEm?: string } | null;
+    if (!d?.shortUrl || !d?.codigo) return null;
+    return { shortUrl: d.shortUrl, codigo: d.codigo, expiraEm: d.expiraEm ?? "" };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Envia um PDF como anexo via WhatsApp Cloud API (Meta) usando as
+ * credenciais oficiais cadastradas pelo laboratório. Retorna o message_id
+ * em caso de sucesso, ou lança erro se o lab não tiver configurado a API.
+ */
+export async function enviarPdfWhatsappCloud(params: {
+  telefone: string;
+  pdfUrl: string;
+  filename?: string;
+  caption?: string;
+  protocolo?: string;
+  tipo?: ComprovanteTipo;
+}): Promise<{ messageId: string }> {
+  const { data, error } = await supabase.functions.invoke("whatsapp-send", {
+    body: {
+      telefone: params.telefone,
+      pdfUrl: params.pdfUrl,
+      filename: params.filename,
+      caption: params.caption,
+      atendimentoProtocolo: params.protocolo,
+      tipo: params.tipo,
+    },
+  });
+  if (error) {
+    const msg = error.message || "Falha ao enviar pelo WhatsApp Cloud API";
+    const e = new Error(msg) as Error & { code?: string };
+    if (/configurado/i.test(msg)) e.code = "WHATSAPP_NAO_CONFIGURADO";
+    throw e;
+  }
+  const d = data as { messageId?: string } | null;
+  if (!d?.messageId) throw new Error("Cloud API nao retornou messageId");
+  return { messageId: d.messageId };
+}
+
+export async function gerarOrcamentoPDF(o: OrcamentoPDFData): Promise<void> {
+  await ensureLabLogoLoaded();
+  await renderAndSave(buildOrcamentoHtml(o), `orcamento-${o.id}.pdf`);
+}
+
+export async function gerarComprovantePDF(d: ComprovanteData): Promise<void> {
+  const v = validarLaboratorioParaComprovante(d.tipo);
+  if (!v.ok) {
+    const erro = new Error(
+      `Não foi possível emitir o comprovante. Configure os dados legais do laboratório:\n\n• ${v.erros.join("\n• ")}`,
+    );
+    (erro as Error & { code?: string }).code = "LAB_CONFIG_INCOMPLETA";
+    throw erro;
+  }
+  await ensureLabLogoLoaded();
+  await renderAndSave(
+    buildHtml(d),
+    `comprovante-${d.tipo}-${d.protocolo}.pdf`,
+    COMPROVANTE_TO_DOCUMENTO_TIPO[d.tipo],
+  );
+}
+
+// ===== Compartilhar via WhatsApp =====
+// Uploads the PDF to public Cloud Storage and shares the link in the
+// WhatsApp message. The recipient opens the link directly — no manual
+// attachment needed. Falls back to download + manual instructions only if
+// the upload fails.
+function buildWaUrl(phone: string | undefined, msg: string): string {
+  const phoneDigits = (phone ?? "").replace(/\D/g, "");
+  const fp = phoneDigits
+    ? phoneDigits.startsWith("55")
+      ? phoneDigits
+      : `55${phoneDigits}`
+    : "";
+  return fp
+    ? `https://wa.me/${fp}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+}
+
+export async function enviarOrcamentoPorWhatsapp(
+  o: OrcamentoPDFData,
+  telefone?: string,
+): Promise<void> {
+  await ensureLabLogoLoaded();
+  let pdfUrl: string | null = null;
+  try {
+    const blob = await renderToBlob(buildOrcamentoHtml(o));
+    pdfUrl = await uploadPdfAndGetUrl(blob, `orcamento-${o.id}.pdf`);
+  } catch (err) {
+    // Upload falhou — fallback intencional para download local. Sem ruído no console.
+    void err;
+    await gerarOrcamentoPDF(o); // fallback: baixa o PDF
+  }
+  const examesList = o.exames.map((e, i) => `  ${i + 1}. ${e}`).join("\n");
+  const linkLine = pdfUrl
+    ? `📎 *PDF:* ${pdfUrl}`
+    : `📎 O PDF do orçamento foi baixado — anexe o arquivo a esta conversa.`;
+  const msg = [
+    `📋 *ORÇAMENTO ${o.id}*`,
+    "",
+    `Olá *${o.paciente}*, segue o orçamento solicitado:`,
+    "",
+    `🏥 Convênio: ${o.convenio}`,
+    o.solicitante ? `👨‍⚕️ Solicitante: ${o.solicitante}` : "",
+    "",
+    `🔬 *Exames (${o.exames.length}):*`,
+    examesList,
+    "",
+    `💰 *Total: ${fmtBRL(o.total)}*`,
+    "",
+    linkLine,
+  ].filter(Boolean).join("\n");
+  window.open(buildWaUrl(telefone, msg), "_blank");
+}
+
+export async function enviarComprovantePorWhatsapp(
+  d: ComprovanteData,
+  telefone?: string,
+): Promise<void> {
+  const v = validarLaboratorioParaComprovante(d.tipo);
+  if (!v.ok) {
+    const erro = new Error(
+      `Não foi possível enviar o comprovante. Configure os dados legais do laboratório:\n\n• ${v.erros.join("\n• ")}`,
+    );
+    (erro as Error & { code?: string }).code = "LAB_CONFIG_INCOMPLETA";
+    throw erro;
+  }
+  await ensureLabLogoLoaded();
+  let pdfUrl: string | null = null;
+  try {
+    const blob = await renderToBlob(buildHtml(d), COMPROVANTE_TO_DOCUMENTO_TIPO[d.tipo]);
+    const longUrl = await uploadPdfAndGetUrl(
+      blob,
+      `comprovante-${d.tipo}-${d.protocolo}.pdf`,
+    );
+    // Tenta encurtar a URL para evitar links gigantes do Storage.
+    const short = await criarShortlinkPdf({
+      pdfUrl: longUrl,
+      protocolo: d.protocolo,
+      tipo: d.tipo,
+    });
+    pdfUrl = short?.shortUrl ?? longUrl;
+  } catch (err) {
+    // Upload falhou — fallback intencional para download local. Sem ruído no console.
+    void err;
+    await gerarComprovantePDF(d);
+  }
+  const tipoLabel = tipoConfig[d.tipo].label;
+  const totalLine = d.totais ? `\n💰 *Total: ${fmtBRL(d.totais.total)}*` : "";
+  const linkLine = pdfUrl
+    ? `📎 *PDF:* ${pdfUrl}`
+    : `📎 O PDF foi baixado — anexe o arquivo a esta conversa.`;
+  const msg = [
+    `📋 *${tipoLabel}*`,
+    `Protocolo: *${d.protocolo}*`,
+    `Data: ${d.data}`,
+    "",
+    `Olá *${d.paciente.nome}*, segue seu comprovante.${totalLine}`,
+    "",
+    linkLine,
+  ].join("\n");
+  window.open(buildWaUrl(telefone, msg), "_blank");
+}

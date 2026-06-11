@@ -1,0 +1,1 @@
+ALTER TABLE public.exame_layouts ADD COLUMN IF NOT EXISTS config jsonb NOT NULL DEFAULT '{}'::jsonb;

@@ -1,0 +1,113 @@
+name: CI
+
+# Pipeline bloqueante para PRs e pushes em main/develop.
+# Falha em qualquer etapa impede merge. Sem bypass silencioso.
+#
+# Etapas (fail-fast por job, paralelo entre jobs independentes):
+#   guards     -> check-no-mocks + check-file-size (rápido, falha cedo)
+#   typecheck  -> tsc --noEmit (estrito)
+#   lint       -> eslint
+#   test       -> vitest run
+#   build      -> vite build (smoke de bundling)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guards:
+    name: Guards (mocks + file-size)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: check-no-mocks
+        run: bash scripts/check-no-mocks.sh
+      - name: check-file-size
+        run: bash scripts/check-file-size.sh
+
+  typecheck:
+    name: TypeScript (tsc --noEmit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile || bun install
+      - name: typecheck
+        run: bun run typecheck
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile || bun install
+      - name: lint
+        run: bun run lint
+
+  test:
+    name: Vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile || bun install
+      - name: test
+        run: bun run test
+
+  build:
+    name: Vite build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [guards, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install --frozen-lockfile || bun install
+      - name: build
+        run: bun run build
+
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [guards, typecheck, lint, test, build]
+    if: always()
+    steps:
+      - name: Verify all checks passed
+        run: |
+          if [ "${{ needs.guards.result }}" != "success" ] || \
+             [ "${{ needs.typecheck.result }}" != "success" ] || \
+             [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ]; then
+            echo "::error::One or more CI jobs failed. Merge blocked."
+            exit 1
+          fi
+          echo "All CI jobs passed."

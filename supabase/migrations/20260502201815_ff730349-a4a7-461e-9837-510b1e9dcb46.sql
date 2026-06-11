@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.seed_tenant_default_lists(uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.trigger_seed_tenant_default_lists() FROM anon, authenticated, public;

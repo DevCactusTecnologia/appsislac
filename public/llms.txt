@@ -1,0 +1,13 @@
+# SISLAC
+
+> Plataforma SaaS multi-tenant para gestão completa de laboratórios de análises clínicas — do atendimento à liberação do laudo.
+
+SISLAC unifica em um único sistema o ciclo operacional de um laboratório clínico: recepção e cadastro de pacientes, geração de orçamentos, atendimentos com cobrança por convênio ou particular, registro de coleta, controle de amostras, análise técnica, validação clínica, liberação de resultados, impressão de laudos e gestão financeira (entradas, saídas e faturamento de convênios). Cada laboratório (tenant) pode publicar um site público com vitrine de exames para captação de pedidos online.
+
+## Pages
+
+- [Login](/login): Acesso ao sistema para usuários autenticados (administradores, recepção, coleta, análise, financeiro).
+
+## Optional
+
+- [Verificar comprovante](/verificar/:codigo): Página pública de verificação de autenticidade de comprovantes emitidos pelo sistema.

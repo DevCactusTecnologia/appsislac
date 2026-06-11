@@ -1,0 +1,18 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://sislac.lovable.app/sitemap.xml
+# Sitemap dinâmico (edge function lista os sites de todos os laboratórios)
+Sitemap: https://gocmtvwvanpdgxhjkfgt.supabase.co/functions/v1/sitemap

@@ -1,0 +1,18 @@
+# Allowlist de arquivos > 1000 linhas (§12 docs/IA_ARCHITECTURE_RULES.md)
+#
+# Cada entrada é uma exceção temporária: o arquivo segue acima do limite
+# 🔴 mas está em fila de slicing incremental. Adicionar somente com
+# justificativa no PR/ADR; remover ao refatorar.
+#
+# Baseline 2026-05-09 — arquivos legados em fila de refatoração:
+src/components/configuracoes/NovoExameDialog.tsx
+src/components/configuracoes/mapas/RichTextEditorPro.tsx
+src/data/atendimentoStore.ts
+src/lib/comprovantes.ts
+src/pages/AnalisarAmostra.tsx
+src/pages/Financeiro.tsx
+src/pages/Index.tsx
+src/pages/Mapa.tsx
+src/pages/NovoAtendimento.tsx
+src/pages/RegistrarColeta.tsx
+src/pages/ResultadoDetalhe.tsx
