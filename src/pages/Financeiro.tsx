@@ -593,17 +593,14 @@ const Financeiro = () => {
 
   const hasActiveFilters = convenioFilter !== "all" || tipoDespesaFilter !== "all" || destinoPagamentoFilter !== "all" || !!dateFrom || !!dateTo;
 
-  // Aplica intervalo de período rápido
+  // Aplica intervalo de período rápido (lógica pura em services/periodoRapido.ts)
   const aplicarPeriodoRapido = (p: typeof periodoRapido) => {
     setPeriodoRapido(p);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (p === "tudo") { setDateFrom(undefined); setDateTo(undefined); }
-    else if (p === "hoje") { setDateFrom(today); setDateTo(today); }
-    else if (p === "7d") { const f = new Date(today); f.setDate(f.getDate() - 6); setDateFrom(f); setDateTo(today); }
-    else if (p === "30d") { const f = new Date(today); f.setDate(f.getDate() - 29); setDateFrom(f); setDateTo(today); }
-    else if (p === "mes") { setDateFrom(new Date(today.getFullYear(), today.getMonth(), 1)); setDateTo(today); }
-    else if (p === "ano") { setDateFrom(new Date(today.getFullYear(), 0, 1)); setDateTo(today); }
+    if (p !== "custom") {
+      const { dateFrom: df, dateTo: dt } = computePeriodoRange(p);
+      setDateFrom(df);
+      setDateTo(dt);
+    }
     setCurrentPage(1);
   };
 
