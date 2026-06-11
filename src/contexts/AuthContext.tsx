@@ -18,7 +18,7 @@ export interface UserProfile {
   avatarKey?: string;
   unidadeIds: string[];
   unidadeAtiva: string;
-  source: "supabase" | "mock";
+  source: "supabase";
   isSuperAdmin?: boolean;
   tenantId?: string;
 }
