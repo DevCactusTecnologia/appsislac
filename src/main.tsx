@@ -6,7 +6,6 @@ import "./index.css";
 // reduzindo trabalho na thread principal no primeiro paint.
 import { setMapaWarningsConsole } from "@/lib/mapaSharedStyles";
 import { installFavicon } from "@/lib/favicon";
-import { installThemeDiagnostics } from "@/lib/themeDiagnostics";
 import { logger } from "@/lib/logger";
 
 const SW_CLEANUP_RELOAD_FLAG = "sislac-sw-cleanup-reload";
@@ -54,58 +53,29 @@ cleanupLegacyBrowserWorkers();
 // Instala favicon com URL versionada (hash de conteúdo via Vite).
 installFavicon();
 
-// Expõe `window.__sislacThemeDiag()` no console para diagnosticar a origem do
-// tema atual (localStorage, classes/atributos do <html>, vars CSS resolvidas).
-// É somente leitura — não muda nenhum comportamento da aplicação.
-installThemeDiagnostics();
-
 // Em DEV, ecoa avisos de preparação de mapas (colgroup inválido, normalizações
 // de células pequenas, etc.) para o console — facilita depurar layouts quebrados.
 if (import.meta.env.DEV) setMapaWarningsConsole(true);
 
-const LEGACY_ROOT_CLASSES = ["sa-light", "sa-dark", "superadmin-light", "superadmin-dark"];
-const LEGACY_ROOT_ATTRS = ["data-color-mode", "data-mode", "data-sa-theme", "data-superadmin-theme"];
-
-function resetRootVisualState() {
-  if (typeof document === "undefined") return;
+// Limpa qualquer marca visual residual de temas antigos (dark mode foi removido).
+if (typeof document !== "undefined") {
   const root = document.documentElement;
-  // Remove apenas marcas legadas. A classe `dark` é gerenciada pelo
-  // ThemeContext e NÃO deve ser removida no boot.
-  root.classList.remove(...LEGACY_ROOT_CLASSES);
-  for (const attr of LEGACY_ROOT_ATTRS) root.removeAttribute(attr);
-}
-
-function applyStoredTheme() {
-  if (typeof window === "undefined") return;
+  root.classList.remove(
+    "dark", "sa-light", "sa-dark", "superadmin-light", "superadmin-dark",
+  );
+  for (const attr of [
+    "data-theme", "data-color-mode", "data-mode", "data-sa-theme", "data-superadmin-theme",
+  ]) root.removeAttribute(attr);
+  root.style.colorScheme = "light";
   try {
-    const stored = window.localStorage.getItem("sislac-theme-mode");
-    const theme = stored === "dark" ? "dark" : "light";
-    const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    root.setAttribute("data-theme", theme);
-    root.style.colorScheme = theme;
+    // Remove chaves legadas de tema do localStorage.
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && (k.startsWith("sislac-theme-mode") || k === "vite-ui-theme")) keys.push(k);
+    }
+    for (const k of keys) window.localStorage.removeItem(k);
   } catch { /* ignore */ }
-}
-
-resetRootVisualState();
-applyStoredTheme();
-
-// Remove somente marcas visuais legadas do Super Admin sem tocar em sessão,
-// cache, service worker ou credenciais de demonstração.
-if (typeof window !== "undefined" && typeof document !== "undefined") {
-  const enforceCurrentThemeOnly = () => {
-    resetRootVisualState();
-    applyStoredTheme();
-  };
-
-  const observer = new MutationObserver(enforceCurrentThemeOnly);
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class", ...LEGACY_ROOT_ATTRS],
-  });
-
-  window.addEventListener("pageshow", enforceCurrentThemeOnly);
-  window.addEventListener("storage", enforceCurrentThemeOnly);
 }
 
 // Boot dos stores acontece em App.tsx após autenticação (ver AppRoutes).
@@ -115,8 +85,6 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
 // sessionStorage para evitar loop infinito caso o problema seja real.
 if (typeof window !== "undefined") {
   // ── Captura global de erros frontend (estruturado via logger) ─────────
-  // Não interfere em outros handlers — apenas adiciona registro estruturado
-  // que pode ser plugado em sink externo (Sentry, Logflare) via __logSink.
   window.addEventListener("error", (event) => {
     try {
       logger.error("window.onerror", event.message || "Erro não capturado", {
