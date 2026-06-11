@@ -1,51 +1,67 @@
-## Contexto
+## Architectural Split Program — Plano de execução faseado
 
-São ~30 páginas operacionais do laboratório (Index/Atendimentos, Pacientes, Coleta, Análise, Resultados, Financeiro, Estoque, Especialistas, Configurações, Mapa, Soroteca, Produção, Auditoria, Usuários, Orçamentos, LabApoio, ConsultarResultados, Dashboard, etc.). Index.tsx sozinho tem 1.158 linhas. Fazer tudo "em um único turno" gera risco real de regressão. O caminho seguro é padronizar a **fundação compartilhada** primeiro e depois aplicá-la página por página.
+### Tamanho atual confirmado
+- `ResultadoDetalhe.tsx` — 2.627 linhas
+- `NovoAtendimento.tsx` — 2.570 linhas
+- `Financeiro.tsx` — 2.413 linhas
+- `atendimentoStore.ts` — 1.504 linhas
+- **Total:** 9.114 linhas a reorganizar (sem alterar comportamento)
 
-## Fundação compartilhada (entrega já nesta fase)
+### Por que faseado, com confirmação entre fases
+A missão exige `mesmo input = mesmo output` em 4 módulos clínicos/financeiros críticos. Tentar executar Fases 1–7 num único turno significaria mover ~9k linhas em paralelo, sem você poder validar regressão a cada etapa. A memória do projeto também impõe que mudanças estruturais (rotas, contextos globais, boot) só ocorram com confirmação explícita. Proposta: **uma fase por turno**, com diff pequeno, checkpoint de smoke test, e só então a próxima.
 
-Promover os componentes do Super Admin para uso global do app (sem mexer na lógica, só no visual):
+### Estratégia comum (todas as fases)
+1. **Extração mecânica primeiro** — recortar trechos contíguos para novos arquivos, manter assinaturas e imports. Sem renomear funções, sem alterar fluxo de dados, sem refatorar lógica interna.
+2. **Re-export shim quando útil** — manter caminho legado importável durante a transição (zero risco para consumidores externos).
+3. **API pública intocada** — hooks, stores e páginas continuam sendo importados pelo mesmo path original (`@/pages/...`, `@/data/atendimentoStore`).
+4. **Sem novas dependências, sem mudar tipos públicos, sem mudar RPC/edge/RLS.**
+5. **Validação por fase:** `tsc` limpo + smoke manual no fluxo da fase + diff revisado.
 
-1. **`PageHeader`** — mover de `src/components/superadmin/PageHeader.tsx` para `src/components/shared/PageHeader.tsx` (re-export no caminho antigo para não quebrar nada do SA). Mesma assinatura: `eyebrow`, `title`, `description`, `actions`, `children`.
-2. **`StatusBadge`** — mover de `src/components/superadmin/StatusBadge.tsx` para `src/components/shared/StatusBadge.tsx` (mesmo padrão de re-export). Adicionar helpers para os status do laboratório: `toneForAtendimento`, `toneForColeta`, `toneForAnalise`, `toneForResultado`, `toneForFinanceiro`.
-3. **`PageContainer`** novo — wrapper padrão `max-w-7xl mx-auto px-6 py-8` que todas as páginas do lab passam a usar (mesmo respiro/densidade do SA).
-4. **`Toolbar`** novo — barra de busca + filtros + ações, no mesmo estilo do SuperAdminTenants (input com ícone, chips de filtro flat, debounce 300ms já é o padrão do projeto).
+### Ordem proposta (menor risco → maior risco)
 
-Esses 4 ficam em `src/components/shared/` e viram a referência visual de toda a app.
+```text
+Fase 4  →  atendimentoStore split        (1.504 linhas, base de tudo)
+Fase 3  →  Financeiro split              (2.413 linhas, leitura-mostly)
+Fase 1  →  ResultadoDetalhe split        (2.627 linhas, PDF/assinatura)
+Fase 2  →  NovoAtendimento split         (2.570 linhas, wizard + preço)
+Fase 5  →  Services consolidation        (após arquivos divididos)
+Fase 6  →  Regressão guiada              (checklist por módulo)
+Fase 7  →  Relatórios em docs/refactors/
+```
 
-## Aplicação por fase (uma fase por turno)
+Inverti a ordem original (4→3→1→2) porque:
+- `atendimentoStore` é dependência de `ResultadoDetalhe` e `NovoAtendimento`; quebrá-lo depois força retrabalho.
+- `Financeiro` é o mais isolado (read-only via store) — ótimo "ensaio" do padrão antes dos módulos críticos.
 
-Faço uma fase por vez, valido visualmente, sigo para a próxima. Em cada página: substituir cabeçalho ad-hoc por `PageHeader`, envelopar conteúdo em `PageContainer`, trocar badges de status soltos por `StatusBadge`, padronizar a toolbar de busca/filtros. **Sem mexer em lógica, store, RLS, fluxos ou impressão de laudo (travada por constraint).**
+### Detalhamento por fase
 
-### Fase 1 — Operacional principal (mais visível)
-- `Index.tsx` (/atendimentos)
-- `Pacientes.tsx`
-- `RegistrarColeta.tsx`
-- `AnalisarAmostra.tsx`
-- `Resultados.tsx` + `ConsultarResultados.tsx`
+**Fase 4 — `src/data/atendimentoStore/`**
+Split mecânico em `types.ts`, `queries.ts`, `mutations.ts`, `realtime.ts`, `status.ts`, `payments.ts`, `selectors.ts`, `index.ts` (apenas reexporta). Arquivo legado `atendimentoStore.ts` vira shim de 1 linha re-exportando do diretório. **Zero mudança nos imports das telas.**
 
-### Fase 2 — Financeiro + Orçamentos
-- `Financeiro.tsx` (+ pasta `Financeiro/`)
-- `Orcamentos.tsx`
+**Fase 3 — `src/pages/Financeiro/`**
+Já existem `helpers.ts` e `types.ts`. Adicionar `components/FinanceiroKpis|Entradas|Saidas|Faturas|Filtros.tsx`, `hooks/useFinanceiro.ts` (estado + queries derivadas), `services/FinanceiroService.ts` (agregações puras). `index.tsx` vira orquestrador (<400 linhas).
 
-### Fase 3 — Suporte operacional
-- `Estoque.tsx`, `Soroteca.tsx`, `Producao.tsx` (+ pasta `producao/`), `Mapa.tsx`, `Especialistas.tsx`, `LabApoio.tsx`, `SolicitacoesSite.tsx`
+**Fase 1 — `src/pages/ResultadoDetalhe/`**
+Já existem `helpers.ts`, `types.ts`, `ParamTypedInput.tsx`. Adicionar `components/Resultado{Header,Actions,Parametros,Assinaturas,Anexos,PdfPanel}.tsx`, `hooks/useResultadoDetalhe.ts`, `services/ResultadoDetalheService.ts`. Mover `calcStatusGeral` duplicado, `isExameLiberado`, `addAuditEntry`, `handleLiberarTodos` etc. para o service. `index.tsx` <500 linhas.
 
-### Fase 4 — Configurações / administração do tenant
-- `Configuracoes.tsx`, `Usuarios.tsx`, `Auditoria.tsx`, `RelatorioOcorrencias.tsx`, `RelatorioRecoletas.tsx`, `Perfil.tsx`, `Dashboard.tsx`
+**Fase 2 — `src/pages/NovoAtendimento/`**
+Já existem `helpers.ts`, `types.ts`, `pricing.ts`, `buildExamesCobranca.ts`. Adicionar `steps/{Paciente,Exames,Pagamento,Confirmacao}Step.tsx`, `hooks/useNovoAtendimento.ts` (estado do wizard), `services/AppointmentWizardService.ts` (orquestração + validações puras). `index.tsx` <400 linhas.
 
-### Fora do escopo (não tocar)
-- `ResultadoDetalhe.tsx` (CSS de impressão congelado por constraint)
-- `LoginV2.tsx`, `ResetPassword.tsx`, `Inscricao.tsx`, `TenantSite*`, `Privacidade.tsx`, `NotFound.tsx`, `VerificarComprovante.tsx`, `RedirectShortlink.tsx`, `ImpressaoGeral.tsx` (são telas públicas/sem chrome ou de impressão)
-- Páginas `superadmin/*` (já estão no padrão)
+**Fase 5 — Services first**
+Consolidar 4 services criados acima; remover duplicações remanescentes apontadas em `ssot-validation.md` (ex.: `calcStatusGeral` vs `deriveStatusGeral`, `parseNum` vs `parseNumeric`, `escapeHtml` triplicado). Apenas remover duplicação — nenhuma nova regra.
 
-## Detalhes técnicos
+**Fase 6 — Regressão**
+Checklist manual + os testes Vitest existentes (`pricing.test.ts`, `buildExamesCobranca.test.ts`). Não vou inventar novos testes a menos que você peça.
 
-- Sem mudança de rotas, contextos globais, deps ou boot — apenas componentes e classes Tailwind.
-- Reusa 100% dos tokens HSL já definidos em `index.css` (`--primary`, `--status-*`, `--muted`, etc.). Nenhuma cor hardcoded.
-- Mantém comportamento existente (busca-as-you-type 300ms NFD, responsividade desktop/tablet/mobile, animações framer-motion onde já existem).
-- Atualiza a memória `mem://style/visual-identity-lovable-minimalist` no fim, registrando que o padrão SA agora é o padrão único do app.
+**Fase 7 — Relatórios**
+Gerar os 5 arquivos em `docs/refactors/` com tabela antes/depois (linhas, responsabilidades, módulos) e confirmação textual de cada "alterado? NÃO".
 
-## O que entrego nesta fase agora (após você aprovar)
+### O que NÃO farei (respeitando as suas constraints)
+- Não tocar regras clínicas, financeiras, status, assinaturas, liberação, RLS, edge functions, banco.
+- Não criar abstrações genéricas (`BaseService`, etc.).
+- Não fazer "melhorias de oportunidade" durante o split.
+- Não alterar a dashboard do tenant nem reintroduzir PWA.
+- Não alterar `src/integrations/supabase/client.ts` nem auto-gen.
 
-Apenas a **Fundação compartilhada** + **Fase 1** (Index/atendimentos como referência). Aí você valida o resultado visual e libero as fases 2–4 nos próximos turnos.
+### Próximo passo
+Confirme a ordem (4 → 3 → 1 → 2 → 5 → 6 → 7) e eu começo pela **Fase 4 (atendimentoStore)** no próximo turno, entregando apenas ela para você validar antes de seguir. Se preferir a ordem original do briefing (1 → 2 → 3 → 4), também sigo — só registre.
