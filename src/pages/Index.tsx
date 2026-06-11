@@ -19,12 +19,7 @@ import PagamentoDialog from "@/components/PagamentoDialog";
 import AtendimentoDetalheDialog from "@/components/AtendimentoDetalheDialog";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { requerConfirmacaoEdicao, mensagemAlertaEdicao, setAuditJustificativa } from "@/lib/atendimentoPolicy";
-import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { showError } from "@/lib/showError";
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { usePaginatedAtendimentos, pageRowToLightAtendimento } from "@/hooks/usePaginatedAtendimentos";
@@ -299,20 +294,15 @@ function CancelDialog({ open, onClose, onConfirm, pacienteNome }: {
 }) {
   const [selectedMotivo, setSelectedMotivo] = useState("");
   const [motivoCustom, setMotivoCustom] = useState("");
-  const [, force] = useState(0);
 
-  useEffect(() => {
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsub = subscribeMotivosCancelamento(() => force((n) => n + 1));
-    return () => unsub();
-  }, []);
+  const { data: motivosOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
   useBodyScrollLock(open);
 
   if (!open) return null;
 
-  // Lista do store + garante "Outro" no final para texto livre
-  const motivosStore = getMotivosCancelamentoAtivos().map((m) => m.nome);
+  // Lista do dicionário + garante "Outro" no final para texto livre
+  const motivosStore = motivosOpts.map((m) => m.label);
   const motivosCancelamento = motivosStore.includes("Outro")
     ? motivosStore
     : [...motivosStore, "Outro"];

@@ -38,12 +38,7 @@ import { imprimirEtiquetaPorAtendimentoExame } from "@/lib/imprimirEtiquetaPorAt
 import LabBadge from "@/components/LabBadge";
 import ImpressaoLotePorLab from "@/components/ImpressaoLotePorLab";
 import { getCachedTenantNome } from "@/data/_tenant";
-import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import ExameListWithFade from "@/components/ExameListWithFade";
 import { showError } from "@/lib/showError";
@@ -179,7 +174,7 @@ const RegistrarColeta = () => {
   const [showIdentidadeDialog, setShowIdentidadeDialog] = useState(false);
   const [showOrientacoesDialog, setShowOrientacoesDialog] = useState(false);
 
-  const [, forceMotivos] = useState(0);
+  const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
   // Banner contextual quando o usuário chega via ?protocolo= (vindo do Novo Atendimento)
   const [protoBanner, setProtoBanner] = useState<{
     protocolo: string;
@@ -197,9 +192,7 @@ const RegistrarColeta = () => {
         if (!cancelled) setLoading(false);
       }
     })();
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsubMotivos = subscribeMotivosCancelamento(() => forceMotivos((n) => n + 1));
-    return () => { cancelled = true; unsubMotivos(); };
+    return () => { cancelled = true; };
   }, []);
 
   const reload = async () => {
@@ -827,7 +820,7 @@ const RegistrarColeta = () => {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Motivo do cancelamento</p>
           <div className="space-y-1.5 mb-5">
             {(() => {
-              const motivosStore = getMotivosCancelamentoAtivos().map((m) => m.nome);
+              const motivosStore = motivosCancelamentoOpts.map((m) => m.label);
               const lista = motivosStore.includes("Outro") ? motivosStore : [...motivosStore, "Outro"];
               return lista;
             })().map((motivo) => {

@@ -28,12 +28,7 @@ import {
   updateAtendimentoExame,
   type ExameOperacionalRow,
 } from "@/data/atendimentoStore";
-import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import PermissionDenied from "@/components/PermissionDenied";
@@ -152,7 +147,7 @@ const AnalisarAmostra = () => {
     exameNome: string;
   }>({ open: false, exameId: null, exameNome: "" });
 
-  const [, forceMotivos] = useState(0);
+  const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
   useEffect(() => {
     let cancelled = false;
@@ -164,9 +159,7 @@ const AnalisarAmostra = () => {
         if (!cancelled) setLoading(false);
       }
     })();
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsubMotivos = subscribeMotivosCancelamento(() => forceMotivos((n) => n + 1));
-    return () => { cancelled = true; unsubMotivos(); };
+    return () => { cancelled = true; };
   }, []);
 
   const reload = async () => {
@@ -712,7 +705,7 @@ const AnalisarAmostra = () => {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Motivo do cancelamento</p>
           <div className="space-y-1.5 mb-5">
             {(() => {
-              const motivosStore = getMotivosCancelamentoAtivos().map((m) => m.nome);
+              const motivosStore = motivosCancelamentoOpts.map((m) => m.label);
               const lista = motivosStore.includes("Outro") ? motivosStore : [...motivosStore, "Outro"];
               return lista;
             })().map((motivo) => {
