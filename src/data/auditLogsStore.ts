@@ -1,7 +1,14 @@
-// Acesso ao log técnico imutável (audit_logs) — capturado via triggers PostgreSQL.
+// Acesso ao log técnico imutável.
+//
+// FONTE: `public.operational_audit` (consolidada — alimentada por triggers em
+// `audit_logs`, `atendimento_audit`, `storage_audit` etc.). A leitura via
+// `operationalAuditReader` desempacota `contexto` JSONB para reconstruir o
+// shape `AuditLogTech` (antes/depois/user_email) sem mudar consumidores.
 import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/lib/showError";
-import { getCurrentTenantId } from "@/data/_tenant";
+import {
+  fetchOperationalAuditLogs,
+  fetchOperationalAuditTabelas,
+} from "@/domains/tenant/services/operationalAuditReader";
 
 export type AuditAcao = "INSERT" | "UPDATE" | "DELETE";
 
@@ -33,61 +40,12 @@ export interface FetchAuditLogsParams {
   offset?: number;
 }
 
-function mapRow(row: Record<string, unknown>): AuditLogTech {
-  return {
-    id: String(row.id),
-    tabela: String(row.tabela ?? ""),
-    registroId: (row.registro_id as string | null) ?? null,
-    acao: (row.acao as AuditAcao) ?? "INSERT",
-    antes: (row.antes as Record<string, unknown> | null) ?? null,
-    depois: (row.depois as Record<string, unknown> | null) ?? null,
-    userId: (row.user_id as string | null) ?? null,
-    userEmail: (row.user_email as string | null) ?? null,
-    createdAt: String(row.created_at ?? new Date().toISOString()),
-  };
-}
-
 /**
- * Busca paginada de audit_logs.
- * Aplica filtros opcionais por tabela, registro_id (ou lista) e ação.
+ * Busca paginada de logs de auditoria — lê de `operational_audit`.
+ * Mantém o mesmo contrato anterior (campos antes/depois/userEmail).
  */
 export async function fetchAuditLogs(params: FetchAuditLogsParams = {}): Promise<AuditLogTech[]> {
-  const limit = params.limit ?? 50;
-  const offset = params.offset ?? 0;
-
-  // Defesa em profundidade: filtra explicitamente pelo tenant_id do usuário,
-  // mesmo que a RLS já isole — assim evitamos qualquer vazamento se a policy
-  // mudar no futuro.
-  let tenantId: string | null = null;
-  try {
-    tenantId = await getCurrentTenantId();
-  } catch {
-    tenantId = null;
-  }
-
-  let req = supabase
-    .from("audit_logs")
-    .select("id, tabela, registro_id, acao, antes, depois, user_id, user_email, created_at")
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (tenantId) req = req.eq("tenant_id", tenantId);
-  if (params.tabela) req = req.eq("tabela", params.tabela);
-  if (params.registroId) req = req.eq("registro_id", params.registroId);
-  if (params.registroIds && params.registroIds.length > 0) {
-    req = req.in("registro_id", params.registroIds);
-  }
-  if (params.acao) req = req.eq("acao", params.acao);
-  if (params.search && params.search.trim()) {
-    req = req.ilike("user_email", `%${params.search.trim()}%`);
-  }
-
-  const { data, error } = await req;
-  if (error) {
-    showError(error, { scope: "auditLogsStore.fetch", silent: true });
-    return [];
-  }
-  return (data ?? []).map((r) => mapRow(r as Record<string, unknown>));
+  return fetchOperationalAuditLogs(params);
 }
 
 /**
@@ -115,24 +73,11 @@ export function diffObjects(
   return out.sort((x, y) => x.campo.localeCompare(y.campo));
 }
 
-/**
- * Lista de tabelas distintas presentes em audit_logs (para filtros).
- * Implementação simples: busca uma página e extrai distintos no cliente.
- */
+/** Lista de tabelas distintas (recurso_tipo) presentes em `operational_audit`. */
 export async function fetchAuditTabelas(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("audit_logs")
-    .select("tabela")
-    .order("tabela", { ascending: true })
-    .limit(1000);
-  if (error) {
-    showError(error, { scope: "auditLogsStore.tabelas", silent: true });
-    return [];
-  }
-  const set = new Set<string>();
-  for (const r of data ?? []) set.add(String((r as { tabela: string }).tabela));
-  return Array.from(set).sort();
+  return fetchOperationalAuditTabelas();
 }
+
 
 /**
  * Resolve os IDs de exames e pagamentos vinculados a um atendimento.
