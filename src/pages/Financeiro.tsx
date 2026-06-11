@@ -336,22 +336,10 @@ const Financeiro = () => {
     void fetchSaldoEmAbertoPorConvenio().then(setSaldoConvenios);
   }, [activeTab]);
 
-  const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(() => {
-    const convs = getConvenios();
-    const rows: AReceberConvenioRow[] = [];
-    saldoConvenios.forEach((v, cid) => {
-      const c = convs.find(cc => cc.id === cid);
-      if (!c || c.id === 0) return; // ignora Particular
-      rows.push({
-        convenioId: cid,
-        convenioNome: c.nome,
-        saldo: Math.round(v.saldo * 100) / 100,
-        qtdExames: v.exames,
-        qtdPacientes: v.pacientes.size,
-      });
-    });
-    return rows.sort((a, b) => b.saldo - a.saldo);
-  }, [saldoConvenios]);
+  const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(
+    () => buildAReceberConvenioRows(saldoConvenios, getConvenios()),
+    [saldoConvenios],
+  );
 
   const allEntries = useMemo(() => {
     if (activeTab === "entrada") return entradas;
@@ -359,40 +347,13 @@ const Financeiro = () => {
     return [...entradas, ...saidas].sort((a, b) => b.data.localeCompare(a.data));
   }, [activeTab, entradas, saidas]);
 
-  const filtered = useMemo(() => {
-    let data = allEntries;
-    if (dateFrom || dateTo) {
-      data = data.filter(e => {
-        const d = parseDate(e.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (d > toEnd) return false; }
-        return true;
-      });
-    }
-    if (activeTab === "entrada" && convenioFilter !== "all") data = data.filter(e => e.convenio === convenioFilter);
-    if (activeTab === "saida" && tipoDespesaFilter !== "all") data = data.filter(e => e.tipoDespesa === tipoDespesaFilter);
-    if (activeTab === "saida" && destinoPagamentoFilter !== "all") data = data.filter(e => e.destinoPagamento === destinoPagamentoFilter);
-    if (activeTab === "saida" && saidaStatusFilter !== "todas") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      data = data.filter(e => {
-        const venc = e.dataVencimento ? parseDate(e.dataVencimento) : null;
-        const paga = e.foiPago === "Sim";
-        if (saidaStatusFilter === "pagas") return paga;
-        if (saidaStatusFilter === "vencidas") return !paga && venc !== null && venc < today;
-        if (saidaStatusFilter === "vencendo7") {
-          if (paga || !venc) return false;
-          const diff = Math.round((venc.getTime() - today.getTime()) / 86400000);
-          return diff >= 0 && diff <= 7;
-        }
-        return true;
-      });
-    }
-    if (!searchQuery) return data;
-    const q = searchNormalize(searchQuery);
-    return data.filter(e => searchNormalize(e.protocolo).includes(q) || searchNormalize(e.cliente).includes(q) || searchNormalize(e.pagamento).includes(q));
-  }, [allEntries, searchQuery, dateFrom, dateTo, convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter, activeTab]);
+  const filtered = useMemo(
+    () => applyFinanceiroFilters(allEntries, {
+      activeTab, searchQuery, dateFrom, dateTo,
+      convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter,
+    }),
+    [allEntries, searchQuery, dateFrom, dateTo, convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter, activeTab],
+  );
 
   // Lista de convênios disponíveis nas entradas atuais (origem dinâmica, não mock)
   const conveniosDisponiveis = useMemo(() => {
@@ -401,99 +362,26 @@ const Financeiro = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [entradas]);
 
-  // Contadores para a aba Entradas (regime de caixa: somente pagamentos efetivados)
-  // Aplica filtros de período e convênio (NÃO aplica busca por texto, para refletir o universo do período).
-  const entradaCounts = useMemo(() => {
-    const filtered = entradas.filter(e => {
-      if (convenioFilter !== "all" && e.convenio !== convenioFilter) return false;
-      if (dateFrom || dateTo) {
-        const d = parseDate(e.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) {
-          const toEnd = new Date(dateTo);
-          toEnd.setHours(23, 59, 59, 999);
-          if (d > toEnd) return false;
-        }
-      }
-      return true;
-    });
-    const total = filtered.reduce((s, e) => s + e.valorTotal, 0);
-    // Quebra por forma de pagamento
-    const byPagamentoMap = new Map<string, { count: number; total: number }>();
-    filtered.forEach(e => {
-      const key = (e.pagamento || "—").trim() || "—";
-      const cur = byPagamentoMap.get(key) ?? { count: 0, total: 0 };
-      cur.count += 1;
-      cur.total += e.valorTotal;
-      byPagamentoMap.set(key, cur);
-    });
-    const byPagamento = Array.from(byPagamentoMap.entries())
-      .map(([nome, v]) => ({ nome, count: v.count, total: v.total }))
-      .sort((a, b) => b.total - a.total);
-    return { todas: filtered.length, totalRecebido: total, byPagamento };
-  }, [entradas, convenioFilter, dateFrom, dateTo]);
-
-  // Contadores para a aba A Receber
-  const aReceberCounts = useMemo(() => {
-    let parciais = 0, pendentes = 0;
-    let totalParciais = 0, totalPendentes = 0, totalGeral = 0;
-    aReceberSource.forEach(r => {
-      totalGeral += r.saldo;
-      if (r.status === "parcial") { parciais++; totalParciais += r.saldo; }
-      else { pendentes++; totalPendentes += r.saldo; }
-    });
-    return { todas: aReceberSource.length, parciais, pendentes, totalParciais, totalPendentes, totalGeral };
-  }, [aReceberSource]);
-
-
-  // Contadores de status para a aba Saídas (sempre baseado em todas as saídas, não no filtered)
-  const saidaCounts = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let vencidas = 0, vencendo7 = 0, pagas = 0, pendentes = 0;
-    let totalVencidas = 0, totalVencendo7 = 0, totalPagas = 0, totalPendentes = 0;
-    saidas.forEach(e => {
-      const venc = e.dataVencimento ? parseDate(e.dataVencimento) : null;
-      const paga = e.foiPago === "Sim";
-      if (paga) { pagas++; totalPagas += e.valorTotal; return; }
-      pendentes++; totalPendentes += e.valorTotal;
-      if (!venc) return;
-      if (venc < today) { vencidas++; totalVencidas += e.valorTotal; return; }
-      const diff = Math.round((venc.getTime() - today.getTime()) / 86400000);
-      if (diff <= 7) { vencendo7++; totalVencendo7 += e.valorTotal; }
-    });
-    return {
-      todas: saidas.length, vencidas, vencendo7, pagas, pendentes,
-      totalVencidas, totalVencendo7, totalPagas, totalPendentes,
-    };
-  }, [saidas]);
+  // Contadores por aba (regime de caixa para Entradas; KPIs de A Receber e Saídas).
+  const entradaCounts = useMemo(
+    () => computeEntradaCounts(entradas, { convenioFilter, dateFrom, dateTo }),
+    [entradas, convenioFilter, dateFrom, dateTo],
+  );
+  const aReceberCounts = useMemo(() => computeAReceberCounts(aReceberSource), [aReceberSource]);
+  const saidaCounts = useMemo(() => computeSaidaCounts(saidas), [saidas]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // ─── A Receber: filtragem + paginação dedicada ───
-  const aReceberFiltered = useMemo(() => {
-    let data = aReceberSource;
-    if (aReceberStatusFilter !== "todas") {
-      data = data.filter(r => r.status === (aReceberStatusFilter === "parciais" ? "parcial" : "pendente"));
-    }
-    if (convenioFilter !== "all") data = data.filter(r => r.convenio === convenioFilter);
-    if (dateFrom || dateTo) {
-      data = data.filter(r => {
-        const d = parseDate(r.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (d > toEnd) return false; }
-        return true;
-      });
-    }
-    if (searchQuery) {
-      const q = searchNormalize(searchQuery);
-      data = data.filter(r => searchNormalize(r.protocolo).includes(q) || searchNormalize(r.cliente).includes(q) || searchNormalize(r.convenio).includes(q));
-    }
-    return data;
-  }, [aReceberSource, aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo]);
+  const aReceberFiltered = useMemo(
+    () => filterAReceberRows(aReceberSource, {
+      aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo,
+    }),
+    [aReceberSource, aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo],
+  );
+
+
 
   const aReceberTotalPages = Math.max(1, Math.ceil(aReceberFiltered.length / itemsPerPage));
   const aReceberPaginated = aReceberFiltered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
