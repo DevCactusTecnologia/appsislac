@@ -20,10 +20,11 @@ import {
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
 } from "@/data/financeiroStore";
 import {
-  getTiposDespesa, getDestinosPagamento, getFormasPagamento,
-  subscribeListas, createItem, deleteItem, nomeJaExiste, reloadAll,
+  createItem, deleteItem,
   type ListaItem,
 } from "@/data/financeiroListasStore";
+import { useDicionario } from "@/hooks/useDicionario";
+import { useQueryClient } from "@tanstack/react-query";
 // Dialogs lazy-loaded — cada um vira chunk separado e só baixa quando abre.
 const CriarItemDialog = lazy(() => import("@/components/financeiro/CriarItemDialog"));
 const FecharFaturaDialog = lazy(() => import("@/components/financeiro/FecharFaturaDialog"));
