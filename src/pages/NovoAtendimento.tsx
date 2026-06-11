@@ -17,7 +17,7 @@ import type { PagamentoRealizado, MockAtendimento } from "@/data/types";
 import { getConvenios, getConveniosAtivosNomes, getTabelaByConvenioNome, subscribeConvenios } from "@/data/convenioStore";
 import { getPacientes, type Paciente } from "@/data/pacienteStore";
 import { getSolicitantesNomes, subscribeEspecialistas } from "@/data/especialistaStore";
-import { getTabelaPrecoItens, getPrecoExame, subscribeTabelaPreco, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import { subscribeTabelaPreco } from "@/data/tabelaPrecoStore";
 import { addAtendimento, getAtendimentos, getNextProtocolo, updateAtendimento, fetchAtendimentosByPacienteCpf, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
 import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
@@ -53,12 +53,13 @@ const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPane
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
 import type { CobrancaDestino, Exame, ExameTemplate } from "./NovoAtendimento/types";
 import {
-  examesCatalogoLegado,
   computeAvailableConvenios,
   computeAvailableSolicitantes,
   buildAvailableExames,
   resolveCobrancaDefault,
 } from "./NovoAtendimento/helpers";
+import { calculateExamPrice } from "./NovoAtendimento/pricing";
+import { buildExamesCobranca } from "./NovoAtendimento/buildExamesCobranca";
 import { highlightMatch } from "./NovoAtendimento/highlightMatch";
 import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
 
@@ -155,11 +156,11 @@ const NovoAtendimento = () => {
           const meta = a.examesCobranca?.find(c => c.nome === nomeExame);
           if (meta?.cobrancaDestino === "convenio") return sum; // exame faturado p/ convênio não entra no saldo do paciente
           // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
-          if (typeof meta?.valor === "number") return sum + meta.valor;
-          const preco = getPrecoExame(nomeExame, getTabelaByConvenioNome(a.convenio) as TabelaTipo)
-            ?? getPrecoExame(nomeExame, "Própria")
-            ?? 0;
-          return sum + preco;
+          return sum + calculateExamPrice({
+            nomeExame,
+            convenioNome: a.convenio,
+            metaValor: meta?.valor,
+          });
         }, 0);
         const totalPago = (a.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
         return { protocolo: a.protocolo, saldo: Math.max(0, totalExames - totalPago) };
@@ -384,11 +385,12 @@ const NovoAtendimento = () => {
     let atendimento = getAtendimentos().find(a => a.protocolo === decoded);
     if (!atendimento) {
       // Fallback server-side quando o atendimento não está no cache (modo paginado).
+      // `editAtendimentoData` NÃO é gatilho de render: é o dado real (cpf/nascimento/idade)
+      // consumido em `updateAtendimento(...)` mais abaixo quando o paciente não está
+      // resolvido via `getPacientes()`. Hidratação do restante (convenios/exames/etc)
+      // exigiria refetch + re-execução; este fallback é intencionalmente mínimo.
       void fetchAtendimentoByProtocolo(decoded).then((a) => {
         if (a) {
-          // Re-dispara o effect com o atendimento já no cache via reload no store legado:
-          // como esse effect roda novamente quando editProtocolo muda, basta forçar um
-          // re-render setando algum state — usamos editAtendimentoData como sinal.
           setEditAtendimentoData({ cpf: a.cpf, nascimento: a.nascimento, idade: a.idade });
         }
       });
@@ -420,11 +422,11 @@ const NovoAtendimento = () => {
       const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
       if (meta?.cobrancaDestino === "convenio") return sum;
       // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
-      if (typeof meta?.valor === "number") return sum + meta.valor;
-      const preco = getPrecoExame(nomeExame, getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo)
-        ?? getPrecoExame(nomeExame, "Própria")
-        ?? 0;
-      return sum + preco;
+      return sum + calculateExamPrice({
+        nomeExame,
+        convenioNome: atendimento.convenio,
+        metaValor: meta?.valor,
+      });
     }, 0);
     const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
     if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
@@ -450,11 +452,11 @@ const NovoAtendimento = () => {
         convenio: atendimento.convenio,
         material: meta?.material ?? cat?.material ?? "Sangue",
         // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
-        valor: typeof meta?.valor === "number"
-          ? meta.valor
-          : (getPrecoExame(nomeExame, getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo)
-              ?? getPrecoExame(nomeExame, "Própria")
-              ?? 0),
+        valor: calculateExamPrice({
+          nomeExame,
+          convenioNome: atendimento.convenio,
+          metaValor: meta?.valor,
+        }),
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
@@ -528,21 +530,7 @@ const NovoAtendimento = () => {
         solicitante: solicitantes[0] || "",
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
-        examesCobranca: examesParaSalvar.map(e => ({
-          nome: e.nome,
-          cobrancaDestino: e.cobrancaDestino,
-          convenioCobrancaId: e.convenioCobrancaId ?? null,
-          valor: e.valor,
-          amostraSeq: e.amostraSeq ?? 1,
-          grupoExameId: e.grupoExameId ?? null,
-          tipoProcesso: e.tipoProcesso ?? "INTERNO",
-          labApoioId: e.tipoProcesso === "TERCEIRIZADO"
-            ? (e.labApoioIdOverride ?? e.labApoioIdPadrao ?? null)
-            : null,
-          solicitante: solicitantes.length > 1
-            ? ((e.solicitanteExame === "__ambos" ? "" : e.solicitanteExame) ?? "")
-            : "",
-        })),
+        examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
         pagamentosRealizados,
         unidadeId: user?.unidadeAtiva,
@@ -567,21 +555,7 @@ const NovoAtendimento = () => {
         solicitante: solicitantes[0] || "",
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
-        examesCobranca: examesParaSalvar.map(e => ({
-          nome: e.nome,
-          cobrancaDestino: e.cobrancaDestino,
-          convenioCobrancaId: e.convenioCobrancaId ?? null,
-          valor: e.valor,
-          amostraSeq: e.amostraSeq ?? 1,
-          grupoExameId: e.grupoExameId ?? null,
-          tipoProcesso: e.tipoProcesso ?? "INTERNO",
-          labApoioId: e.tipoProcesso === "TERCEIRIZADO"
-            ? (e.labApoioIdOverride ?? e.labApoioIdPadrao ?? null)
-            : null,
-          solicitante: solicitantes.length > 1
-            ? ((e.solicitanteExame === "__ambos" ? "" : e.solicitanteExame) ?? "")
-            : "",
-        })),
+        examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         unidadeId: user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
@@ -644,11 +618,9 @@ const NovoAtendimento = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convenios.join("|")]);
 
-  const resolvePreco = (nomeExame: string, convenioNome: string): number => {
-    const tabela = getTabelaByConvenioNome(convenioNome) as TabelaTipo;
+  const resolvePreco = (nomeExame: string, convenioNome: string): number =>
     // Nunca inventar preço. Sem cadastro → 0 (UI mostra "sem preço") em vez de chute silencioso.
-    return getPrecoExame(nomeExame, tabela) ?? getPrecoExame(nomeExame, "Própria") ?? 0;
-  };
+    calculateExamPrice({ nomeExame, convenioNome });
 
   const handleAddExameIA = (
     nome: string,
