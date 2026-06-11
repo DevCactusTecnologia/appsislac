@@ -537,19 +537,8 @@ const NovoAtendimento = () => {
         origem: origemRef.current ?? "INTERNO",
       });
       }
-      const temTerceirizados = exames.some(
-        (e) => (e.tipoProcesso ?? "INTERNO") === "TERCEIRIZADO",
-      );
-      // Conta etiquetas estimadas por exame (catálogo: quantidadeEtiquetas, default 1)
-      const catalogo = getExamesCatalogo();
-      let etiquetasTotal = 0;
-      let etiquetasTerc = 0;
-      for (const e of exames) {
-        const cat = catalogo.find(c => c.nome.toLowerCase() === e.nome.toLowerCase());
-        const q = Math.max(1, Math.min(20, Number(cat?.quantidadeEtiquetas ?? 1)));
-        etiquetasTotal += q;
-        if ((e.tipoProcesso ?? "INTERNO") === "TERCEIRIZADO") etiquetasTerc += q;
-      }
+      const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
+        contarEtiquetas(exames, getExamesCatalogo());
       const protocoloFinal = isEditing && editProtocolo
         ? decodeURIComponent(editProtocolo)
         : novoProtocolo;
