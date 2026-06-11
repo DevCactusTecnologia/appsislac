@@ -1,0 +1,158 @@
+// Bloco 5a.5 — helpers de RESULTADOS / exames operacionais (Fase 4 split).
+// Mantém o contrato síncrono via re-hidratação do cache após mutações.
+
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/lib/showError";
+import { persistOrThrow } from "@/lib/persist";
+import type { TablesUpdate } from "@/integrations/supabase/types";
+import {
+  cache,
+  type AtendimentoExameDbRow,
+} from "./_internal";
+import { _initAtendimentosStore } from "./queries";
+import type {
+  AtendimentoExameRow, AtendimentoExamePatch, ExameOperacionalRow,
+} from "./types";
+
+/**
+ * Busca, direto do Supabase, os exames de um atendimento (incluindo a
+ * coluna jsonb `resultados`). Use para carregar a tela de resultado/detalhe.
+ */
+export async function getAtendimentoExamesDB(protocolo: string): Promise<AtendimentoExameRow[]> {
+  const id = cache.idByProtocolo.get(protocolo);
+  if (!id) return [];
+  const { data, error } = await supabase
+    .from("atendimento_exames")
+    .select("*")
+    .eq("atendimento_id", id)
+    .order("ordem", { ascending: true });
+  if (error) {
+    showError(error, { scope: "atendimentoStore.getAtendimentoExamesDB", silent: true });
+    return [];
+  }
+  return (data ?? []) as unknown as AtendimentoExameRow[];
+}
+
+/**
+ * Atualiza um exame específico (por id da row em atendimento_exames).
+ * O trigger no banco recalcula o status do atendimento automaticamente.
+ * Após sucesso, refaz a hidratação do cache.
+ */
+export async function updateAtendimentoExame(
+  exameId: number,
+  patch: AtendimentoExamePatch,
+  justificativa?: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = patch as TablesUpdate<"atendimento_exames">;
+  try {
+    if (justificativa?.trim()) {
+      const { data, error } = await supabase.rpc("update_atendimento_exame_tx" as never, {
+        _exame_id: exameId,
+        _patch: payload,
+        _justificativa: justificativa.trim(),
+      } as never);
+      if (error) throw error;
+      if (!data) throw new Error("exame não encontrado");
+    } else {
+      await persistOrThrow<AtendimentoExameDbRow>(
+        supabase.from("atendimento_exames").update(payload).eq("id", exameId),
+        "atendimentos.atualizarExame",
+      );
+    }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  await _initAtendimentosStore();
+  return { ok: true };
+}
+
+/**
+ * Atribui um mesmo analista a vários exames de uma vez.
+ * Usado pela página /mapa (aba Exame).
+ */
+export async function setAnalistaParaExames(
+  exameIds: number[],
+  analista: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (exameIds.length === 0) return { ok: true };
+  try {
+    await persistOrThrow<AtendimentoExameDbRow>(
+      supabase.from("atendimento_exames").update({ analista }).in("id", exameIds),
+      "atendimentos.setAnalistaParaExames",
+      { expectAtLeast: exameIds.length },
+    );
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  await _initAtendimentosStore();
+  return { ok: true };
+}
+
+/**
+ * Carrega exames de atendimentos cujos exames possuem algum dos statuses
+ * dados, agrupando por atendimento (paciente). Usado em Registrar Coleta /
+ * Analisar Amostra.
+ */
+export async function getExamesOperacionaisByStatus(
+  statuses: Array<"pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado">,
+): Promise<ExameOperacionalRow[]> {
+  const { data: exRows, error: exErr } = await supabase
+    .from("atendimento_exames")
+    .select("*")
+    .in("status", statuses)
+    .order("ordem", { ascending: true });
+  if (exErr) {
+    showError(exErr, { scope: "atendimentoStore.getExamesOperacionais.exames", silent: true });
+    return [];
+  }
+
+  const examesByAt = new Map<number, typeof exRows>();
+  (exRows ?? []).forEach((e) => {
+    const arr = examesByAt.get(e.atendimento_id) ?? [];
+    arr.push(e);
+    examesByAt.set(e.atendimento_id, arr);
+  });
+
+  const atIds = Array.from(examesByAt.keys());
+  if (atIds.length === 0) return [];
+
+  const { data: atRows, error: atErr } = await supabase
+    .from("atendimentos")
+    .select("id, protocolo, paciente_id, paciente_nome, paciente_cpf, paciente_nascimento, unidade_id")
+    .in("id", atIds);
+  if (atErr) {
+    showError(atErr, { scope: "atendimentoStore.getExamesOperacionais.atendimentos", silent: true });
+    return [];
+  }
+
+  return (atRows ?? []).map((at) => {
+    const exs = examesByAt.get(at.id) ?? [];
+    const responsavel = exs.find((e) => e.analista)?.analista ?? "";
+    return {
+      id: at.id,
+      atendimento_id: at.id,
+      protocolo: at.protocolo,
+      paciente_id: at.paciente_id ?? null,
+      paciente_nome: at.paciente_nome,
+      paciente_cpf: (at.paciente_cpf ?? "").replace(/\D/g, ""),
+      paciente_sexo: "M",
+      paciente_nascimento: at.paciente_nascimento ?? "",
+      unidade_id: at.unidade_id,
+      responsavel,
+      exames: exs.map((e) => ({
+        id: e.id,
+        nome: e.nome_exame,
+        exame_id: e.exame_id ?? null,
+        amostra_id: e.amostra_id ?? null,
+        material: e.material || "—",
+        status: e.status as "pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado",
+        data_coleta: e.data_coleta,
+        data_analise: e.data_analise,
+        motivo_cancelamento: e.motivo_cancelamento,
+        updated_at: e.updated_at ?? null,
+        tipo_processo: (e.tipo_processo === "TERCEIRIZADO" ? "TERCEIRIZADO" : "INTERNO") as "INTERNO" | "TERCEIRIZADO",
+        lab_apoio_id: e.lab_apoio_id ?? null,
+      })),
+    };
+  });
+}
