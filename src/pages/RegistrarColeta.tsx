@@ -820,7 +820,7 @@ const RegistrarColeta = () => {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Motivo do cancelamento</p>
           <div className="space-y-1.5 mb-5">
             {(() => {
-              const motivosStore = getMotivosCancelamentoAtivos().map((m) => m.nome);
+              const motivosStore = motivosCancelamentoOpts.map((m) => m.label);
               const lista = motivosStore.includes("Outro") ? motivosStore : [...motivosStore, "Outro"];
               return lista;
             })().map((motivo) => {
