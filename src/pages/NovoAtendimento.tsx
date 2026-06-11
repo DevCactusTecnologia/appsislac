@@ -156,11 +156,11 @@ const NovoAtendimento = () => {
           const meta = a.examesCobranca?.find(c => c.nome === nomeExame);
           if (meta?.cobrancaDestino === "convenio") return sum; // exame faturado p/ convênio não entra no saldo do paciente
           // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
-          if (typeof meta?.valor === "number") return sum + meta.valor;
-          const preco = getPrecoExame(nomeExame, getTabelaByConvenioNome(a.convenio) as TabelaTipo)
-            ?? getPrecoExame(nomeExame, "Própria")
-            ?? 0;
-          return sum + preco;
+          return sum + calculateExamPrice({
+            nomeExame,
+            convenioNome: a.convenio,
+            metaValor: meta?.valor,
+          });
         }, 0);
         const totalPago = (a.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
         return { protocolo: a.protocolo, saldo: Math.max(0, totalExames - totalPago) };
@@ -421,11 +421,11 @@ const NovoAtendimento = () => {
       const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
       if (meta?.cobrancaDestino === "convenio") return sum;
       // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
-      if (typeof meta?.valor === "number") return sum + meta.valor;
-      const preco = getPrecoExame(nomeExame, getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo)
-        ?? getPrecoExame(nomeExame, "Própria")
-        ?? 0;
-      return sum + preco;
+      return sum + calculateExamPrice({
+        nomeExame,
+        convenioNome: atendimento.convenio,
+        metaValor: meta?.valor,
+      });
     }, 0);
     const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
     if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
@@ -451,11 +451,11 @@ const NovoAtendimento = () => {
         convenio: atendimento.convenio,
         material: meta?.material ?? cat?.material ?? "Sangue",
         // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
-        valor: typeof meta?.valor === "number"
-          ? meta.valor
-          : (getPrecoExame(nomeExame, getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo)
-              ?? getPrecoExame(nomeExame, "Própria")
-              ?? 0),
+        valor: calculateExamPrice({
+          nomeExame,
+          convenioNome: atendimento.convenio,
+          metaValor: meta?.valor,
+        }),
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
@@ -645,11 +645,9 @@ const NovoAtendimento = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convenios.join("|")]);
 
-  const resolvePreco = (nomeExame: string, convenioNome: string): number => {
-    const tabela = getTabelaByConvenioNome(convenioNome) as TabelaTipo;
+  const resolvePreco = (nomeExame: string, convenioNome: string): number =>
     // Nunca inventar preço. Sem cadastro → 0 (UI mostra "sem preço") em vez de chute silencioso.
-    return getPrecoExame(nomeExame, tabela) ?? getPrecoExame(nomeExame, "Própria") ?? 0;
-  };
+    calculateExamPrice({ nomeExame, convenioNome });
 
   const handleAddExameIA = (
     nome: string,
