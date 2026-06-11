@@ -54,9 +54,12 @@ import IntegracoesWebhookPanel from "@/components/financeiro/IntegracoesWebhookP
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 
-// Types e helpers puros extraídos para ./Financeiro/* (Sprint 1).
+// Types, helpers e service puros extraídos para ./Financeiro/* (Architectural Split).
 // Comportamento idêntico, apenas reorganização.
-import type { TabType, SaidaStatusFilter, FinanceiroEntry } from "./Financeiro/types";
+import type {
+  TabType, SaidaStatusFilter, FinanceiroEntry,
+  AReceberRow, AReceberConvenioRow, CaixaMov,
+} from "./Financeiro/types";
 import { baseTabs, paymentIcons } from "./Financeiro/types";
 import {
   saidaToEntry,
@@ -65,6 +68,24 @@ import {
   maskDateBR,
   isValidDateBR,
 } from "./Financeiro/helpers";
+import {
+  buildAReceberRowsFromAtendimentos,
+  buildAReceberRowsFromRpc,
+  buildAReceberConvenioRows,
+  filterAReceberRows,
+  applyFinanceiroFilters,
+  computeEntradaCounts,
+  computeAReceberCounts,
+  computeSaidaCounts,
+  buildCaixaMovimentos,
+  filterCaixaMovimentos,
+  computeCaixaSaldoInicial,
+  applyCaixaSaldoAcumulado,
+  computeCaixaTotais,
+  buildLivroCaixaHtml,
+} from "./Financeiro/services/FinanceiroService";
+
+
 
 
 const Financeiro = () => {
