@@ -159,12 +159,16 @@ function numeroPorExtenso(n: number): string {
 // Códigos de verificação + validações legais foram extraídos para
 // src/domains/result/services/comprovantesValidation.ts (Fase: domain slicing).
 // Re-exportamos aqui para manter o contrato público deste módulo.
-export {
+import {
   codigoVerificacao,
   codigoVerificacaoDeComprovante,
   validarLaboratorioParaComprovante,
 } from "@/domains/result/services/comprovantesValidation";
-import { codigoVerificacao } from "@/domains/result/services/comprovantesValidation";
+export {
+  codigoVerificacao,
+  codigoVerificacaoDeComprovante,
+  validarLaboratorioParaComprovante,
+};
 
 /** Gera vCard 3.0 com dados do laboratório + código de verificação no campo NOTE. */
 function buildVCard(codigo: string, tipoLabel: string): string {
