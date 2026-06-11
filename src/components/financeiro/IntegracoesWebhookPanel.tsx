@@ -91,10 +91,10 @@ const IntegracoesWebhookPanel = () => {
           </p>
         </div>
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-          <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+          <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">
             Sucesso · 24h
           </p>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+          <p className="text-2xl font-bold text-emerald-600 mt-1">
             {counts.ok24}
           </p>
         </div>
@@ -194,7 +194,7 @@ const IntegracoesWebhookPanel = () => {
                       <span
                         className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${
                           ok
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                             : "bg-destructive/10 text-destructive border-destructive/20"
                         }`}
                       >

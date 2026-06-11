@@ -91,9 +91,9 @@ const PreviewComprovantesDialog = ({ open, onClose }: PreviewComprovantesDialogP
           </div>
 
           {faltando.length > 0 && (
-            <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-lg">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+            <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-700 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-800 leading-relaxed">
                 Campos não preenchidos não aparecem no comprovante: <strong>{faltando.join(", ")}</strong>.
                 Para validade legal completa, preencha-os antes de salvar.
               </p>

@@ -467,9 +467,9 @@ export default function Estoque() {
 /* ─── KPI Card ─── */
 function KpiCard({ icon: Icon, label, value, tone, hint, active, onClick }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number; tone?: "warning" | "danger"; hint?: string; active?: boolean; onClick?: () => void }) {
   const toneCls = tone === "danger"
-    ? "text-red-600 dark:text-red-400 bg-red-500/10"
+    ? "text-red-600 bg-red-500/10"
     : tone === "warning"
-    ? "text-amber-600 dark:text-amber-400 bg-amber-500/10"
+    ? "text-amber-600 bg-amber-500/10"
     : "text-primary bg-primary/10";
   const ringCls = active
     ? tone === "danger"
@@ -533,7 +533,7 @@ function InsumosTabela({ insumos, lotes, fornMap, onEditar, onExcluir, onNovoLot
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-border bg-muted/40 text-[11px] font-medium text-muted-foreground">{i.categoria}</span>
                   </td>
-                  <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", baixo && "text-amber-600 dark:text-amber-400")}>
+                  <td className={cn("px-4 py-3 text-right font-semibold tabular-nums", baixo && "text-amber-600")}>
                     {total} <span className="text-[11px] font-normal text-muted-foreground">{i.unidade_medida}</span>
                   </td>
                   <td className="px-4 py-3 text-right text-muted-foreground tabular-nums">{i.estoque_minimo > 0 ? i.estoque_minimo : "—"}</td>
@@ -589,7 +589,7 @@ function LotesTabela({ lotes, insumoMap, fornMap, onEditar, onExcluir, onMovimen
                     <p className="text-foreground">{fmtDate(l.data_validade)}</p>
                     <p className={cn(
                       "text-[11px]",
-                      sv === "vencido" ? "text-red-600 dark:text-red-400" : sv === "vence_em_breve" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+                      sv === "vencido" ? "text-red-600" : sv === "vence_em_breve" ? "text-amber-600" : "text-muted-foreground",
                     )}>
                       {dias < 0 ? `${Math.abs(dias)}d vencido` : dias === 0 ? "vence hoje" : `${dias}d restantes`}
                     </p>
@@ -743,7 +743,7 @@ function DecisionPanel({
 
         {top5.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center">
-            <Activity className="w-8 h-8 mx-auto text-emerald-600 dark:text-emerald-400 mb-2" />
+            <Activity className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
             <p className="text-[13px] text-foreground font-medium">Estoque saudável</p>
             <p className="text-[11.5px] text-muted-foreground mt-0.5">Nenhum alerta crítico no momento.</p>
           </div>
@@ -808,7 +808,7 @@ function DecisionPanel({
           </div>
           <div className="rounded-2xl bg-muted/30 border border-border/60 p-3">
             <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold">Descartes</p>
-            <p className={cn("text-xl font-bold tabular-nums mt-1", taxaDescarte >= 5 ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>
+            <p className={cn("text-xl font-bold tabular-nums mt-1", taxaDescarte >= 5 ? "text-amber-600" : "text-foreground")}>
               {descarte.toLocaleString("pt-BR")}
             </p>
             <p className="text-[10.5px] text-muted-foreground mt-0.5">{taxaDescarte.toFixed(1)}% do consumo</p>

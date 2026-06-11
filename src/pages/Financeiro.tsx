@@ -1370,7 +1370,7 @@ const Financeiro = () => {
                                   "text-xs font-semibold px-3 py-1 rounded-full transition-all hover:ring-2 hover:ring-offset-1 hover:ring-offset-background cursor-pointer",
                                   paga ? "bg-status-success/10 text-status-success hover:ring-status-success/30"
                                     : vencida ? "bg-destructive/10 text-destructive hover:ring-destructive/30"
-                                    : vencendo ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:ring-amber-500/30"
+                                    : vencendo ? "bg-amber-500/10 text-amber-700 hover:ring-amber-500/30"
                                     : "bg-muted/60 text-muted-foreground hover:ring-border",
                                 )}
                                 title="Ver detalhes"
@@ -1429,7 +1429,7 @@ const Financeiro = () => {
                                 className={cn(
                                   "text-xs font-semibold px-3 py-1 rounded-full transition-all hover:ring-2 hover:ring-offset-1 hover:ring-offset-background cursor-pointer",
                                   entradaPago ? "bg-status-success/10 text-status-success hover:ring-status-success/30"
-                                    : entradaParcial ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:ring-amber-500/30"
+                                    : entradaParcial ? "bg-amber-500/10 text-amber-700 hover:ring-amber-500/30"
                                     : "bg-muted/60 text-muted-foreground hover:ring-border",
                                 )}
                                 title="Ver detalhes"
@@ -1504,7 +1504,7 @@ const Financeiro = () => {
                             "text-[11px] px-2 py-0.5 rounded-md font-semibold transition-all hover:opacity-80",
                             paga ? "bg-status-success/10 text-status-success"
                               : vencida ? "bg-destructive/10 text-destructive"
-                              : vencendo ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                              : vencendo ? "bg-amber-500/10 text-amber-700"
                               : "bg-muted/60 text-muted-foreground",
                           )}
                         >

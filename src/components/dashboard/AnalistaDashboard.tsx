@@ -73,9 +73,9 @@ function Kpi({ label, value, hint, icon: Icon, to, accent = "default", badge }: 
     : accent === "danger" ? "ring-rose-500/20"
     : "ring-primary/10";
   const accentBg =
-    accent === "warning" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-    : accent === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-    : accent === "danger" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+    accent === "warning" ? "bg-amber-500/10 text-amber-600"
+    : accent === "success" ? "bg-emerald-500/10 text-emerald-600"
+    : accent === "danger" ? "bg-rose-500/10 text-rose-600"
     : "bg-primary/10 text-primary";
 
   const inner = (
@@ -131,11 +131,11 @@ function Quick({ label, icon: Icon, to }: QuickProps) {
 
 function StatusPill({ kind, label }: { kind: StatusKind; label: string }) {
   const cls =
-    kind === "liberado" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-    : kind === "cancelado" ? "bg-rose-500/15 text-rose-700 dark:text-rose-300"
-    : kind === "coleta" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-    : kind === "analise" ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
-    : kind === "liberar" ? "bg-violet-500/15 text-violet-700 dark:text-violet-300"
+    kind === "liberado" ? "bg-emerald-500/15 text-emerald-700"
+    : kind === "cancelado" ? "bg-rose-500/15 text-rose-700"
+    : kind === "coleta" ? "bg-amber-500/15 text-amber-700"
+    : kind === "analise" ? "bg-sky-500/15 text-sky-700"
+    : kind === "liberar" ? "bg-violet-500/15 text-violet-700"
     : "bg-muted text-muted-foreground";
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>

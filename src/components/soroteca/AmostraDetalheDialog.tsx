@@ -77,9 +77,9 @@ function idadeAnos(iso: string | null | undefined): string {
 }
 
 const STATUS_STYLE: Record<AmostraStatus, { bg: string; text: string; label: string }> = {
-  DISPONIVEL: { bg: "bg-emerald-500/10 border-emerald-500/20", text: "text-emerald-600 dark:text-emerald-400", label: "Disponível" },
-  UTILIZADA: { bg: "bg-blue-500/10 border-blue-500/20", text: "text-blue-600 dark:text-blue-400", label: "Utilizada" },
-  VENCIDA: { bg: "bg-red-500/10 border-red-500/20", text: "text-red-600 dark:text-red-400", label: "Vencida" },
+  DISPONIVEL: { bg: "bg-emerald-500/10 border-emerald-500/20", text: "text-emerald-600", label: "Disponível" },
+  UTILIZADA: { bg: "bg-blue-500/10 border-blue-500/20", text: "text-blue-600", label: "Utilizada" },
+  VENCIDA: { bg: "bg-red-500/10 border-red-500/20", text: "text-red-600", label: "Vencida" },
   DESCARTADA: { bg: "bg-muted border-border", text: "text-muted-foreground", label: "Descartada" },
 };
 
@@ -98,12 +98,12 @@ function eventoIcon(tipo: AmostraEvento["tipo"]) {
 
 function eventoCor(tipo: AmostraEvento["tipo"]) {
   const map: Record<AmostraEvento["tipo"], string> = {
-    CRIACAO: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    STATUS: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    REUTILIZACAO: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
-    ANALISE: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30",
-    LIBERACAO: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    DESCARTE: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+    CRIACAO: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+    STATUS: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+    REUTILIZACAO: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+    ANALISE: "bg-violet-500/10 text-violet-600 border-violet-500/30",
+    LIBERACAO: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+    DESCARTE: "bg-red-500/10 text-red-600 border-red-500/30",
     AUDITORIA: "bg-muted text-muted-foreground border-border",
   };
   return map[tipo];
@@ -198,7 +198,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                       {a.codigo_barra}
                     </span>
                     {detalhe.terceirizado.isTerceirizado && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/30 flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-violet-500/10 text-violet-600 border border-violet-500/30 flex items-center gap-1">
                         <Send className="w-2.5 h-2.5" />
                         Terceirizado
                       </span>
@@ -335,7 +335,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                         </div>
                       )}
                     </dl>
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-3 flex items-start gap-1.5">
+                    <p className="text-[11px] text-amber-600 mt-3 flex items-start gap-1.5">
                       <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                       Dados extraídos do atendimento — paciente não está vinculado ao cadastro.
                     </p>
@@ -391,9 +391,9 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
             {detalhe.terceirizado.isTerceirizado && (
               <section className="rounded-2xl border border-violet-500/30 bg-violet-500/5 p-4">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-                  <Send className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  <Send className="w-4 h-4 text-violet-600" />
                   Exame terceirizado
-                  <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30">
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-violet-500/15 text-violet-600 border border-violet-500/30">
                     {detalhe.terceirizado.statusEnvio === "AGUARDANDO_ENVIO" && "Reservada para envio"}
                     {detalhe.terceirizado.statusEnvio === "ENVIADO" && "Enviada ao laboratório"}
                     {detalhe.terceirizado.statusEnvio === "RETORNADO" && "Resultado retornado"}
@@ -430,7 +430,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                   </div>
                 </dl>
                 {detalhe.terceirizado.statusEnvio === "AGUARDANDO_ENVIO" && (
-                  <p className="mt-3 text-[11px] text-violet-700 dark:text-violet-300 flex items-start gap-1.5">
+                  <p className="mt-3 text-[11px] text-violet-700 flex items-start gap-1.5">
                     <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                     Esta amostra está reservada e não pode ser reutilizada até ser enviada e processada pelo laboratório de apoio.
                   </p>
@@ -449,7 +449,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
               </h3>
               {detalhe.agrupamento.totalExames > 1 && (
                 <div className="mb-3 p-2.5 rounded-xl bg-blue-500/5 border border-blue-500/20 flex items-start gap-2">
-                  <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <Layers className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                   <div className="text-xs text-foreground/80">
                     <span className="font-semibold">Mesmo tubo, múltiplos exames.</span>{" "}
                     Esta amostra física atende{" "}
@@ -481,7 +481,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                             {e.nome_exame}
                           </span>
                           {e.is_reutilizacao && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-500/10 text-blue-600 border border-blue-500/30 flex items-center gap-1">
                               <RefreshCw className="w-2.5 h-2.5" />
                               Reuso
                             </span>

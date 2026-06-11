@@ -992,8 +992,8 @@ const NovoAtendimento = () => {
                                 !cpfValido
                                   ? "bg-destructive/10 text-destructive"
                                   : cpfEncontrado
-                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                                    : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                                    ? "bg-emerald-500/10 text-emerald-700"
+                                    : "bg-amber-500/10 text-amber-700"
                               }`}
                             >
                               {!cpfValido
