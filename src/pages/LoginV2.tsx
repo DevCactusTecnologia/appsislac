@@ -5,7 +5,7 @@
 //   1) Identificar o laboratório (slug ou e-mail) → tenant-resolve
 //   2) Senha (com branding aplicado do tenant resolvido)
 //
-// Rollback: /login?legacy=1 renderiza a versão clássica (src/pages/Login.tsx).
+//
 // ════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useMemo, useState } from "react";
