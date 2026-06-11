@@ -83,7 +83,9 @@ import {
   applyCaixaSaldoAcumulado,
   computeCaixaTotais,
   buildLivroCaixaHtml,
+  buildDetalhadoHtml,
 } from "./Financeiro/services/FinanceiroService";
+import CaixaTab from "./Financeiro/components/CaixaTab";
 
 
 
@@ -607,113 +609,17 @@ const Financeiro = () => {
 
   // Impressão detalhada respeitando filtros ativos
   const imprimirDetalhado = () => {
-    const titulo = activeTab === "saida" ? "Saídas" : activeTab === "entrada" ? "Entradas" : "Movimentação";
-    const periodoLabel =
-      dateFrom && dateTo ? `${format(dateFrom, "dd/MM/yyyy")} a ${format(dateTo, "dd/MM/yyyy")}`
-      : dateFrom ? `A partir de ${format(dateFrom, "dd/MM/yyyy")}`
-      : dateTo ? `Até ${format(dateTo, "dd/MM/yyyy")}`
-      : "Todos os períodos";
-
-    const filtrosResumo: string[] = [];
-    if (activeTab === "entrada" && convenioFilter !== "all") filtrosResumo.push(`Convênio: ${convenioFilter}`);
-    if (activeTab === "saida" && tipoDespesaFilter !== "all") filtrosResumo.push(`Tipo despesa: ${tipoDespesaFilter}`);
-    if (activeTab === "saida" && destinoPagamentoFilter !== "all") filtrosResumo.push(`Destino: ${destinoPagamentoFilter}`);
-    if (activeTab === "saida" && saidaStatusFilter !== "todas") filtrosResumo.push(`Status: ${saidaStatusFilter}`);
-    if (searchQuery) filtrosResumo.push(`Busca: "${searchQuery}"`);
-
-    const totalGeral = filtered.reduce((s, e) => s + e.valorTotal, 0);
-
-    // Resumo por forma de pagamento (para Entradas: todos; para Saídas: apenas pagas)
-    const fpMap = new Map<string, { count: number; total: number }>();
-    filtered.forEach(e => {
-      if (activeTab === "saida" && e.foiPago !== "Sim") return;
-      const key = (e.pagamento || "—").trim() || "—";
-      const cur = fpMap.get(key) ?? { count: 0, total: 0 };
-      cur.count += 1;
-      cur.total += e.valorTotal;
-      fpMap.set(key, cur);
+    const html = buildDetalhadoHtml({
+      activeTab,
+      filtered,
+      dateFrom,
+      dateTo,
+      convenioFilter,
+      tipoDespesaFilter,
+      destinoPagamentoFilter,
+      saidaStatusFilter,
+      searchQuery,
     });
-    const fpResumo = Array.from(fpMap.entries())
-      .map(([nome, v]) => ({ nome, count: v.count, total: v.total }))
-      .sort((a, b) => b.total - a.total);
-    const fpTotal = fpResumo.reduce((s, r) => s + r.total, 0);
-
-    const linhas = filtered.map(e => `
-      <tr>
-        <td>${e.data}</td>
-        <td>${e.protocolo}</td>
-        <td>${e.cliente}</td>
-        <td>${e.tipo === "saida" ? (e.tipoDespesa ?? "—") : (e.convenio ?? "—")}</td>
-        <td>${e.tipo === "saida" ? (e.destinoPagamento ?? "—") : "—"}</td>
-        <td>${e.pagamento || "—"}</td>
-        <td>${e.tipo === "saida" ? (e.foiPago === "Sim" ? "Pago" : "Pendente") : "—"}</td>
-        <td class="r ${e.tipo === "saida" ? "neg" : "pos"}">${e.tipo === "saida" ? "- " : "+ "}R$ ${fmtBRLNumber(e.valorTotal)}</td>
-      </tr>`).join("");
-
-    const fpResumoHtml = fpResumo.length > 0 ? `
-      <h2 class="sec-title">Resumo por forma de pagamento${activeTab === "saida" ? " (somente pagas)" : ""}</h2>
-      <table class="resumo">
-        <thead><tr>
-          <th>Forma de pagamento</th>
-          <th class="r">Qtd.</th>
-          <th class="r">% do total</th>
-          <th class="r">Valor</th>
-        </tr></thead>
-        <tbody>
-          ${fpResumo.map(r => `
-            <tr>
-              <td>${r.nome}</td>
-              <td class="r">${r.count}</td>
-              <td class="r">${fpTotal > 0 ? ((r.total / fpTotal) * 100).toFixed(1) : "0.0"}%</td>
-              <td class="r ${activeTab === "saida" ? "neg" : "pos"}">R$ ${fmtBRLNumber(r.total)}</td>
-            </tr>`).join("")}
-        </tbody>
-        <tfoot><tr>
-          <td class="r">Total</td>
-          <td class="r">${fpResumo.reduce((s, r) => s + r.count, 0)}</td>
-          <td class="r">100,0%</td>
-          <td class="r">R$ ${fmtBRLNumber(fpTotal)}</td>
-        </tr></tfoot>
-      </table>` : "";
-
-    const html = `<html><head><title>Relatório Financeiro — ${titulo}</title>
-      <style>
-        *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#222;font-size:12px}
-        h1{font-size:18px;margin:0 0 4px}.sub{color:#666;font-size:11px;margin-bottom:12px}
-        h2.sec-title{font-size:13px;margin:18px 0 8px;color:#222;border-bottom:1px solid #e5e5e5;padding-bottom:4px}
-        .meta{display:flex;justify-content:space-between;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px}
-        .meta b{color:#000}
-        table{width:100%;border-collapse:collapse;font-size:11px}
-        table.resumo{margin-bottom:18px}
-        th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-        th{background:#fafafa;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#555}
-        .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-        .pos{color:#16a34a;font-weight:600}.neg{color:#dc2626;font-weight:600}
-        tfoot td{font-weight:700;border-top:2px solid #222;background:#fafafa}
-        .empty{padding:40px;text-align:center;color:#888;border:1px dashed #ddd;border-radius:8px}
-        .footer{margin-top:18px;font-size:10px;color:#888;text-align:right}
-      </style></head><body>
-      <h1>Relatório Financeiro — ${titulo}</h1>
-      <p class="sub">Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-      <div class="meta">
-        <div><b>Período:</b> ${periodoLabel}</div>
-        <div><b>Registros:</b> ${filtered.length}</div>
-        <div><b>Total:</b> R$ ${fmtBRLNumber(totalGeral)}</div>
-      </div>
-      ${filtrosResumo.length > 0 ? `<div class="meta"><div><b>Filtros aplicados:</b> ${filtrosResumo.join(" • ")}</div></div>` : ""}
-      ${fpResumoHtml}
-      ${filtered.length === 0 ? `<div class="empty">Nenhum registro para o filtro aplicado.</div>` : `
-      <table>
-        <thead><tr>
-          <th>Data</th><th>Protocolo</th><th>Cliente / Descrição</th>
-          <th>${activeTab === "saida" ? "Tipo despesa" : "Convênio"}</th>
-          <th>Destino</th><th>Pagamento</th><th>Status</th><th class="r">Valor</th>
-        </tr></thead>
-        <tbody>${linhas}</tbody>
-        <tfoot><tr><td colspan="7" class="r">Total geral</td><td class="r">R$ ${fmtBRLNumber(totalGeral)}</td></tr></tfoot>
-      </table>`}
-      <div class="footer">SISLAC — Relatório financeiro detalhado</div>
-      </body></html>`;
     printHtmlInHiddenFrame({ html });
   };
 
@@ -1471,139 +1377,19 @@ const Financeiro = () => {
 
           {/* ─── Livro-Caixa ─── */}
           {activeTab === "caixa" && (
-            <div className="space-y-6">
-              {/* Resumo + ação imprimir */}
-              <div className="rounded-3xl border border-border/60 bg-card p-6">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
-                      <CircleDollarSign className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo do período</span>
-                      <p className={cn("text-2xl font-bold", caixaTotais.saldoFinal >= 0 ? "text-foreground" : "text-destructive")}>{fmtBRL(caixaTotais.saldoFinal)}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 w-full lg:w-auto">
-                    <div className="px-4 py-3 rounded-2xl border border-border/60 bg-muted/30">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Saldo inicial</p>
-                      <p className="text-sm font-bold text-foreground tabular-nums">{fmtBRL(caixaSaldoInicial)}</p>
-                    </div>
-                    <div className="px-4 py-3 rounded-2xl border border-border/60 bg-status-success/5">
-                      <p className="text-[10px] font-semibold text-status-success uppercase tracking-wider">Entradas</p>
-                      <p className="text-sm font-bold text-foreground tabular-nums">+ {fmtBRL(caixaTotais.totalEntradas)}</p>
-                    </div>
-                    <div className="px-4 py-3 rounded-2xl border border-border/60 bg-destructive/5">
-                      <p className="text-[10px] font-semibold text-destructive uppercase tracking-wider">Saídas</p>
-                      <p className="text-sm font-bold text-foreground tabular-nums">- {fmtBRL(caixaTotais.totalSaidas)}</p>
-                    </div>
-                  </div>
-                  <Button onClick={imprimirLivroCaixa} disabled={caixaLinhasComSaldo.length === 0} className="rounded-2xl h-11 gap-2 px-6">
-                    <Printer className="h-4 w-4" />Imprimir
-                  </Button>
-                </div>
-              </div>
-
-              {/* Tabela cronológica */}
-              <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
-                {/* Desktop */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border/40 bg-muted/20">
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Protocolo</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pagamento</th>
-                        <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Entrada</th>
-                        <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saída</th>
-                        <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dateFrom && currentPage === 1 && (
-                        <tr className="border-b border-border/30 bg-muted/15">
-                          <td className="px-5 py-3 text-xs text-muted-foreground" colSpan={5}>
-                            Saldo inicial em {format(dateFrom, "dd/MM/yyyy")}
-                          </td>
-                          <td className="px-5 py-3 text-sm text-right font-bold text-foreground tabular-nums">{fmtBRL(caixaSaldoInicial)}</td>
-                        </tr>
-                      )}
-                      {caixaPaginated.length === 0 ? (
-                        <tr><td colSpan={6} className="text-center py-16 text-sm text-muted-foreground">Nenhuma movimentação no período</td></tr>
-                      ) : caixaPaginated.map((m, idx) => (
-                        <tr key={idx} className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors">
-                          <td className="px-5 py-3 text-foreground tabular-nums whitespace-nowrap align-top">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm font-semibold text-foreground tabular-nums">{m.protocolo}</span>
-                              <span className="text-[11px] text-muted-foreground tabular-nums">{m.data}</span>
-                            </div>
-                          </td>
-                          <td className="px-5 py-3 text-foreground max-w-[280px] align-top">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm font-medium truncate">{m.descricao}</span>
-                              <span className="text-[11px] text-muted-foreground">{m.categoria}</span>
-                            </div>
-                          </td>
-                          <td className="px-5 py-3 text-[11px] text-muted-foreground align-top">{m.pagamento}</td>
-                          <td className="px-5 py-3 text-sm text-right font-bold tabular-nums text-status-success align-top">{m.tipo === "entrada" ? `+ ${fmtBRL(m.valor)}` : "—"}</td>
-                          <td className="px-5 py-3 text-sm text-right font-bold tabular-nums text-destructive align-top">{m.tipo === "saida" ? `- ${fmtBRL(m.valor)}` : "—"}</td>
-                          <td className={cn("px-5 py-3 text-sm text-right font-extrabold tabular-nums align-top", m.saldoAcumulado >= 0 ? "text-foreground" : "text-destructive")}>{fmtBRL(m.saldoAcumulado)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    {caixaLinhasComSaldo.length > 0 && (
-                      <tfoot>
-                        <tr className="border-t-2 border-border/60 bg-muted/30">
-                          <td colSpan={3} className="px-5 py-4 text-sm font-bold text-foreground text-right">Totais do período</td>
-                          <td className="px-5 py-4 text-sm text-right font-bold text-status-success tabular-nums">+ {fmtBRL(caixaTotais.totalEntradas)}</td>
-                          <td className="px-5 py-4 text-sm text-right font-bold text-destructive tabular-nums">- {fmtBRL(caixaTotais.totalSaidas)}</td>
-                          <td className={cn("px-5 py-4 text-sm text-right font-extrabold tabular-nums", caixaTotais.saldoFinal >= 0 ? "text-foreground" : "text-destructive")}>{fmtBRL(caixaTotais.saldoFinal)}</td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
-                </div>
-
-                {/* Mobile */}
-                <div className="md:hidden divide-y divide-border/30">
-                  {caixaPaginated.length === 0 ? (
-                    <div className="p-16 text-center text-sm text-muted-foreground">Nenhuma movimentação no período</div>
-                  ) : caixaPaginated.map((m, idx) => (
-                    <div key={idx} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate">{m.descricao}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{m.protocolo} · {m.data}</p>
-                        </div>
-                        <p className={cn("text-sm font-bold shrink-0 tabular-nums", m.tipo === "entrada" ? "text-status-success" : "text-destructive")}>
-                          {m.tipo === "entrada" ? "+" : "-"} {fmtBRL(m.valor)}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium">{m.categoria}</span>
-                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted/40 text-muted-foreground">{m.pagamento}</span>
-                        <span className="ml-auto text-[11px] text-muted-foreground">Saldo: <span className={cn("font-bold tabular-nums", m.saldoAcumulado >= 0 ? "text-foreground" : "text-destructive")}>{fmtBRL(m.saldoAcumulado)}</span></span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Paginação */}
-                {caixaTotalPages > 1 && (
-                  <div className="flex items-center justify-between px-5 py-4 border-t border-border/30">
-                    <span className="text-xs text-muted-foreground">{((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, caixaLinhasComSaldo.length)} de {caixaLinhasComSaldo.length}</span>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
-                      {Array.from({ length: Math.min(caixaTotalPages, 5) }, (_, i) => i + 1).map(page => (
-                        <button key={page} onClick={() => setCurrentPage(page)} className={cn("h-8 w-8 rounded-xl text-xs font-semibold transition-all", currentPage === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{page}</button>
-                      ))}
-                      {caixaTotalPages > 5 && <span className="text-xs text-muted-foreground px-1">…</span>}
-                      <button onClick={() => setCurrentPage(p => Math.min(caixaTotalPages, p + 1))} disabled={currentPage === caixaTotalPages} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <CaixaTab
+              caixaTotais={caixaTotais}
+              caixaSaldoInicial={caixaSaldoInicial}
+              caixaPaginated={caixaPaginated}
+              caixaLinhasComSaldo={caixaLinhasComSaldo}
+              caixaTotalPages={caixaTotalPages}
+              currentPage={currentPage}
+              setCurrentPage={(updater) => setCurrentPage(updater)}
+              setCurrentPageDirect={(page) => setCurrentPage(page)}
+              dateFrom={dateFrom}
+              itemsPerPage={itemsPerPage}
+              imprimirLivroCaixa={imprimirLivroCaixa}
+            />
           )}
         </>
 
