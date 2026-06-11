@@ -10,6 +10,7 @@ import {
   newRequestId,
   preflight,
 } from "../_shared/hardening.ts";
+import { checkRateLimit, extractIp } from "../_shared/rateLimit.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
@@ -34,6 +35,17 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  // P0 #3 — rate-limit por IP + por código (anti brute-force)
+  const ip = extractIp(req);
+  const rlIp = await checkRateLimit(admin, "comprovante-resolve", `ip:${ip}`, { windowSec: 60, max: 30 });
+  if (!rlIp.allowed) {
+    return errorResponse(429, "Muitas tentativas. Aguarde alguns minutos.", requestId, log);
+  }
+  const rlCod = await checkRateLimit(admin, "comprovante-resolve", `codigo:${codigo}`, { windowSec: 60, max: 5 });
+  if (!rlCod.allowed) {
+    return errorResponse(429, "Muitas tentativas para este código.", requestId, log);
+  }
 
   const { data: link, error } = await admin
     .from("comprovante_links")

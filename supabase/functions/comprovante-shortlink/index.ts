@@ -14,6 +14,7 @@ import {
   newRequestId,
   preflight,
 } from "../_shared/hardening.ts";
+import { checkRateLimit, extractIp } from "../_shared/rateLimit.ts";
 
 interface Body {
   url: string;
