@@ -631,20 +631,8 @@ export async function gerarComprovantePDF(d: ComprovanteData): Promise<void> {
 
 // ===== Compartilhar via WhatsApp =====
 // Uploads the PDF to public Cloud Storage and shares the link in the
-// WhatsApp message. The recipient opens the link directly — no manual
-// attachment needed. Falls back to download + manual instructions only if
-// the upload fails.
-function buildWaUrl(phone: string | undefined, msg: string): string {
-  const phoneDigits = (phone ?? "").replace(/\D/g, "");
-  const fp = phoneDigits
-    ? phoneDigits.startsWith("55")
-      ? phoneDigits
-      : `55${phoneDigits}`
-    : "";
-  return fp
-    ? `https://wa.me/${fp}?text=${encodeURIComponent(msg)}`
-    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-}
+// WhatsApp message. `buildWaUrl` foi extraído para comprovantesWhatsapp.ts.
+
 
 export async function enviarOrcamentoPorWhatsapp(
   o: OrcamentoPDFData,
