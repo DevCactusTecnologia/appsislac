@@ -33,8 +33,7 @@ export default function RegistrarCriticoDialog(p: Props) {
   const [destinatarioContato, setDestinatarioContato] = useState("");
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const { options: canaisDb } = useSelectOptions(SELECT_CATEGORIAS.CANAIS_COMUNICACAO);
+  const { data: canaisDb = [] } = useDicionario("canais_comunicacao", { ativosOnly: true });
   const canais = canaisDb
     .filter((c) => CRITICO_CANAIS_VALIDOS.includes(c.valor as CriticoCanal))
     .map((c) => ({ value: c.valor as CriticoCanal, label: c.label }));
