@@ -39,11 +39,7 @@ import LabBadge from "@/components/LabBadge";
 import ImpressaoLotePorLab from "@/components/ImpressaoLotePorLab";
 import { getCachedTenantNome } from "@/data/_tenant";
 import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import ExameListWithFade from "@/components/ExameListWithFade";
 import { showError } from "@/lib/showError";
