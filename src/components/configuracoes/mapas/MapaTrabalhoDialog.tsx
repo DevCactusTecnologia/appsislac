@@ -83,7 +83,6 @@ const labelClass = "text-[11px] font-semibold uppercase tracking-wide text-muted
 
 const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Props) => {
   const { toast } = useToast();
-  const { theme } = useTheme();
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [tipo, setTipo] = useState<MapaTipo>("LOTE");
