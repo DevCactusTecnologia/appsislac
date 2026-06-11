@@ -64,6 +64,17 @@ import {
   buildPacienteFromAtendimento,
 } from "./ResultadoDetalhe/helpers";
 import { buildLaudoHtml as buildLaudoHtmlPure } from "./ResultadoDetalhe/services/laudoHtmlBuilder";
+import {
+  avaliarNivelCriticoPure,
+  getParametrosCriticosDoExamePure,
+} from "./ResultadoDetalhe/services/criticoPipeline";
+import { buildAuditLogFromDb } from "./ResultadoDetalhe/services/auditLogBuilder";
+import {
+  statusAnaliseLabel,
+  isExameLiberadoStatus,
+  isExameBloqueadoStatus,
+  statusGeralType,
+} from "./ResultadoDetalhe/statusHelpers";
 
 const getMnemonico = (nome: string): string => {
   const cat = getExamesCatalogo().find((c) => c.nome === nome);
