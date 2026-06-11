@@ -21,7 +21,7 @@ import { renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
 import { buildLotePreviewBlock } from "@/lib/mapaLotePreview";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/contexts/ThemeContext";
+
 
 interface Props {
   open: boolean;
