@@ -42,15 +42,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_STORAGE_KEY = "sislac_auth_user";
-const DEMO_EMAIL = "admin@sislac.com";
-const DEMO_PASSWORD = "admin123";
-
-// Demo só pode ser usado em desenvolvimento (Vite DEV).
-// Em produção, qualquer tentativa de login com as credenciais demo
-// é tratada como senha inválida e nenhum mock user é hidratado do localStorage.
-const DEMO_ENABLED = import.meta.env.DEV === true;
-
 // Defaults espelham public.has_permission no banco e DEFAULTS_POR_PERFIL em usuariosStore.
 // IMPORTANTE: chaves devem ser as permissões finas (ex: "visualizar_atendimentos"),
 // pois é isso que `hasPermission()` consulta tanto no menu (PERMISSION_BY_PATH) quanto no backend.
@@ -89,44 +80,10 @@ interface DbProfile {
   tenant_id: string;
 }
 
-function createDemoUser(): UserProfile {
-  return {
-    id: "demo-admin",
-    nome: "Administrador",
-    email: DEMO_EMAIL,
-    perfil: "admin",
-    permissoes: ["*"],
-    unidadeIds: ["und-001"],
-    unidadeAtiva: "und-001",
-    source: "mock",
-    tenantId: "demo",
-  };
-}
-
-function readMockUser(): UserProfile | null {
-  if (!DEMO_ENABLED) {
-    // Limpeza defensiva: qualquer token mock antigo cacheado em produção é removido.
-    if (typeof window !== "undefined") {
-      try { localStorage.removeItem(MOCK_STORAGE_KEY); } catch { /* noop */ }
-    }
-    return null;
-  }
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(MOCK_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<UserProfile>;
-    if (parsed.email !== DEMO_EMAIL) return null;
-    return { ...createDemoUser(), ...parsed, source: "mock", permissoes: ["*"] };
-  } catch {
-    return null;
-  }
-}
-
-function persistMockUser(user: UserProfile) {
-  if (!DEMO_ENABLED) return;
-  if (typeof window === "undefined") return;
-  try { localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(user)); } catch { /* noop */ }
+// Limpeza defensiva: remove qualquer token mock antigo que ainda esteja no
+// localStorage de usuários que utilizaram versões anteriores do sistema.
+if (typeof window !== "undefined") {
+  try { localStorage.removeItem("sislac_auth_user"); } catch { /* noop */ }
 }
 
 async function isTenantActive(tenantId: string | null | undefined): Promise<boolean> {
