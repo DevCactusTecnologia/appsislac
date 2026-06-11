@@ -112,6 +112,26 @@ Deno.serve(async (req) => {
   }
   const tenantId = profile.tenant_id as string;
 
+  // P0 #4 — checagem de idempotência ANTES de tudo
+  const idemKey = body.idempotencyKey ??
+    await computeIdempotencyKey(tenantId, body.atendimentoProtocolo, body.tipo, telefone);
+  {
+    const { data: prev } = await admin
+      .from("whatsapp_mensagens")
+      .select("message_id, status, modo:tipo_documento")
+      .eq("tenant_id", tenantId)
+      .eq("idempotency_key", idemKey)
+      .maybeSingle();
+    if (prev?.message_id && prev.status === "sent") {
+      log.info("idempotent_replay", { idemKey, messageId: prev.message_id });
+      return jsonResponse(200, {
+        messageId: prev.message_id,
+        status: "sent",
+        idempotent: true,
+      }, requestId);
+    }
+  }
+
   const { data: cfg } = await admin
     .from("tenant_whatsapp_config")
     .select(
