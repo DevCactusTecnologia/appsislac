@@ -1,6 +1,11 @@
-// Hook para consumir opções configuráveis (`select_options`) com auto-load + subscribe.
-// Retorna sempre as opções ATIVAS já mescladas (globais + tenant override).
-
+// @deprecated — use `useDicionario` (src/hooks/useDicionario.ts) em vez deste hook.
+//
+// Mantido temporariamente apenas como ponte tipada para qualquer importador
+// remanescente. Toda nova leitura de `select_options` deve usar `useDicionario`
+// (React Query, cache por tenant, sem store global).
+//
+// O store `selectOptionsStore` continua sendo usado para CRUD admin
+// (addSelectOption/updateSelectOptionLabel/toggleSelectOption/...).
 import { useEffect, useState } from "react";
 import {
   ensureSelectOptions,
@@ -10,6 +15,7 @@ import {
   type SelectOption,
 } from "@/data/selectOptionsStore";
 
+/** @deprecated use `useDicionario(categoria, { ativosOnly: true })` */
 export function useSelectOptions(categoria: string): {
   options: SelectOption[];
   loading: boolean;
