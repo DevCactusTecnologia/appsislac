@@ -2380,7 +2380,7 @@ const ResultadoDetalhe = () => {
                   </div>
                 ) : (
                   motivosCancelamentoOpts.map((m) => (
-                    <SelectItem key={m.id} value={m.nome}>{m.nome}</SelectItem>
+                    <SelectItem key={m.id} value={m.label}>{m.label}</SelectItem>
                   ))
                 )}
               </SelectContent>
