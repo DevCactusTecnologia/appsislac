@@ -241,12 +241,6 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
 
   const handleDesativar = async () => {
     if (!deleteDialog) return;
-    const u = usuarios.find((x) => x.userId === deleteDialog);
-    if (u?.email === "admin@sislac.com") {
-      toast.error("O administrador padrão do sistema não pode ser desativado.");
-      setDeleteDialog(null);
-      return;
-    }
     const result = await updateUsuario({ userId: deleteDialog, status: "Inativo" });
     setDeleteDialog(null);
     if (!result.ok) { toast.error(result.error || "Falha."); return; }
