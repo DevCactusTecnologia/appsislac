@@ -125,7 +125,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   );
   const previewA4Html = useMemo(
     () => wrapHtmlAsA4Preview(previewHtml, previewOrientation),
-    [previewHtml, previewOrientation, theme]
+    [previewHtml, previewOrientation]
   );
 
   // Templates filtrados pelo tipo selecionado
