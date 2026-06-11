@@ -316,35 +316,9 @@ const Financeiro = () => {
   // (template lê row.atendimento.convenio; criamos um stub leve com os campos lidos).
   const aReceberRowsRpc: AReceberRow[] = useMemo(() => {
     if (!useRpc || activeTab !== "a_receber") return [];
-    return rpcRows.map((r) => {
-      const atStub = {
-        protocolo: r.protocolo,
-        data: r.data,
-        nome: r.paciente_nome,
-        convenio: r.convenio_nome || "Particular",
-        cpf: "",
-        nascimento: "",
-        idade: "",
-        statusAtendimento: { label: "—", type: "neutral" as const },
-        statusPagamento: { label: "—", type: "warning" as const },
-        solicitante: "",
-        exames: [],
-        examesCobranca: [],
-        pagamentosRealizados: [],
-      } as unknown as MockAtendimento;
-      return {
-        protocolo: r.protocolo,
-        data: r.data,
-        cliente: r.paciente_nome,
-        convenio: r.convenio_nome || "Particular",
-        valorTotal: Number(r.valor_total) || 0,
-        valorPago: Number(r.valor_pago) || 0,
-        saldo: Number(r.saldo) || 0,
-        status: r.status,
-        atendimento: atStub,
-      };
-    });
+    return buildAReceberRowsFromRpc(rpcRows);
   }, [useRpc, activeTab, rpcRows]);
+
 
   // Fonte efetiva de A Receber (RPC quando flag ON; legacy caso contrário)
   const aReceberSource: AReceberRow[] = useRpc ? aReceberRowsRpc : aReceberRows;
