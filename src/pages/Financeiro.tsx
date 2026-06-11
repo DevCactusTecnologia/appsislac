@@ -274,57 +274,12 @@ const Financeiro = () => {
 
   const saidas = useMemo(() => [...saidasList].sort((a, b) => b.data.localeCompare(a.data)), [saidasList]);
 
-  // ─── A Receber: separa pacientes vs convênios ───
-  type AReceberRow = {
-    protocolo: string;
-    data: string;
-    cliente: string;        // Paciente (sub-aba pacientes) ou "Convênio\nPaciente" agregado
-    convenio: string;
-    valorTotal: number;
-    valorPago: number;
-    saldo: number;
-    status: "parcial" | "pendente";
-    atendimento: MockAtendimento;
-  };
-
-  type AReceberConvenioRow = {
-    convenioId: number;
-    convenioNome: string;
-    saldo: number;
-    qtdExames: number;
-    qtdPacientes: number;
-  };
-
+  // ─── A Receber (pacientes — fonte legacy via cache de atendimentos) ───
   const aReceberRows: AReceberRow[] = useMemo(() => {
     if (activeTab !== "a_receber") return [];
-    const rows: AReceberRow[] = [];
-    getAtendimentos().forEach(at => {
-      if (at.statusAtendimento.label === "Cancelado") return;
-      const tabela = getTabelaByConvenioNome(at.convenio) as TabelaTipo;
-      // SOMENTE exames cobrados do paciente entram no saldo paciente
-      const valorTotalPaciente = at.exames.reduce((s, nome) => {
-        const meta: ExameCobrancaInfo | undefined = at.examesCobranca?.find(c => c.nome === nome);
-        if (meta && meta.cobrancaDestino === "convenio") return s; // exclui convênio
-        const v = getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
-        return s + v;
-      }, 0);
-      const valorPago = (at.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
-      const saldo = valorTotalPaciente - valorPago;
-      if (saldo <= 0.009) return;
-      rows.push({
-        protocolo: at.protocolo,
-        data: at.data,
-        cliente: at.nome,
-        convenio: at.convenio,
-        valorTotal: valorTotalPaciente,
-        valorPago,
-        saldo: Math.round(saldo * 100) / 100,
-        status: valorPago > 0 ? "parcial" : "pendente",
-        atendimento: at,
-      });
-    });
-    return rows.sort((a, b) => b.data.localeCompare(a.data));
+    return buildAReceberRowsFromAtendimentos(getAtendimentos());
   }, [activeTab]);
+
 
   // ─── C-2 Financeiro: branch RPC (paginated_atendimentos ON & USE_LEGACY_STORE OFF) ───
   // Quando ativo, "A Receber (pacientes)" e o resumo agregado vêm direto do banco,
