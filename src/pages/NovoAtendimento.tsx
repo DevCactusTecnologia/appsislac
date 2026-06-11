@@ -529,21 +529,7 @@ const NovoAtendimento = () => {
         solicitante: solicitantes[0] || "",
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
-        examesCobranca: examesParaSalvar.map(e => ({
-          nome: e.nome,
-          cobrancaDestino: e.cobrancaDestino,
-          convenioCobrancaId: e.convenioCobrancaId ?? null,
-          valor: e.valor,
-          amostraSeq: e.amostraSeq ?? 1,
-          grupoExameId: e.grupoExameId ?? null,
-          tipoProcesso: e.tipoProcesso ?? "INTERNO",
-          labApoioId: e.tipoProcesso === "TERCEIRIZADO"
-            ? (e.labApoioIdOverride ?? e.labApoioIdPadrao ?? null)
-            : null,
-          solicitante: solicitantes.length > 1
-            ? ((e.solicitanteExame === "__ambos" ? "" : e.solicitanteExame) ?? "")
-            : "",
-        })),
+        examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
         pagamentosRealizados,
         unidadeId: user?.unidadeAtiva,
@@ -568,21 +554,7 @@ const NovoAtendimento = () => {
         solicitante: solicitantes[0] || "",
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
-        examesCobranca: examesParaSalvar.map(e => ({
-          nome: e.nome,
-          cobrancaDestino: e.cobrancaDestino,
-          convenioCobrancaId: e.convenioCobrancaId ?? null,
-          valor: e.valor,
-          amostraSeq: e.amostraSeq ?? 1,
-          grupoExameId: e.grupoExameId ?? null,
-          tipoProcesso: e.tipoProcesso ?? "INTERNO",
-          labApoioId: e.tipoProcesso === "TERCEIRIZADO"
-            ? (e.labApoioIdOverride ?? e.labApoioIdPadrao ?? null)
-            : null,
-          solicitante: solicitantes.length > 1
-            ? ((e.solicitanteExame === "__ambos" ? "" : e.solicitanteExame) ?? "")
-            : "",
-        })),
+        examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         unidadeId: user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
