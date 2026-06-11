@@ -5,7 +5,7 @@ import { useIsCompact } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMenuLayout } from "@/contexts/MenuLayoutContext";
 import AppSidebar from "./AppSidebar";
-import AppTopbar, { MenuLayoutToggle, ThemeToggle } from "./AppTopbar";
+import AppTopbar, { MenuLayoutToggle } from "./AppTopbar";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   // Sidebar agora abre no modo tile (estreita) por padrão — combina com o novo dashboard.
@@ -22,7 +22,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const closeUserMenu = () => setUserMenuKey((k) => k + 1);
   const userMenuControls = (
     <>
-      <ThemeToggle onSelect={closeUserMenu} />
       <MenuLayoutToggle onSelect={closeUserMenu} />
     </>
   );
