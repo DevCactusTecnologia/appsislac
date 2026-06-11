@@ -5,7 +5,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
-import type { MockAtendimento, PagamentoRealizado, StatusType } from "./types";
+import type { MockAtendimento, PagamentoRealizado } from "./types";
+import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
 import { logger } from "@/lib/logger";
 import { showError } from "@/lib/showError";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
@@ -37,25 +38,8 @@ const _protocoloById = new Map<number, string>();
 function notify() { _listeners.forEach(fn => fn()); }
 
 // ── Helpers de formatação ──
-const STATUS_AT_TYPES: Record<string, { type: StatusType; showIcon?: boolean }> = {
-  "Pedido Realizado":   { type: "neutral" },
-  "Amostra Coletada":   { type: "purple", showIcon: true },
-  "Em Análise":         { type: "warning", showIcon: true },
-  "Amostra Analisada":  { type: "teal", showIcon: true },
-  "Resultado Salvo":    { type: "info", showIcon: true },
-  "Em Retificação":     { type: "warning", showIcon: true },
-  "Retificado":         { type: "info", showIcon: true },
-  "Resultado Liberado": { type: "success", showIcon: true },
-  "Cancelado":          { type: "danger" },
-  "Pedido cancelado":   { type: "danger" },
-};
-
-const STATUS_PG_TYPES: Record<string, StatusType> = {
-  "Pagamento efetuado":  "success",
-  "Pagamento parcial":   "info",
-  "Pagamento pendente":  "warning",
-  "Pagamento cancelado": "danger",
-};
+// Status mapping: SSOT em src/lib/atendimentoStatus.ts (Fase 2 do Simplification Plan).
+// As tabelas locais foram removidas — use deriveAtendimentoStatus / derivePagamentoStatus.
 
 function formatCPF(digits: string): string {
   const d = (digits || "").replace(/\D/g, "").padStart(11, "0").slice(0, 11);
@@ -90,8 +74,8 @@ function buildAtendimento(
   exames: AtendimentoExameDbRow[],
   pagamentos: AtendimentoPagamentoRow[],
 ): MockAtendimento {
-  const cfgAt = STATUS_AT_TYPES[atRow.status_atendimento] ?? { type: "neutral" };
-  const cfgPg: StatusType = STATUS_PG_TYPES[atRow.status_pagamento] ?? "warning";
+  const dsAt = deriveAtendimentoStatus(atRow.status_atendimento);
+  const dsPg = derivePagamentoStatus(atRow.status_pagamento);
 
   const examesOrdenados = [...exames].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
   const pagamentosFmt: PagamentoRealizado[] = pagamentos.map(p => ({
@@ -107,8 +91,8 @@ function buildAtendimento(
     cpf: formatCPF(atRow.paciente_cpf),
     nascimento: formatDateBR(atRow.paciente_nascimento),
     idade: calcIdade(atRow.paciente_nascimento),
-    statusAtendimento: { label: atRow.status_atendimento, type: cfgAt.type, showIcon: cfgAt.showIcon },
-    statusPagamento: { label: atRow.status_pagamento, type: cfgPg },
+    statusAtendimento: { label: dsAt.label, type: dsAt.type, showIcon: dsAt.showIcon },
+    statusPagamento: { label: dsPg.label, type: dsPg.type },
     motivoCancelamento: atRow.motivo_cancelamento ?? undefined,
     solicitante: atRow.solicitante,
     convenio: atRow.convenio_nome,

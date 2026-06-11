@@ -10,16 +10,19 @@
 // Falhas silenciosas em listas eram a causa raiz dos bugs de dialog.
 // ============================================================
 
-import type { MockAtendimento, StatusType } from "./types";
+import type { MockAtendimento } from "./types";
+import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
 
-const SAFE_STATUS_AT: { label: string; type: StatusType; showIcon?: boolean } = {
-  label: "—",
-  type: "neutral",
-};
-const SAFE_STATUS_PG: { label: string; type: StatusType } = {
-  label: "Pagamento pendente",
-  type: "warning",
-};
+// Fallbacks: usam o SSOT — label vazia cai em "neutral" (atendimento) e
+// "warning" (pagamento), preservando o comportamento histórico.
+const SAFE_STATUS_AT = (() => {
+  const d = deriveAtendimentoStatus("");
+  return { label: "—", type: d.type, showIcon: d.showIcon };
+})();
+const SAFE_STATUS_PG = (() => {
+  const d = derivePagamentoStatus("Pagamento pendente");
+  return { label: d.label, type: d.type };
+})();
 
 /**
  * Normaliza um atendimento — independente da origem — para o shape
