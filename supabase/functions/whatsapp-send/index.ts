@@ -27,6 +27,22 @@ interface Body {
   caption?: string;
   atendimentoProtocolo?: string;
   tipo?: string;
+  /** P0 #4 — idempotency key calculada no frontend: sha256(tenant|protocolo|tipo|telefone|bucket5min). */
+  idempotencyKey?: string;
+}
+
+/** Computa idempotencyKey caso o frontend não envie (defesa em profundidade). */
+async function computeIdempotencyKey(
+  tenantId: string,
+  protocolo: string | undefined,
+  tipo: string | undefined,
+  telefone: string,
+): Promise<string> {
+  const bucket = Math.floor(Date.now() / (5 * 60_000));
+  const raw = `${tenantId}|${protocolo ?? ""}|${tipo ?? ""}|${telefone}|${bucket}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function normalizePhone(input: string): string {
@@ -95,6 +111,26 @@ Deno.serve(async (req) => {
     return errorResponse(403, "tenant nao resolvido", requestId, log);
   }
   const tenantId = profile.tenant_id as string;
+
+  // P0 #4 — checagem de idempotência ANTES de tudo
+  const idemKey = body.idempotencyKey ??
+    await computeIdempotencyKey(tenantId, body.atendimentoProtocolo, body.tipo, telefone);
+  {
+    const { data: prev } = await admin
+      .from("whatsapp_mensagens")
+      .select("message_id, status, modo:tipo_documento")
+      .eq("tenant_id", tenantId)
+      .eq("idempotency_key", idemKey)
+      .maybeSingle();
+    if (prev?.message_id && prev.status === "sent") {
+      log.info("idempotent_replay", { idemKey, messageId: prev.message_id });
+      return jsonResponse(200, {
+        messageId: prev.message_id,
+        status: "sent",
+        idempotent: true,
+      }, requestId);
+    }
+  }
 
   const { data: cfg } = await admin
     .from("tenant_whatsapp_config")
@@ -206,6 +242,7 @@ Deno.serve(async (req) => {
     erroMsg = e instanceof Error ? e.message : String(e);
   }
 
+  // P0 #4 — grava com idempotency_key (apenas se sent, para permitir retentativa de falhas)
   await admin.from("whatsapp_mensagens").insert({
     tenant_id: tenantId,
     atendimento_protocolo: body.atendimentoProtocolo ?? null,
@@ -216,6 +253,7 @@ Deno.serve(async (req) => {
     erro: erroMsg,
     payload: respJson as Record<string, unknown> | null,
     enviado_por: userId,
+    idempotency_key: status === "sent" ? idemKey : null,
   });
 
   if (status !== "sent") {

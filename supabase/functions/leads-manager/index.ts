@@ -6,19 +6,29 @@ import {
   newRequestId,
   createLogger,
 } from "../_shared/hardening.ts";
+import { checkRateLimit, extractIp } from "../_shared/rateLimit.ts";
 
 interface Body {
   action: "submit" | "verify" | "resend";
-  // For submit
   nome_responsavel?: string;
   whatsapp?: string;
   nome_laboratorio?: string;
   cidade?: string;
   estado?: string;
   quantidade_unidades?: string;
-  // For verify/resend
   lead_id?: string;
   code?: string;
+}
+
+const OTP_TTL_MIN = 5;
+const OTP_MAX_TENTATIVAS = 5;
+
+/** OTP criptograficamente seguro (6 dígitos, zero-padded). */
+function generateSecureOtp(): string {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  const code = (buf[0] % 1_000_000).toString().padStart(6, "0");
+  return code;
 }
 
 Deno.serve(async (req) => {
@@ -30,20 +40,29 @@ Deno.serve(async (req) => {
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+  const ip = extractIp(req);
+
   try {
     const body = (await req.json()) as Body;
     const { action } = body;
 
     if (action === "submit") {
       const { nome_responsavel, whatsapp, nome_laboratorio, cidade, estado, quantidade_unidades } = body;
-      
+
       if (!nome_responsavel || !whatsapp || !nome_laboratorio) {
         return errorResponse(400, "Campos obrigatórios ausentes", requestId, log);
       }
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      // Rate limit por IP — submit
+      const rl = await checkRateLimit(admin, "leads-manager:submit", `ip:${ip}`, { windowSec: 60, max: 5 });
+      if (!rl.allowed) {
+        log.warn("rate_limited", { ip, attempts: rl.attempts });
+        return errorResponse(429, "Muitas tentativas. Tente novamente em instantes.", requestId, log);
+      }
+
+      const code = generateSecureOtp();
       const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+      expiresAt.setMinutes(expiresAt.getMinutes() + OTP_TTL_MIN);
 
       const { data: lead, error: insertError } = await admin
         .from("inscricoes")
@@ -57,6 +76,7 @@ Deno.serve(async (req) => {
           status: "Nova",
           codigo_validacao: code,
           codigo_expira_em: expiresAt.toISOString(),
+          tentativas_codigo: 0,
         })
         .select()
         .single();
@@ -65,11 +85,10 @@ Deno.serve(async (req) => {
         return errorResponse(500, "Erro ao registrar interesse", requestId, log, insertError);
       }
 
-      // Enviar WhatsApp (Mock por enquanto ou usar config global se existir)
-      log.info(`Enviando código ${code} para ${whatsapp}`);
-      
-      // Tenta buscar config global do WhatsApp
-      const { data: globalWpp } = await admin.from("app_settings").select("value").eq("key", "whatsapp_config").maybeSingle();
+      log.info(`OTP gerado para ${whatsapp} (lead ${lead.id})`);
+
+      const { data: globalWpp } = await admin
+        .from("app_settings").select("value").eq("key", "whatsapp_config").maybeSingle();
       if (globalWpp?.value) {
         const cfg = globalWpp.value;
         if (cfg.provider === "meta" && cfg.phoneNumberId && cfg.accessToken) {
@@ -100,6 +119,12 @@ Deno.serve(async (req) => {
       const { lead_id, code } = body;
       if (!lead_id || !code) return errorResponse(400, "ID ou código ausente", requestId, log);
 
+      // Rate limit por lead_id — verify
+      const rl = await checkRateLimit(admin, "leads-manager:verify", `lead:${lead_id}`, { windowSec: 60, max: 5 });
+      if (!rl.allowed) {
+        return errorResponse(429, "Muitas tentativas. Aguarde alguns minutos.", requestId, log);
+      }
+
       const { data: lead, error: fetchError } = await admin
         .from("inscricoes")
         .select("*")
@@ -108,7 +133,20 @@ Deno.serve(async (req) => {
 
       if (fetchError || !lead) return errorResponse(404, "Inscrição não encontrada", requestId, log);
 
+      // Limite de tentativas por código
+      const tentativas = (lead.tentativas_codigo ?? 0) as number;
+      if (tentativas >= OTP_MAX_TENTATIVAS) {
+        // Expira o código automaticamente
+        await admin.from("inscricoes")
+          .update({ codigo_validacao: null, codigo_expira_em: null })
+          .eq("id", lead_id);
+        return errorResponse(429, "Número máximo de tentativas excedido. Solicite novo código.", requestId, log);
+      }
+
       if (lead.codigo_validacao !== code) {
+        await admin.from("inscricoes")
+          .update({ tentativas_codigo: tentativas + 1 })
+          .eq("id", lead_id);
         return errorResponse(400, "Código inválido", requestId, log);
       }
 
@@ -124,6 +162,7 @@ Deno.serve(async (req) => {
           status: "Confirmada",
           codigo_validacao: null,
           codigo_expira_em: null,
+          tentativas_codigo: 0,
         })
         .eq("id", lead_id);
 
@@ -136,15 +175,21 @@ Deno.serve(async (req) => {
       const { lead_id } = body;
       if (!lead_id) return errorResponse(400, "ID ausente", requestId, log);
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const rl = await checkRateLimit(admin, "leads-manager:resend", `lead:${lead_id}`, { windowSec: 60, max: 3 });
+      if (!rl.allowed) {
+        return errorResponse(429, "Aguarde antes de solicitar novo código.", requestId, log);
+      }
+
+      const code = generateSecureOtp();
       const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+      expiresAt.setMinutes(expiresAt.getMinutes() + OTP_TTL_MIN);
 
       const { data: lead, error: updateError } = await admin
         .from("inscricoes")
         .update({
           codigo_validacao: code,
           codigo_expira_em: expiresAt.toISOString(),
+          tentativas_codigo: 0,
         })
         .eq("id", lead_id)
         .select()
@@ -152,9 +197,7 @@ Deno.serve(async (req) => {
 
       if (updateError || !lead) return errorResponse(500, "Erro ao reenviar", requestId, log, updateError);
 
-      // Re-enviar WhatsApp logic (same as submit)
-      log.info(`Re-enviando código ${code} para ${lead.whatsapp}`);
-      // ... (WhatsApp send logic)
+      log.info(`OTP re-gerado para lead ${lead.id}`);
 
       return jsonResponse(200, { ok: true }, requestId);
     }

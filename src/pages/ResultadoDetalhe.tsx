@@ -626,17 +626,39 @@ const ResultadoDetalhe = () => {
   };
 
   // Libera (assina) TODOS os exames salvos/em retificação de uma só vez.
+  // P0 #1 — exames com parâmetros críticos NÃO podem ser liberados em lote:
+  // exigem confirmação individual (conduta + notificação médica) via CriticoConfirm.
   const handleLiberarTodos = async () => {
     const liberaveis = paciente.exames.filter((e) => e.status === "Resultado salvo" || e.status === "Em retificação");
     if (liberaveis.length === 0) {
       toast.info("Não há resultados salvos para liberar.");
       return;
     }
+
+    // Separa críticos × seguros usando o MESMO avaliador do fluxo unitário.
+    const criticosNoLote: typeof liberaveis = [];
+    const seguros: typeof liberaveis = [];
+    for (const ex of liberaveis) {
+      const criticos = getParametrosCriticosDoExame(ex);
+      if (criticos.length > 0) criticosNoLote.push(ex);
+      else seguros.push(ex);
+    }
+
+    if (criticosNoLote.length > 0) {
+      // Bloqueia o lote e direciona o analista para o primeiro crítico.
+      const primeiro = criticosNoLote[0];
+      toast.warning(
+        `${criticosNoLote.length} exame(s) com valores críticos precisam ser liberados individualmente (conduta médica obrigatória).`,
+      );
+      setSelectedExameId(primeiro.id);
+      return;
+    }
+
     setLiberandoTodos(true);
     const dataLib = new Date().toISOString();
     let okCount = 0;
     let failCount = 0;
-    for (const exame of liberaveis) {
+    for (const exame of seguros) {
       const dbId = dbIdMap[exame.id];
       if (!dbId) { failCount++; continue; }
       const res = await updateAtendimentoExame(dbId, {
@@ -646,24 +668,26 @@ const ResultadoDetalhe = () => {
       });
       if (res.ok) {
         okCount++;
-        addAuditEntry(exame.id, "Resultado liberado");
+        // P0 #1 — auditoria individual por exame (não em bloco)
+        addAuditEntry(exame.id, "Resultado liberado (lote validado sem críticos)");
       } else {
         failCount++;
       }
     }
     updatePacienteExames((exames) =>
       exames.map((e) =>
-        e.status === "Resultado salvo" || e.status === "Em retificação" ? { ...e, status: retificados.has(e.id) ? "Retificado" : "Digitado" } : e,
+        (e.status === "Resultado salvo" || e.status === "Em retificação") &&
+          seguros.some((s) => s.id === e.id)
+          ? { ...e, status: retificados.has(e.id) ? "Retificado" : "Digitado" }
+          : e,
       ),
     );
     setLiberandoTodos(false);
     if (failCount === 0) {
-      // Verifica se TODOS os exames do atendimento estão liberados/cancelados.
       const naoLiberados = paciente.exames.filter(
-        (e) => e.status !== "Cancelado" && !liberaveis.some((l) => l.id === e.id),
+        (e) => e.status !== "Cancelado" && !seguros.some((l) => l.id === e.id),
       ).length;
       if (naoLiberados === 0) {
-        // Tudo liberado → celebração com confettis.
         fireSuccessConfetti();
         setShowCelebracao(true);
       } else {
