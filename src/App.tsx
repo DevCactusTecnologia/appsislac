@@ -41,7 +41,7 @@ const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Perfil = lazy(() => import("./pages/Perfil"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-
+const Landing = lazy(() => import("./pages/Landing"));
 const Inscricao = lazy(() => import("./pages/Inscricao"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const VerificarComprovante = lazy(() => import("./pages/VerificarComprovante"));
@@ -240,7 +240,13 @@ function AppRoutes() {
     if (isAuthenticated) {
       return <Navigate to={user?.isSuperAdmin ? "/super-admin" : "/dashboard"} replace />;
     }
-    return <Navigate to="/login" replace />;
+    return (
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Landing />
+        </Suspense>
+      </ChunkErrorBoundary>
+    );
   }
 
   if (location.pathname === "/inscricao") {
