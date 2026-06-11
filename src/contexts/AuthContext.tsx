@@ -1,6 +1,5 @@
 // AuthContext
-// Fonte única de autenticação operacional: backend real primeiro, com fallback
-// demo em localStorage preservado para as credenciais de demonstração.
+// Fonte única de autenticação operacional: 100% Supabase Auth real.
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
