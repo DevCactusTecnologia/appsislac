@@ -18,7 +18,8 @@ export function useAuditLogs(
   params: FetchAuditLogsParams,
   enabled = true,
 ): UseQueryResult<AuditLogTech[]> {
-  const { tenantId } = useAuth();
+  const { user } = useAuth();
+  const tenantId = user?.tenantId ?? null;
   return useQuery({
     queryKey: ["tenant", tenantId, "audit", "operational", params],
     queryFn: () => fetchOperationalAuditLogs(params),
@@ -28,7 +29,8 @@ export function useAuditLogs(
 }
 
 export function useAuditTabelas(enabled = true): UseQueryResult<string[]> {
-  const { tenantId } = useAuth();
+  const { user } = useAuth();
+  const tenantId = user?.tenantId ?? null;
   return useQuery({
     queryKey: ["tenant", tenantId, "audit", "operational", "tabelas"],
     queryFn: () => fetchOperationalAuditTabelas(),
