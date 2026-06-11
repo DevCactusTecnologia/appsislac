@@ -377,9 +377,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <MenuLayoutProvider>
-              <ThemeProvider>
-                <AppRoutes />
-              </ThemeProvider>
+              <AppRoutes />
             </MenuLayoutProvider>
           </AuthProvider>
         </BrowserRouter>
