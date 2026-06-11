@@ -28,12 +28,7 @@ import {
   updateAtendimentoExame,
   type ExameOperacionalRow,
 } from "@/data/atendimentoStore";
-import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import PermissionDenied from "@/components/PermissionDenied";
