@@ -3383,6 +3383,45 @@ export type Database = {
           },
         ]
       }
+      operational_audit: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          ator_papel: string | null
+          contexto: Json
+          created_at: string
+          critico: boolean
+          id: number
+          recurso_id: string | null
+          recurso_tipo: string
+          tenant_id: string
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          ator_papel?: string | null
+          contexto?: Json
+          created_at?: string
+          critico?: boolean
+          id?: number
+          recurso_id?: string | null
+          recurso_tipo: string
+          tenant_id: string
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          ator_papel?: string | null
+          contexto?: Json
+          created_at?: string
+          critico?: boolean
+          id?: number
+          recurso_id?: string | null
+          recurso_tipo?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       orcamento_exames: {
         Row: {
           created_at: string
@@ -3709,6 +3748,39 @@ export type Database = {
           storage_path_novo?: string | null
           tenant_id?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      platform_audit: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          ator_papel: string | null
+          contexto: Json
+          created_at: string
+          id: number
+          recurso_id: string | null
+          recurso_tipo: string
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          ator_papel?: string | null
+          contexto?: Json
+          created_at?: string
+          id?: number
+          recurso_id?: string | null
+          recurso_tipo: string
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          ator_papel?: string | null
+          contexto?: Json
+          created_at?: string
+          id?: number
+          recurso_id?: string | null
+          recurso_tipo?: string
         }
         Relationships: []
       }
