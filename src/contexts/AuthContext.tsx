@@ -271,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (mountedRef.current) {
-        setUser(readMockUser());
+        setUser(null);
         setLoading(false);
       }
     })();
