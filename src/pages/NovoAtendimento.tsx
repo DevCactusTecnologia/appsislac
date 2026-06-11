@@ -62,6 +62,7 @@ import { calculateExamPrice } from "./NovoAtendimento/pricing";
 import { buildExamesCobranca } from "./NovoAtendimento/buildExamesCobranca";
 import { highlightMatch } from "./NovoAtendimento/highlightMatch";
 import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
+import { distribuirDescontoEntreExames } from "./NovoAtendimento/services/distribuirDesconto";
 
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 
