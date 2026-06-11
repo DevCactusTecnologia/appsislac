@@ -19,12 +19,7 @@ import PagamentoDialog from "@/components/PagamentoDialog";
 import AtendimentoDetalheDialog from "@/components/AtendimentoDetalheDialog";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { requerConfirmacaoEdicao, mensagemAlertaEdicao, setAuditJustificativa } from "@/lib/atendimentoPolicy";
-import {
-  getMotivosCancelamentoAtivos,
-  subscribeMotivosCancelamento,
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { showError } from "@/lib/showError";
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { usePaginatedAtendimentos, pageRowToLightAtendimento } from "@/hooks/usePaginatedAtendimentos";
