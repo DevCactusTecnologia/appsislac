@@ -63,6 +63,7 @@ import {
   deriveStatusGeral,
   buildPacienteFromAtendimento,
 } from "./ResultadoDetalhe/helpers";
+import { buildLaudoHtml as buildLaudoHtmlPure } from "./ResultadoDetalhe/services/laudoHtmlBuilder";
 
 const getMnemonico = (nome: string): string => {
   const cat = getExamesCatalogo().find((c) => c.nome === nome);
