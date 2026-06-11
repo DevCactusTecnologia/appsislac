@@ -144,6 +144,20 @@ const Financeiro = () => {
   const destinosItems = useMemo<ListaItem[]>(() => destinosDic.map(toListaItem), [destinosDic]);
   const formasItems = useMemo<ListaItem[]>(() => formasDic.map(toListaItem), [formasDic]);
 
+  // Derivações usadas pelos dropdowns e dialogs
+  const tiposDespesa = useMemo(() => tiposItems.map(i => i.nome), [tiposItems]);
+  const destinosPagamento = useMemo(() => destinosItems.map(i => i.nome), [destinosItems]);
+  const formasPagamento = useMemo(() => formasItems.map(i => i.nome), [formasItems]);
+  const deletableTipos = useMemo(() => tiposItems.filter(i => !i.sistema).map(i => i.nome), [tiposItems]);
+  const deletableDestinos = useMemo(() => destinosItems.filter(i => !i.sistema).map(i => i.nome), [destinosItems]);
+  const deletableFormas = useMemo(() => formasItems.filter(i => !i.sistema).map(i => i.nome), [formasItems]);
+
+  // Mini modal "Criar item"
+  const [criarOpen, setCriarOpen] = useState(false);
+  const [criarCategoria, setCriarCategoria] = useState<"tipo_despesa" | "destino_pagamento" | "forma_pagamento">("tipo_despesa");
+  const [criarInitialValue, setCriarInitialValue] = useState("");
+  const [criarOnSuccess, setCriarOnSuccess] = useState<((nome: string) => void) | null>(null);
+
   const invalidateDicionarios = () => {
     queryClient.invalidateQueries({ queryKey: ["tenant"], predicate: (q) => {
       const k = q.queryKey as unknown[];
