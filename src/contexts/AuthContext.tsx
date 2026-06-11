@@ -383,15 +383,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn("[featureFlags] erro ao limpar flags no logout", e);
     }
 
-    // 2) Encerra a sessão Supabase (se aplicável).
-    if (user?.source === "supabase") {
-      await supabase.auth.signOut();
-    }
+    // 2) Encerra a sessão Supabase.
+    await supabase.auth.signOut();
 
-    // 3) Limpa cache mock e estado em memória.
-    try { localStorage.removeItem(MOCK_STORAGE_KEY); } catch { /* noop */ }
+    // 3) Limpa estado em memória.
     setUser(null);
-  }, [user]);
+  }, []);
 
   // Permissões: admin (perfil ou wildcard) tem tudo
   const hasPermission = useCallback(
