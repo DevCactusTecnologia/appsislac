@@ -22,7 +22,11 @@ export type DicionarioCategoria =
   | "canais_comunicacao";
 
 export interface DicionarioOption {
-  id: string;          // uuid (select_options.id)
+  /** uuid de select_options.id — chave canônica da nova arquitetura. */
+  id: string;
+  /** uuid da tabela legada equivalente (ex.: motivos_cancelamento.id).
+   *  Use este valor enquanto writes ainda dependem das FKs legadas. */
+  legacyId: string | null;
   valor: string;       // chave estável
   label: string;       // texto visível
   ordem: number;
@@ -40,7 +44,7 @@ export async function fetchDicionario(
 ): Promise<DicionarioOption[]> {
   let req = supabase
     .from("select_options")
-    .select("id, valor, label, ordem, ativo, sistema")
+    .select("id, legacy_id, valor, label, ordem, ativo, sistema")
     .eq("categoria", params.categoria)
     .order("ordem", { ascending: true });
   if (params.ativosOnly) req = req.eq("ativo", true);
@@ -52,6 +56,7 @@ export async function fetchDicionario(
   }
   return (data ?? []).map((r: any) => ({
     id: String(r.id),
+    legacyId: r.legacy_id ? String(r.legacy_id) : null,
     valor: String(r.valor ?? ""),
     label: String(r.label ?? r.valor ?? ""),
     ordem: Number(r.ordem ?? 0),

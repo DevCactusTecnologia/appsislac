@@ -4376,6 +4376,7 @@ export type Database = {
           created_at: string
           id: string
           label: string
+          legacy_id: string | null
           ordem: number
           sistema: boolean
           tenant_id: string | null
@@ -4388,6 +4389,7 @@ export type Database = {
           created_at?: string
           id?: string
           label: string
+          legacy_id?: string | null
           ordem?: number
           sistema?: boolean
           tenant_id?: string | null
@@ -4400,6 +4402,7 @@ export type Database = {
           created_at?: string
           id?: string
           label?: string
+          legacy_id?: string | null
           ordem?: number
           sistema?: boolean
           tenant_id?: string | null
