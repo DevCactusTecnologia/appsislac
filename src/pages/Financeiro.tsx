@@ -2364,9 +2364,10 @@ const Financeiro = () => {
             : "Forma de pagamento"
         }
         initialValue={criarInitialValue}
-        existsCheck={(nome) => nomeJaExiste(criarCategoria, nome)}
+        existsCheck={(nome) => nomeJaExisteLocal(criarCategoria, nome)}
         onCreate={async (nome) => {
           const novo = await createItem(criarCategoria, nome);
+          invalidateDicionarios();
           if (criarOnSuccess) criarOnSuccess(novo.nome);
           toast({ title: `"${novo.nome}" cadastrado com sucesso` });
         }}
