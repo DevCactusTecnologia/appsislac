@@ -5,7 +5,7 @@
 //   1) Identificar o laboratório (slug ou e-mail) → tenant-resolve
 //   2) Senha (com branding aplicado do tenant resolvido)
 //
-// Rollback: /login?legacy=1 renderiza a versão clássica (src/pages/Login.tsx).
+//
 // ════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useMemo, useState } from "react";
@@ -179,11 +179,6 @@ export default function LoginV2() {
         </p>
       </div>
 
-      <div className="mt-6 border-t border-border/60 pt-4 text-center text-[10px] text-muted-foreground">
-        <Link to="/login?legacy=1" className="hover:text-foreground">
-          Acessar versão clássica
-        </Link>
-      </div>
     </>
   );
 
