@@ -242,6 +242,7 @@ Deno.serve(async (req) => {
     erroMsg = e instanceof Error ? e.message : String(e);
   }
 
+  // P0 #4 — grava com idempotency_key (apenas se sent, para permitir retentativa de falhas)
   await admin.from("whatsapp_mensagens").insert({
     tenant_id: tenantId,
     atendimento_protocolo: body.atendimentoProtocolo ?? null,
@@ -252,6 +253,7 @@ Deno.serve(async (req) => {
     erro: erroMsg,
     payload: respJson as Record<string, unknown> | null,
     enviado_por: userId,
+    idempotency_key: status === "sent" ? idemKey : null,
   });
 
   if (status !== "sent") {
