@@ -125,41 +125,45 @@ const Financeiro = () => {
   
   const itemsPerPage = 8;
 
-  // Listas dinâmicas vindas do banco (3 tabelas: tipos_despesa, destinos_pagamento, formas_pagamento)
-  const [tiposItems, setTiposItems] = useState<ListaItem[]>(() => getTiposDespesa());
-  const [destinosItems, setDestinosItems] = useState<ListaItem[]>(() => getDestinosPagamento());
-  const [formasItems, setFormasItems] = useState<ListaItem[]>(() => getFormasPagamento());
+  // Listas dinâmicas: leitura unificada via `select_options` (useDicionario).
+  // Escrita continua nas tabelas legadas (financeiro_*) — triggers mantêm sync.
+  const queryClient = useQueryClient();
+  const { data: tiposDic = [] } = useDicionario("financeiro_tipo_despesa", { ativosOnly: true });
+  const { data: destinosDic = [] } = useDicionario("financeiro_destino_pagamento", { ativosOnly: true });
+  const { data: formasDic = [] } = useDicionario("financeiro_forma_pagamento", { ativosOnly: true });
 
-  // Mini modal "Criar item"
-  const [criarOpen, setCriarOpen] = useState(false);
-  const [criarCategoria, setCriarCategoria] = useState<"tipo_despesa" | "destino_pagamento" | "forma_pagamento">("tipo_despesa");
-  const [criarInitialValue, setCriarInitialValue] = useState("");
-  const [criarOnSuccess, setCriarOnSuccess] = useState<((nome: string) => void) | null>(null);
+  const toListaItem = (o: { id: string; legacyId: string | null; label: string; sistema: boolean; ativo: boolean; ordem: number }): ListaItem => ({
+    id: o.legacyId ?? o.id,
+    nome: o.label,
+    sistema: o.sistema,
+    ativo: o.ativo,
+    ordem: o.ordem,
+  });
 
-  const tiposDespesa = useMemo(() => tiposItems.map(i => i.nome), [tiposItems]);
-  const destinosPagamento = useMemo(() => destinosItems.map(i => i.nome), [destinosItems]);
-  const formasPagamento = useMemo(() => formasItems.map(i => i.nome), [formasItems]);
+  const tiposItems = useMemo<ListaItem[]>(() => tiposDic.map(toListaItem), [tiposDic]);
+  const destinosItems = useMemo<ListaItem[]>(() => destinosDic.map(toListaItem), [destinosDic]);
+  const formasItems = useMemo<ListaItem[]>(() => formasDic.map(toListaItem), [formasDic]);
 
-  // Itens deletáveis = não-sistema
-  const deletableTipos = useMemo(() => tiposItems.filter(i => !i.sistema).map(i => i.nome), [tiposItems]);
-  const deletableDestinos = useMemo(() => destinosItems.filter(i => !i.sistema).map(i => i.nome), [destinosItems]);
-  const deletableFormas = useMemo(() => formasItems.filter(i => !i.sistema).map(i => i.nome), [formasItems]);
+  const invalidateDicionarios = () => {
+    queryClient.invalidateQueries({ queryKey: ["tenant"], predicate: (q) => {
+      const k = q.queryKey as unknown[];
+      return k.includes("dicionario") && (
+        k.includes("financeiro_tipo_despesa") ||
+        k.includes("financeiro_destino_pagamento") ||
+        k.includes("financeiro_forma_pagamento")
+      );
+    }});
+  };
 
-  // Subscribe para mudanças no store de listas
-  useEffect(() => {
-    const unsub = subscribeListas(() => {
-      setTiposItems([...getTiposDespesa()]);
-      setDestinosItems([...getDestinosPagamento()]);
-      setFormasItems([...getFormasPagamento()]);
-    });
-    // Garante carga (caso storeBoot não tenha rodado ainda)
-    void reloadAll().then(() => {
-      setTiposItems([...getTiposDespesa()]);
-      setDestinosItems([...getDestinosPagamento()]);
-      setFormasItems([...getFormasPagamento()]);
-    });
-    return unsub;
-  }, []);
+  const normalizeNome = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  const nomeJaExisteLocal = (
+    cat: "tipo_despesa" | "destino_pagamento" | "forma_pagamento",
+    nome: string,
+  ): boolean => {
+    const list = cat === "tipo_despesa" ? tiposItems : cat === "destino_pagamento" ? destinosItems : formasItems;
+    const n = normalizeNome(nome);
+    return list.some((i) => normalizeNome(i.nome) === n);
+  };
 
   // Subscribe ao financeiroStore para refletir adições/atualizações de saídas
   useEffect(() => {
