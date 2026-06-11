@@ -37,6 +37,7 @@ import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplates
 import {
   getDocumentoMarginsMm,
   loadHtml2Pdf,
+  renderToBlob,
 } from "@/domains/result/services/comprovantesRender";
 export {
   getDocumentoMarginsMm,
