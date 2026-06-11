@@ -205,6 +205,7 @@ const Financeiro = () => {
     if (!item) return;
     try {
       await deleteItem(cat, item.id);
+      invalidateDicionarios();
       // Limpa filtros que apontavam para o item removido
       if (cat === "tipo_despesa" && tipoDespesaFilter === nome) setTipoDespesaFilter("all");
       if (cat === "destino_pagamento" && destinoPagamentoFilter === nome) setDestinoPagamentoFilter("all");
