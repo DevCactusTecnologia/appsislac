@@ -97,7 +97,7 @@ export function wrapHtmlAsA4Preview(
       padding: 0;
       background: hsl(var(--muted));
       color: hsl(var(--foreground));
-      color-scheme: ${themeSnapshot.rootClassName === "dark" ? "dark" : "light"};
+      color-scheme: light;
     }
     body {
       padding: 24px 0;
