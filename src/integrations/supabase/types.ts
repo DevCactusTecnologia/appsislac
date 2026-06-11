@@ -2325,6 +2325,7 @@ export type Database = {
           observacoes: string | null
           quantidade_unidades: string | null
           status: Database["public"]["Enums"]["inscricao_status"] | null
+          tentativas_codigo: number
           whatsapp: string
           whatsapp_confirmado: boolean | null
         }
@@ -2340,6 +2341,7 @@ export type Database = {
           observacoes?: string | null
           quantidade_unidades?: string | null
           status?: Database["public"]["Enums"]["inscricao_status"] | null
+          tentativas_codigo?: number
           whatsapp: string
           whatsapp_confirmado?: boolean | null
         }
@@ -2355,6 +2357,7 @@ export type Database = {
           observacoes?: string | null
           quantidade_unidades?: string | null
           status?: Database["public"]["Enums"]["inscricao_status"] | null
+          tentativas_codigo?: number
           whatsapp?: string
           whatsapp_confirmado?: boolean | null
         }
@@ -4022,6 +4025,39 @@ export type Database = {
           timeout_count?: number
           total_latency_ms?: number
           transport_error_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      public_rate_limits: {
+        Row: {
+          attempts: number
+          blocked_until: string | null
+          created_at: string
+          id: string
+          key: string
+          scope: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          key: string
+          scope: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          attempts?: number
+          blocked_until?: string | null
+          created_at?: string
+          id?: string
+          key?: string
+          scope?: string
           updated_at?: string
           window_start?: string
         }
@@ -5844,6 +5880,7 @@ export type Database = {
           enviado_por: string | null
           erro: string | null
           id: string
+          idempotency_key: string | null
           message_id: string | null
           payload: Json | null
           status: string
@@ -5858,6 +5895,7 @@ export type Database = {
           enviado_por?: string | null
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
           message_id?: string | null
           payload?: Json | null
           status?: string
@@ -5872,6 +5910,7 @@ export type Database = {
           enviado_por?: string | null
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
           message_id?: string | null
           payload?: Json | null
           status?: string
