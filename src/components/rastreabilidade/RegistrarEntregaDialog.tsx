@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { registrarEntrega, type EntregaCanal } from "@/data/rastreabilidadeStore";
-import { useSelectOptions } from "@/hooks/use-select-options";
-import { SELECT_CATEGORIAS } from "@/data/selectOptionsStore";
+import { useDicionario } from "@/hooks/useDicionario";
 
 /** Canais válidos para entrega de laudo. */
 const ENTREGA_CANAIS_VALIDOS: EntregaCanal[] = ["presencial", "email", "whatsapp", "portal", "impresso", "outro"];
