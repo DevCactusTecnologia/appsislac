@@ -13,12 +13,11 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Building2, LayoutDashboard, LogOut, Shield, Menu, ChevronsLeft, ChevronsRight,
-  Settings, Inbox, Sun, Moon, PanelLeft, LayoutGrid, CreditCard,
+  Settings, Inbox, PanelLeft, LayoutGrid, CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsCompact } from "@/hooks/use-mobile";
 import { SuperAdminPrefsProvider, useSuperAdminPrefs } from "@/contexts/SuperAdminPrefsContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 
 // ──────────────────────────────────────────────────────────────────
