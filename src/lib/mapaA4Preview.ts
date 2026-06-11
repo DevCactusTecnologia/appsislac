@@ -48,7 +48,7 @@ function getPreviewThemeSnapshot() {
     .join("");
 
   return {
-    rootClassName: root.classList.contains("dark") ? "dark" : "",
+    rootClassName: "",
     fontFamily: window.getComputedStyle(document.body).fontFamily || "Inter, system-ui, sans-serif",
     cssVars,
   };
