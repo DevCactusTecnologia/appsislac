@@ -9,9 +9,14 @@ import { logger } from "@/lib/logger";
  * Mantém em tempo real a contagem de solicitações públicas não lidas do tenant
  * atual. Usado pelo badge da sidebar e como gatilho de notificações toast.
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function useSolicitacoesNaoLidas(opts?: { notify?: boolean }): { count: number; refresh: () => void } {
   const { user } = useAuth();
-  const tenantId = user?.tenantId ?? "";
+  const rawTenantId = user?.tenantId ?? "";
+  // Tenants mock/demo (não-UUID) não existem no banco — evita 400 em query
+  // e CHANNEL_ERROR em loop infinito no Realtime.
+  const tenantId = UUID_RE.test(rawTenantId) ? rawTenantId : "";
   const [count, setCount] = useState(0);
 
   const refresh = useCallback(async () => {
@@ -32,7 +37,10 @@ export function useSolicitacoesNaoLidas(opts?: { notify?: boolean }): { count: n
     const subscribe = () => {
       if (cancelled) return;
       const name = `solicpub-unread:${tenantId}:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-      const channel = supabase.channel(name, { config: { private: true } });
+      // Canal público: isolamento via filtro `tenant_id=eq.<uuid>`.
+      // `private: true` exigia policy de Realtime authorization inexistente,
+      // gerando CHANNEL_ERROR em loop infinito.
+      const channel = supabase.channel(name);
       currentChannel = channel;
       channel
         .on(
