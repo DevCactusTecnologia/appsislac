@@ -290,13 +290,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
     const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (error) {
-      // Fallback para credenciais de demonstração quando o Supabase Auth falhar (somente DEV).
-      if (DEMO_ENABLED && email.trim().toLowerCase() === DEMO_EMAIL && senha === DEMO_PASSWORD) {
-        const demoUser = createDemoUser();
-        persistMockUser(demoUser);
-        setUser(demoUser);
-        return { ok: true };
-      }
       return { ok: false, error: error.message };
     }
 
