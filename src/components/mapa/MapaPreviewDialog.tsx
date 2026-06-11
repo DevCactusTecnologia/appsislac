@@ -5,7 +5,7 @@ import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
-import { useTheme } from "@/contexts/ThemeContext";
+
 
 export type { MapaOrientation };
 
