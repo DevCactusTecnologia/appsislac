@@ -17,7 +17,7 @@ import type { PagamentoRealizado, MockAtendimento } from "@/data/types";
 import { getConvenios, getConveniosAtivosNomes, getTabelaByConvenioNome, subscribeConvenios } from "@/data/convenioStore";
 import { getPacientes, type Paciente } from "@/data/pacienteStore";
 import { getSolicitantesNomes, subscribeEspecialistas } from "@/data/especialistaStore";
-import { getTabelaPrecoItens, getPrecoExame, subscribeTabelaPreco, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import { getTabelaPrecoItens, subscribeTabelaPreco, type TabelaTipo } from "@/data/tabelaPrecoStore";
 import { addAtendimento, getAtendimentos, getNextProtocolo, updateAtendimento, fetchAtendimentosByPacienteCpf, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
 import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
@@ -53,12 +53,13 @@ const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPane
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
 import type { CobrancaDestino, Exame, ExameTemplate } from "./NovoAtendimento/types";
 import {
-  examesCatalogoLegado,
   computeAvailableConvenios,
   computeAvailableSolicitantes,
   buildAvailableExames,
   resolveCobrancaDefault,
 } from "./NovoAtendimento/helpers";
+import { calculateExamPrice } from "./NovoAtendimento/pricing";
+import { buildExamesCobranca } from "./NovoAtendimento/buildExamesCobranca";
 import { highlightMatch } from "./NovoAtendimento/highlightMatch";
 import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
 
