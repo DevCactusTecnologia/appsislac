@@ -63,6 +63,8 @@ import { buildExamesCobranca } from "./NovoAtendimento/buildExamesCobranca";
 import { highlightMatch } from "./NovoAtendimento/highlightMatch";
 import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
 import { distribuirDescontoEntreExames } from "./NovoAtendimento/services/distribuirDesconto";
+import { contarEtiquetas } from "./NovoAtendimento/services/contarEtiquetas";
+import { resyncCobrancaConvenios } from "./NovoAtendimento/services/resyncCobrancaConvenios";
 
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 
@@ -535,19 +537,8 @@ const NovoAtendimento = () => {
         origem: origemRef.current ?? "INTERNO",
       });
       }
-      const temTerceirizados = exames.some(
-        (e) => (e.tipoProcesso ?? "INTERNO") === "TERCEIRIZADO",
-      );
-      // Conta etiquetas estimadas por exame (catálogo: quantidadeEtiquetas, default 1)
-      const catalogo = getExamesCatalogo();
-      let etiquetasTotal = 0;
-      let etiquetasTerc = 0;
-      for (const e of exames) {
-        const cat = catalogo.find(c => c.nome.toLowerCase() === e.nome.toLowerCase());
-        const q = Math.max(1, Math.min(20, Number(cat?.quantidadeEtiquetas ?? 1)));
-        etiquetasTotal += q;
-        if ((e.tipoProcesso ?? "INTERNO") === "TERCEIRIZADO") etiquetasTerc += q;
-      }
+      const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
+        contarEtiquetas(exames, getExamesCatalogo());
       const protocoloFinal = isEditing && editProtocolo
         ? decodeURIComponent(editProtocolo)
         : novoProtocolo;
@@ -579,15 +570,7 @@ const NovoAtendimento = () => {
           .map(n => getConvenios().find(c => c.nome === n)?.id)
           .filter((id): id is number => typeof id === "number"),
       );
-      let mudou = false;
-      const next = prev.map(e => {
-        if (e.cobrancaDestino === "convenio" && (e.convenioCobrancaId == null || !naoParticularesIds.has(e.convenioCobrancaId))) {
-          mudou = true;
-          return { ...e, cobrancaDestino: "paciente" as const, convenioCobrancaId: null };
-        }
-        return e;
-      });
-      return mudou ? next : prev;
+      return resyncCobrancaConvenios(prev, naoParticularesIds);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convenios.join("|")]);
