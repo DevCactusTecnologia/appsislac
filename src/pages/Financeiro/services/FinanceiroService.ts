@@ -448,3 +448,132 @@ export function buildLivroCaixaHtml(opts: {
       <div class="footer">SISLAC — Livro-Caixa</div>
       </body></html>`;
 }
+
+/**
+ * Monta o HTML do Relatório Detalhado (aba Entradas/Saídas) para impressão.
+ * Pure builder — caller chama `printHtmlInHiddenFrame({ html })`.
+ */
+export function buildDetalhadoHtml(opts: {
+  activeTab: TabType;
+  filtered: FinanceiroEntry[];
+  dateFrom?: Date;
+  dateTo?: Date;
+  convenioFilter: string;
+  tipoDespesaFilter: string;
+  destinoPagamentoFilter: string;
+  saidaStatusFilter: SaidaStatusFilter;
+  searchQuery: string;
+}): string {
+  const {
+    activeTab, filtered, dateFrom, dateTo,
+    convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter, searchQuery,
+  } = opts;
+
+  const titulo = activeTab === "saida" ? "Saídas" : activeTab === "entrada" ? "Entradas" : "Movimentação";
+  const periodoLabel =
+    dateFrom && dateTo ? `${format(dateFrom, "dd/MM/yyyy")} a ${format(dateTo, "dd/MM/yyyy")}`
+    : dateFrom ? `A partir de ${format(dateFrom, "dd/MM/yyyy")}`
+    : dateTo ? `Até ${format(dateTo, "dd/MM/yyyy")}`
+    : "Todos os períodos";
+
+  const filtrosResumo: string[] = [];
+  if (activeTab === "entrada" && convenioFilter !== "all") filtrosResumo.push(`Convênio: ${convenioFilter}`);
+  if (activeTab === "saida" && tipoDespesaFilter !== "all") filtrosResumo.push(`Tipo despesa: ${tipoDespesaFilter}`);
+  if (activeTab === "saida" && destinoPagamentoFilter !== "all") filtrosResumo.push(`Destino: ${destinoPagamentoFilter}`);
+  if (activeTab === "saida" && saidaStatusFilter !== "todas") filtrosResumo.push(`Status: ${saidaStatusFilter}`);
+  if (searchQuery) filtrosResumo.push(`Busca: "${searchQuery}"`);
+
+  const totalGeral = filtered.reduce((s, e) => s + e.valorTotal, 0);
+
+  // Resumo por forma de pagamento (Entradas: todos; Saídas: apenas pagas)
+  const fpMap = new Map<string, { count: number; total: number }>();
+  filtered.forEach(e => {
+    if (activeTab === "saida" && e.foiPago !== "Sim") return;
+    const key = (e.pagamento || "—").trim() || "—";
+    const cur = fpMap.get(key) ?? { count: 0, total: 0 };
+    cur.count += 1;
+    cur.total += e.valorTotal;
+    fpMap.set(key, cur);
+  });
+  const fpResumo = Array.from(fpMap.entries())
+    .map(([nome, v]) => ({ nome, count: v.count, total: v.total }))
+    .sort((a, b) => b.total - a.total);
+  const fpTotal = fpResumo.reduce((s, r) => s + r.total, 0);
+
+  const linhas = filtered.map(e => `
+      <tr>
+        <td>${e.data}</td>
+        <td>${e.protocolo}</td>
+        <td>${e.cliente}</td>
+        <td>${e.tipo === "saida" ? (e.tipoDespesa ?? "—") : (e.convenio ?? "—")}</td>
+        <td>${e.tipo === "saida" ? (e.destinoPagamento ?? "—") : "—"}</td>
+        <td>${e.pagamento || "—"}</td>
+        <td>${e.tipo === "saida" ? (e.foiPago === "Sim" ? "Pago" : "Pendente") : "—"}</td>
+        <td class="r ${e.tipo === "saida" ? "neg" : "pos"}">${e.tipo === "saida" ? "- " : "+ "}R$ ${fmtBRLNumber(e.valorTotal)}</td>
+      </tr>`).join("");
+
+  const fpResumoHtml = fpResumo.length > 0 ? `
+      <h2 class="sec-title">Resumo por forma de pagamento${activeTab === "saida" ? " (somente pagas)" : ""}</h2>
+      <table class="resumo">
+        <thead><tr>
+          <th>Forma de pagamento</th>
+          <th class="r">Qtd.</th>
+          <th class="r">% do total</th>
+          <th class="r">Valor</th>
+        </tr></thead>
+        <tbody>
+          ${fpResumo.map(r => `
+            <tr>
+              <td>${r.nome}</td>
+              <td class="r">${r.count}</td>
+              <td class="r">${fpTotal > 0 ? ((r.total / fpTotal) * 100).toFixed(1) : "0.0"}%</td>
+              <td class="r ${activeTab === "saida" ? "neg" : "pos"}">R$ ${fmtBRLNumber(r.total)}</td>
+            </tr>`).join("")}
+        </tbody>
+        <tfoot><tr>
+          <td class="r">Total</td>
+          <td class="r">${fpResumo.reduce((s, r) => s + r.count, 0)}</td>
+          <td class="r">100,0%</td>
+          <td class="r">R$ ${fmtBRLNumber(fpTotal)}</td>
+        </tr></tfoot>
+      </table>` : "";
+
+  return `<html><head><title>Relatório Financeiro — ${titulo}</title>
+      <style>
+        *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#222;font-size:12px}
+        h1{font-size:18px;margin:0 0 4px}.sub{color:#666;font-size:11px;margin-bottom:12px}
+        h2.sec-title{font-size:13px;margin:18px 0 8px;color:#222;border-bottom:1px solid #e5e5e5;padding-bottom:4px}
+        .meta{display:flex;justify-content:space-between;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px}
+        .meta b{color:#000}
+        table{width:100%;border-collapse:collapse;font-size:11px}
+        table.resumo{margin-bottom:18px}
+        th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+        th{background:#fafafa;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+        .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+        .pos{color:#16a34a;font-weight:600}.neg{color:#dc2626;font-weight:600}
+        tfoot td{font-weight:700;border-top:2px solid #222;background:#fafafa}
+        .empty{padding:40px;text-align:center;color:#888;border:1px dashed #ddd;border-radius:8px}
+        .footer{margin-top:18px;font-size:10px;color:#888;text-align:right}
+      </style></head><body>
+      <h1>Relatório Financeiro — ${titulo}</h1>
+      <p class="sub">Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+      <div class="meta">
+        <div><b>Período:</b> ${periodoLabel}</div>
+        <div><b>Registros:</b> ${filtered.length}</div>
+        <div><b>Total:</b> R$ ${fmtBRLNumber(totalGeral)}</div>
+      </div>
+      ${filtrosResumo.length > 0 ? `<div class="meta"><div><b>Filtros aplicados:</b> ${filtrosResumo.join(" • ")}</div></div>` : ""}
+      ${fpResumoHtml}
+      ${filtered.length === 0 ? `<div class="empty">Nenhum registro para o filtro aplicado.</div>` : `
+      <table>
+        <thead><tr>
+          <th>Data</th><th>Protocolo</th><th>Cliente / Descrição</th>
+          <th>${activeTab === "saida" ? "Tipo despesa" : "Convênio"}</th>
+          <th>Destino</th><th>Pagamento</th><th>Status</th><th class="r">Valor</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+        <tfoot><tr><td colspan="7" class="r">Total geral</td><td class="r">R$ ${fmtBRLNumber(totalGeral)}</td></tr></tfoot>
+      </table>`}
+      <div class="footer">SISLAC — Relatório financeiro detalhado</div>
+      </body></html>`;
+}
