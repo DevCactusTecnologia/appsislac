@@ -147,7 +147,7 @@ const AnalisarAmostra = () => {
     exameNome: string;
   }>({ open: false, exameId: null, exameNome: "" });
 
-  const [, forceMotivos] = useState(0);
+  const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
   useEffect(() => {
     let cancelled = false;
@@ -159,9 +159,7 @@ const AnalisarAmostra = () => {
         if (!cancelled) setLoading(false);
       }
     })();
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsubMotivos = subscribeMotivosCancelamento(() => forceMotivos((n) => n + 1));
-    return () => { cancelled = true; unsubMotivos(); };
+    return () => { cancelled = true; };
   }, []);
 
   const reload = async () => {
