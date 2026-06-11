@@ -473,7 +473,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 <div className="bg-muted/30 h-[520px] overflow-auto">
                   {previewHtml ? (
                     <iframe
-                        key={`${previewOrientation}-${theme}`}
+                        key={previewOrientation}
                       title="Pré-visualização A4 do mapa"
                       srcDoc={previewA4Html}
                       className="w-full h-full border-0 bg-background"
