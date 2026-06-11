@@ -410,161 +410,45 @@ const Financeiro = () => {
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───
   // Apenas movimentos efetivamente realizados entram no caixa.
   // Saídas pendentes NÃO entram (não houve débito de caixa ainda).
-  type CaixaMov = {
-    data: string;             // dd/mm/yyyy
-    dataObj: Date;
-    tipo: "entrada" | "saida";
-    protocolo: string;
-    descricao: string;
-    categoria: string;        // convênio (entrada) ou tipoDespesa (saída)
-    pagamento: string;
-    valor: number;            // sempre positivo
-  };
-
   const caixaMovimentos: CaixaMov[] = useMemo(() => {
     if (activeTab !== "caixa") return [];
-    const ents: CaixaMov[] = entradas.map(e => {
-      const d = parseDate(e.data) ?? new Date();
-      return {
-        data: e.data, dataObj: d, tipo: "entrada" as const,
-        protocolo: e.protocolo, descricao: e.cliente,
-        categoria: e.convenio || "—", pagamento: e.pagamento || "—",
-        valor: e.valorTotal,
-      };
-    });
-    const sais: CaixaMov[] = saidas
-      .filter(s => s.foiPago === "Sim")
-      .map(s => {
-        // Para ordenação cronológica usa dataPagamento; para exibição usa s.data (com hora)
-        const dataExib = s.data || s.dataPagamento || "";
-        const d = parseDate(s.dataPagamento || "") ?? parseDate(s.data || "") ?? new Date();
-        return {
-          data: dataExib, dataObj: d, tipo: "saida" as const,
-          protocolo: s.protocolo, descricao: s.descricao || s.cliente || "—",
-          categoria: s.tipoDespesa || "—", pagamento: s.pagamento || "—",
-          valor: s.valorTotal,
-        };
-      });
-    return [...ents, ...sais].sort((a, b) => a.dataObj.getTime() - b.dataObj.getTime());
+    return buildCaixaMovimentos(entradas, saidas);
   }, [activeTab, entradas, saidas]);
 
-  const caixaMovFiltrados = useMemo(() => {
-    let data = caixaMovimentos;
-    if (dateFrom || dateTo) {
-      data = data.filter(m => {
-        if (dateFrom && m.dataObj < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (m.dataObj > toEnd) return false; }
-        return true;
-      });
-    }
-    if (searchQuery) {
-      const q = searchNormalize(searchQuery);
-      data = data.filter(m =>
-        searchNormalize(m.protocolo).includes(q) ||
-        searchNormalize(m.descricao).includes(q) ||
-        searchNormalize(m.categoria).includes(q) ||
-        searchNormalize(m.pagamento).includes(q),
-      );
-    }
-    return data;
-  }, [caixaMovimentos, dateFrom, dateTo, searchQuery]);
+  const caixaMovFiltrados = useMemo(
+    () => filterCaixaMovimentos(caixaMovimentos, { dateFrom, dateTo, searchQuery }),
+    [caixaMovimentos, dateFrom, dateTo, searchQuery],
+  );
 
-  // Saldo inicial = soma dos movimentos ANTERIORES ao período filtrado
-  const caixaSaldoInicial = useMemo(() => {
-    if (!dateFrom) return 0;
-    return caixaMovimentos
-      .filter(m => m.dataObj < dateFrom)
-      .reduce((s, m) => s + (m.tipo === "entrada" ? m.valor : -m.valor), 0);
-  }, [caixaMovimentos, dateFrom]);
+  const caixaSaldoInicial = useMemo(
+    () => computeCaixaSaldoInicial(caixaMovimentos, dateFrom),
+    [caixaMovimentos, dateFrom],
+  );
 
-  const caixaLinhasComSaldo = useMemo(() => {
-    let saldo = caixaSaldoInicial;
-    return caixaMovFiltrados.map(m => {
-      saldo += m.tipo === "entrada" ? m.valor : -m.valor;
-      return { ...m, saldoAcumulado: saldo };
-    });
-  }, [caixaMovFiltrados, caixaSaldoInicial]);
+  const caixaLinhasComSaldo = useMemo(
+    () => applyCaixaSaldoAcumulado(caixaMovFiltrados, caixaSaldoInicial),
+    [caixaMovFiltrados, caixaSaldoInicial],
+  );
 
-  const caixaTotais = useMemo(() => {
-    const totalEntradas = caixaMovFiltrados.filter(m => m.tipo === "entrada").reduce((s, m) => s + m.valor, 0);
-    const totalSaidas = caixaMovFiltrados.filter(m => m.tipo === "saida").reduce((s, m) => s + m.valor, 0);
-    const saldoPeriodo = totalEntradas - totalSaidas;
-    const saldoFinal = caixaSaldoInicial + saldoPeriodo;
-    return { totalEntradas, totalSaidas, saldoPeriodo, saldoFinal };
-  }, [caixaMovFiltrados, caixaSaldoInicial]);
+  const caixaTotais = useMemo(
+    () => computeCaixaTotais(caixaMovFiltrados, caixaSaldoInicial),
+    [caixaMovFiltrados, caixaSaldoInicial],
+  );
 
   const caixaTotalPages = Math.max(1, Math.ceil(caixaLinhasComSaldo.length / itemsPerPage));
   const caixaPaginated = caixaLinhasComSaldo.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const imprimirLivroCaixa = () => {
-    const periodoLabel =
-      dateFrom && dateTo ? `${format(dateFrom, "dd/MM/yyyy")} a ${format(dateTo, "dd/MM/yyyy")}`
-      : dateFrom ? `A partir de ${format(dateFrom, "dd/MM/yyyy")}`
-      : dateTo ? `Até ${format(dateTo, "dd/MM/yyyy")}`
-      : "Todos os períodos";
-
-    const linhas = caixaLinhasComSaldo.map(m => `
-      <tr>
-        <td>${m.data}</td>
-        <td>${m.protocolo}</td>
-        <td>${m.descricao}</td>
-        <td>${m.categoria}</td>
-        <td>${m.pagamento}</td>
-        <td class="r ${m.tipo === "entrada" ? "pos" : ""}">${m.tipo === "entrada" ? "+ R$ " + fmtBRLNumber(m.valor) : "—"}</td>
-        <td class="r ${m.tipo === "saida" ? "neg" : ""}">${m.tipo === "saida" ? "- R$ " + fmtBRLNumber(m.valor) : "—"}</td>
-        <td class="r ${m.saldoAcumulado >= 0 ? "pos" : "neg"}"><b>R$ ${fmtBRLNumber(m.saldoAcumulado)}</b></td>
-      </tr>`).join("");
-
-    const html = `<html><head><title>Livro-Caixa</title>
-      <style>
-        *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#222;font-size:12px}
-        h1{font-size:18px;margin:0 0 4px}.sub{color:#666;font-size:11px;margin-bottom:12px}
-        .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px}
-        .meta b{color:#000}
-        table{width:100%;border-collapse:collapse;font-size:11px}
-        th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-        th{background:#fafafa;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#555}
-        .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-        .pos{color:#16a34a;font-weight:600}.neg{color:#dc2626;font-weight:600}
-        tfoot td{font-weight:700;border-top:2px solid #222;background:#fafafa}
-        .empty{padding:40px;text-align:center;color:#888;border:1px dashed #ddd;border-radius:8px}
-        .footer{margin-top:18px;font-size:10px;color:#888;text-align:right}
-        .saldo-inicial{background:#fafafa;font-weight:600}
-      </style></head><body>
-      <h1>Livro-Caixa</h1>
-      <p class="sub">Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-      <div class="meta">
-        <div><b>Período:</b> ${periodoLabel}</div>
-        <div><b>Lançamentos:</b> ${caixaLinhasComSaldo.length}</div>
-        <div><b>Saldo inicial:</b> R$ ${fmtBRLNumber(caixaSaldoInicial)}</div>
-        <div><b>Entradas:</b> <span style="color:#16a34a">+ R$ ${fmtBRLNumber(caixaTotais.totalEntradas)}</span></div>
-        <div><b>Saídas:</b> <span style="color:#dc2626">- R$ ${fmtBRLNumber(caixaTotais.totalSaidas)}</span></div>
-        <div><b>Saldo final:</b> R$ ${fmtBRLNumber(caixaTotais.saldoFinal)}</div>
-      </div>
-      ${caixaLinhasComSaldo.length === 0 ? `<div class="empty">Nenhuma movimentação no período.</div>` : `
-      <table>
-        <thead><tr>
-          <th>Data</th><th>Protocolo</th><th>Descrição</th>
-          <th>Categoria</th><th>Pagamento</th>
-          <th class="r">Entrada</th><th class="r">Saída</th><th class="r">Saldo</th>
-        </tr></thead>
-        <tbody>
-          ${dateFrom ? `<tr class="saldo-inicial"><td colspan="7">Saldo inicial em ${format(dateFrom, "dd/MM/yyyy")}</td><td class="r">R$ ${fmtBRLNumber(caixaSaldoInicial)}</td></tr>` : ""}
-          ${linhas}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="5" class="r">Totais do período</td>
-            <td class="r pos">+ R$ ${fmtBRLNumber(caixaTotais.totalEntradas)}</td>
-            <td class="r neg">- R$ ${fmtBRLNumber(caixaTotais.totalSaidas)}</td>
-            <td class="r"><b>R$ ${fmtBRLNumber(caixaTotais.saldoFinal)}</b></td>
-          </tr>
-        </tfoot>
-      </table>`}
-      <div class="footer">SISLAC — Livro-Caixa</div>
-      </body></html>`;
+    const html = buildLivroCaixaHtml({
+      linhas: caixaLinhasComSaldo,
+      totais: caixaTotais,
+      saldoInicial: caixaSaldoInicial,
+      dateFrom,
+      dateTo,
+    });
     printHtmlInHiddenFrame({ html });
   };
+
 
   const handleNovaEntrada = (entry: NovaEntradaSaidaData) => {
     if (entry.tipo === "entrada") {
