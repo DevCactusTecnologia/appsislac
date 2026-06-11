@@ -30,45 +30,25 @@ import {
 } from "@/lib/documentoRenderer";
 import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplatesStore";
 
-/** Margens default (mm) — usadas quando o template não define margens próprias. */
-const DEFAULT_MARGINS_MM: [number, number, number, number] = [18, 18, 22, 18];
-
-/**
- * Resolve as margens de impressão (em mm) configuradas no template padrão
- * do tipo de documento informado. Cada documento tem suas próprias margens,
- * editadas em Configurações → Documentos → editor de template.
- */
-export function getDocumentoMarginsMm(
-  tipo?: DocumentoTipo,
-): [number, number, number, number] {
-  if (!tipo) return [...DEFAULT_MARGINS_MM];
-  const tpl = getTemplatePadrao(tipo);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const m = (tpl?.config as any)?.margins as
-    | { top?: number; right?: number; bottom?: number; left?: number }
-    | undefined;
-  if (!m) return [...DEFAULT_MARGINS_MM];
-  const pick = (v: unknown, fb: number) => (Number.isFinite(Number(v)) ? Number(v) : fb);
-  return [
-    pick(m.top, DEFAULT_MARGINS_MM[0]),
-    pick(m.right, DEFAULT_MARGINS_MM[1]),
-    pick(m.bottom, DEFAULT_MARGINS_MM[2]),
-    pick(m.left, DEFAULT_MARGINS_MM[3]),
-  ];
-}
-
-// html2pdf.js (~370 KB minificado) é caro para entrar no chunk inicial — só é
-// necessário quando o usuário efetivamente gera/imprime/baixa um PDF. Carregamos
-// dinamicamente e cacheamos a Promise para não duplicar requisições.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let html2pdfPromise: Promise<any> | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function loadHtml2Pdf(): Promise<any> {
-  if (!html2pdfPromise) {
-    html2pdfPromise = import("html2pdf.js").then((m) => (m as { default: unknown }).default ?? m);
-  }
-  return html2pdfPromise;
-}
+// Render pipeline (html2pdf.js loader + margens + cache LRU + progresso)
+// foi extraído para src/domains/result/services/comprovantesRender.ts.
+// Importamos `getDocumentoMarginsMm`/`loadHtml2Pdf` para o helper interno
+// `renderAndSave` (auto-download) que segue neste módulo.
+import {
+  getDocumentoMarginsMm,
+  loadHtml2Pdf,
+} from "@/domains/result/services/comprovantesRender";
+export {
+  getDocumentoMarginsMm,
+  renderToBlob,
+  renderToBlobAdvanced,
+  getCachedPdfBlob,
+  clearPdfBlobCache,
+  RenderCancelledError,
+  type RenderStage,
+  type RenderProgress,
+  type RenderOptions,
+} from "@/domains/result/services/comprovantesRender";
 export type ComprovanteTipo = "pagamento" | "atendimento" | "comparecimento";
 
 interface ComprovanteData {
