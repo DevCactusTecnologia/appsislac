@@ -17,7 +17,7 @@ import type { PagamentoRealizado, MockAtendimento } from "@/data/types";
 import { getConvenios, getConveniosAtivosNomes, getTabelaByConvenioNome, subscribeConvenios } from "@/data/convenioStore";
 import { getPacientes, type Paciente } from "@/data/pacienteStore";
 import { getSolicitantesNomes, subscribeEspecialistas } from "@/data/especialistaStore";
-import { getTabelaPrecoItens, subscribeTabelaPreco, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import { subscribeTabelaPreco } from "@/data/tabelaPrecoStore";
 import { addAtendimento, getAtendimentos, getNextProtocolo, updateAtendimento, fetchAtendimentosByPacienteCpf, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
 import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";

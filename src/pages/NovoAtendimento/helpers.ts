@@ -5,12 +5,6 @@ import { getSolicitantesNomes } from "@/data/especialistaStore";
 import { getTabelaPrecoItens } from "@/data/tabelaPrecoStore";
 import type { CobrancaDestino, ExameTemplate } from "./types";
 
-/**
- * Catálogo legado de "exames disponíveis" — agora 100% derivado das tabelas de preço.
- * Mantido como array vazio apenas como referência tipada para fallbacks defensivos.
- */
-export const examesCatalogoLegado: { id: number; nome: string; convenio: string; material: string; valor: number }[] = [];
-
 /* ─── Reactive cadastros (recomputados quando os stores hidratam) ─── */
 export function computeAvailableConvenios(): string[] {
   return ["Particular", ...getConveniosAtivosNomes().filter(n => n !== "Particular")];
