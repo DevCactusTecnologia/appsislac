@@ -39,7 +39,7 @@ export default function RegistrarOrientacoesDialog(p: Props) {
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { options: canaisDb } = useSelectOptions(SELECT_CATEGORIAS.CANAIS_COMUNICACAO);
+  const { data: canaisDb = [] } = useDicionario("canais_comunicacao", { ativosOnly: true });
   const canais = canaisDb.filter((c) => ORIENTACAO_CANAIS_VALIDOS.includes(c.valor));
 
   const itensSelecionados = Object.keys(checks).filter(k => checks[k]);
