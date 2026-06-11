@@ -5,7 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
-import type { MockAtendimento, PagamentoRealizado, StatusType } from "./types";
+import type { MockAtendimento, PagamentoRealizado } from "./types";
 import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
 import { logger } from "@/lib/logger";
 import { showError } from "@/lib/showError";
