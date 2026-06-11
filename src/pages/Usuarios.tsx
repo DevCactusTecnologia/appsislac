@@ -386,16 +386,14 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
                       <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleEditar(u)} className="p-2 rounded-xl hover:bg-muted transition-colors" title="Editar"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
                         <button onClick={() => setResetSenhaDialog(u.userId)} className="p-2 rounded-xl hover:bg-muted transition-colors" title="Enviar link de redefinição"><KeyRound className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                        {u.email !== "admin@sislac.com" && (
-                          <button onClick={() => handleToggleStatus(u)} className="p-2 rounded-xl hover:bg-muted transition-colors" title={u.status === "Ativo" ? "Inativar" : "Ativar"}>
-                            {u.status === "Ativo" ? <UserX className="h-3.5 w-3.5 text-destructive" /> : <UserCheck className="h-3.5 w-3.5 text-[hsl(var(--status-success))]" />}
-                          </button>
-                        )}
+                        <button onClick={() => handleToggleStatus(u)} className="p-2 rounded-xl hover:bg-muted transition-colors" title={u.status === "Ativo" ? "Inativar" : "Ativar"}>
+                          {u.status === "Ativo" ? <UserX className="h-3.5 w-3.5 text-destructive" /> : <UserCheck className="h-3.5 w-3.5 text-[hsl(var(--status-success))]" />}
+                        </button>
                         <button
                           onClick={() => { setPurgeDialog(u.userId); setPurgeConfirm(""); }}
-                          disabled={currentUser?.id === u.userId || u.email === "admin@sislac.com"}
+                          disabled={currentUser?.id === u.userId}
                           className="p-2 rounded-xl hover:bg-destructive/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={currentUser?.id === u.userId ? "Você não pode excluir seu próprio usuário" : u.email === "admin@sislac.com" ? "O administrador padrão não pode ser excluído" : "Excluir definitivamente"}
+                          title={currentUser?.id === u.userId ? "Você não pode excluir seu próprio usuário" : "Excluir definitivamente"}
                         >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </button>
