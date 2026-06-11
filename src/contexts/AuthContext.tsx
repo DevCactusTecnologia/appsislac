@@ -254,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try { supabase.removeChannel(profileChannel); } catch { /* noop */ }
           profileChannel = null;
         }
-        setUser(readMockUser());
+        setUser(null);
       }
     });
     unsub = () => sub.subscription.unsubscribe();
