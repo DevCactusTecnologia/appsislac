@@ -174,7 +174,7 @@ const RegistrarColeta = () => {
   const [showIdentidadeDialog, setShowIdentidadeDialog] = useState(false);
   const [showOrientacoesDialog, setShowOrientacoesDialog] = useState(false);
 
-  const [, forceMotivos] = useState(0);
+  const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
   // Banner contextual quando o usuário chega via ?protocolo= (vindo do Novo Atendimento)
   const [protoBanner, setProtoBanner] = useState<{
     protocolo: string;
@@ -192,9 +192,7 @@ const RegistrarColeta = () => {
         if (!cancelled) setLoading(false);
       }
     })();
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsubMotivos = subscribeMotivosCancelamento(() => forceMotivos((n) => n + 1));
-    return () => { cancelled = true; unsubMotivos(); };
+    return () => { cancelled = true; };
   }, []);
 
   const reload = async () => {
