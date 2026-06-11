@@ -39,22 +39,15 @@ export default function SolicitarRecoletaDialog({
   onConfirmed,
 }: SolicitarRecoletaDialogProps) {
   const { user } = useAuth();
-  const [, force] = useState(0);
   const [motivoId, setMotivoId] = useState<string>("");
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    if (!isRecoletasMotivosLoaded()) loadRecoletasMotivos();
-    const unsub = subscribeRecoletasMotivos(() => force((n) => n + 1));
-    return () => unsub();
-  }, []);
+  const { data: motivos = [] } = useDicionario("recoleta_motivo", { ativosOnly: true });
 
   useEffect(() => {
     if (open) { setMotivoId(""); setObservacao(""); }
   }, [open]);
-
-  const motivos = useMemo(() => getRecoletasMotivosAtivos(), []);
 
   const handleConfirm = async () => {
     if (!motivoId) {
@@ -63,6 +56,10 @@ export default function SolicitarRecoletaDialog({
     }
     const motivo = motivos.find((m) => m.id === motivoId);
     if (!motivo) return;
+    if (!motivo.legacyId) {
+      toast.error("Motivo sem mapeamento legado — contate o administrador");
+      return;
+    }
     setSalvando(true);
     try {
       const novo = await criarRecoleta({
@@ -71,8 +68,8 @@ export default function SolicitarRecoletaDialog({
         exameNome,
         pacienteNome,
         protocolo,
-        motivoId: motivo.id,
-        motivoNome: motivo.nome,
+        motivoId: motivo.legacyId,
+        motivoNome: motivo.label,
         etapa,
         observacao: observacao.trim(),
         solicitanteEmail: user?.email ?? "",
@@ -82,7 +79,7 @@ export default function SolicitarRecoletaDialog({
         return;
       }
       toast.success("Recoleta registrada", {
-        description: `${exameNome} — ${motivo.nome}`,
+        description: `${exameNome} — ${motivo.label}`,
       });
       onOpenChange(false);
       if (onConfirmed) await onConfirmed();
