@@ -97,42 +97,14 @@ function SolicitacoesSiteInner() {
   useEffect(() => { void reload(); }, [reload]);
 
   // Realtime: atualiza a lista quando algo mudar para este tenant.
-  useEffect(() => {
-    if (!tenantId) return;
-    let cancelled = false;
-    let attempt = 0;
-    let retryTimer: ReturnType<typeof setTimeout> | null = null;
-    let currentChannel: ReturnType<typeof supabase.channel> | null = null;
-
-    const subscribe = () => {
-      if (cancelled) return;
-      const name = `solicpub-list:${tenantId}:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-      const ch = supabase.channel(name, { config: { private: true } });
-      currentChannel = ch;
-      ch.on("postgres_changes",
-          { event: "*", schema: "public", table: "solicitacoes_publicas", filter: `tenant_id=eq.${tenantId}` },
-          () => { void reload(); })
-        .subscribe((status, err) => {
-          if (cancelled) return;
-          if (status === "SUBSCRIBED") { attempt = 0; return; }
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            logger.warn("SolicitacoesSite", `realtime ${status}`, { channel: name, attempt, error: err?.message });
-            const delay = Math.min(15000, 1000 * Math.pow(2, attempt));
-            attempt += 1;
-            try { void supabase.removeChannel(ch); } catch { /* noop */ }
-            currentChannel = null;
-            retryTimer = setTimeout(subscribe, delay);
-          }
-        });
-    };
-
-    subscribe();
-    return () => {
-      cancelled = true;
-      if (retryTimer) clearTimeout(retryTimer);
-      if (currentChannel) { try { void supabase.removeChannel(currentChannel); } catch { /* noop */ } }
-    };
-  }, [tenantId, reload]);
+  // Refatorado (Fase 1): usa useRealtimeChannel (back-off + pauseOnHidden encapsulados).
+  useRealtimeChannel({
+    channelName: tenantId ? `solicpub-list:${tenantId}` : "solicpub-list:disabled",
+    table: "solicitacoes_publicas",
+    filter: tenantId ? `tenant_id=eq.${tenantId}` : undefined,
+    enabled: !!tenantId,
+    onPayload: () => { void reload(); },
+  });
 
   const counters = useMemo(() => {
     const c: Record<SolicitacaoStatus | "TODOS", number> = { TODOS: leads.length, NOVO: 0, EM_CONTATO: 0, CONVERTIDO: 0, DESCARTADO: 0 };
