@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { registrarCriticoComunicacao, type CriticoCanal } from "@/data/rastreabilidadeStore";
-import { useSelectOptions } from "@/hooks/use-select-options";
-import { SELECT_CATEGORIAS } from "@/data/selectOptionsStore";
+import { useDicionario } from "@/hooks/useDicionario";
 
 /** Canais válidos para comunicação de crítico (ordem de exibição). */
 const CRITICO_CANAIS_VALIDOS: CriticoCanal[] = ["telefone", "email", "whatsapp", "presencial", "outro"];
@@ -34,8 +33,7 @@ export default function RegistrarCriticoDialog(p: Props) {
   const [destinatarioContato, setDestinatarioContato] = useState("");
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const { options: canaisDb } = useSelectOptions(SELECT_CATEGORIAS.CANAIS_COMUNICACAO);
+  const { data: canaisDb = [] } = useDicionario("canais_comunicacao", { ativosOnly: true });
   const canais = canaisDb
     .filter((c) => CRITICO_CANAIS_VALIDOS.includes(c.valor as CriticoCanal))
     .map((c) => ({ value: c.valor as CriticoCanal, label: c.label }));

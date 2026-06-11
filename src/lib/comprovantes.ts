@@ -38,6 +38,7 @@ import {
   getDocumentoMarginsMm,
   loadHtml2Pdf,
   renderToBlob,
+  renderAndSave,
 } from "@/domains/result/services/comprovantesRender";
 export {
   getDocumentoMarginsMm,
@@ -557,36 +558,8 @@ function buildOrcamentoHtml(o: OrcamentoPDFData): string {
 </div>`;
 }
 
-async function renderAndSave(
-  html: string,
-  filename: string,
-  tipo?: DocumentoTipo,
-): Promise<void> {
-  const wrapper = document.createElement("div");
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "-10000px";
-  wrapper.style.top = "0";
-  wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
-  document.body.appendChild(wrapper);
-  try {
-    const html2pdf = await loadHtml2Pdf();
-    await html2pdf()
-      .set({
-        margin: getDocumentoMarginsMm(tipo),
-        filename,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", letterRendering: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "table", ".no-break"] },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
-      .from(wrapper.firstElementChild as HTMLElement)
-      .save();
-  } finally {
-    wrapper.remove();
-  }
-}
+// renderAndSave foi movido para src/domains/result/services/comprovantesRender.ts
+// (re-importado acima). Mantemos esta nota apenas como ponte histórica.
 
 // renderToBlob / renderToBlobAdvanced / RenderStage / cache LRU foram
 // movidos para src/domains/result/services/comprovantesRender.ts.

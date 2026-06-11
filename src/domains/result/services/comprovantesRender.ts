@@ -235,3 +235,38 @@ export async function renderToBlobAdvanced(
     wrapper.remove();
   }
 }
+
+/**
+ * Render HTML to PDF and trigger browser download (filename).
+ * Extraído de src/lib/comprovantes.ts — mesma implementação, sem efeitos colaterais.
+ */
+export async function renderAndSave(
+  html: string,
+  filename: string,
+  tipo?: DocumentoTipo,
+): Promise<void> {
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.left = "-10000px";
+  wrapper.style.top = "0";
+  wrapper.style.width = "640px";
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+  try {
+    const html2pdf = await loadHtml2Pdf();
+    await html2pdf()
+      .set({
+        margin: getDocumentoMarginsMm(tipo),
+        filename,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff", letterRendering: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"], avoid: ["tr", "table", ".no-break"] },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      .from(wrapper.firstElementChild as HTMLElement)
+      .save();
+  } finally {
+    wrapper.remove();
+  }
+}

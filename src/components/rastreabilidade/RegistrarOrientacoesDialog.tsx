@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { registrarOrientacoes } from "@/data/rastreabilidadeStore";
-import { useSelectOptions } from "@/hooks/use-select-options";
-import { SELECT_CATEGORIAS } from "@/data/selectOptionsStore";
+import { useDicionario } from "@/hooks/useDicionario";
 
 /** Canais válidos para entrega de orientações pré-analíticas. */
 const ORIENTACAO_CANAIS_VALIDOS = ["presencial", "impresso", "email", "whatsapp", "outro"];
@@ -40,7 +39,7 @@ export default function RegistrarOrientacoesDialog(p: Props) {
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { options: canaisDb } = useSelectOptions(SELECT_CATEGORIAS.CANAIS_COMUNICACAO);
+  const { data: canaisDb = [] } = useDicionario("canais_comunicacao", { ativosOnly: true });
   const canais = canaisDb.filter((c) => ORIENTACAO_CANAIS_VALIDOS.includes(c.valor));
 
   const itensSelecionados = Object.keys(checks).filter(k => checks[k]);
