@@ -1,13 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RotateCcw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import {
-  loadRecoletasMotivos,
-  isRecoletasMotivosLoaded,
-  subscribeRecoletasMotivos,
-  getRecoletasMotivosAtivos,
-} from "@/data/recoletasMotivosStore";
+import { useDicionario } from "@/hooks/useDicionario";
 import { criarRecoleta, type RecoletaEtapa } from "@/data/recoletasStore";
 import { useAuth } from "@/contexts/AuthContext";
 
