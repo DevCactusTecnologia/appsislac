@@ -54,9 +54,12 @@ import IntegracoesWebhookPanel from "@/components/financeiro/IntegracoesWebhookP
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 
-// Types e helpers puros extraídos para ./Financeiro/* (Sprint 1).
+// Types, helpers e service puros extraídos para ./Financeiro/* (Architectural Split).
 // Comportamento idêntico, apenas reorganização.
-import type { TabType, SaidaStatusFilter, FinanceiroEntry } from "./Financeiro/types";
+import type {
+  TabType, SaidaStatusFilter, FinanceiroEntry,
+  AReceberRow, AReceberConvenioRow, CaixaMov,
+} from "./Financeiro/types";
 import { baseTabs, paymentIcons } from "./Financeiro/types";
 import {
   saidaToEntry,
@@ -65,6 +68,24 @@ import {
   maskDateBR,
   isValidDateBR,
 } from "./Financeiro/helpers";
+import {
+  buildAReceberRowsFromAtendimentos,
+  buildAReceberRowsFromRpc,
+  buildAReceberConvenioRows,
+  filterAReceberRows,
+  applyFinanceiroFilters,
+  computeEntradaCounts,
+  computeAReceberCounts,
+  computeSaidaCounts,
+  buildCaixaMovimentos,
+  filterCaixaMovimentos,
+  computeCaixaSaldoInicial,
+  applyCaixaSaldoAcumulado,
+  computeCaixaTotais,
+  buildLivroCaixaHtml,
+} from "./Financeiro/services/FinanceiroService";
+
+
 
 
 const Financeiro = () => {
@@ -253,57 +274,12 @@ const Financeiro = () => {
 
   const saidas = useMemo(() => [...saidasList].sort((a, b) => b.data.localeCompare(a.data)), [saidasList]);
 
-  // ─── A Receber: separa pacientes vs convênios ───
-  type AReceberRow = {
-    protocolo: string;
-    data: string;
-    cliente: string;        // Paciente (sub-aba pacientes) ou "Convênio\nPaciente" agregado
-    convenio: string;
-    valorTotal: number;
-    valorPago: number;
-    saldo: number;
-    status: "parcial" | "pendente";
-    atendimento: MockAtendimento;
-  };
-
-  type AReceberConvenioRow = {
-    convenioId: number;
-    convenioNome: string;
-    saldo: number;
-    qtdExames: number;
-    qtdPacientes: number;
-  };
-
+  // ─── A Receber (pacientes — fonte legacy via cache de atendimentos) ───
   const aReceberRows: AReceberRow[] = useMemo(() => {
     if (activeTab !== "a_receber") return [];
-    const rows: AReceberRow[] = [];
-    getAtendimentos().forEach(at => {
-      if (at.statusAtendimento.label === "Cancelado") return;
-      const tabela = getTabelaByConvenioNome(at.convenio) as TabelaTipo;
-      // SOMENTE exames cobrados do paciente entram no saldo paciente
-      const valorTotalPaciente = at.exames.reduce((s, nome) => {
-        const meta: ExameCobrancaInfo | undefined = at.examesCobranca?.find(c => c.nome === nome);
-        if (meta && meta.cobrancaDestino === "convenio") return s; // exclui convênio
-        const v = getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
-        return s + v;
-      }, 0);
-      const valorPago = (at.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
-      const saldo = valorTotalPaciente - valorPago;
-      if (saldo <= 0.009) return;
-      rows.push({
-        protocolo: at.protocolo,
-        data: at.data,
-        cliente: at.nome,
-        convenio: at.convenio,
-        valorTotal: valorTotalPaciente,
-        valorPago,
-        saldo: Math.round(saldo * 100) / 100,
-        status: valorPago > 0 ? "parcial" : "pendente",
-        atendimento: at,
-      });
-    });
-    return rows.sort((a, b) => b.data.localeCompare(a.data));
+    return buildAReceberRowsFromAtendimentos(getAtendimentos());
   }, [activeTab]);
+
 
   // ─── C-2 Financeiro: branch RPC (paginated_atendimentos ON & USE_LEGACY_STORE OFF) ───
   // Quando ativo, "A Receber (pacientes)" e o resumo agregado vêm direto do banco,
@@ -340,35 +316,9 @@ const Financeiro = () => {
   // (template lê row.atendimento.convenio; criamos um stub leve com os campos lidos).
   const aReceberRowsRpc: AReceberRow[] = useMemo(() => {
     if (!useRpc || activeTab !== "a_receber") return [];
-    return rpcRows.map((r) => {
-      const atStub = {
-        protocolo: r.protocolo,
-        data: r.data,
-        nome: r.paciente_nome,
-        convenio: r.convenio_nome || "Particular",
-        cpf: "",
-        nascimento: "",
-        idade: "",
-        statusAtendimento: { label: "—", type: "neutral" as const },
-        statusPagamento: { label: "—", type: "warning" as const },
-        solicitante: "",
-        exames: [],
-        examesCobranca: [],
-        pagamentosRealizados: [],
-      } as unknown as MockAtendimento;
-      return {
-        protocolo: r.protocolo,
-        data: r.data,
-        cliente: r.paciente_nome,
-        convenio: r.convenio_nome || "Particular",
-        valorTotal: Number(r.valor_total) || 0,
-        valorPago: Number(r.valor_pago) || 0,
-        saldo: Number(r.saldo) || 0,
-        status: r.status,
-        atendimento: atStub,
-      };
-    });
+    return buildAReceberRowsFromRpc(rpcRows);
   }, [useRpc, activeTab, rpcRows]);
+
 
   // Fonte efetiva de A Receber (RPC quando flag ON; legacy caso contrário)
   const aReceberSource: AReceberRow[] = useRpc ? aReceberRowsRpc : aReceberRows;
@@ -386,22 +336,10 @@ const Financeiro = () => {
     void fetchSaldoEmAbertoPorConvenio().then(setSaldoConvenios);
   }, [activeTab]);
 
-  const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(() => {
-    const convs = getConvenios();
-    const rows: AReceberConvenioRow[] = [];
-    saldoConvenios.forEach((v, cid) => {
-      const c = convs.find(cc => cc.id === cid);
-      if (!c || c.id === 0) return; // ignora Particular
-      rows.push({
-        convenioId: cid,
-        convenioNome: c.nome,
-        saldo: Math.round(v.saldo * 100) / 100,
-        qtdExames: v.exames,
-        qtdPacientes: v.pacientes.size,
-      });
-    });
-    return rows.sort((a, b) => b.saldo - a.saldo);
-  }, [saldoConvenios]);
+  const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(
+    () => buildAReceberConvenioRows(saldoConvenios, getConvenios()),
+    [saldoConvenios],
+  );
 
   const allEntries = useMemo(() => {
     if (activeTab === "entrada") return entradas;
@@ -409,40 +347,13 @@ const Financeiro = () => {
     return [...entradas, ...saidas].sort((a, b) => b.data.localeCompare(a.data));
   }, [activeTab, entradas, saidas]);
 
-  const filtered = useMemo(() => {
-    let data = allEntries;
-    if (dateFrom || dateTo) {
-      data = data.filter(e => {
-        const d = parseDate(e.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (d > toEnd) return false; }
-        return true;
-      });
-    }
-    if (activeTab === "entrada" && convenioFilter !== "all") data = data.filter(e => e.convenio === convenioFilter);
-    if (activeTab === "saida" && tipoDespesaFilter !== "all") data = data.filter(e => e.tipoDespesa === tipoDespesaFilter);
-    if (activeTab === "saida" && destinoPagamentoFilter !== "all") data = data.filter(e => e.destinoPagamento === destinoPagamentoFilter);
-    if (activeTab === "saida" && saidaStatusFilter !== "todas") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      data = data.filter(e => {
-        const venc = e.dataVencimento ? parseDate(e.dataVencimento) : null;
-        const paga = e.foiPago === "Sim";
-        if (saidaStatusFilter === "pagas") return paga;
-        if (saidaStatusFilter === "vencidas") return !paga && venc !== null && venc < today;
-        if (saidaStatusFilter === "vencendo7") {
-          if (paga || !venc) return false;
-          const diff = Math.round((venc.getTime() - today.getTime()) / 86400000);
-          return diff >= 0 && diff <= 7;
-        }
-        return true;
-      });
-    }
-    if (!searchQuery) return data;
-    const q = searchNormalize(searchQuery);
-    return data.filter(e => searchNormalize(e.protocolo).includes(q) || searchNormalize(e.cliente).includes(q) || searchNormalize(e.pagamento).includes(q));
-  }, [allEntries, searchQuery, dateFrom, dateTo, convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter, activeTab]);
+  const filtered = useMemo(
+    () => applyFinanceiroFilters(allEntries, {
+      activeTab, searchQuery, dateFrom, dateTo,
+      convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter,
+    }),
+    [allEntries, searchQuery, dateFrom, dateTo, convenioFilter, tipoDespesaFilter, destinoPagamentoFilter, saidaStatusFilter, activeTab],
+  );
 
   // Lista de convênios disponíveis nas entradas atuais (origem dinâmica, não mock)
   const conveniosDisponiveis = useMemo(() => {
@@ -451,99 +362,26 @@ const Financeiro = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [entradas]);
 
-  // Contadores para a aba Entradas (regime de caixa: somente pagamentos efetivados)
-  // Aplica filtros de período e convênio (NÃO aplica busca por texto, para refletir o universo do período).
-  const entradaCounts = useMemo(() => {
-    const filtered = entradas.filter(e => {
-      if (convenioFilter !== "all" && e.convenio !== convenioFilter) return false;
-      if (dateFrom || dateTo) {
-        const d = parseDate(e.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) {
-          const toEnd = new Date(dateTo);
-          toEnd.setHours(23, 59, 59, 999);
-          if (d > toEnd) return false;
-        }
-      }
-      return true;
-    });
-    const total = filtered.reduce((s, e) => s + e.valorTotal, 0);
-    // Quebra por forma de pagamento
-    const byPagamentoMap = new Map<string, { count: number; total: number }>();
-    filtered.forEach(e => {
-      const key = (e.pagamento || "—").trim() || "—";
-      const cur = byPagamentoMap.get(key) ?? { count: 0, total: 0 };
-      cur.count += 1;
-      cur.total += e.valorTotal;
-      byPagamentoMap.set(key, cur);
-    });
-    const byPagamento = Array.from(byPagamentoMap.entries())
-      .map(([nome, v]) => ({ nome, count: v.count, total: v.total }))
-      .sort((a, b) => b.total - a.total);
-    return { todas: filtered.length, totalRecebido: total, byPagamento };
-  }, [entradas, convenioFilter, dateFrom, dateTo]);
-
-  // Contadores para a aba A Receber
-  const aReceberCounts = useMemo(() => {
-    let parciais = 0, pendentes = 0;
-    let totalParciais = 0, totalPendentes = 0, totalGeral = 0;
-    aReceberSource.forEach(r => {
-      totalGeral += r.saldo;
-      if (r.status === "parcial") { parciais++; totalParciais += r.saldo; }
-      else { pendentes++; totalPendentes += r.saldo; }
-    });
-    return { todas: aReceberSource.length, parciais, pendentes, totalParciais, totalPendentes, totalGeral };
-  }, [aReceberSource]);
-
-
-  // Contadores de status para a aba Saídas (sempre baseado em todas as saídas, não no filtered)
-  const saidaCounts = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let vencidas = 0, vencendo7 = 0, pagas = 0, pendentes = 0;
-    let totalVencidas = 0, totalVencendo7 = 0, totalPagas = 0, totalPendentes = 0;
-    saidas.forEach(e => {
-      const venc = e.dataVencimento ? parseDate(e.dataVencimento) : null;
-      const paga = e.foiPago === "Sim";
-      if (paga) { pagas++; totalPagas += e.valorTotal; return; }
-      pendentes++; totalPendentes += e.valorTotal;
-      if (!venc) return;
-      if (venc < today) { vencidas++; totalVencidas += e.valorTotal; return; }
-      const diff = Math.round((venc.getTime() - today.getTime()) / 86400000);
-      if (diff <= 7) { vencendo7++; totalVencendo7 += e.valorTotal; }
-    });
-    return {
-      todas: saidas.length, vencidas, vencendo7, pagas, pendentes,
-      totalVencidas, totalVencendo7, totalPagas, totalPendentes,
-    };
-  }, [saidas]);
+  // Contadores por aba (regime de caixa para Entradas; KPIs de A Receber e Saídas).
+  const entradaCounts = useMemo(
+    () => computeEntradaCounts(entradas, { convenioFilter, dateFrom, dateTo }),
+    [entradas, convenioFilter, dateFrom, dateTo],
+  );
+  const aReceberCounts = useMemo(() => computeAReceberCounts(aReceberSource), [aReceberSource]);
+  const saidaCounts = useMemo(() => computeSaidaCounts(saidas), [saidas]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // ─── A Receber: filtragem + paginação dedicada ───
-  const aReceberFiltered = useMemo(() => {
-    let data = aReceberSource;
-    if (aReceberStatusFilter !== "todas") {
-      data = data.filter(r => r.status === (aReceberStatusFilter === "parciais" ? "parcial" : "pendente"));
-    }
-    if (convenioFilter !== "all") data = data.filter(r => r.convenio === convenioFilter);
-    if (dateFrom || dateTo) {
-      data = data.filter(r => {
-        const d = parseDate(r.data);
-        if (!d) return true;
-        if (dateFrom && d < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (d > toEnd) return false; }
-        return true;
-      });
-    }
-    if (searchQuery) {
-      const q = searchNormalize(searchQuery);
-      data = data.filter(r => searchNormalize(r.protocolo).includes(q) || searchNormalize(r.cliente).includes(q) || searchNormalize(r.convenio).includes(q));
-    }
-    return data;
-  }, [aReceberSource, aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo]);
+  const aReceberFiltered = useMemo(
+    () => filterAReceberRows(aReceberSource, {
+      aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo,
+    }),
+    [aReceberSource, aReceberStatusFilter, convenioFilter, searchQuery, dateFrom, dateTo],
+  );
+
+
 
   const aReceberTotalPages = Math.max(1, Math.ceil(aReceberFiltered.length / itemsPerPage));
   const aReceberPaginated = aReceberFiltered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -572,161 +410,45 @@ const Financeiro = () => {
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───
   // Apenas movimentos efetivamente realizados entram no caixa.
   // Saídas pendentes NÃO entram (não houve débito de caixa ainda).
-  type CaixaMov = {
-    data: string;             // dd/mm/yyyy
-    dataObj: Date;
-    tipo: "entrada" | "saida";
-    protocolo: string;
-    descricao: string;
-    categoria: string;        // convênio (entrada) ou tipoDespesa (saída)
-    pagamento: string;
-    valor: number;            // sempre positivo
-  };
-
   const caixaMovimentos: CaixaMov[] = useMemo(() => {
     if (activeTab !== "caixa") return [];
-    const ents: CaixaMov[] = entradas.map(e => {
-      const d = parseDate(e.data) ?? new Date();
-      return {
-        data: e.data, dataObj: d, tipo: "entrada" as const,
-        protocolo: e.protocolo, descricao: e.cliente,
-        categoria: e.convenio || "—", pagamento: e.pagamento || "—",
-        valor: e.valorTotal,
-      };
-    });
-    const sais: CaixaMov[] = saidas
-      .filter(s => s.foiPago === "Sim")
-      .map(s => {
-        // Para ordenação cronológica usa dataPagamento; para exibição usa s.data (com hora)
-        const dataExib = s.data || s.dataPagamento || "";
-        const d = parseDate(s.dataPagamento || "") ?? parseDate(s.data || "") ?? new Date();
-        return {
-          data: dataExib, dataObj: d, tipo: "saida" as const,
-          protocolo: s.protocolo, descricao: s.descricao || s.cliente || "—",
-          categoria: s.tipoDespesa || "—", pagamento: s.pagamento || "—",
-          valor: s.valorTotal,
-        };
-      });
-    return [...ents, ...sais].sort((a, b) => a.dataObj.getTime() - b.dataObj.getTime());
+    return buildCaixaMovimentos(entradas, saidas);
   }, [activeTab, entradas, saidas]);
 
-  const caixaMovFiltrados = useMemo(() => {
-    let data = caixaMovimentos;
-    if (dateFrom || dateTo) {
-      data = data.filter(m => {
-        if (dateFrom && m.dataObj < dateFrom) return false;
-        if (dateTo) { const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999); if (m.dataObj > toEnd) return false; }
-        return true;
-      });
-    }
-    if (searchQuery) {
-      const q = searchNormalize(searchQuery);
-      data = data.filter(m =>
-        searchNormalize(m.protocolo).includes(q) ||
-        searchNormalize(m.descricao).includes(q) ||
-        searchNormalize(m.categoria).includes(q) ||
-        searchNormalize(m.pagamento).includes(q),
-      );
-    }
-    return data;
-  }, [caixaMovimentos, dateFrom, dateTo, searchQuery]);
+  const caixaMovFiltrados = useMemo(
+    () => filterCaixaMovimentos(caixaMovimentos, { dateFrom, dateTo, searchQuery }),
+    [caixaMovimentos, dateFrom, dateTo, searchQuery],
+  );
 
-  // Saldo inicial = soma dos movimentos ANTERIORES ao período filtrado
-  const caixaSaldoInicial = useMemo(() => {
-    if (!dateFrom) return 0;
-    return caixaMovimentos
-      .filter(m => m.dataObj < dateFrom)
-      .reduce((s, m) => s + (m.tipo === "entrada" ? m.valor : -m.valor), 0);
-  }, [caixaMovimentos, dateFrom]);
+  const caixaSaldoInicial = useMemo(
+    () => computeCaixaSaldoInicial(caixaMovimentos, dateFrom),
+    [caixaMovimentos, dateFrom],
+  );
 
-  const caixaLinhasComSaldo = useMemo(() => {
-    let saldo = caixaSaldoInicial;
-    return caixaMovFiltrados.map(m => {
-      saldo += m.tipo === "entrada" ? m.valor : -m.valor;
-      return { ...m, saldoAcumulado: saldo };
-    });
-  }, [caixaMovFiltrados, caixaSaldoInicial]);
+  const caixaLinhasComSaldo = useMemo(
+    () => applyCaixaSaldoAcumulado(caixaMovFiltrados, caixaSaldoInicial),
+    [caixaMovFiltrados, caixaSaldoInicial],
+  );
 
-  const caixaTotais = useMemo(() => {
-    const totalEntradas = caixaMovFiltrados.filter(m => m.tipo === "entrada").reduce((s, m) => s + m.valor, 0);
-    const totalSaidas = caixaMovFiltrados.filter(m => m.tipo === "saida").reduce((s, m) => s + m.valor, 0);
-    const saldoPeriodo = totalEntradas - totalSaidas;
-    const saldoFinal = caixaSaldoInicial + saldoPeriodo;
-    return { totalEntradas, totalSaidas, saldoPeriodo, saldoFinal };
-  }, [caixaMovFiltrados, caixaSaldoInicial]);
+  const caixaTotais = useMemo(
+    () => computeCaixaTotais(caixaMovFiltrados, caixaSaldoInicial),
+    [caixaMovFiltrados, caixaSaldoInicial],
+  );
 
   const caixaTotalPages = Math.max(1, Math.ceil(caixaLinhasComSaldo.length / itemsPerPage));
   const caixaPaginated = caixaLinhasComSaldo.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const imprimirLivroCaixa = () => {
-    const periodoLabel =
-      dateFrom && dateTo ? `${format(dateFrom, "dd/MM/yyyy")} a ${format(dateTo, "dd/MM/yyyy")}`
-      : dateFrom ? `A partir de ${format(dateFrom, "dd/MM/yyyy")}`
-      : dateTo ? `Até ${format(dateTo, "dd/MM/yyyy")}`
-      : "Todos os períodos";
-
-    const linhas = caixaLinhasComSaldo.map(m => `
-      <tr>
-        <td>${m.data}</td>
-        <td>${m.protocolo}</td>
-        <td>${m.descricao}</td>
-        <td>${m.categoria}</td>
-        <td>${m.pagamento}</td>
-        <td class="r ${m.tipo === "entrada" ? "pos" : ""}">${m.tipo === "entrada" ? "+ R$ " + fmtBRLNumber(m.valor) : "—"}</td>
-        <td class="r ${m.tipo === "saida" ? "neg" : ""}">${m.tipo === "saida" ? "- R$ " + fmtBRLNumber(m.valor) : "—"}</td>
-        <td class="r ${m.saldoAcumulado >= 0 ? "pos" : "neg"}"><b>R$ ${fmtBRLNumber(m.saldoAcumulado)}</b></td>
-      </tr>`).join("");
-
-    const html = `<html><head><title>Livro-Caixa</title>
-      <style>
-        *{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#222;font-size:12px}
-        h1{font-size:18px;margin:0 0 4px}.sub{color:#666;font-size:11px;margin-bottom:12px}
-        .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;border:1px solid #e5e5e5;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px}
-        .meta b{color:#000}
-        table{width:100%;border-collapse:collapse;font-size:11px}
-        th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-        th{background:#fafafa;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#555}
-        .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-        .pos{color:#16a34a;font-weight:600}.neg{color:#dc2626;font-weight:600}
-        tfoot td{font-weight:700;border-top:2px solid #222;background:#fafafa}
-        .empty{padding:40px;text-align:center;color:#888;border:1px dashed #ddd;border-radius:8px}
-        .footer{margin-top:18px;font-size:10px;color:#888;text-align:right}
-        .saldo-inicial{background:#fafafa;font-weight:600}
-      </style></head><body>
-      <h1>Livro-Caixa</h1>
-      <p class="sub">Gerado em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-      <div class="meta">
-        <div><b>Período:</b> ${periodoLabel}</div>
-        <div><b>Lançamentos:</b> ${caixaLinhasComSaldo.length}</div>
-        <div><b>Saldo inicial:</b> R$ ${fmtBRLNumber(caixaSaldoInicial)}</div>
-        <div><b>Entradas:</b> <span style="color:#16a34a">+ R$ ${fmtBRLNumber(caixaTotais.totalEntradas)}</span></div>
-        <div><b>Saídas:</b> <span style="color:#dc2626">- R$ ${fmtBRLNumber(caixaTotais.totalSaidas)}</span></div>
-        <div><b>Saldo final:</b> R$ ${fmtBRLNumber(caixaTotais.saldoFinal)}</div>
-      </div>
-      ${caixaLinhasComSaldo.length === 0 ? `<div class="empty">Nenhuma movimentação no período.</div>` : `
-      <table>
-        <thead><tr>
-          <th>Data</th><th>Protocolo</th><th>Descrição</th>
-          <th>Categoria</th><th>Pagamento</th>
-          <th class="r">Entrada</th><th class="r">Saída</th><th class="r">Saldo</th>
-        </tr></thead>
-        <tbody>
-          ${dateFrom ? `<tr class="saldo-inicial"><td colspan="7">Saldo inicial em ${format(dateFrom, "dd/MM/yyyy")}</td><td class="r">R$ ${fmtBRLNumber(caixaSaldoInicial)}</td></tr>` : ""}
-          ${linhas}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="5" class="r">Totais do período</td>
-            <td class="r pos">+ R$ ${fmtBRLNumber(caixaTotais.totalEntradas)}</td>
-            <td class="r neg">- R$ ${fmtBRLNumber(caixaTotais.totalSaidas)}</td>
-            <td class="r"><b>R$ ${fmtBRLNumber(caixaTotais.saldoFinal)}</b></td>
-          </tr>
-        </tfoot>
-      </table>`}
-      <div class="footer">SISLAC — Livro-Caixa</div>
-      </body></html>`;
+    const html = buildLivroCaixaHtml({
+      linhas: caixaLinhasComSaldo,
+      totais: caixaTotais,
+      saldoInicial: caixaSaldoInicial,
+      dateFrom,
+      dateTo,
+    });
     printHtmlInHiddenFrame({ html });
   };
+
 
   const handleNovaEntrada = (entry: NovaEntradaSaidaData) => {
     if (entry.tipo === "entrada") {
