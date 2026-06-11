@@ -1467,7 +1467,7 @@ export async function getTerceirizadosOperacionalPaged(opts: {
   const { limit, offset, statusExternos } = opts;
   let q = supabase
     .from("atendimento_exames")
-    .select("*", { count: "exact" })
+    .select("*", { count: "estimated" })
     .eq("tipo_processo", "TERCEIRIZADO")
     .neq("status", "cancelado")
     .order("data_envio", { ascending: false, nullsFirst: false })

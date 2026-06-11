@@ -20,10 +20,17 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      retry: 1,
+      // Não retry em erros 4xx (auth/permissão/validação): não vão melhorar
+      // ao repetir e só geram custo. Apenas 5xx/transientes ganham 1 retry.
+      retry: (failureCount, error: unknown) => {
+        const status = (error as { status?: number; statusCode?: number } | null)?.status
+          ?? (error as { statusCode?: number } | null)?.statusCode;
+        if (typeof status === "number" && status >= 400 && status < 500) return false;
+        return failureCount < 1;
+      },
       placeholderData: keepPreviousData,
     },
   },
