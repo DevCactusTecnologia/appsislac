@@ -385,11 +385,12 @@ const NovoAtendimento = () => {
     let atendimento = getAtendimentos().find(a => a.protocolo === decoded);
     if (!atendimento) {
       // Fallback server-side quando o atendimento não está no cache (modo paginado).
+      // `editAtendimentoData` NÃO é gatilho de render: é o dado real (cpf/nascimento/idade)
+      // consumido em `updateAtendimento(...)` mais abaixo quando o paciente não está
+      // resolvido via `getPacientes()`. Hidratação do restante (convenios/exames/etc)
+      // exigiria refetch + re-execução; este fallback é intencionalmente mínimo.
       void fetchAtendimentoByProtocolo(decoded).then((a) => {
         if (a) {
-          // Re-dispara o effect com o atendimento já no cache via reload no store legado:
-          // como esse effect roda novamente quando editProtocolo muda, basta forçar um
-          // re-render setando algum state — usamos editAtendimentoData como sinal.
           setEditAtendimentoData({ cpf: a.cpf, nascimento: a.nascimento, idade: a.idade });
         }
       });
