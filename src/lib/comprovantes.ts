@@ -590,151 +590,22 @@ async function renderAndSave(
 
 // renderToBlob / renderToBlobAdvanced / RenderStage / cache LRU foram
 // movidos para src/domains/result/services/comprovantesRender.ts.
+// uploadPdfAndGetUrl / criarShortlinkPdf foram movidos para
+// src/domains/result/services/comprovantesUpload.ts.
+// enviarPdfWhatsappCloud foi movido para
+// src/domains/result/services/comprovantesWhatsapp.ts.
 // Os re-exports estão no topo deste arquivo para preservar a API pública.
 
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const comma = result.indexOf(",");
-      resolve(comma >= 0 ? result.slice(comma + 1) : result);
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("read error"));
-    reader.readAsDataURL(blob);
-  });
-}
+import {
+  uploadPdfAndGetUrl,
+  criarShortlinkPdf,
+} from "@/domains/result/services/comprovantesUpload";
+import {
+  enviarPdfWhatsappCloud,
+  buildWaUrl,
+} from "@/domains/result/services/comprovantesWhatsapp";
+export { uploadPdfAndGetUrl, criarShortlinkPdf, enviarPdfWhatsappCloud };
 
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-+/g, "-");
-}
-
-/**
- * Uploads a generated PDF (as Blob) to the public `comprovantes` bucket
- * via the `upload-pdf` edge function and returns the resulting public URL.
- */
-export async function uploadPdfAndGetUrl(
-  blob: Blob,
-  filename: string,
-  options?: {
-    pacienteId?: number | null;
-    pacienteCpf?: string | null;
-    category?: "comprovantes" | "documentos" | "laudos";
-  },
-): Promise<string> {
-  const base64 = await blobToBase64(blob);
-  const safeName = sanitizeFilename(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
-  const { data, error } = await supabase.functions.invoke("upload-pdf", {
-    body: {
-      filename: safeName,
-      contentBase64: base64,
-      pacienteId: options?.pacienteId ?? null,
-      pacienteCpf: options?.pacienteCpf ?? null,
-      category: options?.category ?? "comprovantes",
-    },
-  });
-  if (error) throw new Error(error.message || "Falha ao enviar PDF");
-  const url = (data as { url?: string } | null)?.url;
-  if (!url) throw new Error("URL pública não retornada pelo servidor");
-  return url;
-}
-
-/**
- * Cria um link curto (`/p/:codigo`) que aponta para o PDF assinado.
- * Use depois de `uploadPdfAndGetUrl` para encurtar a URL antes de mandar
- * pelo WhatsApp / e-mail. TTL padrão: 24h.
- */
-export async function criarShortlinkPdf(params: {
-  pdfUrl: string;
-  protocolo: string;
-  tipo: ComprovanteTipo;
-  ttlHours?: number;
-}): Promise<{ shortUrl: string; codigo: string; expiraEm: string } | null> {
-  try {
-    const origin =
-      typeof window !== "undefined" && window.location?.origin ? window.location.origin : "";
-    const { data, error } = await supabase.functions.invoke("comprovante-shortlink", {
-      body: {
-        url: params.pdfUrl,
-        protocolo: params.protocolo,
-        tipo: params.tipo,
-        ttlHours: params.ttlHours ?? 24,
-        hostHint: origin,
-      },
-    });
-    if (error) return null;
-    const d = data as { shortUrl?: string; codigo?: string; expiraEm?: string } | null;
-    if (!d?.shortUrl || !d?.codigo) return null;
-    return { shortUrl: d.shortUrl, codigo: d.codigo, expiraEm: d.expiraEm ?? "" };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Envia um PDF como anexo via WhatsApp Cloud API (Meta) usando as
- * credenciais oficiais cadastradas pelo laboratório. Retorna o message_id
- * em caso de sucesso, ou lança erro se o lab não tiver configurado a API.
- *
- * P0 #4 — Idempotência: calcula uma chave baseada em
- * (protocolo|tipo|telefone|janela_5min) e mantém um lock in-memory
- * para impedir reenvio por duplo clique. O backend valida via índice único.
- */
-const _whatsappInFlight = new Set<string>();
-
-async function sha256Hex(input: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-export async function enviarPdfWhatsappCloud(params: {
-  telefone: string;
-  pdfUrl: string;
-  filename?: string;
-  caption?: string;
-  protocolo?: string;
-  tipo?: ComprovanteTipo;
-}): Promise<{ messageId: string; idempotent?: boolean }> {
-  const telefoneNorm = (params.telefone || "").replace(/\D/g, "");
-  const bucket = Math.floor(Date.now() / (5 * 60_000));
-  const idempotencyKey = await sha256Hex(
-    `${params.protocolo ?? ""}|${params.tipo ?? ""}|${telefoneNorm}|${bucket}`,
-  );
-
-  // Lock local (anti duplo clique no mesmo cliente)
-  if (_whatsappInFlight.has(idempotencyKey)) {
-    throw new Error("Envio já em andamento, aguarde a confirmação.");
-  }
-  _whatsappInFlight.add(idempotencyKey);
-
-  try {
-    const { data, error } = await supabase.functions.invoke("whatsapp-send", {
-      body: {
-        telefone: params.telefone,
-        pdfUrl: params.pdfUrl,
-        filename: params.filename,
-        caption: params.caption,
-        atendimentoProtocolo: params.protocolo,
-        tipo: params.tipo,
-        idempotencyKey,
-      },
-    });
-    if (error) {
-      const msg = error.message || "Falha ao enviar pelo WhatsApp Cloud API";
-      const e = new Error(msg) as Error & { code?: string };
-      if (/configurado/i.test(msg)) e.code = "WHATSAPP_NAO_CONFIGURADO";
-      throw e;
-    }
-    const d = data as { messageId?: string; idempotent?: boolean } | null;
-    if (!d?.messageId) throw new Error("Cloud API nao retornou messageId");
-    return { messageId: d.messageId, idempotent: d.idempotent };
-  } finally {
-    // Libera o lock após 5s para permitir reenvio rápido em caso de erro de UI
-    setTimeout(() => _whatsappInFlight.delete(idempotencyKey), 5_000);
-  }
-}
 
 export async function gerarOrcamentoPDF(o: OrcamentoPDFData): Promise<void> {
   await ensureLabLogoLoaded();
