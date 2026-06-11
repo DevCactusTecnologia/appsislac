@@ -27,6 +27,22 @@ interface Body {
   caption?: string;
   atendimentoProtocolo?: string;
   tipo?: string;
+  /** P0 #4 — idempotency key calculada no frontend: sha256(tenant|protocolo|tipo|telefone|bucket5min). */
+  idempotencyKey?: string;
+}
+
+/** Computa idempotencyKey caso o frontend não envie (defesa em profundidade). */
+async function computeIdempotencyKey(
+  tenantId: string,
+  protocolo: string | undefined,
+  tipo: string | undefined,
+  telefone: string,
+): Promise<string> {
+  const bucket = Math.floor(Date.now() / (5 * 60_000));
+  const raw = `${tenantId}|${protocolo ?? ""}|${tipo ?? ""}|${telefone}|${bucket}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function normalizePhone(input: string): string {
