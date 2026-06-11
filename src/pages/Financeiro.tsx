@@ -83,7 +83,9 @@ import {
   applyCaixaSaldoAcumulado,
   computeCaixaTotais,
   buildLivroCaixaHtml,
+  buildDetalhadoHtml,
 } from "./Financeiro/services/FinanceiroService";
+import CaixaTab from "./Financeiro/components/CaixaTab";
 
 
 
