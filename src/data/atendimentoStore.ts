@@ -6,6 +6,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
 import type { MockAtendimento, PagamentoRealizado, StatusType } from "./types";
+import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
 import { logger } from "@/lib/logger";
 import { showError } from "@/lib/showError";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
@@ -90,8 +91,8 @@ function buildAtendimento(
     cpf: formatCPF(atRow.paciente_cpf),
     nascimento: formatDateBR(atRow.paciente_nascimento),
     idade: calcIdade(atRow.paciente_nascimento),
-    statusAtendimento: { label: atRow.status_atendimento, type: cfgAt.type, showIcon: cfgAt.showIcon },
-    statusPagamento: { label: atRow.status_pagamento, type: cfgPg },
+    statusAtendimento: { label: dsAt.label, type: dsAt.type, showIcon: dsAt.showIcon },
+    statusPagamento: { label: dsPg.label, type: dsPg.type },
     motivoCancelamento: atRow.motivo_cancelamento ?? undefined,
     solicitante: atRow.solicitante,
     convenio: atRow.convenio_nome,
