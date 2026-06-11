@@ -661,26 +661,10 @@ const ResultadoDetalhe = () => {
     toast.info("Análise cancelada.");
   };
 
-  const statusAnaliseLabel = (status: ExameStatus) => {
-    switch (status) {
-      case "Pendente": return "Análise Pendente";
-      case "Digitado": return "Digitado";
-      case "Cancelado": return "Cancelado";
-      case "Impresso": return "Impresso";
-      case "Resultado salvo": return "Resultado salvo";
-      case "Em retificação": return "Em retificação";
-      case "Retificado": return "Retificado";
-    }
-  };
-
-  const isExameLiberado = (status: ExameStatus) => status === "Digitado" || status === "Impresso" || status === "Retificado";
-  const isExameBloqueado = (status: ExameStatus) => status === "Resultado salvo" || isExameLiberado(status);
-  const statusGeralType = (status: string): "success" | "warning" | "danger" | "info" => {
-    if (status === "Cancelado") return "danger";
-    if (status === "Retificado") return "info";
-    if (status === "Finalizado") return "success";
-    return "warning";
-  };
+  // statusAnaliseLabel / isExameLiberado / isExameBloqueado / statusGeralType
+  // foram extraídos para ./ResultadoDetalhe/statusHelpers.ts (Fase 1).
+  const isExameLiberado = isExameLiberadoStatus;
+  const isExameBloqueado = isExameBloqueadoStatus;
 
   const isBlocked = selectedExame ? isExameBloqueado(selectedExame.status) : false;
   const isEditable = !isBlocked || selectedExame?.status === "Em retificação";
