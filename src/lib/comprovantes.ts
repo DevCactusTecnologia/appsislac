@@ -38,6 +38,7 @@ import {
   getDocumentoMarginsMm,
   loadHtml2Pdf,
   renderToBlob,
+  renderAndSave,
 } from "@/domains/result/services/comprovantesRender";
 export {
   getDocumentoMarginsMm,
