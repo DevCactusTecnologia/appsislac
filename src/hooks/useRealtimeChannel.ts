@@ -68,10 +68,11 @@ export function useRealtimeChannel(opts: UseRealtimeChannelOptions): void {
       if (disposed) return;
       if (pauseOnHidden && typeof document !== "undefined" && document.hidden) return;
 
-      // @ts-expect-error - supabase realtime types are loose for filter
+      const cfg: Record<string, unknown> = { event, schema, table };
+      if (filter) cfg.filter = filter;
       channel = supabase.channel(channelName).on(
-        "postgres_changes",
-        { event, schema, table, ...(filter ? { filter } : {}) },
+        "postgres_changes" as never,
+        cfg as never,
         (payload: unknown) => {
           try { onPayloadRef.current(payload); } catch { /* swallow */ }
         },
