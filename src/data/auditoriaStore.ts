@@ -1,4 +1,6 @@
-// Audit log access — reads from public.atendimento_audit + public.app_settings_audit
+// Audit log access — reads from public.operational_audit (fonte unificada).
+// `app_settings_audit` continua sendo lido diretamente porque o forwarder
+// destino é `platform_audit` (super_admin only).
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/lib/showError";
 
@@ -71,23 +73,23 @@ function classifyAction(entidade: string, acao: string): AuditTipo {
   return "alteracao";
 }
 
-// Lista pacientes com auditoria — usado pelo autocomplete
+// Lista pacientes com auditoria — usado pelo autocomplete.
+// Lê de operational_audit (recurso_tipo IN atendimento/exame/pagamento/critico),
+// pivotando por contexto->>protocolo.
 export async function fetchAuditPacientes(query: string): Promise<AuditPaciente[]> {
   const q = query.trim();
   let req = supabase
-    .from("atendimento_audit")
-    .select("protocolo, paciente_nome, atendimento_id, changed_at")
-    .not("protocolo", "eq", "")
-    .order("changed_at", { ascending: false })
+    .from("operational_audit")
+    .select("recurso_id, contexto, created_at")
+    .in("recurso_tipo", ["atendimento", "exame", "pagamento", "critico"])
+    .not("contexto->>protocolo", "is", null)
+    .order("created_at", { ascending: false })
     .limit(200);
 
   if (q) {
-    const digits = q.replace(/\D/g, "");
-    if (digits.length >= 3) {
-      req = req.or(`protocolo.ilike.%${q}%,paciente_nome.ilike.%${q}%`);
-    } else {
-      req = req.or(`protocolo.ilike.%${q}%,paciente_nome.ilike.%${q}%`);
-    }
+    req = req.or(
+      `contexto->>protocolo.ilike.%${q}%,contexto->>paciente_nome.ilike.%${q}%`,
+    );
   }
 
   const { data, error } = await req;
@@ -97,7 +99,13 @@ export async function fetchAuditPacientes(query: string): Promise<AuditPaciente[
   }
 
   // Agrega CPF dos atendimentos
-  const ids = Array.from(new Set((data ?? []).map((r: any) => r.atendimento_id).filter(Boolean)));
+  const ids = Array.from(
+    new Set(
+      (data ?? [])
+        .map((r: any) => Number(r.recurso_id))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    ),
+  );
   let cpfMap = new Map<number, string>();
   if (ids.length > 0) {
     const { data: ats } = await supabase
@@ -110,14 +118,16 @@ export async function fetchAuditPacientes(query: string): Promise<AuditPaciente[
   const seen = new Set<string>();
   const out: AuditPaciente[] = [];
   for (const row of data ?? []) {
-    const proto = (row as any).protocolo as string;
+    const ctx = ((row as any).contexto ?? {}) as Record<string, unknown>;
+    const proto = (ctx.protocolo as string) || "";
     if (!proto || seen.has(proto)) continue;
     seen.add(proto);
+    const aid = Number((row as any).recurso_id);
     out.push({
       protocolo: proto,
-      paciente: (row as any).paciente_nome || "",
-      cpf: cpfMap.get((row as any).atendimento_id) || "",
-      dataCriacao: fmt((row as any).changed_at),
+      paciente: (ctx.paciente_nome as string) || "",
+      cpf: cpfMap.get(aid) || "",
+      dataCriacao: fmt((row as any).created_at),
     });
   }
   return out;
@@ -125,12 +135,11 @@ export async function fetchAuditPacientes(query: string): Promise<AuditPaciente[
 
 export async function fetchAuditLogsByProtocolo(protocolo: string): Promise<AuditLog[]> {
   const { data, error } = await supabase
-    .from("atendimento_audit")
-    .select(
-      "id, changed_at, changed_by_email, acao, entidade, operacao, paciente_nome, protocolo, exame_nome, old_value, new_value, justificativa, pos_finalizacao, atendimento_id"
-    )
-    .eq("protocolo", protocolo)
-    .order("changed_at", { ascending: true });
+    .from("operational_audit")
+    .select("id, created_at, ator_id, acao, recurso_tipo, contexto")
+    .in("recurso_tipo", ["atendimento", "exame", "pagamento", "critico"])
+    .eq("contexto->>protocolo", protocolo)
+    .order("created_at", { ascending: true });
 
   if (error) {
     showError(error, { scope: "auditoriaStore.logs", silent: true });
@@ -138,31 +147,37 @@ export async function fetchAuditLogsByProtocolo(protocolo: string): Promise<Audi
   }
 
   return (data ?? []).map((row: any) => {
-    const email = row.changed_by_email || "Sistema";
-    const tipo = classifyAction(row.entidade, row.acao);
-    const acaoFinal = row.exame_nome ? `${row.acao} — ${row.exame_nome}` : row.acao;
+    const ctx = (row.contexto ?? {}) as Record<string, unknown>;
+    const email = (ctx.email as string) || "Sistema";
+    const entidade = ((ctx.entidade as string) || row.recurso_tipo || "atendimento") as
+      | "atendimento" | "exame" | "pagamento" | "configuracao";
+    const operacao = ((ctx.operacao as string) || "UPDATE") as "INSERT" | "UPDATE" | "DELETE";
+    const exameNome = (ctx.exame_nome as string) || "";
+    const tipo = classifyAction(entidade, row.acao);
+    const acaoFinal = exameNome ? `${row.acao} — ${exameNome}` : row.acao;
     return {
       id: String(row.id),
-      dataIso: row.changed_at,
-      dataHora: fmt(row.changed_at),
+      dataIso: row.created_at,
+      dataHora: fmt(row.created_at),
       usuario: email,
       iniciais: iniciaisFromEmail(email),
       acao: acaoFinal,
       tipo,
-      paciente: row.paciente_nome || "",
-      protocolo: row.protocolo || "",
-      exameNome: row.exame_nome || undefined,
-      entidade: row.entidade,
-      operacao: row.operacao,
-      oldValue: row.old_value,
-      newValue: row.new_value,
-      justificativa: row.justificativa || undefined,
-      posFinalizacao: !!row.pos_finalizacao,
+      paciente: (ctx.paciente_nome as string) || "",
+      protocolo: (ctx.protocolo as string) || "",
+      exameNome: exameNome || undefined,
+      entidade,
+      operacao,
+      oldValue: ctx.old_value,
+      newValue: ctx.new_value,
+      justificativa: (ctx.justificativa as string) || undefined,
+      posFinalizacao: !!ctx.pos_finalizacao,
     } satisfies AuditLog;
   });
 }
 
-// Logs de configurações (app_settings_audit) — opcional, busca recente
+// Logs de configurações (app_settings_audit) — mantido na tabela original;
+// o forwarder envia para `platform_audit` que é super_admin only.
 const APP_SETTINGS_AUDIT_PAGE_SIZE = 100;
 
 export async function fetchAppSettingsAudit(
@@ -182,7 +197,6 @@ export async function fetchAppSettingsAudit(
     return [];
   }
 
-  // Busca emails dos perfis para os UUIDs encontrados
   const userIds = Array.from(
     new Set((data ?? []).map((r: any) => r.changed_by).filter(Boolean))
   );
