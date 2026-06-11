@@ -226,7 +226,6 @@ function UserPopover({
             <p className="text-[12px] font-semibold text-foreground">Super Admin</p>
             <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
           </div>
-          <ThemeChooser />
           <MenuModeChooser onSelect={() => setOpen(false)} />
           <div className="h-px bg-border/60 my-1" />
           <button
