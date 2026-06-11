@@ -86,6 +86,7 @@ import {
   buildDetalhadoHtml,
 } from "./Financeiro/services/FinanceiroService";
 import CaixaTab from "./Financeiro/components/CaixaTab";
+import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 
 
 
