@@ -553,9 +553,12 @@ export function installAtendimentosRealtime(tenantId?: string | null): void {
     _realtimeInstalled = true;
     _realtimeTenantId = tid;
 
-    const channel = supabase.channel(`atendimentos-store:${tid}`, {
-      config: { private: true },
-    });
+    // Canal público (não-`private`): a autorização `private: true` exige
+    // policies em `realtime.messages` que não existem neste projeto, o que
+    // gerava CHANNEL_ERROR a cada ~14s em loop infinito. O isolamento
+    // multi-tenant é garantido pelo filtro server-side `tenant_id=eq.<tid>`
+    // nas três tabelas + validação defensiva no handler (linha ~568).
+    const channel = supabase.channel(`atendimentos-store:${tid}`);
     _realtimeChannel = channel;
 
     const handle = (table: string, idKey: "id" | "atendimento_id") =>
