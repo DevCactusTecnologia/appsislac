@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { registrarCriticoComunicacao, type CriticoCanal } from "@/data/rastreabilidadeStore";
-import { useSelectOptions } from "@/hooks/use-select-options";
-import { SELECT_CATEGORIAS } from "@/data/selectOptionsStore";
+import { useDicionario } from "@/hooks/useDicionario";
 
 /** Canais válidos para comunicação de crítico (ordem de exibição). */
 const CRITICO_CANAIS_VALIDOS: CriticoCanal[] = ["telefone", "email", "whatsapp", "presencial", "outro"];
