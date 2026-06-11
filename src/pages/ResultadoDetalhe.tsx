@@ -320,19 +320,8 @@ const ResultadoDetalhe = () => {
     reloadExames();
   }, [reloadExames]);
 
-  // Hidrata motivos de cancelamento (data-driven, configuráveis em /configuracoes).
-  // Mantém um tick local para re-render quando o store atualiza.
-  const [, _forceMotivos] = useState(0);
-  useEffect(() => {
-    if (!isMotivosCancelamentoLoaded()) loadMotivosCancelamento();
-    const unsub = subscribeMotivosCancelamento(() => _forceMotivos((n) => n + 1));
-    return () => unsub();
-  }, []);
-  const motivosCancelamentoOpts = getMotivosCancelamentoAtivos();
-  if (import.meta.env.DEV && motivosCancelamentoOpts.length === 0 && isMotivosCancelamentoLoaded()) {
-    // eslint-disable-next-line no-console
-    console.warn("[ResultadoDetalhe] Nenhum motivo de cancelamento ativo cadastrado.");
-  }
+  // Hidrata motivos de cancelamento via dicionário unificado (`select_options`).
+  const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
   /**
    * Carrega os parâmetros configurados (com critico_min/max) de cada exame
