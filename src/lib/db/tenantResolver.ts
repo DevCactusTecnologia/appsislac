@@ -16,8 +16,9 @@ let _cachedContext: TenantContext | null = null;
 let _cachedTenantNome: string | null = null;
 let _authListenerInstalled = false;
 
-// ID do Tenant Demo (fallback seguro)
-const DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000001";
+// Tenant padrão da plataforma (laboratório principal) usado como fallback
+// quando a resolução via `profiles.tenant_id` não retorna nada.
+const DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 
 export function clearTenantContextCache(): void {
   _cachedContext = null;
@@ -50,7 +51,7 @@ export async function getTenantContext(): Promise<TenantContext> {
 
   // 1. Identifica o usuário
   const { data: { user } } = await supabase.auth.getUser();
-  let tenant_id = DEMO_TENANT_ID;
+  let tenant_id = DEFAULT_TENANT_ID;
 
   if (user) {
     // 2. Busca o tenant_id no profile (Fonte de verdade da identidade)

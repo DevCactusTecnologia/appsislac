@@ -1,6 +1,5 @@
 // AuthContext
-// Fonte única de autenticação operacional: backend real primeiro, com fallback
-// demo em localStorage preservado para as credenciais de demonstração.
+// Fonte única de autenticação operacional: 100% Supabase Auth real.
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
@@ -19,7 +18,7 @@ export interface UserProfile {
   avatarKey?: string;
   unidadeIds: string[];
   unidadeAtiva: string;
-  source: "supabase" | "mock";
+  source: "supabase";
   isSuperAdmin?: boolean;
   tenantId?: string;
 }
@@ -42,15 +41,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-const MOCK_STORAGE_KEY = "sislac_auth_user";
-const DEMO_EMAIL = "admin@sislac.com";
-const DEMO_PASSWORD = "admin123";
-
-// Demo só pode ser usado em desenvolvimento (Vite DEV).
-// Em produção, qualquer tentativa de login com as credenciais demo
-// é tratada como senha inválida e nenhum mock user é hidratado do localStorage.
-const DEMO_ENABLED = import.meta.env.DEV === true;
 
 // Defaults espelham public.has_permission no banco e DEFAULTS_POR_PERFIL em usuariosStore.
 // IMPORTANTE: chaves devem ser as permissões finas (ex: "visualizar_atendimentos"),
@@ -90,44 +80,10 @@ interface DbProfile {
   tenant_id: string;
 }
 
-function createDemoUser(): UserProfile {
-  return {
-    id: "demo-admin",
-    nome: "Administrador",
-    email: DEMO_EMAIL,
-    perfil: "admin",
-    permissoes: ["*"],
-    unidadeIds: ["und-001"],
-    unidadeAtiva: "und-001",
-    source: "mock",
-    tenantId: "demo",
-  };
-}
-
-function readMockUser(): UserProfile | null {
-  if (!DEMO_ENABLED) {
-    // Limpeza defensiva: qualquer token mock antigo cacheado em produção é removido.
-    if (typeof window !== "undefined") {
-      try { localStorage.removeItem(MOCK_STORAGE_KEY); } catch { /* noop */ }
-    }
-    return null;
-  }
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(MOCK_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<UserProfile>;
-    if (parsed.email !== DEMO_EMAIL) return null;
-    return { ...createDemoUser(), ...parsed, source: "mock", permissoes: ["*"] };
-  } catch {
-    return null;
-  }
-}
-
-function persistMockUser(user: UserProfile) {
-  if (!DEMO_ENABLED) return;
-  if (typeof window === "undefined") return;
-  try { localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(user)); } catch { /* noop */ }
+// Limpeza defensiva: remove qualquer token mock antigo que ainda esteja no
+// localStorage de usuários que utilizaram versões anteriores do sistema.
+if (typeof window !== "undefined") {
+  try { localStorage.removeItem("sislac_auth_user"); } catch { /* noop */ }
 }
 
 async function isTenantActive(tenantId: string | null | undefined): Promise<boolean> {
@@ -298,7 +254,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try { supabase.removeChannel(profileChannel); } catch { /* noop */ }
           profileChannel = null;
         }
-        setUser(readMockUser());
+        setUser(null);
       }
     });
     unsub = () => sub.subscription.unsubscribe();
@@ -315,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (mountedRef.current) {
-        setUser(readMockUser());
+        setUser(null);
         setLoading(false);
       }
     })();
@@ -334,13 +290,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
     const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (error) {
-      // Fallback para credenciais de demonstração quando o Supabase Auth falhar (somente DEV).
-      if (DEMO_ENABLED && email.trim().toLowerCase() === DEMO_EMAIL && senha === DEMO_PASSWORD) {
-        const demoUser = createDemoUser();
-        persistMockUser(demoUser);
-        setUser(demoUser);
-        return { ok: true };
-      }
       return { ok: false, error: error.message };
     }
 
@@ -373,12 +322,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
       if (error) {
-        if (DEMO_ENABLED && email.trim().toLowerCase() === DEMO_EMAIL && senha === DEMO_PASSWORD) {
-          const demoUser = createDemoUser();
-          persistMockUser(demoUser);
-          setUser(demoUser);
-          return { ok: true };
-        }
         return { ok: false, error: error.message };
       }
       const uid = signInData.user?.id;
@@ -440,15 +383,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn("[featureFlags] erro ao limpar flags no logout", e);
     }
 
-    // 2) Encerra a sessão Supabase (se aplicável).
-    if (user?.source === "supabase") {
-      await supabase.auth.signOut();
-    }
+    // 2) Encerra a sessão Supabase.
+    await supabase.auth.signOut();
 
-    // 3) Limpa cache mock e estado em memória.
-    try { localStorage.removeItem(MOCK_STORAGE_KEY); } catch { /* noop */ }
+    // 3) Limpa estado em memória.
     setUser(null);
-  }, [user]);
+  }, []);
 
   // Permissões: admin (perfil ou wildcard) tem tudo
   const hasPermission = useCallback(

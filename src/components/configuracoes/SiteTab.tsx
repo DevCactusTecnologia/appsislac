@@ -369,7 +369,7 @@ export default function SiteTab() {
       toast.error("Sessão expirada. Faça login novamente para verificar o domínio.");
       return;
     }
-    // tenant_id precisa ser um UUID válido (evita tenant mock 'demo' do fallback)
+    // tenant_id precisa ser um UUID válido.
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
       toast.error("Tenant inválido para verificação de domínio.");
       return;

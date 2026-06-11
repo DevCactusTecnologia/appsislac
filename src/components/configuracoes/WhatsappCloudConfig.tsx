@@ -181,7 +181,7 @@ const WhatsappCloudConfig = () => {
         tenantId = await getCurrentTenantId();
       }
       
-      if (!tenantId || tenantId === "demo") {
+      if (!tenantId) {
         throw new Error("Tenant não resolvido.");
       }
 
