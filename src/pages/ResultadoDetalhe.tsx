@@ -45,12 +45,7 @@ import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRender
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { validarCredenciaisAnalista } from "@/lib/validarCredenciaisAnalista";
-import {
-  loadMotivosCancelamento,
-  isMotivosCancelamentoLoaded,
-  subscribeMotivosCancelamento,
-  getMotivosCancelamentoAtivos,
-} from "@/data/motivosCancelamentoStore";
+import { useDicionario } from "@/hooks/useDicionario";
 
 // Tipos, helpers puros e ParamTypedInput foram extraídos para ./ResultadoDetalhe/*
 // na Fase 3 do slicing estrutural. Comportamento idêntico, apenas reorganização.
