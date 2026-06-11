@@ -242,21 +242,9 @@ function UserPopover({
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Segmented controls (tema / menu mode)
+// Segmented controls (menu mode)
 // ──────────────────────────────────────────────────────────────────
 
-function ThemeChooser() {
-  const { theme, setTheme } = useTheme();
-  return (
-    <div className="px-2 py-1">
-      <p className="px-1 pb-1 text-[9px] font-semibold text-muted-foreground/70 uppercase tracking-[0.1em]">Tema</p>
-      <div className="flex gap-0.5 p-0.5 bg-muted/60 rounded-md">
-        <SegBtn active={theme === "light"} onClick={() => setTheme("light")}><Sun className="w-3 h-3" /> Claro</SegBtn>
-        <SegBtn active={theme === "dark"} onClick={() => setTheme("dark")}><Moon className="w-3 h-3" /> Escuro</SegBtn>
-      </div>
-    </div>
-  );
-}
 
 function MenuModeChooser({ onSelect }: { onSelect?: () => void }) {
   const { menuMode, setMenuMode } = useSuperAdminPrefs();
