@@ -25,7 +25,7 @@ import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
-import { logger } from "@/lib/logger";
+
 
 const fmtBRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
