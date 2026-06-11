@@ -154,9 +154,27 @@ async function hydrateFromSupabase(session: Session): Promise<UserProfile | null
     supabase.from("user_roles" as never).select("role").eq("user_id", userId),
   ]);
 
-  if (!profile) return null;
-  const p = profile as unknown as DbProfile;
   const rolesList = Array.isArray(roles) ? (roles as { role: string }[]).map((r) => r.role) : [];
+  const isSuperAdminEarly = rolesList.includes("super_admin");
+
+  // Super admin é entidade de plataforma — pode existir sem linha em `profiles`
+  // (não pertence a nenhum tenant). Hidratamos um perfil mínimo nesse caso.
+  if (!profile) {
+    if (!isSuperAdminEarly) return null;
+    return {
+      id: userId,
+      nome: session.user.email?.split("@")[0] || "Super Admin",
+      email: session.user.email || "",
+      perfil: "admin",
+      permissoes: ["*"],
+      unidadeIds: ["und-001"],
+      unidadeAtiva: "und-001",
+      source: "supabase",
+      isSuperAdmin: true,
+      tenantId: undefined,
+    };
+  }
+  const p = profile as unknown as DbProfile;
 
   const base = new Set<string>(DEFAULT_PERMS_BY_PERFIL[p.perfil] ?? []);
   for (const e of p.permissoes_extras ?? []) base.add(e);
