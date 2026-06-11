@@ -21,7 +21,7 @@ import {
 } from "@/lib/tenantSite/vitrineStore";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
-import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
