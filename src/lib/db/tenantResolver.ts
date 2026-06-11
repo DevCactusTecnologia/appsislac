@@ -51,7 +51,7 @@ export async function getTenantContext(): Promise<TenantContext> {
 
   // 1. Identifica o usuário
   const { data: { user } } = await supabase.auth.getUser();
-  let tenant_id = DEMO_TENANT_ID;
+  let tenant_id = DEFAULT_TENANT_ID;
 
   if (user) {
     // 2. Busca o tenant_id no profile (Fonte de verdade da identidade)
