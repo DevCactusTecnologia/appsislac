@@ -251,11 +251,6 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
     if (!purgeDialog) return;
     const u = usuarios.find((x) => x.userId === purgeDialog);
     if (!u) return;
-    if (u.email === "admin@sislac.com") {
-      toast.error("O administrador padrão do sistema não pode ser excluído.");
-      setPurgeDialog(null);
-      return;
-    }
     if (purgeConfirm.trim().toUpperCase() !== "EXCLUIR") {
       toast.error('Digite "EXCLUIR" para confirmar.');
       return;
