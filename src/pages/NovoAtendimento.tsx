@@ -62,6 +62,7 @@ import { calculateExamPrice } from "./NovoAtendimento/pricing";
 import { buildExamesCobranca } from "./NovoAtendimento/buildExamesCobranca";
 import { highlightMatch } from "./NovoAtendimento/highlightMatch";
 import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
+import { distribuirDescontoEntreExames } from "./NovoAtendimento/services/distribuirDesconto";
 
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 
@@ -483,36 +484,9 @@ const NovoAtendimento = () => {
     const today = new Date();
     const dataStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
     let novoProtocolo: string | null = null;
-    // ── Distribuição do desconto ──────────────────────────────────────────
-    // Desconto é dado: ninguém paga por ele (nem paciente, nem convênio).
-    // Como NÃO afeta convênio (faturamento próprio), distribuímos
-    // proporcionalmente entre os exames cobrados do paciente, abatendo o
-    // valor de cada um. Assim o saldo persistido já vem reduzido e não
-    // ressurge na listagem de "A Receber".
-    const examesParaSalvar = (() => {
-      const desc = Math.max(0, Math.round(desconto * 100) / 100);
-      if (desc <= 0) return exames;
-      const pacienteIdxs = exames
-        .map((e, i) => ({ e, i }))
-        .filter(({ e }) => e.cobrancaDestino !== "convenio");
-      const subtotalPaciente = pacienteIdxs.reduce((s, { e }) => s + e.valor, 0);
-      if (subtotalPaciente <= 0) return exames;
-      const totalDesc = Math.min(desc, subtotalPaciente);
-      let restante = Math.round(totalDesc * 100); // em centavos
-      const novosValores = new Map<number, number>();
-      pacienteIdxs.forEach(({ e, i }, idx) => {
-        const isLast = idx === pacienteIdxs.length - 1;
-        const share = isLast
-          ? restante
-          : Math.round((e.valor / subtotalPaciente) * totalDesc * 100);
-        const safeShare = Math.max(0, Math.min(share, Math.round(e.valor * 100)));
-        restante -= safeShare;
-        novosValores.set(i, Math.max(0, Math.round(e.valor * 100) - safeShare) / 100);
-      });
-      return exames.map((e, i) =>
-        novosValores.has(i) ? { ...e, valor: novosValores.get(i)! } : e,
-      );
-    })();
+    // Desconto proporcional entre exames do paciente — pipeline puro extraído
+    // para ./NovoAtendimento/services/distribuirDesconto.ts (Fase 2).
+    const examesParaSalvar = distribuirDescontoEntreExames(exames, desconto);
     try {
       if (isEditing && editProtocolo) {
       const decoded = decodeURIComponent(editProtocolo);

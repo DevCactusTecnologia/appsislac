@@ -64,6 +64,17 @@ import {
   buildPacienteFromAtendimento,
 } from "./ResultadoDetalhe/helpers";
 import { buildLaudoHtml as buildLaudoHtmlPure } from "./ResultadoDetalhe/services/laudoHtmlBuilder";
+import {
+  avaliarNivelCriticoPure,
+  getParametrosCriticosDoExamePure,
+} from "./ResultadoDetalhe/services/criticoPipeline";
+import { buildAuditLogFromDb } from "./ResultadoDetalhe/services/auditLogBuilder";
+import {
+  statusAnaliseLabel,
+  isExameLiberadoStatus,
+  isExameBloqueadoStatus,
+  statusGeralType,
+} from "./ResultadoDetalhe/statusHelpers";
 
 const getMnemonico = (nome: string): string => {
   const cat = getExamesCatalogo().find((c) => c.nome === nome);
@@ -233,87 +244,7 @@ const ResultadoDetalhe = () => {
     }
 
     // Reconstrói o log a partir do estado vindo do banco, preservando hora/minuto/segundo.
-    const fmtDateTime = (d: Date) => {
-      const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-      return `${String(d.getDate()).padStart(2, "0")} de ${meses[d.getMonth()]} de ${d.getFullYear()} - ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-    };
-    const fmtIso = (iso: string | null | undefined, fallback: Date) =>
-      fmtDateTime(iso ? new Date(iso) : fallback);
-    const now = new Date();
-    const log: Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]> = {};
-    // Index DB rows by uiId via idMap reverse lookup
-    const rowByUiId = new Map<number, AtendimentoExameRow>();
-    Object.entries(idMap).forEach(([uiIdStr, dbId]) => {
-      const row = rows.find((r) => r.id === dbId);
-      if (row) rowByUiId.set(Number(uiIdStr), row);
-    });
-    exames.forEach((exame) => {
-      const row = rowByUiId.get(exame.id);
-      const dbStatus = row?.status;
-      const dataPedido = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now);
-      const dataColeta = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO, now);
-      const dataAnal = fmtIso(exame.dataAnaliseISO, now);
-      const dataLib = fmtIso(exame.dataLiberacaoISO, now);
-      const entries = [
-        { acao: "Pedido realizado", dataHora: dataPedido, usuario: "Felipe Andrade Melo", iniciais: "FA" },
-        { acao: "Amostra coletada", dataHora: dataColeta, usuario: "Felipe Andrade Melo", iniciais: "FA" },
-      ];
-      // Transições de bancada (apenas exames internos: em_bancada → analisado)
-      if (dbStatus === "em_bancada" || dbStatus === "analisado" ||
-          dbStatus === "em_analise" || dbStatus === "finalizado") {
-        entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, usuario: "Felipe Andrade Melo", iniciais: "FA" });
-      }
-      if (dbStatus === "analisado" || dbStatus === "em_analise" || dbStatus === "finalizado") {
-        entries.push({ acao: "Análise concluída", dataHora: dataAnal, usuario: "Felipe Andrade Melo", iniciais: "FA" });
-      }
-      if (exame.status === "Resultado salvo" || exame.status === "Em retificação" || isExameLiberado(exame.status)) {
-        const dadosAtuais = exame.parametros.map((p) => `${p.nome}: ${p.valor || "—"}`).join("\n");
-        const foiRetificado = row?.retificado === true;
-        const dataRetificacao = fmtIso(row?.retificado_at ?? null, new Date(dataAnal));
-        if (foiRetificado) {
-          // Antes da retificação: preserva o registro original do "Resultado salvo".
-          // Os valores anteriores não são versionados em banco — exibimos um marcador
-          // explicativo no campo `dados` para deixar a linha do tempo legível.
-          entries.push({
-            acao: "Resultado salvo",
-            dataHora: dataAnal,
-            usuario: "Felipe Andrade Melo",
-            iniciais: "FA",
-            dados: "Valores anteriores à retificação (não versionados).",
-          } as any);
-          // Marcador de retificação.
-          entries.push({
-            acao: "Resultado retificado",
-            dataHora: dataRetificacao,
-            usuario: "Felipe Andrade Melo",
-            iniciais: "FA",
-          });
-          // Após a retificação: valores correntes.
-          entries.push({
-            acao: "Resultado salvo (após retificação)",
-            dataHora: dataRetificacao,
-            usuario: "Felipe Andrade Melo",
-            iniciais: "FA",
-            dados: dadosAtuais,
-          } as any);
-        } else {
-          entries.push({
-            acao: "Resultado salvo",
-            dataHora: dataAnal,
-            usuario: "Felipe Andrade Melo",
-            iniciais: "FA",
-            dados: dadosAtuais,
-          } as any);
-        }
-      }
-      if (isExameLiberado(exame.status)) {
-        entries.push({ acao: "Resultado liberado", dataHora: dataLib, usuario: "Felipe Andrade Melo", iniciais: "FA" });
-      }
-      if (exame.status === "Cancelado") {
-        entries.push({ acao: "Análise cancelada", dataHora: fmtIso(exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now), usuario: "Felipe Andrade Melo", iniciais: "FA" });
-      }
-      log[exame.id] = entries;
-    });
+    const log = buildAuditLogFromDb(rows, exames, idMap);
     setAuditLog(log);
   }, [id]);
 
@@ -347,31 +278,17 @@ const ResultadoDetalhe = () => {
     return () => { cancel = true; };
   }, [paciente.exames]);
 
-  /**
-   * Avalia o nível crítico de um parâmetro de exame consultando a configuração
-   * (critico_min/critico_max) cadastrada em ParametrosDialog. Faz match por
-   * rótulo OU chave (case-insensitive).
-   */
-  const avaliarNivelCritico = useCallback((exameNome: string, paramNome: string, valor: string): NivelCritico => {
-    if (!valor) return "normal";
-    const lista = parametrosConfigPorExame[exameNome];
-    if (!lista || lista.length === 0) return "normal";
-    const k = paramNome.trim().toLowerCase();
-    const cfg = lista.find(p => p.rotulo.trim().toLowerCase() === k || p.chave.trim().toLowerCase() === k);
-    if (!cfg) return "normal";
-    return avaliarCritico(valor, cfg.criticoMin, cfg.criticoMax);
-  }, [parametrosConfigPorExame]);
-
-  /** Lista todos os parâmetros críticos do exame selecionado. */
-  const getParametrosCriticosDoExame = useCallback((exame: { nome: string; parametros: Array<{ nome: string; valor: string }> } | undefined) => {
-    if (!exame) return [] as Array<{ nome: string; valor: string; nivel: NivelCritico }>;
-    const out: Array<{ nome: string; valor: string; nivel: NivelCritico }> = [];
-    for (const p of exame.parametros) {
-      const nivel = avaliarNivelCritico(exame.nome, p.nome, p.valor);
-      if (nivel !== "normal") out.push({ nome: p.nome, valor: p.valor, nivel });
-    }
-    return out;
-  }, [avaliarNivelCritico]);
+  // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts
+  const avaliarNivelCritico = useCallback(
+    (exameNome: string, paramNome: string, valor: string): NivelCritico =>
+      avaliarNivelCriticoPure(parametrosConfigPorExame, exameNome, paramNome, valor),
+    [parametrosConfigPorExame],
+  );
+  const getParametrosCriticosDoExame = useCallback(
+    (exame: { nome: string; parametros: Array<{ nome: string; valor: string }> } | undefined) =>
+      getParametrosCriticosDoExamePure(parametrosConfigPorExame, exame),
+    [parametrosConfigPorExame],
+  );
 
   const addAuditEntry = (exameId: number, acao: string, dados?: string) => {
     const now = new Date();
@@ -744,26 +661,10 @@ const ResultadoDetalhe = () => {
     toast.info("Análise cancelada.");
   };
 
-  const statusAnaliseLabel = (status: ExameStatus) => {
-    switch (status) {
-      case "Pendente": return "Análise Pendente";
-      case "Digitado": return "Digitado";
-      case "Cancelado": return "Cancelado";
-      case "Impresso": return "Impresso";
-      case "Resultado salvo": return "Resultado salvo";
-      case "Em retificação": return "Em retificação";
-      case "Retificado": return "Retificado";
-    }
-  };
-
-  const isExameLiberado = (status: ExameStatus) => status === "Digitado" || status === "Impresso" || status === "Retificado";
-  const isExameBloqueado = (status: ExameStatus) => status === "Resultado salvo" || isExameLiberado(status);
-  const statusGeralType = (status: string): "success" | "warning" | "danger" | "info" => {
-    if (status === "Cancelado") return "danger";
-    if (status === "Retificado") return "info";
-    if (status === "Finalizado") return "success";
-    return "warning";
-  };
+  // statusAnaliseLabel / isExameLiberado / isExameBloqueado / statusGeralType
+  // foram extraídos para ./ResultadoDetalhe/statusHelpers.ts (Fase 1).
+  const isExameLiberado = isExameLiberadoStatus;
+  const isExameBloqueado = isExameBloqueadoStatus;
 
   const isBlocked = selectedExame ? isExameBloqueado(selectedExame.status) : false;
   const isEditable = !isBlocked || selectedExame?.status === "Em retificação";
