@@ -129,7 +129,7 @@ export default function SolicitarRecoletaDialog({
                 >
                   <option value="">Selecione...</option>
                   {motivos.map((m) => (
-                    <option key={m.id} value={m.id}>{m.nome}</option>
+                    <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>
               )}
