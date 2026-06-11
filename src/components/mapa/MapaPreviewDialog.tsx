@@ -32,11 +32,10 @@ export default function MapaPreviewDialog({
   orientation = "portrait",
   onOrientationChange,
 }: MapaPreviewDialogProps) {
-  const { theme } = useTheme();
   const [maximized, setMaximized] = useState(false);
   const previewHtml = useMemo(
     () => wrapHtmlAsA4Preview(html, orientation),
-    [html, orientation, theme],
+    [html, orientation],
   );
 
   const handlePrint = () => {
