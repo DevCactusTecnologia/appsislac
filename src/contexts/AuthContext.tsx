@@ -322,12 +322,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
       const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
       if (error) {
-        if (DEMO_ENABLED && email.trim().toLowerCase() === DEMO_EMAIL && senha === DEMO_PASSWORD) {
-          const demoUser = createDemoUser();
-          persistMockUser(demoUser);
-          setUser(demoUser);
-          return { ok: true };
-        }
         return { ok: false, error: error.message };
       }
       const uid = signInData.user?.id;
