@@ -65,7 +65,19 @@ export interface FinanceiroContextValue {
   setFaturaDetalheOpen: (open: boolean) => void;
 
   // A Receber (handler usado por sub-tab pacientes)
+  // A Receber
+  aReceberStatusFilter: string;
+  setAReceberStatusFilter: (v: any) => void;
+  aReceberSubTab: "pacientes" | "convenios";
+  setAReceberSubTab: (v: "pacientes" | "convenios") => void;
+  aReceberSource: AReceberRow[];
+  aReceberConvenioRows: AReceberConvenioRow[];
+  aReceberPaginated: AReceberRow[];
+  aReceberFilteredLength: number;
+  aReceberTotalPages: number;
   handleAReceberPagar: (row: AReceberRow) => void;
+  setFecharFaturaAlvo: (v: { convenioId: number; convenioNome: string } | null) => void;
+  setFecharFaturaOpen: (open: boolean) => void;
 }
 
 const FinanceiroCtx = createContext<FinanceiroContextValue | null>(null);
