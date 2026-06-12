@@ -592,7 +592,15 @@ const Financeiro = () => {
   };
 
   // Impressão detalhada respeitando filtros ativos
+  const dictHandlers: DictionaryHandlers = {
+    tiposDespesa, destinosPagamento, formasPagamento,
+    deletableTipos, deletableDestinos, deletableFormas,
+    openCriar, handleDeleteItem,
+  };
+
+  // Impressão detalhada respeitando filtros ativos
   const imprimirDetalhado = () => {
+
     const html = buildDetalhadoHtml({
       activeTab,
       filtered,
