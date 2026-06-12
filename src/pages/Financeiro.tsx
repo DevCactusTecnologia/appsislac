@@ -469,12 +469,13 @@ const Financeiro = () => {
   const handleEditClick = (entry: FinanceiroEntry) => { setEditingEntry({ ...entry }); setEditDialogOpen(true); };
   const handleEditSave = () => {
     if (!editingEntry) return;
-    if (!isValidDateBR(editingEntry.dataVencimento ?? "")) {
-      toast({ title: "Vencimento inválido", description: "Use o formato dd/mm/aaaa.", variant: "destructive" });
-      return;
-    }
-    if (editingEntry.foiPago === "Sim" && !isValidDateBR(editingEntry.dataPagamento ?? "")) {
-      toast({ title: "Data de pagamento inválida", description: "Use o formato dd/mm/aaaa.", variant: "destructive" });
+    const err = validateSaidaEdit({
+      dataVencimento: editingEntry.dataVencimento ?? "",
+      dataPagamento: editingEntry.dataPagamento ?? "",
+      foiPago: editingEntry.foiPago,
+    });
+    if (err) {
+      toast({ title: err.title, description: err.description, variant: "destructive" });
       return;
     }
     updateSaida(editingEntry.protocolo, {
