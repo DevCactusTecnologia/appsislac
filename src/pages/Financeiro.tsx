@@ -87,6 +87,9 @@ import { validateSaidaEdit } from "./Financeiro/services/validateSaidaEdit";
 import { computeDetailExames } from "./Financeiro/services/computeDetailExames";
 import { filterEntradasPagas } from "./Financeiro/services/filterEntradasPagas";
 import { computeFinanceiroSummary } from "./Financeiro/services/computeFinanceiroSummary";
+import { validatePayment } from "./Financeiro/services/validatePayment";
+import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
+import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 
@@ -488,23 +491,18 @@ const Financeiro = () => {
 
   const handlePagarFromDetail = () => {
     if (!detailEntry) return;
-    const today = new Date();
-    const dataHoje = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
     setPayTarget(detailEntry);
     setPayForma(detailEntry.pagamento && detailEntry.pagamento !== "—" ? detailEntry.pagamento : "PIX");
-    setPayData(dataHoje);
+    setPayData(todayBR());
     setDetailDialogOpen(false);
     setPayDialogOpen(true);
   };
 
   const handleConfirmPay = () => {
     if (!payTarget) return;
-    if (!isValidDateBR(payData) || !payData) {
-      toast({ title: "Data inválida", description: "Informe uma data de pagamento válida (dd/mm/aaaa).", variant: "destructive" });
-      return;
-    }
-    if (!payForma.trim()) {
-      toast({ title: "Forma de pagamento obrigatória", description: "Selecione ou informe a forma de pagamento.", variant: "destructive" });
+    const err = validatePayment({ payData, payForma });
+    if (err) {
+      toast({ title: err.title, description: err.description, variant: "destructive" });
       return;
     }
     updateSaida(payTarget.protocolo, {
@@ -546,8 +544,7 @@ const Financeiro = () => {
   };
 
   const marcarSaidasComoPagas = () => {
-    const today = new Date();
-    const dataHoje = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+    const dataHoje = todayBR();
     const protocolos = Array.from(saidasSelecionadas);
     protocolos.forEach(p => {
       const s = saidasList.find(x => x.protocolo === p);
@@ -570,9 +567,8 @@ const Financeiro = () => {
     [detailAtendimento],
   );
 
-  const detailTotalExames = detailExames.reduce((s, e) => s + e.valor, 0);
-  const detailTotalPago = (detailAtendimento?.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
-  const detailSaldo = detailTotalExames - detailTotalPago;
+  const { totalExames: detailTotalExames, totalPago: detailTotalPago, saldo: detailSaldo } =
+    computeDetailTotals(detailExames, detailAtendimento);
 
   /* ─── Render helpers ─── */
 
