@@ -654,6 +654,14 @@ const Financeiro = () => {
     setDialogOpen, setDialogTipo,
     setFaturaDetalheAlvo, setFaturaDetalheOpen,
     handleAReceberPagar,
+    aReceberStatusFilter, setAReceberStatusFilter,
+    aReceberSubTab, setAReceberSubTab,
+    aReceberSource,
+    aReceberConvenioRows,
+    aReceberPaginated,
+    aReceberFilteredLength: aReceberFiltered.length,
+    aReceberTotalPages,
+    setFecharFaturaAlvo, setFecharFaturaOpen,
   };
 
   return (
