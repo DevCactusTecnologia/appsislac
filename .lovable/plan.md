@@ -1,67 +1,89 @@
-## Architectural Split Program — Plano de execução faseado
 
-### Tamanho atual confirmado
-- `ResultadoDetalhe.tsx` — 2.627 linhas
-- `NovoAtendimento.tsx` — 2.570 linhas
-- `Financeiro.tsx` — 2.413 linhas
-- `atendimentoStore.ts` — 1.504 linhas
-- **Total:** 9.114 linhas a reorganizar (sem alterar comportamento)
+# Fatiamento de `Financeiro.tsx` por abas
 
-### Por que faseado, com confirmação entre fases
-A missão exige `mesmo input = mesmo output` em 4 módulos clínicos/financeiros críticos. Tentar executar Fases 1–7 num único turno significaria mover ~9k linhas em paralelo, sem você poder validar regressão a cada etapa. A memória do projeto também impõe que mudanças estruturais (rotas, contextos globais, boot) só ocorram com confirmação explícita. Proposta: **uma fase por turno**, com diff pequeno, checkpoint de smoke test, e só então a próxima.
+## Objetivo
+Reduzir `src/pages/Financeiro.tsx` (1.899 linhas) para um orquestrador (~300-400 linhas) que carrega 4 sub-componentes de aba, compartilhando estado/filtros via um contexto interno do módulo. Comportamento e UI **idênticos**.
 
-### Estratégia comum (todas as fases)
-1. **Extração mecânica primeiro** — recortar trechos contíguos para novos arquivos, manter assinaturas e imports. Sem renomear funções, sem alterar fluxo de dados, sem refatorar lógica interna.
-2. **Re-export shim quando útil** — manter caminho legado importável durante a transição (zero risco para consumidores externos).
-3. **API pública intocada** — hooks, stores e páginas continuam sendo importados pelo mesmo path original (`@/pages/...`, `@/data/atendimentoStore`).
-4. **Sem novas dependências, sem mudar tipos públicos, sem mudar RPC/edge/RLS.**
-5. **Validação por fase:** `tsc` limpo + smoke manual no fluxo da fase + diff revisado.
-
-### Ordem proposta (menor risco → maior risco)
+## Estrutura alvo
 
 ```text
-Fase 4  →  atendimentoStore split        (1.504 linhas, base de tudo)
-Fase 3  →  Financeiro split              (2.413 linhas, leitura-mostly)
-Fase 1  →  ResultadoDetalhe split        (2.627 linhas, PDF/assinatura)
-Fase 2  →  NovoAtendimento split         (2.570 linhas, wizard + preço)
-Fase 5  →  Services consolidation        (após arquivos divididos)
-Fase 6  →  Regressão guiada              (checklist por módulo)
-Fase 7  →  Relatórios em docs/refactors/
+src/pages/Financeiro/
+  page.tsx                       (novo orquestrador, substitui Financeiro.tsx)
+  FinanceiroContext.tsx          (novo — estado e filtros compartilhados)
+  components/
+    CaixaTab.tsx                 (já existe)
+    EntradasTab.tsx              (novo)
+    SaidasTab.tsx                (novo)
+    AReceberTab.tsx              (novo)
+    FinanceiroHeader.tsx         (novo — PageHeader + tabs + busca + filtros de período)
+    SummaryBar.tsx               (novo — cards de totais por forma de pagamento)
+    dialogs/
+      EditEntryDialog.tsx        (novo)
+      DeleteEntryDialog.tsx      (novo)
+      DetailEntryDialog.tsx      (novo)
+      PagarDespesaDialog.tsx     (novo)
 ```
 
-Inverti a ordem original (4→3→1→2) porque:
-- `atendimentoStore` é dependência de `ResultadoDetalhe` e `NovoAtendimento`; quebrá-lo depois força retrabalho.
-- `Financeiro` é o mais isolado (read-only via store) — ótimo "ensaio" do padrão antes dos módulos críticos.
+`src/pages/Financeiro.tsx` vira um re-export de `./Financeiro/page` (mantém rota `/financeiro` sem mexer em `App.tsx` — **não é mudança estrutural de rota**).
 
-### Detalhamento por fase
+## Contexto compartilhado (`FinanceiroContext.tsx`)
 
-**Fase 4 — `src/data/atendimentoStore/`**
-Split mecânico em `types.ts`, `queries.ts`, `mutations.ts`, `realtime.ts`, `status.ts`, `payments.ts`, `selectors.ts`, `index.ts` (apenas reexporta). Arquivo legado `atendimentoStore.ts` vira shim de 1 linha re-exportando do diretório. **Zero mudança nos imports das telas.**
+Expõe um único provider com:
 
-**Fase 3 — `src/pages/Financeiro/`**
-Já existem `helpers.ts` e `types.ts`. Adicionar `components/FinanceiroKpis|Entradas|Saidas|Faturas|Filtros.tsx`, `hooks/useFinanceiro.ts` (estado + queries derivadas), `services/FinanceiroService.ts` (agregações puras). `index.tsx` vira orquestrador (<400 linhas).
+- **Filtros globais**: `searchQuery`, `dateFrom`, `dateTo`, `periodoRapido`, `convenioFilter`, `saidaStatusFilter`, `currentPage` + setters.
+- **Dados derivados**: `entradas`, `saidas`, `aReceberRows`, `aReceberConvenioRows`, `allEntries`, `filtered`, `summary`, `caixa*`, `counts` (já calculados via os services existentes).
+- **Ações**: `openNovaEntradaSaida(tipo)`, `openEdit(entry)`, `openDelete(protocolo)`, `openDetail(entry)`, `openPagar(saida)`.
+- **Dicionários**: `tiposDespesa`, `destinosPagamento`, `formasPagamento` (já vindos de `useDicionario`).
 
-**Fase 1 — `src/pages/ResultadoDetalhe/`**
-Já existem `helpers.ts`, `types.ts`, `ParamTypedInput.tsx`. Adicionar `components/Resultado{Header,Actions,Parametros,Assinaturas,Anexos,PdfPanel}.tsx`, `hooks/useResultadoDetalhe.ts`, `services/ResultadoDetalheService.ts`. Mover `calcStatusGeral` duplicado, `isExameLiberado`, `addAuditEntry`, `handleLiberarTodos` etc. para o service. `index.tsx` <500 linhas.
+Cada aba consome via `useFinanceiro()` — zero props drilling.
 
-**Fase 2 — `src/pages/NovoAtendimento/`**
-Já existem `helpers.ts`, `types.ts`, `pricing.ts`, `buildExamesCobranca.ts`. Adicionar `steps/{Paciente,Exames,Pagamento,Confirmacao}Step.tsx`, `hooks/useNovoAtendimento.ts` (estado do wizard), `services/AppointmentWizardService.ts` (orquestração + validações puras). `index.tsx` <400 linhas.
+## Distribuição de responsabilidades
 
-**Fase 5 — Services first**
-Consolidar 4 services criados acima; remover duplicações remanescentes apontadas em `ssot-validation.md` (ex.: `calcStatusGeral` vs `deriveStatusGeral`, `parseNum` vs `parseNumeric`, `escapeHtml` triplicado). Apenas remover duplicação — nenhuma nova regra.
+| Componente | Conteúdo movido de Financeiro.tsx |
+|---|---|
+| `FinanceiroHeader` | tabs, busca, calendário from/to, chips de período rápido |
+| `EntradasTab` | tabela/lista de `filtered` quando `activeTab="entrada"` + paginação |
+| `SaidasTab` | tabela/lista de saídas + filtro de status + ações pagar/editar/excluir |
+| `AReceberTab` | sub-abas pacientes/convênios + diálogos `FecharFatura`/`FaturaDetalhe` |
+| `CaixaTab` | já existe — passa a consumir contexto |
+| `SummaryBar` | cards de `summary.byMethod` + total |
+| dialogs/ | 4 diálogos extraídos (cada um ~50-100 linhas) |
 
-**Fase 6 — Regressão**
-Checklist manual + os testes Vitest existentes (`pricing.test.ts`, `buildExamesCobranca.test.ts`). Não vou inventar novos testes a menos que você peça.
+## Detalhes técnicos
 
-**Fase 7 — Relatórios**
-Gerar os 5 arquivos em `docs/refactors/` com tabela antes/depois (linhas, responsabilidades, módulos) e confirmação textual de cada "alterado? NÃO".
+1. **Não criar barrel** (`index.ts`) — regra do `module-structure-standard.md`.
+2. **Manter lazy imports** dos diálogos existentes (`CriarItemDialog`, `FecharFaturaDialog`, `FaturaDetalheDialog`, `NovaEntradaSaidaDialog`).
+3. **Realtime/effects** (`subscribeAtendimentos`, `subscribeFinanceiro`, `fetchEntradasView`) ficam no provider — só executa uma vez.
+4. **`useEnsureStore`, `useAuth`, `useFeatureFlag`, `useAReceberPacientes`** permanecem no `page.tsx` orquestrador e descem via contexto.
+5. **CSS/JSX preservados literalmente** — só recortar.
+6. **Sem alteração de comportamento**: handlers continuam chamando os mesmos services puros (`validateSaidaEdit`, `validatePayment`, `computeDetailExames`, etc.).
+7. **Verificação**: tsc + abrir cada aba no preview para conferir paridade visual.
 
-### O que NÃO farei (respeitando as suas constraints)
-- Não tocar regras clínicas, financeiras, status, assinaturas, liberação, RLS, edge functions, banco.
-- Não criar abstrações genéricas (`BaseService`, etc.).
-- Não fazer "melhorias de oportunidade" durante o split.
-- Não alterar a dashboard do tenant nem reintroduzir PWA.
-- Não alterar `src/integrations/supabase/client.ts` nem auto-gen.
+## Plano de execução (sequencial, 1 PR mental)
 
-### Próximo passo
-Confirme a ordem (4 → 3 → 1 → 2 → 5 → 6 → 7) e eu começo pela **Fase 4 (atendimentoStore)** no próximo turno, entregando apenas ela para você validar antes de seguir. Se preferir a ordem original do briefing (1 → 2 → 3 → 4), também sigo — só registre.
+1. Criar `FinanceiroContext.tsx` movendo states/effects/useMemos.
+2. Extrair `FinanceiroHeader.tsx` e `SummaryBar.tsx`.
+3. Extrair `EntradasTab.tsx` (mais simples — primeiro teste de paridade).
+4. Extrair `SaidasTab.tsx` + `dialogs/EditEntryDialog`, `DeleteEntryDialog`, `DetailEntryDialog`, `PagarDespesaDialog`.
+5. Extrair `AReceberTab.tsx`.
+6. Reescrever `Financeiro.tsx` → `page.tsx` orquestrador com `<FinanceiroProvider>` + switch de aba.
+7. Compilar, abrir preview, conferir as 4 abas.
+
+## Resultado esperado
+
+- `page.tsx`: ~300 linhas (header + provider + switch).
+- Cada `*Tab.tsx`: 200-400 linhas focadas.
+- Cada `dialogs/*.tsx`: 50-120 linhas.
+- Zero props drilling além de 1 nível (Tab → Dialog quando dialog é local da aba).
+
+## Riscos / mitigação
+
+- **Risco**: quebrar ordem de hooks ao mover effects. **Mitigação**: copiar effects em bloco para o provider preservando ordem.
+- **Risco**: ciclos de import. **Mitigação**: contexto importa dos services; tabs importam contexto + ui; dialogs importam contexto.
+- **Risco**: regressão silenciosa em filtros. **Mitigação**: services puros já cobrem a lógica — recorte é mecânico.
+
+## Fora de escopo
+
+- Não mexer em `financeiroStore.ts` nem em services já criados.
+- Não alterar rotas em `App.tsx`.
+- Não tocar em RLS, edge functions, ou layout impresso (laudo travado).
