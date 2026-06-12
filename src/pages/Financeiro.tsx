@@ -86,6 +86,8 @@ import {
 } from "./Financeiro/services/FinanceiroService";
 import { validateSaidaEdit } from "./Financeiro/services/validateSaidaEdit";
 import { computeDetailExames } from "./Financeiro/services/computeDetailExames";
+import { filterEntradasPagas } from "./Financeiro/services/filterEntradasPagas";
+import { computeFinanceiroSummary } from "./Financeiro/services/computeFinanceiroSummary";
 import CaixaTab from "./Financeiro/components/CaixaTab";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 
@@ -266,15 +268,10 @@ const Financeiro = () => {
   // Entradas vêm exclusivamente da view financeiro_entradas (read-only, derivada de atendimento_pagamentos).
   // Regime de caixa: a aba Entradas exibe APENAS pagamentos efetivamente recebidos.
   // Pendências/parciais são gerenciadas na aba "A Receber".
-  const entradas: FinanceiroEntry[] = useMemo(() => {
-    return entradasView
-      .map(entradaViewToEntry)
-      .filter(e => {
-        const st = (e.statusPagamento || "").toLowerCase();
-        return st === "pago" || st === "pagamento efetuado";
-      })
-      .sort((a, b) => b.data.localeCompare(a.data));
-  }, [entradasView]);
+  const entradas: FinanceiroEntry[] = useMemo(
+    () => filterEntradasPagas(entradasView),
+    [entradasView],
+  );
 
   const saidas = useMemo(() => [...saidasList].sort((a, b) => b.data.localeCompare(a.data)), [saidasList]);
 
@@ -396,20 +393,10 @@ const Financeiro = () => {
     setReceberDialogOpen(true);
   };
 
-  const summary = useMemo(() => {
-    const map: Record<string, number> = {};
-    let total = 0;
-    const data = activeTab === "caixa" ? entradas : filtered;
-    data.forEach(e => {
-      if (activeTab === "saida") return;
-      map[e.pagamento] = (map[e.pagamento] || 0) + e.valorTotal;
-      total += e.valorTotal;
-    });
-    if (activeTab === "saida") {
-      filtered.forEach(e => { map[e.pagamento] = (map[e.pagamento] || 0) + e.valorTotal; total += e.valorTotal; });
-    }
-    return { byMethod: map, total };
-  }, [filtered, entradas, activeTab]);
+  const summary = useMemo(
+    () => computeFinanceiroSummary(activeTab, entradas, filtered),
+    [filtered, entradas, activeTab],
+  );
 
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───
   // Apenas movimentos efetivamente realizados entram no caixa.
