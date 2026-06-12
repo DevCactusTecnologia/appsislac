@@ -62,7 +62,6 @@ import type {
 import { baseTabs, paymentIcons } from "./Financeiro/types";
 import {
   saidaToEntry,
-  entradaViewToEntry,
   parseDate,
   maskDateBR,
   isValidDateBR,
