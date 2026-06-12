@@ -580,14 +580,10 @@ const Financeiro = () => {
     return getAtendimentos().find(a => a.protocolo === detailEntry.protocolo) ?? null;
   }, [detailEntry]);
 
-  const detailExames = useMemo(() => {
-    if (!detailAtendimento) return [];
-    const tabela = getTabelaByConvenioNome(detailAtendimento.convenio) as TabelaTipo;
-    return detailAtendimento.exames.map(nome => {
-      const valor = getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
-      return { nome, valor };
-    });
-  }, [detailAtendimento]);
+  const detailExames = useMemo(
+    () => computeDetailExames(detailAtendimento),
+    [detailAtendimento],
+  );
 
   const detailTotalExames = detailExames.reduce((s, e) => s + e.valor, 0);
   const detailTotalPago = (detailAtendimento?.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
