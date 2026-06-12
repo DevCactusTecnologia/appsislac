@@ -756,8 +756,8 @@ const Financeiro = () => {
 
           {/* ─── Tab A Receber (Fase 4 — Passo 4): consome FinanceiroContext ─── */}
           {activeTab === "a_receber" && <AReceberTab />}
-            </div>
-          )}
+
+
 
           {/* ─── Livro-Caixa ─── */}
           {activeTab === "caixa" && (
