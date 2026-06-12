@@ -92,6 +92,12 @@ import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
 import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
+import EditEntryDialog from "./Financeiro/components/dialogs/EditEntryDialog";
+import DeleteEntryDialog from "./Financeiro/components/dialogs/DeleteEntryDialog";
+import DetailEntryDialog from "./Financeiro/components/dialogs/DetailEntryDialog";
+import PagarDespesaDialog from "./Financeiro/components/dialogs/PagarDespesaDialog";
+import type { DictionaryHandlers } from "./Financeiro/components/dialogs/types";
+
 
 
 
