@@ -170,13 +170,9 @@ const Financeiro = () => {
 
   
 
-  // ─── Receber pagamento (A Receber) ───
-  // Reusa o NovaEntradaSaidaDialog (idêntico ao "Entrada de pagamento"), pré-selecionando o protocolo.
-  const [receberDialogOpen, setReceberDialogOpen] = useState(false);
-  const [receberInitial, setReceberInitial] = useState<{
-    tipo: "paciente" | "convenio" | "protocolo";
-    protocolo?: string;
-  } | null>(null);
+  // (receberDialogOpen/receberInitial agora vêm de useFinanceiroDialogs)
+
+
   
   const itemsPerPage = 8;
 
@@ -207,11 +203,8 @@ const Financeiro = () => {
   const deletableDestinos = useMemo(() => destinosItems.filter(i => !i.sistema).map(i => i.nome), [destinosItems]);
   const deletableFormas = useMemo(() => formasItems.filter(i => !i.sistema).map(i => i.nome), [formasItems]);
 
-  // Mini modal "Criar item"
-  const [criarOpen, setCriarOpen] = useState(false);
-  const [criarCategoria, setCriarCategoria] = useState<"tipo_despesa" | "destino_pagamento" | "forma_pagamento">("tipo_despesa");
-  const [criarInitialValue, setCriarInitialValue] = useState("");
-  const [criarOnSuccess, setCriarOnSuccess] = useState<((nome: string) => void) | null>(null);
+  // (criar* agora vêm de useFinanceiroDialogs)
+
 
   const invalidateDicionarios = () => {
     queryClient.invalidateQueries({ queryKey: ["tenant"], predicate: (q) => {
