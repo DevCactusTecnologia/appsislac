@@ -632,7 +632,32 @@ const Financeiro = () => {
   };
 
 
+  // ─── Valor único do contexto consumido pelos Tabs (Fase 4 — Passo 3). ───
+  const ctxValue: FinanceiroContextValue = {
+    activeTab, setActiveTab,
+    currentPage, setCurrentPage, itemsPerPage,
+    searchQuery, setSearchQuery,
+    convenioFilter, setConvenioFilter,
+    tipoDespesaFilter, setTipoDespesaFilter,
+    destinoPagamentoFilter, setDestinoPagamentoFilter,
+    saidaStatusFilter, setSaidaStatusFilter,
+    conveniosDisponiveis,
+    tiposDespesa, destinosPagamento, formasPagamento,
+    deletableTipos, deletableDestinos, deletableFormas,
+    openCriar, handleDeleteItem,
+    entradaCounts, aReceberCounts, saidaCounts,
+    paginatedData,
+    filteredLength: filtered.length,
+    totalPages,
+    saidasSelecionadas, setSaidasSelecionadas,
+    handleEditClick, handleDeleteClick, handleDetailClick,
+    setDialogOpen, setDialogTipo,
+    setFaturaDetalheAlvo, setFaturaDetalheOpen,
+    handleAReceberPagar,
+  };
+
   return (
+    <FinanceiroProvider value={ctxValue}>
     <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
       {/* ─── Header (design system unificado SA) ─── */}
       <PageHeader
