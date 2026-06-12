@@ -1,46 +1,26 @@
-// CaixaTab — JSX da aba "Livro Caixa" extraído de Financeiro.tsx
-// (Architectural Split Program — Fase 3 / Parte 2).
-// Sem mudança de comportamento: recebe state já derivado como props.
+// CaixaTab — consome FinanceiroContext (Fase 4 — Passo 5).
+// Comportamento idêntico ao recorte anterior; apenas trocou props por contexto.
 
 import { CircleDollarSign, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn, fmtBRL } from "@/lib/utils";
-import type { CaixaLinhaComSaldo } from "../types";
+import { useFinanceiroContext } from "../FinanceiroContext";
 
-interface CaixaTotais {
-  totalEntradas: number;
-  totalSaidas: number;
-  saldoFinal: number;
-}
+export default function CaixaTab() {
+  const {
+    caixaTotais,
+    caixaSaldoInicial,
+    caixaPaginated,
+    caixaLinhasComSaldo,
+    caixaTotalPages,
+    currentPage,
+    setCurrentPage,
+    dateFrom,
+    itemsPerPage,
+    imprimirLivroCaixa,
+  } = useFinanceiroContext();
 
-interface CaixaTabProps {
-  caixaTotais: CaixaTotais;
-  caixaSaldoInicial: number;
-  caixaPaginated: CaixaLinhaComSaldo[];
-  caixaLinhasComSaldo: CaixaLinhaComSaldo[];
-  caixaTotalPages: number;
-  currentPage: number;
-  setCurrentPage: (updater: (p: number) => number) => void;
-  setCurrentPageDirect: (page: number) => void;
-  dateFrom: Date | undefined;
-  itemsPerPage: number;
-  imprimirLivroCaixa: () => void;
-}
-
-export default function CaixaTab({
-  caixaTotais,
-  caixaSaldoInicial,
-  caixaPaginated,
-  caixaLinhasComSaldo,
-  caixaTotalPages,
-  currentPage,
-  setCurrentPage,
-  setCurrentPageDirect,
-  dateFrom,
-  itemsPerPage,
-  imprimirLivroCaixa,
-}: CaixaTabProps) {
   return (
     <div className="space-y-6">
       {/* Resumo + ação imprimir */}
@@ -166,7 +146,7 @@ export default function CaixaTab({
             <div className="flex items-center gap-1">
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
               {Array.from({ length: Math.min(caixaTotalPages, 5) }, (_, i) => i + 1).map(page => (
-                <button key={page} onClick={() => setCurrentPageDirect(page)} className={cn("h-8 w-8 rounded-xl text-xs font-semibold transition-all", currentPage === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{page}</button>
+                <button key={page} onClick={() => setCurrentPage(page)} className={cn("h-8 w-8 rounded-xl text-xs font-semibold transition-all", currentPage === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{page}</button>
               ))}
               {caixaTotalPages > 5 && <span className="text-xs text-muted-foreground px-1">…</span>}
               <button onClick={() => setCurrentPage(p => Math.min(caixaTotalPages, p + 1))} disabled={currentPage === caixaTotalPages} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button>

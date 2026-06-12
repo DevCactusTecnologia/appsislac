@@ -663,6 +663,9 @@ const Financeiro = () => {
     aReceberFilteredLength: aReceberFiltered.length,
     aReceberTotalPages,
     setFecharFaturaAlvo, setFecharFaturaOpen,
+    dateFrom,
+    caixaTotais, caixaSaldoInicial, caixaPaginated, caixaLinhasComSaldo, caixaTotalPages,
+    imprimirLivroCaixa,
   };
 
   return (
@@ -760,22 +763,8 @@ const Financeiro = () => {
 
 
 
-          {/* ─── Livro-Caixa ─── */}
-          {activeTab === "caixa" && (
-            <CaixaTab
-              caixaTotais={caixaTotais}
-              caixaSaldoInicial={caixaSaldoInicial}
-              caixaPaginated={caixaPaginated}
-              caixaLinhasComSaldo={caixaLinhasComSaldo}
-              caixaTotalPages={caixaTotalPages}
-              currentPage={currentPage}
-              setCurrentPage={(updater) => setCurrentPage(updater)}
-              setCurrentPageDirect={(page) => setCurrentPage(page)}
-              dateFrom={dateFrom}
-              itemsPerPage={itemsPerPage}
-              imprimirLivroCaixa={imprimirLivroCaixa}
-            />
-          )}
+          {/* ─── Livro-Caixa (Fase 4 — Passo 5): consome FinanceiroContext ─── */}
+          {activeTab === "caixa" && <CaixaTab />}
         </>
 
 

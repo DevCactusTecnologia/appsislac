@@ -1,12 +1,10 @@
-// Contexto interno do módulo Financeiro (Fase 4 — Passo 3).
+// Contexto interno do módulo Financeiro (Fase 4 — Passos 3-5).
 // Expõe estados/filtros/derivados/handlers para os Tabs sem props drilling.
-// Construído a partir dos hooks `useFinanceiroFilters` e `useFinanceiroDialogs`
-// + dados/derivados/handlers que ainda vivem no orquestrador `Financeiro.tsx`.
 //
 // Comportamento idêntico — apenas reorganização. Nenhum hook novo aqui;
 // o provider apenas recebe o `value` montado no orquestrador.
 import { createContext, useContext, type ReactNode } from "react";
-import type { FinanceiroEntry, AReceberRow, AReceberConvenioRow } from "./types";
+import type { FinanceiroEntry, AReceberRow, AReceberConvenioRow, CaixaLinhaComSaldo } from "./types";
 
 type CategoriaDicionario = "tipo_despesa" | "destino_pagamento" | "forma_pagamento";
 
@@ -78,6 +76,15 @@ export interface FinanceiroContextValue {
   handleAReceberPagar: (row: AReceberRow) => void;
   setFecharFaturaAlvo: (v: { convenioId: number; convenioNome: string } | null) => void;
   setFecharFaturaOpen: (open: boolean) => void;
+
+  // Caixa (Fase 4 — Passo 5)
+  dateFrom: Date | undefined;
+  caixaTotais: { totalEntradas: number; totalSaidas: number; saldoFinal: number };
+  caixaSaldoInicial: number;
+  caixaPaginated: CaixaLinhaComSaldo[];
+  caixaLinhasComSaldo: CaixaLinhaComSaldo[];
+  caixaTotalPages: number;
+  imprimirLivroCaixa: () => void;
 }
 
 const FinanceiroCtx = createContext<FinanceiroContextValue | null>(null);
