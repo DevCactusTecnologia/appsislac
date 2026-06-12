@@ -6,7 +6,7 @@
 // Comportamento idêntico — apenas reorganização. Nenhum hook novo aqui;
 // o provider apenas recebe o `value` montado no orquestrador.
 import { createContext, useContext, type ReactNode } from "react";
-import type { FinanceiroEntry, AReceberRow } from "./types";
+import type { FinanceiroEntry, AReceberRow, AReceberConvenioRow } from "./types";
 
 type CategoriaDicionario = "tipo_despesa" | "destino_pagamento" | "forma_pagamento";
 
