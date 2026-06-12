@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn, fmtBRL, fmtBRLNumber, searchNormalize } from "@/lib/utils";
+import { cn, fmtBRL, searchNormalize } from "@/lib/utils";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
 
@@ -46,9 +46,9 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import StandardDialog from "@/components/ui/standard-dialog";
 import SearchableSelect from "@/components/financeiro/SearchableSelect";
-import { AlertTriangle, CheckCircle, Wallet, Receipt, Plug } from "lucide-react";
+import { CheckCircle, Wallet, Receipt, Plug } from "lucide-react";
+
 import IntegracoesWebhookPanel from "@/components/financeiro/IntegracoesWebhookPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/components/shared/PageHeader";
