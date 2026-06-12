@@ -663,6 +663,9 @@ const Financeiro = () => {
     aReceberFilteredLength: aReceberFiltered.length,
     aReceberTotalPages,
     setFecharFaturaAlvo, setFecharFaturaOpen,
+    dateFrom,
+    caixaTotais, caixaSaldoInicial, caixaPaginated, caixaLinhasComSaldo, caixaTotalPages,
+    imprimirLivroCaixa,
   };
 
   return (
