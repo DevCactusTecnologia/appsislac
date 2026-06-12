@@ -1396,419 +1396,47 @@ const Financeiro = () => {
       )}
       </Suspense>
 
-      <StandardDialog
+      <EditEntryDialog
         open={editDialogOpen}
+        editingEntry={editingEntry}
+        setEditingEntry={setEditingEntry}
         onClose={() => setEditDialogOpen(false)}
-        icon={<ArrowUpCircle className="h-5 w-5 text-destructive" />}
-        title="Editar saída"
-        subtitle={editingEntry ? `Protocolo ${editingEntry.protocolo}` : "Altere os dados da despesa"}
-        maxWidth="2xl"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-2xl">Cancelar</Button>
-            <Button onClick={handleEditSave} className="rounded-2xl">Salvar alterações</Button>
-          </>
-        }
-      >
-        {editingEntry && (
-          <div className="px-6 py-5 space-y-4">
-            {/* Card: Classificação */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Classificação</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Tipo de despesa <span className="text-destructive">*</span></Label>
-                  <SearchableSelect
-                    value={editingEntry.tipoDespesa || ""}
-                    onChange={v => setEditingEntry({ ...editingEntry, tipoDespesa: v })}
-                    onCreateRequest={(typed) => openCriar("tipo_despesa", typed, (nome) => setEditingEntry((prev) => prev ? { ...prev, tipoDespesa: nome } : prev))}
-                    options={tiposDespesa}
-                    placeholder="Digite ou selecione..."
-                    allowCreate
-                    deletableOptions={deletableTipos}
-                    onDelete={v => {
-                      void handleDeleteItem("tipo_despesa", v);
-                      if (editingEntry.tipoDespesa === v) setEditingEntry({ ...editingEntry, tipoDespesa: "" });
-                    }}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Destino do pagamento</Label>
-                  <SearchableSelect
-                    value={editingEntry.destinoPagamento || ""}
-                    onChange={v => setEditingEntry({ ...editingEntry, destinoPagamento: v })}
-                    onCreateRequest={(typed) => openCriar("destino_pagamento", typed, (nome) => setEditingEntry((prev) => prev ? { ...prev, destinoPagamento: nome } : prev))}
-                    options={destinosPagamento}
-                    placeholder="Digite ou selecione..."
-                    allowCreate
-                    deletableOptions={deletableDestinos}
-                    onDelete={v => {
-                      void handleDeleteItem("destino_pagamento", v);
-                      if (editingEntry.destinoPagamento === v) setEditingEntry({ ...editingEntry, destinoPagamento: "" });
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+        onSave={handleEditSave}
+        dict={dictHandlers}
+      />
 
-            {/* Card: Detalhes */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Detalhes</span>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-cliente" className="text-xs font-medium text-muted-foreground">Cliente / Fornecedor</Label>
-                <Input
-                  id="edit-cliente"
-                  value={editingEntry.cliente}
-                  maxLength={120}
-                  onChange={e => setEditingEntry({ ...editingEntry, cliente: e.target.value })}
-                  className="rounded-xl h-10"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-descricao" className="text-xs font-medium text-muted-foreground">Descrição</Label>
-                <Input
-                  id="edit-descricao"
-                  value={editingEntry.descricao || ""}
-                  maxLength={200}
-                  placeholder="Ex. Conta de luz — Janeiro/2026"
-                  onChange={e => setEditingEntry({ ...editingEntry, descricao: e.target.value })}
-                  className="rounded-xl h-10"
-                />
-              </div>
-            </div>
-
-            {/* Card: Valores e Datas */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Valores e Datas</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-valor" className="text-xs font-medium text-muted-foreground">Valor (R$)</Label>
-                  <Input
-                    id="edit-valor"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editingEntry.valorTotal}
-                    onChange={e => setEditingEntry({ ...editingEntry, valorTotal: parseFloat(e.target.value) || 0 })}
-                    className="rounded-xl h-10 font-semibold"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-vencimento" className="text-xs font-medium text-muted-foreground">Vencimento</Label>
-                  <Input
-                    id="edit-vencimento"
-                    inputMode="numeric"
-                    placeholder="dd/mm/aaaa"
-                    maxLength={10}
-                    value={editingEntry.dataVencimento || ""}
-                    onChange={e => setEditingEntry({ ...editingEntry, dataVencimento: maskDateBR(e.target.value) })}
-                    aria-invalid={!isValidDateBR(editingEntry.dataVencimento || "")}
-                    className={cn("rounded-xl h-10", !isValidDateBR(editingEntry.dataVencimento || "") && "border-destructive focus-visible:ring-destructive")}
-                  />
-                  {!isValidDateBR(editingEntry.dataVencimento || "") && (
-                    <p className="text-[11px] text-destructive">Data inválida. Use dd/mm/aaaa.</p>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Forma de pagamento</Label>
-                  <SearchableSelect
-                    value={editingEntry.pagamento === "—" ? "" : editingEntry.pagamento}
-                    onChange={v => setEditingEntry({ ...editingEntry, pagamento: v })}
-                    onCreateRequest={(typed) => openCriar("forma_pagamento", typed, (nome) => setEditingEntry((prev) => prev ? { ...prev, pagamento: nome } : prev))}
-                    options={formasPagamento}
-                    placeholder="Selecione"
-                    allowCreate
-                    deletableOptions={deletableFormas}
-                    onDelete={v => void handleDeleteItem("forma_pagamento", v)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Card: Status do pagamento */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status do pagamento</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Foi pago?</Label>
-                  <div className="flex gap-2">
-                    {(["Sim", "Não"] as const).map(opt => {
-                      const active = (editingEntry.foiPago || "Não") === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => {
-                            const today = new Date();
-                            const hoje = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
-                            setEditingEntry({
-                              ...editingEntry,
-                              foiPago: opt,
-                              dataPagamento: opt === "Não" ? "" : (editingEntry.dataPagamento || hoje),
-                            });
-                          }}
-                          className={cn(
-                            "flex-1 h-10 rounded-xl border text-sm font-medium transition-all",
-                            active
-                              ? opt === "Sim"
-                                ? "bg-status-success/10 border-status-success/40 text-status-success"
-                                : "bg-muted/60 border-border text-foreground"
-                              : "bg-background border-border text-muted-foreground hover:bg-muted/30",
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                {editingEntry.foiPago === "Sim" && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="edit-data-pgto" className="text-xs font-medium text-muted-foreground">Data do pagamento</Label>
-                    <Input
-                      id="edit-data-pgto"
-                      inputMode="numeric"
-                      placeholder="dd/mm/aaaa"
-                      maxLength={10}
-                      value={editingEntry.dataPagamento || ""}
-                      onChange={e => setEditingEntry({ ...editingEntry, dataPagamento: maskDateBR(e.target.value) })}
-                      aria-invalid={!isValidDateBR(editingEntry.dataPagamento || "")}
-                      className={cn("rounded-xl h-10", !isValidDateBR(editingEntry.dataPagamento || "") && "border-destructive focus-visible:ring-destructive")}
-                    />
-                    {!isValidDateBR(editingEntry.dataPagamento || "") && (
-                      <p className="text-[11px] text-destructive">Data inválida. Use dd/mm/aaaa.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </StandardDialog>
-
-      <StandardDialog
+      <DeleteEntryDialog
         open={deleteDialogOpen}
+        protocolo={deletingProtocolo}
         onClose={() => setDeleteDialogOpen(false)}
-        icon={<AlertTriangle className="h-5 w-5 text-destructive" />}
-        title="Excluir registro"
-        subtitle={`Protocolo ${deletingProtocolo}`}
-        maxWidth="sm"
-        footer={
-          <>
-            <Button variant="outline" className="rounded-2xl" onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-2xl">Excluir</Button>
-          </>
-        }
-      >
-        <div className="px-6 py-5 text-sm text-muted-foreground">
-          Tem certeza que deseja excluir <span className="font-semibold text-foreground">{deletingProtocolo}</span>? Esta ação não pode ser desfeita.
-        </div>
-      </StandardDialog>
+        onConfirm={handleDeleteConfirm}
+      />
 
-      <StandardDialog
+      <DetailEntryDialog
         open={detailDialogOpen}
+        detailEntry={detailEntry}
+        detailAtendimento={detailAtendimento}
+        detailExames={detailExames}
+        detailTotalExames={detailTotalExames}
+        detailTotalPago={detailTotalPago}
+        detailSaldo={detailSaldo}
         onClose={() => setDetailDialogOpen(false)}
-        icon={detailEntry?.tipo === "saida"
-          ? <ArrowUpCircle className="h-5 w-5 text-destructive" />
-          : <FileText className="h-5 w-5 text-primary" />}
-        title={detailEntry?.tipo === "saida" ? "Detalhes da despesa" : "Detalhes da entrada"}
-        subtitle={detailEntry?.protocolo}
-        maxWidth="lg"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setDetailDialogOpen(false)} className="rounded-2xl">Fechar</Button>
-            <Button variant="outline" className="rounded-2xl gap-2" onClick={() => {
-              if (!detailEntry) return;
-              const examesHtml = detailAtendimento ? detailExames.map(e => `<div class="line"><span>${e.nome}</span><span>R$ ${fmtBRLNumber(e.valor)}</span></div>`).join("") : "";
-              const pagsHtml = detailAtendimento ? (detailAtendimento.pagamentosRealizados ?? []).map(p => `<div class="line"><span>${p.tipo} — ${p.data}</span><span>R$ ${fmtBRLNumber(p.valor)}</span></div>`).join("") : `<div class="line"><span>${detailEntry.pagamento}</span><span>R$ ${fmtBRLNumber(detailEntry.valorTotal)}</span></div>`;
-              const html = `<html><head><title>Comprovante</title><style>body{font-family:Arial,sans-serif;padding:24px;font-size:13px;color:#222}h2{text-align:center;margin-bottom:4px}.sub{text-align:center;color:#888;font-size:11px;margin-bottom:16px}.line{display:flex;justify-content:space-between;padding:4px 0}.divider{border-top:1px dashed #ccc;margin:12px 0}.bold{font-weight:bold}</style></head><body><h2>Comprovante de Pagamento</h2><p class="sub">${detailEntry.data}</p><div class="divider"></div><div class="line"><span>Protocolo:</span><span class="bold">${detailEntry.protocolo}</span></div><div class="line"><span>Cliente:</span><span class="bold">${detailEntry.cliente}</span></div><div class="line"><span>Convênio:</span><span>${detailEntry.convenio ?? "—"}</span></div>${examesHtml ? `<div class="divider"></div><div class="line bold"><span>Exames:</span></div>${examesHtml}<div class="divider"></div><div class="line bold"><span>Total exames:</span><span>R$ ${fmtBRLNumber(detailTotalExames)}</span></div>` : ""}<div class="divider"></div><div class="line bold"><span>Pagamentos:</span></div>${pagsHtml}<div class="divider"></div><div class="line bold"><span>Valor:</span><span>R$ ${fmtBRLNumber(detailEntry.valorTotal)}</span></div>${detailAtendimento ? `<div class="line"><span>Total pago:</span><span>R$ ${fmtBRLNumber(detailTotalPago)}</span></div><div class="line bold"><span>Saldo devedor:</span><span style="color:${detailSaldo > 0.01 ? '#dc2626' : '#16a34a'}">R$ ${fmtBRLNumber(Math.max(0,detailSaldo))}</span></div>` : ""}</body></html>`;
-              printHtmlInHiddenFrame({ html, frameId: "financeiro-comprovante-print-frame" });
-            }}><Printer className="h-4 w-4" />Imprimir</Button>
-            {detailEntry?.tipo === "saida" && detailEntry.foiPago !== "Sim" && (
-              <>
-                <Button variant="outline" className="rounded-2xl gap-2" onClick={handleEditFromDetail}>
-                  <Pencil className="h-4 w-4" />Editar
-                </Button>
-                <Button className="rounded-2xl gap-2 bg-status-success text-white hover:bg-status-success/90" onClick={handlePagarFromDetail}>
-                  <CheckCircle className="h-4 w-4" />Pagar agora
-                </Button>
-              </>
-            )}
-          </>
-        }
-      >
-        {detailEntry && (
-          <div className="px-6 py-5 space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">{detailEntry.tipo === "saida" ? "Descrição" : "Cliente"}</span><span className="font-bold text-foreground">{detailEntry.tipo === "saida" ? (detailEntry.descricao || detailEntry.cliente) : detailEntry.cliente}</span></div>
-              {detailEntry.tipo === "saida" ? (
-                <>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tipo despesa</span><span className="text-foreground">{detailEntry.tipoDespesa ?? "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Destino</span><span className="text-foreground">{detailEntry.destinoPagamento ?? "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Vencimento</span><span className="text-foreground">{detailEntry.dataVencimento ?? "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Pago?</span><span className={cn("font-semibold", detailEntry.foiPago === "Sim" ? "text-status-success" : "text-destructive")}>{detailEntry.foiPago ?? "—"}</span></div>
-                  {detailEntry.foiPago === "Sim" && (
-                    <>
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Data pgto</span><span className="text-foreground">{detailEntry.dataPagamento ?? "—"}</span></div>
-                      <div className="flex justify-between text-sm"><span className="text-muted-foreground">Forma pgto</span><span className="font-medium text-foreground">{detailEntry.pagamento}</span></div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Data</span><span className="text-foreground">{detailEntry.data}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Convênio</span><span className="text-foreground">{detailEntry.convenio ?? "—"}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Forma pgto</span><span className="font-medium text-foreground">{detailEntry.pagamento}</span></div>
-                </>
-              )}
-              <div className="h-px bg-border/40" />
-              <div className="flex justify-between text-sm font-bold"><span>Valor</span><span className={detailEntry.tipo === "saida" ? "text-destructive" : "text-foreground"}>{detailEntry.tipo === "saida" ? "- " : ""}{fmtBRL(detailEntry.valorTotal)}</span></div>
-            </div>
+        onPagar={handlePagarFromDetail}
+        onEdit={handleEditFromDetail}
+      />
 
-            {detailAtendimento && (
-              <>
-                <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">Exames</p>
-                  {detailExames.map((e, i) => <div key={i} className="flex justify-between text-sm"><span className="text-muted-foreground">{e.nome}</span><span className="font-medium text-foreground">{fmtBRL(e.valor)}</span></div>)}
-                  <div className="h-px bg-border/40" />
-                  <div className="flex justify-between text-sm font-bold"><span>Total exames</span><span>{fmtBRL(detailTotalExames)}</span></div>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">Pagamentos</p>
-                  {(detailAtendimento.pagamentosRealizados ?? []).map((p, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-2">
-                        {p.tipo === "PIX" && <QrCode className="h-3.5 w-3.5" />}
-                        {p.tipo === "Dinheiro" && <Banknote className="h-3.5 w-3.5" />}
-                        {(p.tipo === "Crédito" || p.tipo === "Débito" || p.tipo.includes("crédito") || p.tipo.includes("débito") || p.tipo.includes("Cartão")) && <CreditCard className="h-3.5 w-3.5" />}
-                        {p.tipo} — {p.data}
-                      </span>
-                      <span className="font-medium text-foreground">{fmtBRL(p.valor)}</span>
-                    </div>
-                  ))}
-                  <div className="h-px bg-border/40" />
-                  <div className="flex justify-between text-sm font-bold"><span>Total pago</span><span className="text-status-success">{fmtBRL(detailTotalPago)}</span></div>
-                </div>
-                <div className="rounded-2xl bg-muted/30 p-4 space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status atendimento</span><span className="font-medium">{detailAtendimento.statusAtendimento.label}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status pagamento</span><span className="font-medium">{detailAtendimento.statusPagamento.label}</span></div>
-                  <div className="h-px bg-border/40" />
-                  <div className="flex justify-between text-sm font-bold"><span>Saldo devedor</span><span className={detailSaldo > 0.01 ? "text-destructive" : "text-status-success"}>{fmtBRL(Math.max(0, detailSaldo))}</span></div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </StandardDialog>
-
-      {/* Confirmar pagamento (Pagar agora) */}
-      <StandardDialog
+      <PagarDespesaDialog
         open={payDialogOpen}
+        payTarget={payTarget}
+        payForma={payForma}
+        setPayForma={setPayForma}
+        payData={payData}
+        setPayData={setPayData}
         onClose={() => { setPayDialogOpen(false); setPayTarget(null); }}
-        icon={<CheckCircle className="h-5 w-5 text-status-success" />}
-        title="Confirmar pagamento"
-        subtitle={payTarget ? `Protocolo ${payTarget.protocolo}` : undefined}
-        maxWidth="lg"
-        footer={
-          <>
-            <Button variant="outline" className="rounded-2xl" onClick={() => { setPayDialogOpen(false); setPayTarget(null); }}>Cancelar</Button>
-            <Button className="rounded-2xl gap-2 bg-status-success text-white hover:bg-status-success/90" onClick={handleConfirmPay}>
-              <CheckCircle className="h-4 w-4" />Confirmar pagamento
-            </Button>
-          </>
-        }
-      >
-        {payTarget && (
-          <div className="px-6 py-5 space-y-4">
-            {/* Resumo */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Despesa</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Descrição</span>
-                  <span className="font-semibold text-foreground truncate ml-3">{payTarget.descricao || payTarget.cliente}</span>
-                </div>
-                {payTarget.tipoDespesa && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tipo</span>
-                    <span className="text-foreground">{payTarget.tipoDespesa}</span>
-                  </div>
-                )}
-                {payTarget.destinoPagamento && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Destino</span>
-                    <span className="text-foreground">{payTarget.destinoPagamento}</span>
-                  </div>
-                )}
-                {payTarget.dataVencimento && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Vencimento</span>
-                    <span className="text-foreground">{payTarget.dataVencimento}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm pt-1 border-t border-border/50">
-                  <span className="text-muted-foreground">Valor</span>
-                  <span className="font-bold text-foreground tabular-nums">{fmtBRL(payTarget.valorTotal)}</span>
-                </div>
-              </div>
-            </div>
+        onConfirm={handleConfirmPay}
+        dict={dictHandlers}
+      />
 
-            {/* Forma e data de pagamento */}
-            <div className="rounded-2xl border border-border/50 bg-muted/15 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Pagamento</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground">Forma de pagamento <span className="text-destructive">*</span></Label>
-                  <SearchableSelect
-                    value={payForma}
-                    onChange={setPayForma}
-                    onCreateRequest={(typed) => openCriar("forma_pagamento", typed, (nome) => setPayForma(nome))}
-                    options={formasPagamento}
-                    placeholder="Selecione"
-                    allowCreate
-                    deletableOptions={deletableFormas}
-                    onDelete={v => void handleDeleteItem("forma_pagamento", v)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="pay-data" className="text-xs font-medium text-muted-foreground">Data do pagamento <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="pay-data"
-                    inputMode="numeric"
-                    placeholder="dd/mm/aaaa"
-                    maxLength={10}
-                    value={payData}
-                    onChange={e => setPayData(maskDateBR(e.target.value))}
-                    aria-invalid={!isValidDateBR(payData)}
-                    className={cn("rounded-xl h-10", !isValidDateBR(payData) && "border-destructive focus-visible:ring-destructive")}
-                  />
-                  {!isValidDateBR(payData) && (
-                    <p className="text-[11px] text-destructive">Data inválida. Use dd/mm/aaaa.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </StandardDialog>
 
       {/* Receber pagamento (A Receber) — usa o mesmo modal "Entrada de pagamento" */}
       <Suspense fallback={null}>
