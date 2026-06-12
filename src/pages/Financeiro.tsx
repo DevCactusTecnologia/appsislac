@@ -93,6 +93,7 @@ import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
 import EntradasTab from "./Financeiro/components/EntradasTab";
 import SaidasTab from "./Financeiro/components/SaidasTab";
+import AReceberTab from "./Financeiro/components/AReceberTab";
 import { FinanceiroProvider, type FinanceiroContextValue } from "./Financeiro/FinanceiroContext";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 import EditEntryDialog from "./Financeiro/components/dialogs/EditEntryDialog";
