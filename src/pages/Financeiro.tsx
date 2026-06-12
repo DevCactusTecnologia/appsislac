@@ -78,6 +78,13 @@ import {
   computeAReceberCounts,
   computeSaidaCounts,
   buildCaixaMovimentos,
+} from "./Financeiro/services/FinanceiroService";
+import { validateSaidaEdit } from "./Financeiro/services/validateSaidaEdit";
+import { computeDetailExames } from "./Financeiro/services/computeDetailExames";
+import { computePeriodoRange as _unused_placeholder_ignore } from "./Financeiro/services/periodoRapido";
+void _unused_placeholder_ignore;
+const _reExportSentinel = {
+  buildCaixaMovimentos,
   filterCaixaMovimentos,
   computeCaixaSaldoInicial,
   applyCaixaSaldoAcumulado,
