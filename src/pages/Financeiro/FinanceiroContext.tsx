@@ -76,6 +76,15 @@ export interface FinanceiroContextValue {
   handleAReceberPagar: (row: AReceberRow) => void;
   setFecharFaturaAlvo: (v: { convenioId: number; convenioNome: string } | null) => void;
   setFecharFaturaOpen: (open: boolean) => void;
+
+  // Caixa (Fase 4 — Passo 5)
+  dateFrom: Date | undefined;
+  caixaTotais: { totalEntradas: number; totalSaidas: number; saldoFinal: number };
+  caixaSaldoInicial: number;
+  caixaPaginated: CaixaLinhaComSaldo[];
+  caixaLinhasComSaldo: CaixaLinhaComSaldo[];
+  caixaTotalPages: number;
+  imprimirLivroCaixa: () => void;
 }
 
 const FinanceiroCtx = createContext<FinanceiroContextValue | null>(null);
