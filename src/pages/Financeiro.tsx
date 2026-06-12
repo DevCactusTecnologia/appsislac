@@ -13,8 +13,7 @@ import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
 
 import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getConvenios, getTabelaByConvenioNome } from "@/data/convenioStore";
-import { getPrecoExame, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import { getConvenios } from "@/data/convenioStore";
 import {
   getSaidas, subscribeFinanceiro, removeSaida, updateSaida,
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
@@ -85,6 +84,8 @@ import {
   buildLivroCaixaHtml,
   buildDetalhadoHtml,
 } from "./Financeiro/services/FinanceiroService";
+import { validateSaidaEdit } from "./Financeiro/services/validateSaidaEdit";
+import { computeDetailExames } from "./Financeiro/services/computeDetailExames";
 import CaixaTab from "./Financeiro/components/CaixaTab";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 
@@ -467,12 +468,13 @@ const Financeiro = () => {
   const handleEditClick = (entry: FinanceiroEntry) => { setEditingEntry({ ...entry }); setEditDialogOpen(true); };
   const handleEditSave = () => {
     if (!editingEntry) return;
-    if (!isValidDateBR(editingEntry.dataVencimento ?? "")) {
-      toast({ title: "Vencimento inválido", description: "Use o formato dd/mm/aaaa.", variant: "destructive" });
-      return;
-    }
-    if (editingEntry.foiPago === "Sim" && !isValidDateBR(editingEntry.dataPagamento ?? "")) {
-      toast({ title: "Data de pagamento inválida", description: "Use o formato dd/mm/aaaa.", variant: "destructive" });
+    const err = validateSaidaEdit({
+      dataVencimento: editingEntry.dataVencimento ?? "",
+      dataPagamento: editingEntry.dataPagamento ?? "",
+      foiPago: editingEntry.foiPago,
+    });
+    if (err) {
+      toast({ title: err.title, description: err.description, variant: "destructive" });
       return;
     }
     updateSaida(editingEntry.protocolo, {
@@ -577,14 +579,10 @@ const Financeiro = () => {
     return getAtendimentos().find(a => a.protocolo === detailEntry.protocolo) ?? null;
   }, [detailEntry]);
 
-  const detailExames = useMemo(() => {
-    if (!detailAtendimento) return [];
-    const tabela = getTabelaByConvenioNome(detailAtendimento.convenio) as TabelaTipo;
-    return detailAtendimento.exames.map(nome => {
-      const valor = getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
-      return { nome, valor };
-    });
-  }, [detailAtendimento]);
+  const detailExames = useMemo(
+    () => computeDetailExames(detailAtendimento),
+    [detailAtendimento],
+  );
 
   const detailTotalExames = detailExames.reduce((s, e) => s + e.valor, 0);
   const detailTotalPago = (detailAtendimento?.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
