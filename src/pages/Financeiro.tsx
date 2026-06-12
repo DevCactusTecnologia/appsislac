@@ -97,6 +97,9 @@ import DeleteEntryDialog from "./Financeiro/components/dialogs/DeleteEntryDialog
 import DetailEntryDialog from "./Financeiro/components/dialogs/DetailEntryDialog";
 import PagarDespesaDialog from "./Financeiro/components/dialogs/PagarDespesaDialog";
 import type { DictionaryHandlers } from "./Financeiro/components/dialogs/types";
+import { useFinanceiroFilters } from "./Financeiro/hooks/useFinanceiroFilters";
+import { useFinanceiroDialogs } from "./Financeiro/hooks/useFinanceiroDialogs";
+
 
 
 
