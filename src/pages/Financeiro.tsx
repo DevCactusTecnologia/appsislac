@@ -91,6 +91,9 @@ import { validatePayment } from "./Financeiro/services/validatePayment";
 import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
 import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
+import EntradasTab from "./Financeiro/components/EntradasTab";
+import SaidasTab from "./Financeiro/components/SaidasTab";
+import { FinanceiroProvider, type FinanceiroContextValue } from "./Financeiro/FinanceiroContext";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 import EditEntryDialog from "./Financeiro/components/dialogs/EditEntryDialog";
 import DeleteEntryDialog from "./Financeiro/components/dialogs/DeleteEntryDialog";
@@ -629,7 +632,32 @@ const Financeiro = () => {
   };
 
 
+  // ─── Valor único do contexto consumido pelos Tabs (Fase 4 — Passo 3). ───
+  const ctxValue: FinanceiroContextValue = {
+    activeTab, setActiveTab,
+    currentPage, setCurrentPage, itemsPerPage,
+    searchQuery, setSearchQuery,
+    convenioFilter, setConvenioFilter,
+    tipoDespesaFilter, setTipoDespesaFilter,
+    destinoPagamentoFilter, setDestinoPagamentoFilter,
+    saidaStatusFilter, setSaidaStatusFilter,
+    conveniosDisponiveis,
+    tiposDespesa, destinosPagamento, formasPagamento,
+    deletableTipos, deletableDestinos, deletableFormas,
+    openCriar, handleDeleteItem,
+    entradaCounts, aReceberCounts, saidaCounts,
+    paginatedData,
+    filteredLength: filtered.length,
+    totalPages,
+    saidasSelecionadas, setSaidasSelecionadas,
+    handleEditClick, handleDeleteClick, handleDetailClick,
+    setDialogOpen, setDialogTipo,
+    setFaturaDetalheAlvo, setFaturaDetalheOpen,
+    handleAReceberPagar,
+  };
+
   return (
+    <FinanceiroProvider value={ctxValue}>
     <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
       {/* ─── Header (design system unificado SA) ─── */}
       <PageHeader
@@ -714,121 +742,9 @@ const Financeiro = () => {
             <IntegracoesWebhookPanel />
           )}
 
-          {/* ─── Cards de status (Saídas) ─── */}
-          {activeTab === "saida" && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              {([
-                { key: "todas", label: "Total", count: saidaCounts.todas, value: saidaCounts.totalPendentes + saidaCounts.totalPagas, icon: CircleDollarSign, tone: "neutral" },
-                { key: "vencidas", label: "Vencidas", count: saidaCounts.vencidas, value: saidaCounts.totalVencidas, icon: AlertOctagon, tone: "bad" },
-                { key: "vencendo7", label: "Vencem em 7 dias", count: saidaCounts.vencendo7, value: saidaCounts.totalVencendo7, icon: Clock, tone: "warn" },
-                { key: "pagas", label: "Pagas", count: saidaCounts.pagas, value: saidaCounts.totalPagas, icon: CheckCircle2, tone: "good" },
-              ] as const).map(card => {
-                const Icon = card.icon;
-                const active = saidaStatusFilter === card.key;
-                const toneStyles = {
-                  neutral: { icon: "text-muted-foreground", accent: "bg-foreground" },
-                  bad: { icon: "text-destructive", accent: "bg-destructive" },
-                  warn: { icon: "text-status-warning", accent: "bg-status-warning" },
-                  good: { icon: "text-status-success", accent: "bg-status-success" },
-                }[card.tone];
-                return (
-                  <button
-                    key={card.key}
-                    onClick={() => { setSaidaStatusFilter(card.key); setCurrentPage(1); setSaidasSelecionadas(new Set()); }}
-                    className={cn(
-                      "relative rounded-lg border bg-card px-3 py-2.5 text-left transition-colors overflow-hidden",
-                      active ? "border-primary/40 bg-muted/30" : "border-border/60 hover:bg-muted/20",
-                    )}
-                  >
-                    {active && (<span className={cn("absolute left-0 top-0 bottom-0 w-0.5", toneStyles.accent)} />)}
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Icon className={cn("h-3.5 w-3.5 shrink-0", toneStyles.icon)} />
-                      <span className="text-[11px] font-medium text-muted-foreground truncate">{card.label}</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-                      <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{card.count}</p>
-                      <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(card.value)}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ─── Card de resumo (Entradas — regime de caixa) ─── */}
-          {activeTab === "entrada" && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="relative rounded-lg border border-border/60 bg-card px-3 py-2.5 overflow-hidden">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-status-success" />
-                    <span className="text-[11px] font-medium text-muted-foreground truncate">Total recebido (pagamentos efetivados)</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-                    <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{entradaCounts.todas}</p>
-                    <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(entradaCounts.totalRecebido)}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { setActiveTab("a_receber"); setCurrentPage(1); }}
-                  className="relative rounded-lg border border-border/60 bg-card px-3 py-2.5 text-left transition-colors overflow-hidden hover:bg-muted/20"
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Clock className="h-3.5 w-3.5 shrink-0 text-status-warning" />
-                    <span className="text-[11px] font-medium text-muted-foreground truncate">A receber (parcial + pendente)</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-                    <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{aReceberCounts.todas}</p>
-                    <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(aReceberCounts.totalGeral)}</p>
-                  </div>
-                </button>
-              </div>
-
-              {/* ─── Breakdown por forma de pagamento (período/convênio filtrado) ─── */}
-              {entradaCounts.byPagamento.length > 0 && (
-                <div className="rounded-lg border border-border/60 bg-card px-3 py-2.5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="text-[11px] font-medium text-muted-foreground truncate">
-                      Recebido por forma de pagamento
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {entradaCounts.byPagamento.map(fp => {
-                      const pct = entradaCounts.totalRecebido > 0
-                        ? (fp.total / entradaCounts.totalRecebido) * 100
-                        : 0;
-                      const Icon = (() => {
-                        const n = fp.nome.toLowerCase();
-                        if (n.includes("pix")) return QrCode;
-                        if (n.includes("dinheiro")) return Banknote;
-                        if (n.includes("crédito") || n.includes("credito") || n.includes("débito") || n.includes("debito") || n.includes("cartão") || n.includes("cartao")) return CreditCard;
-                        if (n.includes("boleto") || n.includes("transfer")) return Building2;
-                        return CircleDollarSign;
-                      })();
-                      return (
-                        <div
-                          key={fp.nome}
-                          className="relative flex-1 min-w-[140px] rounded-lg border border-border/60 bg-background px-2.5 py-2 overflow-hidden"
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-                            <span className="text-[10px] font-medium text-muted-foreground truncate">{fp.nome}</span>
-                          </div>
-                          <p className="text-sm font-semibold text-foreground tabular-nums leading-tight">
-                            {fmtBRL(fp.total)}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground tabular-nums">
-                            {fp.count} {fp.count === 1 ? "pagamento" : "pagamentos"} · {pct.toFixed(1)}%
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* ─── Tabs Entradas e Saídas (Fase 4 — Passo 3): consomem FinanceiroContext ─── */}
+          {activeTab === "saida" && <SaidasTab />}
+          {activeTab === "entrada" && <EntradasTab />}
 
           {/* ─── Cards de status (A Receber) ─── */}
           {activeTab === "a_receber" && (
@@ -870,8 +786,8 @@ const Financeiro = () => {
             </div>
           )}
 
-          {/* (Barra de ações em lote removida — seleção múltipla foi descontinuada) */}
-
+          {/* ─── Filtros (somente A Receber — Entradas/Saídas têm filtros próprios nos Tabs) ─── */}
+          {activeTab === "a_receber" && (
           <div className="rounded-3xl border border-border/60 bg-card p-5 space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="relative flex-1 w-full">
@@ -879,320 +795,20 @@ const Financeiro = () => {
                 <input type="text" placeholder="Pesquisar por nome, protocolo..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all" />
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {(activeTab === "entrada" || activeTab === "a_receber") && (
-                  <SearchableSelect
-                    value={convenioFilter === "all" ? "Todos convênios" : convenioFilter}
-                    onChange={v => {
-                      const val = !v || v === "Todos convênios" ? "all" : v;
-                      setConvenioFilter(val);
-                      setCurrentPage(1);
-                    }}
-                    options={["Todos convênios", ...conveniosDisponiveis]}
-                    placeholder="Convênio"
-                    size="sm"
-                    className="w-48"
-                  />
-                )}
-                {activeTab === "saida" && (
-                  <>
-                    <SearchableSelect
-                      value={tipoDespesaFilter === "all" ? "Todos" : tipoDespesaFilter}
-                      onChange={v => {
-                        const val = !v || v === "Todos" ? "all" : v;
-                        setTipoDespesaFilter(val);
-                        setCurrentPage(1);
-                      }}
-                      onCreateRequest={(typed) => openCriar("tipo_despesa", typed, (nome) => { setTipoDespesaFilter(nome); setCurrentPage(1); })}
-                      options={["Todos", ...tiposDespesa]}
-                      placeholder="Tipo despesa"
-                      allowCreate
-                      size="sm"
-                      className="w-44"
-                      deletableOptions={deletableTipos}
-                      onDelete={(v) => void handleDeleteItem("tipo_despesa", v)}
-                    />
-                    <SearchableSelect
-                      value={destinoPagamentoFilter === "all" ? "Todos" : destinoPagamentoFilter}
-                      onChange={v => {
-                        const val = !v || v === "Todos" ? "all" : v;
-                        setDestinoPagamentoFilter(val);
-                        setCurrentPage(1);
-                      }}
-                      onCreateRequest={(typed) => openCriar("destino_pagamento", typed, (nome) => { setDestinoPagamentoFilter(nome); setCurrentPage(1); })}
-                      options={["Todos", ...destinosPagamento]}
-                      placeholder="Destino"
-                      allowCreate
-                      size="sm"
-                      className="w-44"
-                      deletableOptions={deletableDestinos}
-                      onDelete={(v) => void handleDeleteItem("destino_pagamento", v)}
-                    />
-                  </>
-                )}
-                {activeTab !== "caixa" && activeTab !== "a_receber" && (
-                  <Button onClick={() => { setDialogTipo(activeTab === "saida" ? "saida" : "entrada"); setDialogOpen(true); }} className="rounded-2xl h-10 gap-2 text-xs font-semibold px-5">
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Nova {activeTab === "saida" ? "saída" : "entrada"}</span>
-                    <span className="sm:hidden">Adicionar</span>
-                  </Button>
-                )}
+                <SearchableSelect
+                  value={convenioFilter === "all" ? "Todos convênios" : convenioFilter}
+                  onChange={v => {
+                    const val = !v || v === "Todos convênios" ? "all" : v;
+                    setConvenioFilter(val);
+                    setCurrentPage(1);
+                  }}
+                  options={["Todos convênios", ...conveniosDisponiveis]}
+                  placeholder="Convênio"
+                  size="sm"
+                  className="w-48"
+                />
               </div>
             </div>
-          </div>
-
-          {/* ─── Data Table (Entradas / Saídas) ─── */}
-          {activeTab !== "a_receber" && activeTab !== "caixa" && (
-          <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
-            {/* Desktop */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border/40 bg-muted/20">
-                    {activeTab === "saida" ? (
-                      <>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Protocolo</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</th>
-                        <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                        <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ações</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Protocolo</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cliente</th>
-                        <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recebimento</th>
-                        <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                        <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ações</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-16 text-sm text-muted-foreground">Nenhum registro encontrado</td></tr>
-                  ) : paginatedData.map((entry, idx) => {
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const venc = entry.dataVencimento ? parseDate(entry.dataVencimento) : null;
-                    const paga = entry.foiPago === "Sim";
-                    const vencida = !paga && venc !== null && venc < today;
-                    const diasVenc = venc ? Math.round((venc.getTime() - today.getTime()) / 86400000) : null;
-                    const vencendo = !paga && diasVenc !== null && diasVenc >= 0 && diasVenc <= 7;
-                    const sel = saidasSelecionadas.has(entry.protocolo);
-                    const statusEntrada = entry.statusPagamento || (entry.tipo === "entrada" ? "Pago" : "");
-                    const entradaPago = statusEntrada === "Pago" || statusEntrada === "Pagamento efetuado";
-                    const entradaParcial = statusEntrada === "Parcial" || statusEntrada === "Pagamento parcial";
-                    return (
-                      <tr key={idx} className={cn("border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors group", sel && "bg-primary/5")}>
-                        {activeTab === "saida" ? (
-                          <>
-                            <td className="px-5 py-4">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-semibold text-foreground tabular-nums">{entry.protocolo}</span>
-                                <span className="text-[11px] text-muted-foreground tabular-nums">{entry.data}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-foreground max-w-[260px]">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-medium text-foreground">{entry.tipoDespesa || "—"}</span>
-                                {(entry.descricao || entry.cliente) && (
-                                  <span className="text-[11px] text-muted-foreground truncate">
-                                    {entry.descricao || entry.cliente}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-bold text-destructive tabular-nums">- {fmtBRL(entry.valorTotal)}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] text-muted-foreground">{entry.dataVencimento || "—"}</span>
-                                  {vencida && diasVenc !== null && (
-                                    <span className="text-[11px] font-semibold text-destructive">há {Math.abs(diasVenc)}d</span>
-                                  )}
-                                  {vencendo && diasVenc !== null && (
-                                    <span className="text-[11px] font-semibold text-amber-600">em {diasVenc}d</span>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleDetailClick(entry)}
-                                className={cn(
-                                  "text-xs font-semibold px-3 py-1 rounded-full transition-all hover:ring-2 hover:ring-offset-1 hover:ring-offset-background cursor-pointer",
-                                  paga ? "bg-status-success/10 text-status-success hover:ring-status-success/30"
-                                    : vencida ? "bg-destructive/10 text-destructive hover:ring-destructive/30"
-                                    : vencendo ? "bg-amber-500/10 text-amber-700 hover:ring-amber-500/30"
-                                    : "bg-muted/60 text-muted-foreground hover:ring-border",
-                                )}
-                                title="Ver detalhes"
-                              >
-                                {paga ? "Pago" : vencida ? "Vencida" : vencendo ? "Vence em breve" : "Pendente"}
-                              </button>
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => handleEditClick(entry)} className="p-2 rounded-xl hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                                <button onClick={() => handleDeleteClick(entry.protocolo)} className="p-2 rounded-xl hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button>
-                                <button onClick={() => handleDetailClick(entry)} className="p-2 rounded-xl hover:bg-muted transition-colors"><Eye className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-5 py-4">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-semibold text-foreground tabular-nums flex items-center gap-1.5">
-                                  {entry.protocolo}
-                                  {entry.origem === "fatura_convenio" && (
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold uppercase tracking-wider">Fatura</span>
-                                  )}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground tabular-nums">{entry.data}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-foreground max-w-[260px]">
-                              <div className="flex flex-col gap-0.5">
-                                {entry.origem === "fatura_convenio" ? (
-                                  <>
-                                    <span className="text-sm font-medium text-foreground truncate">{entry.convenio || entry.cliente}</span>
-                                    <span className="text-[11px] text-muted-foreground truncate">Pagamento agregado de fatura</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-sm font-medium text-foreground truncate">{entry.cliente}</span>
-                                    {entry.convenio && (
-                                      <span className="text-[11px] text-muted-foreground truncate">{entry.convenio}</span>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-bold text-status-success tabular-nums">+ {fmtBRL(entry.valorTotal)}</span>
-                                <span className="text-[11px] text-muted-foreground">{entry.pagamento || "—"}</span>
-                              </div>
-                            </td>
-                            <td className="px-5 py-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleDetailClick(entry)}
-                                className={cn(
-                                  "text-xs font-semibold px-3 py-1 rounded-full transition-all hover:ring-2 hover:ring-offset-1 hover:ring-offset-background cursor-pointer",
-                                  entradaPago ? "bg-status-success/10 text-status-success hover:ring-status-success/30"
-                                    : entradaParcial ? "bg-amber-500/10 text-amber-700 hover:ring-amber-500/30"
-                                    : "bg-muted/60 text-muted-foreground hover:ring-border",
-                                )}
-                                title="Ver detalhes"
-                              >
-                                {entradaPago ? "Pago" : entradaParcial ? "Parcial" : (statusEntrada || "Pendente")}
-                              </button>
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                {entry.origem === "fatura_convenio" && entry.faturaId ? (
-                                  <button
-                                    onClick={() => {
-                                      setFaturaDetalheAlvo({
-                                        id: entry.faturaId!,
-                                        codigo: entry.protocolo,
-                                        convenio: entry.convenio || entry.cliente,
-                                        total: entry.valorTotal,
-                                      });
-                                      setFaturaDetalheOpen(true);
-                                    }}
-                                    className="px-2.5 py-1 rounded-xl hover:bg-muted transition-colors text-[11px] font-medium text-primary flex items-center gap-1"
-                                    title="Ver atendimentos da fatura"
-                                  >
-                                    <Receipt className="h-3.5 w-3.5" />
-                                    Ver itens
-                                  </button>
-                                ) : (
-                                  <button onClick={() => handleDetailClick(entry)} className="p-2 rounded-xl hover:bg-muted transition-colors"><Eye className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                                )}
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile */}
-            <div className="md:hidden divide-y divide-border/30">
-              {paginatedData.length === 0 ? (
-                <div className="p-16 text-center text-sm text-muted-foreground">Nenhum registro encontrado</div>
-              ) : paginatedData.map((entry, idx) => {
-                const today = new Date(); today.setHours(0, 0, 0, 0);
-                const venc = entry.dataVencimento ? parseDate(entry.dataVencimento) : null;
-                const paga = entry.foiPago === "Sim";
-                const vencida = !paga && venc !== null && venc < today;
-                const diasVenc = venc ? Math.round((venc.getTime() - today.getTime()) / 86400000) : null;
-                const vencendo = !paga && diasVenc !== null && diasVenc >= 0 && diasVenc <= 7;
-                const sel = saidasSelecionadas.has(entry.protocolo);
-                return (
-                  <div key={idx} className={cn("p-4 space-y-3", sel && "bg-primary/5")}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground truncate">{activeTab === "saida" ? (entry.descricao || entry.cliente) : entry.cliente}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">{entry.protocolo} · {entry.data}</p>
-                      </div>
-                      <p className={cn("text-sm font-bold shrink-0 tabular-nums", entry.tipo === "saida" ? "text-destructive" : "text-status-success")}>
-                        {entry.tipo === "saida" ? "- " : "+ "}{fmtBRL(entry.valorTotal)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium">{entry.pagamento}</span>
-                      {activeTab === "saida" && entry.tipoDespesa && <span className="text-[11px] px-2 py-0.5 rounded-md bg-accent/60 text-accent-foreground font-medium">{entry.tipoDespesa}</span>}
-                      {activeTab === "saida" && (
-                        <button
-                          type="button"
-                          onClick={() => handleDetailClick(entry)}
-                          className={cn(
-                            "text-[11px] px-2 py-0.5 rounded-md font-semibold transition-all hover:opacity-80",
-                            paga ? "bg-status-success/10 text-status-success"
-                              : vencida ? "bg-destructive/10 text-destructive"
-                              : vencendo ? "bg-amber-500/10 text-amber-700"
-                              : "bg-muted/60 text-muted-foreground",
-                          )}
-                        >
-                          {paga ? "Pago" : vencida && diasVenc !== null ? `Vencida há ${Math.abs(diasVenc)}d` : vencendo && diasVenc !== null ? `Vence em ${diasVenc}d` : "Pendente"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 pt-2 border-t border-border/20">
-                      {activeTab === "saida" && (
-                        <>
-                          <button onClick={() => handleEditClick(entry)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5" />Editar</button>
-                          <button onClick={() => handleDeleteClick(entry.protocolo)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" />Excluir</button>
-                        </>
-                      )}
-                      <button onClick={() => handleDetailClick(entry)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"><Eye className="h-3.5 w-3.5" />Detalhes</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-4 border-t border-border/30">
-                <span className="text-xs text-muted-foreground">{((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, filtered.length)} de {filtered.length}</span>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(page => (
-                    <button key={page} onClick={() => setCurrentPage(page)} className={cn("h-8 w-8 rounded-xl text-xs font-semibold transition-all", currentPage === page ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>{page}</button>
-                  ))}
-                  {totalPages > 5 && <span className="text-xs text-muted-foreground px-1">…</span>}
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button>
-                </div>
-              </div>
-            )}
           </div>
           )}
 
@@ -1548,6 +1164,7 @@ const Financeiro = () => {
         </Suspense>
       )}
     </div>
+    </FinanceiroProvider>
   );
 };
 
