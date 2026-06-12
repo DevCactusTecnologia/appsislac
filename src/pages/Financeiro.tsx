@@ -97,6 +97,9 @@ import DeleteEntryDialog from "./Financeiro/components/dialogs/DeleteEntryDialog
 import DetailEntryDialog from "./Financeiro/components/dialogs/DetailEntryDialog";
 import PagarDespesaDialog from "./Financeiro/components/dialogs/PagarDespesaDialog";
 import type { DictionaryHandlers } from "./Financeiro/components/dialogs/types";
+import { useFinanceiroFilters } from "./Financeiro/hooks/useFinanceiroFilters";
+import { useFinanceiroDialogs } from "./Financeiro/hooks/useFinanceiroDialogs";
+
 
 
 
@@ -113,50 +116,63 @@ const Financeiro = () => {
       ? [...baseTabs, { key: "integracoes" as TabType, label: "Integrações", icon: Plug }]
       : baseTabs;
   }, [canSeeIntegracoes]);
-  const [activeTab, setActiveTab] = useState<TabType>("entrada");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [periodoRapido, setPeriodoRapido] = useState<"hoje" | "7d" | "mes" | "30d" | "ano" | "tudo" | "custom">("tudo");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogTipo, setDialogTipo] = useState<"entrada" | "saida">("entrada");
+  // Filtros e UI consolidados em hook (Fase 4 — passo 2).
+  const filters = useFinanceiroFilters();
+  const {
+    activeTab, setActiveTab,
+    searchQuery, setSearchQuery,
+    currentPage, setCurrentPage,
+    dateFrom, setDateFrom,
+    dateTo, setDateTo,
+    periodoRapido, setPeriodoRapido,
+    convenioFilter, setConvenioFilter,
+    tipoDespesaFilter, setTipoDespesaFilter,
+    destinoPagamentoFilter, setDestinoPagamentoFilter,
+    saidaStatusFilter, setSaidaStatusFilter,
+    aReceberStatusFilter, setAReceberStatusFilter,
+    aReceberSubTab, setAReceberSubTab,
+  } = filters;
+  void filters;
+
+  // Estado dos diálogos consolidado em hook (Fase 4 — passo 2).
+  const dialogs = useFinanceiroDialogs();
+  const {
+    editDialogOpen, setEditDialogOpen,
+    editingEntry, setEditingEntry,
+    deleteDialogOpen, setDeleteDialogOpen,
+    deletingProtocolo, setDeletingProtocolo,
+    detailDialogOpen, setDetailDialogOpen,
+    detailEntry, setDetailEntry,
+    payDialogOpen, setPayDialogOpen,
+    payTarget, setPayTarget,
+    payForma, setPayForma,
+    payData, setPayData,
+    receberDialogOpen, setReceberDialogOpen,
+    receberInitial, setReceberInitial,
+    dialogOpen, setDialogOpen,
+    dialogTipo, setDialogTipo,
+    fecharFaturaOpen, setFecharFaturaOpen,
+    fecharFaturaAlvo, setFecharFaturaAlvo,
+    faturaDetalheOpen, setFaturaDetalheOpen,
+    faturaDetalheAlvo, setFaturaDetalheAlvo,
+    criarOpen, setCriarOpen,
+    criarCategoria, setCriarCategoria,
+    criarInitialValue, setCriarInitialValue,
+    criarOnSuccess, setCriarOnSuccess,
+    saidasSelecionadas, setSaidasSelecionadas,
+  } = dialogs;
+  void dialogs;
+
+  // Estados ligados a effects (permanecem no orquestrador).
   const [saidasList, setSaidasList] = useState<FinanceiroEntry[]>(() => getSaidas().map(saidaToEntry));
   const [entradasView, setEntradasView] = useState<FinanceiroEntradaView[]>([]);
-  const [convenioFilter, setConvenioFilter] = useState<string>("all");
-  const [tipoDespesaFilter, setTipoDespesaFilter] = useState<string>("all");
-  const [destinoPagamentoFilter, setDestinoPagamentoFilter] = useState<string>("all");
-  const [saidaStatusFilter, setSaidaStatusFilter] = useState<SaidaStatusFilter>("todas");
-  const [aReceberStatusFilter, setAReceberStatusFilter] = useState<"todas" | "parciais" | "pendentes">("todas");
-  const [aReceberSubTab, setAReceberSubTab] = useState<"pacientes" | "convenios">("pacientes");
-  // Saldo em aberto por convênio (somente cobrancaDestino=convenio, não-faturados)
   const [saldoConvenios, setSaldoConvenios] = useState<Map<number, { saldo: number; exames: number; pacientes: Set<string> }>>(new Map());
-  // Fechar fatura
-  const [fecharFaturaOpen, setFecharFaturaOpen] = useState(false);
-  const [fecharFaturaAlvo, setFecharFaturaAlvo] = useState<{ convenioId: number; convenioNome: string } | null>(null);
-  // Drill-down de fatura nas Entradas
-  const [faturaDetalheOpen, setFaturaDetalheOpen] = useState(false);
-  const [faturaDetalheAlvo, setFaturaDetalheAlvo] = useState<{ id: number; codigo: string; convenio: string; total: number } | null>(null);
-  const [saidasSelecionadas, setSaidasSelecionadas] = useState<Set<string>>(new Set());
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<FinanceiroEntry | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingProtocolo, setDeletingProtocolo] = useState<string>("");
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [detailEntry, setDetailEntry] = useState<FinanceiroEntry | null>(null);
-  const [payDialogOpen, setPayDialogOpen] = useState(false);
-  const [payTarget, setPayTarget] = useState<FinanceiroEntry | null>(null);
-  const [payForma, setPayForma] = useState<string>("PIX");
-  const [payData, setPayData] = useState<string>("");
+
   
 
-  // ─── Receber pagamento (A Receber) ───
-  // Reusa o NovaEntradaSaidaDialog (idêntico ao "Entrada de pagamento"), pré-selecionando o protocolo.
-  const [receberDialogOpen, setReceberDialogOpen] = useState(false);
-  const [receberInitial, setReceberInitial] = useState<{
-    tipo: "paciente" | "convenio" | "protocolo";
-    protocolo?: string;
-  } | null>(null);
+  // (receberDialogOpen/receberInitial agora vêm de useFinanceiroDialogs)
+
+
   
   const itemsPerPage = 8;
 
@@ -187,11 +203,8 @@ const Financeiro = () => {
   const deletableDestinos = useMemo(() => destinosItems.filter(i => !i.sistema).map(i => i.nome), [destinosItems]);
   const deletableFormas = useMemo(() => formasItems.filter(i => !i.sistema).map(i => i.nome), [formasItems]);
 
-  // Mini modal "Criar item"
-  const [criarOpen, setCriarOpen] = useState(false);
-  const [criarCategoria, setCriarCategoria] = useState<"tipo_despesa" | "destino_pagamento" | "forma_pagamento">("tipo_despesa");
-  const [criarInitialValue, setCriarInitialValue] = useState("");
-  const [criarOnSuccess, setCriarOnSuccess] = useState<((nome: string) => void) | null>(null);
+  // (criar* agora vêm de useFinanceiroDialogs)
+
 
   const invalidateDicionarios = () => {
     queryClient.invalidateQueries({ queryKey: ["tenant"], predicate: (q) => {
