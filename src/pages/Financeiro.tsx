@@ -13,8 +13,7 @@ import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
 
 import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getConvenios, getTabelaByConvenioNome } from "@/data/convenioStore";
-import { getPrecoExame, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import { getConvenios } from "@/data/convenioStore";
 import {
   getSaidas, subscribeFinanceiro, removeSaida, updateSaida,
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
