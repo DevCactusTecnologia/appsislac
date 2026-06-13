@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import FornecedorDialog from "@/components/estoque/FornecedorDialog";
 import { type Fornecedor, listarFornecedores, excluirFornecedor } from "@/data/estoqueStore";
+import SectionShell from "./_shared/SectionShell";
 
 export default function FornecedoresTab() {
   const [list, setList] = useState<Fornecedor[]>([]);
