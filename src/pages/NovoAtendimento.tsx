@@ -1869,9 +1869,9 @@ const NovoAtendimento = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
                   {/* Left: Clinical info */}
-                  <div className="xl:col-span-3 space-y-5 min-w-0">
+                  <div className="lg:col-span-3 space-y-5 min-w-0">
                     {/* Linha 1: Prioridade (segmented) + Previsão de entrega (compacto) */}
-                    <div className="flex flex-col md:flex-row md:items-end gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-end gap-4">
                       <div className="min-w-0 flex-1">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Prioridade clínica
@@ -1990,8 +1990,8 @@ const NovoAtendimento = () => {
                   </div>
 
                   {/* Right: Financial */}
-                  <div className="xl:col-span-2 min-w-0">
-                    <div className="xl:sticky xl:top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-5 sm:p-6 space-y-4">
+                  <div className="lg:col-span-2 min-w-0">
+                    <div className="lg:sticky lg:top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-5 sm:p-6 space-y-4">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resumo financeiro</p>
 
                       <div className="space-y-2.5">
