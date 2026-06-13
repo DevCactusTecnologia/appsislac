@@ -405,7 +405,8 @@ const NovoAtendimento = () => {
     const yyyy = dt.getUTCFullYear();
     const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
     const day = String(dt.getUTCDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${day}T${t ?? "18:00"}`;
+    // Hora padrão de entrega = 17:00 (Brasília), independente do horário do atendimento.
+    return `${yyyy}-${mm}-${day}T17:00`;
   };
   const todayBrasiliaDate = () => nowBrasiliaInputValue().split("T")[0];
   const [dataEntrega, setDataEntrega] = useState<string>(() => addBusinessDays(nowBrasiliaInputValue(), 2));
