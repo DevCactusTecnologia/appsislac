@@ -389,6 +389,38 @@ const NovoAtendimento = () => {
   const [dataAtendimento, setDataAtendimento] = useState<string>(() => nowBrasiliaInputValue());
   const [lastGuiaNumero, setLastGuiaNumero] = useState<string | null>(null);
 
+  // Data/hora prevista de entrega = +2 dias úteis (Brasília), editável.
+  // Data da coleta = hoje (Brasília), editável; só aparece quando há exames.
+  const addBusinessDays = (input: string, days: number): string => {
+    const [d, t] = input.split("T");
+    if (!d) return input;
+    const [y, m, dd] = d.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, (m ?? 1) - 1, dd ?? 1));
+    let added = 0;
+    while (added < days) {
+      dt.setUTCDate(dt.getUTCDate() + 1);
+      const dow = dt.getUTCDay();
+      if (dow !== 0 && dow !== 6) added++;
+    }
+    const yyyy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(dt.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${day}T${t ?? "18:00"}`;
+  };
+  const todayBrasiliaDate = () => nowBrasiliaInputValue().split("T")[0];
+  const [dataEntrega, setDataEntrega] = useState<string>(() => addBusinessDays(nowBrasiliaInputValue(), 2));
+  const [dataEntregaTouched, setDataEntregaTouched] = useState(false);
+  const [dataColeta, setDataColeta] = useState<string>(() => todayBrasiliaDate());
+  const [dataColetaTouched, setDataColetaTouched] = useState(false);
+
+  // Quando a data do atendimento muda e o usuário não tocou na entrega, recalcula +2 úteis.
+  useEffect(() => {
+    if (!dataEntregaTouched) setDataEntrega(addBusinessDays(dataAtendimento, 2));
+    if (!dataColetaTouched) setDataColeta(dataAtendimento.split("T")[0] || todayBrasiliaDate());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataAtendimento]);
+
+
 
 
   const [successOpen, setSuccessOpen] = useState(false);
