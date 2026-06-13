@@ -1,12 +1,18 @@
-// Persistência das listas do Financeiro nas 3 tabelas dedicadas:
-//  - financeiro_tipos_despesa
-//  - financeiro_destinos_pagamento
-//  - financeiro_formas_pagamento
+// Persistência das listas do Financeiro — agora apoiada na tabela canônica
+// `select_options` (categorias `financeiro_tipo_despesa`, `financeiro_destino_pagamento`,
+// `financeiro_forma_pagamento`).
 //
-// Cada item tem: id, nome, sistema (protegido), ativo. Unicidade por (tenant_id, nome).
-// Tenant_id é resolvido server-side via RLS — frontend nunca envia.
+// As tabelas legadas (`financeiro_tipos_despesa`, `financeiro_destinos_pagamento`,
+// `financeiro_formas_pagamento`) permanecem populadas pelos triggers
+// `trg_fwd_*` (sincronia 1:1) até serem removidas em migração final. Este
+// store NÃO escreve mais nelas.
 //
-// Substitui o antigo `financeiroCustomListsStore.ts` (que usava app_settings).
+// API externa preservada: getTiposDespesa/getDestinosPagamento/getFormasPagamento,
+// subscribeListas, createItem, deleteItem, reloadAll, _initFinanceiroListasStore.
+// `ListaItem.id` agora é o `select_options.id` (uuid).
+//
+// Permissões: RLS de `select_options` já exige `has_permission('gestao_financeira')`
+// para estas categorias (ver migration 20260613_select_options_per_category_rls).
 
 import { supabase } from "@/integrations/supabase/client";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
@@ -22,10 +28,10 @@ export interface ListaItem {
 
 type Categoria = "tipo_despesa" | "destino_pagamento" | "forma_pagamento";
 
-const TABLE_BY_CATEGORIA: Record<Categoria, "financeiro_tipos_despesa" | "financeiro_destinos_pagamento" | "financeiro_formas_pagamento"> = {
-  tipo_despesa: "financeiro_tipos_despesa",
-  destino_pagamento: "financeiro_destinos_pagamento",
-  forma_pagamento: "financeiro_formas_pagamento",
+const CATEGORIA_DB: Record<Categoria, string> = {
+  tipo_despesa: "financeiro_tipo_despesa",
+  destino_pagamento: "financeiro_destino_pagamento",
+  forma_pagamento: "financeiro_forma_pagamento",
 };
 
 // Cache + listeners
@@ -47,23 +53,24 @@ async function getCurrentTenantId(): Promise<string | null> {
 }
 
 async function loadCategoria(cat: Categoria): Promise<ListaItem[]> {
-  if (cat === "forma_pagamento") {
-    const { data, error } = await supabase
-      .from("financeiro_formas_pagamento")
-      .select("id, nome, sistema, ativo, ordem")
-      .eq("ativo", true)
-      .order("ordem", { ascending: true });
-    if (error) { showError(error, { scope: `financeiroListas.load.${cat}`, silent: true }); return []; }
-    return (data ?? []).map((r) => ({ id: r.id, nome: r.nome, sistema: r.sistema, ativo: r.ativo, ordem: r.ordem }));
-  }
-  const table = TABLE_BY_CATEGORIA[cat] as "financeiro_tipos_despesa" | "financeiro_destinos_pagamento";
-  const { data, error } = await supabase
-    .from(table)
-    .select("id, nome, sistema, ativo")
-    .eq("ativo", true)
-    .order("nome", { ascending: true });
+  const orderByOrdem = cat === "forma_pagamento";
+  let req = supabase
+    .from("select_options")
+    .select("id, label, sistema, ativo, ordem")
+    .eq("categoria", CATEGORIA_DB[cat])
+    .eq("ativo", true);
+  req = orderByOrdem
+    ? req.order("ordem", { ascending: true })
+    : req.order("label", { ascending: true });
+  const { data, error } = await req;
   if (error) { showError(error, { scope: `financeiroListas.load.${cat}`, silent: true }); return []; }
-  return (data ?? []).map((r) => ({ id: r.id, nome: r.nome, sistema: r.sistema, ativo: r.ativo }));
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    nome: r.label as string,
+    sistema: !!r.sistema,
+    ativo: !!r.ativo,
+    ordem: typeof r.ordem === "number" ? r.ordem : undefined,
+  }));
 }
 
 export async function reloadAll(): Promise<void> {
@@ -95,8 +102,8 @@ export function nomeJaExiste(cat: Categoria, nome: string): boolean {
 }
 
 /**
- * Cria um novo item na categoria. Retorna o item criado (do cache) ou lança erro.
- * Valida duplicidade (case/acentos insensíveis) localmente antes de chamar o backend.
+ * Cria um novo item na categoria. Retorna o item criado ou lança erro.
+ * Valida duplicidade (case/acentos insensíveis) localmente antes do backend.
  */
 export async function createItem(cat: Categoria, nome: string): Promise<ListaItem> {
   const trimmed = nome.trim();
@@ -106,15 +113,28 @@ export async function createItem(cat: Categoria, nome: string): Promise<ListaIte
   const tenantId = await getCurrentTenantId();
   if (!tenantId) throw new Error("Tenant não encontrado");
 
-  const table = TABLE_BY_CATEGORIA[cat];
-  let data: { id: string; nome: string; sistema: boolean; ativo: boolean };
+  const categoriaDb = CATEGORIA_DB[cat];
+  // `valor` deve ser estável; usamos o nome normalizado como chave.
+  const valor = normalize(trimmed).replace(/\s+/g, "_");
+  const nextOrdem = _cache[cat].length > 0
+    ? Math.max(..._cache[cat].map((i) => i.ordem ?? 0)) + 1
+    : 1;
+
+  let data: { id: string; label: string; sistema: boolean; ativo: boolean; ordem: number };
   try {
     data = await persistOneOrThrow(
       supabase
-        .from(table)
-        .insert({ tenant_id: tenantId, nome: trimmed, sistema: false } as never),
+        .from("select_options")
+        .insert({
+          tenant_id: tenantId,
+          categoria: categoriaDb,
+          valor,
+          label: trimmed,
+          ordem: nextOrdem,
+          sistema: false,
+        }),
       `financeiroListas.create.${cat}`,
-      { selectCols: "id, nome, sistema, ativo" },
+      { selectCols: "id, label, sistema, ativo, ordem" },
     );
   } catch (error) {
     const code = (error as { cause?: { code?: string } }).cause?.code;
@@ -123,21 +143,21 @@ export async function createItem(cat: Categoria, nome: string): Promise<ListaIte
     throw error;
   }
 
-  const novo: ListaItem = { id: data.id, nome: data.nome, sistema: data.sistema, ativo: data.ativo };
+  const novo: ListaItem = { id: data.id, nome: data.label, sistema: data.sistema, ativo: data.ativo, ordem: data.ordem };
   _cache[cat] = [..._cache[cat], novo].sort((a, b) => a.nome.localeCompare(b.nome));
   _emit();
   return novo;
 }
 
 /**
- * Remove um item (soft delete via RLS: `sistema=true` é bloqueado pelo trigger).
+ * Remove um item. Itens `sistema=true` continuam protegidos no DB (RLS/trigger
+ * de select_options).
  */
 export async function deleteItem(cat: Categoria, id: string): Promise<void> {
   const item = _cache[cat].find((x) => x.id === id);
   if (!item) return;
   if (item.sistema) throw new Error("Itens do sistema não podem ser excluídos");
 
-  const table = TABLE_BY_CATEGORIA[cat];
   // Optimistic
   const prev = _cache[cat];
   _cache[cat] = prev.filter((x) => x.id !== id);
@@ -145,7 +165,7 @@ export async function deleteItem(cat: Categoria, id: string): Promise<void> {
 
   try {
     await persistOrThrow(
-      supabase.from(table).delete().eq("id", id),
+      supabase.from("select_options").delete().eq("id", id),
       `financeiroListas.delete.${cat}`,
     );
   } catch (error) {
