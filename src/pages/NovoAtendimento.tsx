@@ -365,6 +365,7 @@ const NovoAtendimento = () => {
   // Clinical info
   const [observacoes, setObservacoes] = useState("");
   const [jejum, setJejum] = useState<"sim" | "nao">("nao");
+  const [entregaWhatsapp, setEntregaWhatsapp] = useState<"sim" | "nao">("nao");
   const [prioridade, setPrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
 
   // Unidade + data do atendimento (Horário de Brasília)
@@ -1852,22 +1853,60 @@ const NovoAtendimento = () => {
                       </div>
                     </div>
 
-                    {/* Jejum */}
+                    {/* Jejum + Previsão de entrega (mesma linha) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                          Paciente em jejum?
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { v: "nao", label: "Não" },
+                            { v: "sim", label: "Sim" },
+                          ] as const).map(opt => {
+                            const isActive = jejum === opt.v;
+                            return (
+                              <button
+                                key={opt.v}
+                                type="button"
+                                onClick={() => setJejum(opt.v)}
+                                className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-border/60 text-foreground hover:bg-accent/40"}`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                          Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2d úteis · 17h)</span>
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={dataEntrega}
+                          onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Entrega via WhatsApp */}
                     <div>
                       <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                        Paciente em jejum?
+                        Receber resultado via WhatsApp?
                       </label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 max-w-xs">
                         {([
                           { v: "nao", label: "Não" },
                           { v: "sim", label: "Sim" },
                         ] as const).map(opt => {
-                          const isActive = jejum === opt.v;
+                          const isActive = entregaWhatsapp === opt.v;
                           return (
                             <button
                               key={opt.v}
                               type="button"
-                              onClick={() => setJejum(opt.v)}
+                              onClick={() => setEntregaWhatsapp(opt.v)}
                               className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-border/60 text-foreground hover:bg-accent/40"}`}
                             >
                               {opt.label}
@@ -1875,7 +1914,14 @@ const NovoAtendimento = () => {
                           );
                         })}
                       </div>
+                      {entregaWhatsapp === "sim" && (
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          O resultado será enviado ao telefone cadastrado no paciente assim que liberado.
+                        </p>
+                      )}
+
                     </div>
+
 
                     {/* Observações */}
                     <div>
