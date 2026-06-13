@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, Camera, Upload, ShieldCheck, AlertCircle } from "lucide-react";
+import { Building2, Camera, Upload, ShieldCheck, AlertCircle, Mail, Phone, MapPin, FileText, Stethoscope, IdCard } from "lucide-react";
 // ----------------------------------------------------------------------------
 // SISLAC Document Ownership (IA-first semantics)
 //   Lab Data  = institutional identity (THIS TAB — single source of truth).
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { getLabConfig, loadLabConfigFromDb, saveLabConfig, ensureLabLogoLoaded, clearLabLogoCache } from "@/data/labConfigStore";
 import { supabase } from "@/integrations/supabase/client";
-import SectionShell from "./_shared/SectionShell";
 import EstadoCidadeFields from "@/components/EstadoCidadeFields";
 
 
