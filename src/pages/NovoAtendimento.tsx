@@ -1889,7 +1889,7 @@ const NovoAtendimento = () => {
                                 key={opt.v}
                                 type="button"
                                 onClick={() => setPrioridade(opt.v)}
-                                className={`inline-flex flex-1 lg:flex-initial items-center justify-center gap-1 h-8 px-2 lg:px-1.5 rounded-md text-[11px] lg:text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
+                                className={`inline-flex flex-1 items-center justify-center gap-1.5 h-8 px-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 <Icon className="h-3.5 w-3.5 shrink-0" />
                                 {opt.label}
