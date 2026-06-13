@@ -701,6 +701,56 @@ const NovoAtendimento = () => {
     setActiveStep(target);
   };
 
+  // Status derivado de cada seção (preenchimento), para o stepper sticky.
+  const stepDone: Record<1 | 2 | 3 | 4, boolean> = {
+    1: Boolean(selectedPaciente || (!showPacienteSearch && pacienteQuery)),
+    2: convenios.length > 0 && solicitantes.length > 0,
+    3: exames.length > 0,
+    4: false,
+  };
+  stepDone[4] = stepDone[1] && stepDone[2] && stepDone[3];
+
+  const scrollToStep = (id: number) => {
+    const map: Record<number, string> = {
+      1: "step-paciente", 2: "step-convenio", 3: "step-exames", 4: "step-resumo",
+    };
+    const el = document.getElementById(map[id]);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveStep(id);
+  };
+
+  // Validação completa antes de finalizar (mesmas regras de negócio do antigo wizard).
+  const finalizarComValidacao = () => {
+    if (!selectedPaciente && !(!showPacienteSearch && pacienteQuery)) {
+      toast({ title: "Paciente obrigatório", description: "Selecione um paciente antes de finalizar.", variant: "destructive" });
+      scrollToStep(1); return;
+    }
+    if (convenios.length === 0) {
+      toast({ title: "Convênio obrigatório", description: "Selecione ao menos um convênio.", variant: "destructive" });
+      scrollToStep(2); return;
+    }
+    if (solicitantes.length === 0) {
+      toast({ title: "Solicitante obrigatório", description: "Selecione ao menos um solicitante.", variant: "destructive" });
+      scrollToStep(2); return;
+    }
+    if (exames.length === 0) {
+      toast({ title: "Exames obrigatórios", description: "Adicione ao menos um exame.", variant: "destructive" });
+      scrollToStep(3); return;
+    }
+    if (solicitantes.length > 1) {
+      const semSolicitante = exames.filter(e => !e.solicitanteExame || !e.solicitanteExame.trim());
+      if (semSolicitante.length > 0) {
+        toast({
+          title: "Defina o solicitante de cada exame",
+          description: `${semSolicitante.length} exame(s) sem solicitante. Como há mais de um solicitante, informe quem pediu cada exame (ou marque "Ambos").`,
+          variant: "destructive",
+        });
+        scrollToStep(3); return;
+      }
+    }
+    finalizarAtendimento(false);
+  };
+
   /* ─── Render ─── */
   return (
     <div className="min-h-screen bg-background">
@@ -751,20 +801,19 @@ const NovoAtendimento = () => {
           </div>
         </div>
 
-        {/* ── Step Progress ── */}
-        <div className="bg-card border border-border/60 rounded-3xl p-1.5 mb-8 shadow-sm">
-          <div className="flex items-center">
-            {steps.map((step, i) => {
-              const Icon = step.icon;
+        {/* ── Sticky Stepper ── */}
+        <div className="sticky top-4 z-20 bg-card/95 backdrop-blur-sm border border-border/60 rounded-2xl p-1.5 mb-6 shadow-sm">
+          <div className="flex items-center gap-1">
+            {steps.map((step) => {
+              const isDone = stepDone[step.id as 1 | 2 | 3 | 4];
               const isActive = activeStep === step.id;
-              const isDone = activeStep > step.id;
               return (
                 <button
                   key={step.id}
-                  onClick={() => goNext(step.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[20px] text-sm font-medium transition-all relative ${
+                  onClick={() => scrollToStep(step.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-md"
+                      ? "bg-primary text-primary-foreground"
                       : isDone
                       ? "text-primary hover:bg-primary/5"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
@@ -786,13 +835,11 @@ const NovoAtendimento = () => {
           </div>
         </div>
 
-        {/* ── Content Card ── */}
-        <div className="bg-card border border-border/60 rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--foreground)/0.08)] overflow-visible">
-          <div className="p-6 sm:p-10">
+        {/* ── Single-form: todas as seções visíveis ── */}
+        <div className="space-y-6 pb-28">
 
             {/* ════ STEP 1: Paciente ════ */}
-            {activeStep === 1 && (
-              <div className="space-y-8">
+            <section id="step-paciente" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">
                     {isEditing ? "Paciente vinculado" : "Selecionar paciente"}
@@ -1082,28 +1129,10 @@ const NovoAtendimento = () => {
                   );
                 })()}
 
-                {/* Navigation */}
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() => {
-                      if (!selectedPaciente && !(!showPacienteSearch && pacienteQuery)) {
-                        toast({ title: "Paciente obrigatório", description: "Selecione um paciente antes de avançar.", variant: "destructive" });
-                        return;
-                      }
-                      setActiveStep(2);
-                    }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
-                  >
-                    {isEditing && hasChangesStep1 ? "Atualizar" : "Próximo"}
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+            </section>
 
             {/* ════ STEP 2: Convênio & Solicitante ════ */}
-            {activeStep === 2 && (
-              <div className="space-y-8">
+            <section id="step-convenio" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Convênio & Solicitante</h2>
                   <p className="text-sm text-muted-foreground mt-1">Adicione os convênios e médicos solicitantes</p>
@@ -1389,35 +1418,10 @@ const NovoAtendimento = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-2">
-                  <button onClick={() => setActiveStep(1)} className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 border border-border/60 transition-all">
-                    <ChevronLeft className="h-4 w-4" />
-                    Voltar
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (convenios.length === 0) {
-                        toast({ title: "Convênio obrigatório", description: "Selecione ao menos um convênio.", variant: "destructive" });
-                        return;
-                      }
-                      if (solicitantes.length === 0) {
-                        toast({ title: "Solicitante obrigatório", description: "Selecione ao menos um solicitante.", variant: "destructive" });
-                        return;
-                      }
-                      setActiveStep(3);
-                    }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
-                  >
-                    {isEditing && hasChangesStep2 ? "Atualizar" : "Próximo"}
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+            </section>
 
             {/* ════ STEP 3: Exames ════ */}
-            {activeStep === 3 && (
-              <div className="space-y-6">
+            <section id="step-exames" className="scroll-mt-28 space-y-6 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Solicitar exames</h2>
                   <p className="text-sm text-muted-foreground mt-1">Pesquise e adicione os exames necessários</p>
@@ -1739,42 +1743,10 @@ const NovoAtendimento = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between pt-2">
-                  <button onClick={() => setActiveStep(2)} className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 border border-border/60 transition-all">
-                    <ChevronLeft className="h-4 w-4" />
-                    Voltar
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (exames.length === 0) {
-                        toast({ title: "Exames obrigatórios", description: "Adicione ao menos um exame.", variant: "destructive" });
-                        return;
-                      }
-                      if (solicitantes.length > 1) {
-                        const semSolicitante = exames.filter(e => !e.solicitanteExame || !e.solicitanteExame.trim());
-                        if (semSolicitante.length > 0) {
-                          toast({
-                            title: "Defina o solicitante de cada exame",
-                            description: `${semSolicitante.length} exame(s) sem solicitante. Como há mais de um solicitante, informe quem pediu cada exame (ou marque "Ambos").`,
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                      }
-                      setActiveStep(4);
-                    }}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
-                  >
-                    {isEditing && hasChangesStep3 ? "Atualizar" : "Próximo"}
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+            </section>
 
             {/* ════ STEP 4: Resumo ════ */}
-            {activeStep === 4 && (
-              <div className="space-y-8">
+            <section id="step-resumo" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Resumo do atendimento</h2>
                   <p className="text-sm text-muted-foreground mt-1">Confira os dados e finalize</p>
@@ -2010,45 +1982,43 @@ const NovoAtendimento = () => {
                   </div>
                 </div>
 
-                {/* Bottom actions */}
-                <div className="flex flex-col sm:flex-row justify-between gap-3 pt-2">
-                  <button onClick={() => setActiveStep(3)} className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 border border-border/60 transition-all">
-                    <ChevronLeft className="h-4 w-4" />
-                    Voltar
-                  </button>
-                  <div className="flex items-center gap-3">
-                    {!isEditing && (
-                      <button
-                        onClick={() => setOrcamentoConfirmOpen(true)}
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
-                      >
-                        <Receipt className="h-4 w-4" />
-                        Enviar para orçamento
-                      </button>
-                    )}
-                    <button
-                      onClick={() => finalizarAtendimento(false)}
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all"
-                    >
-                      {isEditing ? "Atualizar atendimento" : "Finalizar atendimento"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            </section>
 
-            {/* Persistent save button for edit mode (visible on all steps) */}
-            {isEditing && activeStep !== 4 && (
-              <div className="flex justify-end pt-4 border-t border-border/60 mt-6">
-                <button
-                  onClick={() => finalizarAtendimento(false)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all"
-                >
-                  Atualizar atendimento
-                </button>
-              </div>
-            )}
+        </div>
+      </div>
 
+      {/* ── Sticky Action Bar ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total</p>
+            <p className="text-base sm:text-lg font-bold text-foreground truncate">
+              {fmtBRL(total)}
+              <span className="ml-2 text-xs font-medium text-muted-foreground">· {exames.length} exame(s)</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/atendimentos")}
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 border border-border/60 transition-all"
+            >
+              Cancelar
+            </button>
+            {!isEditing && (
+              <button
+                onClick={() => setOrcamentoConfirmOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
+              >
+                <Receipt className="h-4 w-4" />
+                <span className="hidden sm:inline">Orçamento</span>
+              </button>
+            )}
+            <button
+              onClick={finalizarComValidacao}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+            >
+              {isEditing ? "Atualizar atendimento" : "Finalizar atendimento"}
+            </button>
           </div>
         </div>
       </div>
