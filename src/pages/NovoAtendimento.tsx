@@ -1815,113 +1815,87 @@ const NovoAtendimento = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                   {/* Left: Clinical info */}
                   <div className="lg:col-span-3 space-y-5">
-                    {/* Previsão de entrega */}
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                        Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2 dias úteis · 17:00)</span>
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={dataEntrega}
-                        onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
-                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-
-                    {/* Prioridade */}
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                        Prioridade
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {([
-                          { v: "normal", label: "Normal", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-primary bg-primary/5 text-primary" },
-                          { v: "urgencia", label: "Urgência", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]" },
-                          { v: "emergencia", label: "Emergência", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-[hsl(var(--status-danger))] bg-[hsl(var(--status-danger-bg))] text-[hsl(var(--status-danger))]" },
-                        ] as const).map(opt => {
-                          const isActive = prioridade === opt.v;
-                          return (
-                            <button
-                              key={opt.v}
-                              type="button"
-                              onClick={() => setPrioridade(opt.v)}
-                              className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? opt.active : opt.cls}`}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Jejum + Previsão de entrega (mesma linha) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Linha 1: Prioridade (segmented) + Previsão de entrega (compacto) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
                       <div>
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                          Paciente em jejum?
+                          Prioridade clínica
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="inline-flex p-1 rounded-lg bg-muted/50 border border-border/60">
                           {([
-                            { v: "nao", label: "Não" },
-                            { v: "sim", label: "Sim" },
+                            { v: "normal", label: "Normal", icon: Clock, active: "bg-background text-foreground shadow-sm" },
+                            { v: "urgencia", label: "Urgência", icon: Zap, active: "bg-background text-[hsl(var(--status-warning))] shadow-sm" },
+                            { v: "emergencia", label: "Emergência", icon: Flame, active: "bg-background text-[hsl(var(--status-danger))] shadow-sm" },
                           ] as const).map(opt => {
-                            const isActive = jejum === opt.v;
+                            const Icon = opt.icon;
+                            const isActive = prioridade === opt.v;
                             return (
                               <button
                                 key={opt.v}
                                 type="button"
-                                onClick={() => setJejum(opt.v)}
-                                className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-border/60 text-foreground hover:bg-accent/40"}`}
+                                onClick={() => setPrioridade(opt.v)}
+                                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold transition-all ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
+                                <Icon className="h-3.5 w-3.5" />
                                 {opt.label}
                               </button>
                             );
                           })}
                         </div>
                       </div>
-                      <div>
+                      <div className="sm:min-w-[220px]">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                          Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2d úteis · 17h)</span>
+                          Previsão de entrega
                         </label>
                         <input
                           type="datetime-local"
                           value={dataEntrega}
                           onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
-                          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>
                     </div>
 
-                    {/* Entrega via WhatsApp */}
-                    <div>
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
-                        Receber resultado via WhatsApp?
+                    {/* Linha 2: Opções clínicas (toggles inline) */}
+                    <div className="rounded-lg border border-border/60 bg-muted/20 divide-y divide-border/40">
+                      <label htmlFor="opt-jejum" className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-background border border-border/60 flex items-center justify-center shrink-0">
+                            <Coffee className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-foreground">Paciente em jejum</div>
+                            <div className="text-[11px] text-muted-foreground">Necessário para exames bioquímicos</div>
+                          </div>
+                        </div>
+                        <Switch
+                          id="opt-jejum"
+                          checked={jejum === "sim"}
+                          onCheckedChange={(v) => setJejum(v ? "sim" : "nao")}
+                        />
                       </label>
-                      <div className="grid grid-cols-2 gap-2 max-w-xs">
-                        {([
-                          { v: "nao", label: "Não" },
-                          { v: "sim", label: "Sim" },
-                        ] as const).map(opt => {
-                          const isActive = entregaWhatsapp === opt.v;
-                          return (
-                            <button
-                              key={opt.v}
-                              type="button"
-                              onClick={() => setEntregaWhatsapp(opt.v)}
-                              className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-border/60 text-foreground hover:bg-accent/40"}`}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {entregaWhatsapp === "sim" && (
-                        <p className="mt-2 text-[11px] text-muted-foreground">
-                          O resultado será enviado ao telefone cadastrado no paciente assim que liberado.
-                        </p>
-                      )}
-
+                      <label htmlFor="opt-whats" className="flex items-center justify-between gap-4 px-4 py-3 cursor-pointer">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-background border border-border/60 flex items-center justify-center shrink-0">
+                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-foreground">Entrega do resultado por WhatsApp</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {entregaWhatsapp === "sim"
+                                ? "Enviado ao telefone do paciente assim que liberado"
+                                : "O paciente receberá apenas pelo portal"}
+                            </div>
+                          </div>
+                        </div>
+                        <Switch
+                          id="opt-whats"
+                          checked={entregaWhatsapp === "sim"}
+                          onCheckedChange={(v) => setEntregaWhatsapp(v ? "sim" : "nao")}
+                        />
+                      </label>
                     </div>
+
 
 
                     {/* Observações */}
