@@ -77,7 +77,7 @@ export default function FormasPagamentoTab() {
     setItems((prev) => prev.map((x) => x.id === item.id ? { ...x, ativo } : x));
     try {
       await persistOrThrow(
-        supabase.from("financeiro_formas_pagamento").update({ ativo }).eq("id", item.id),
+        supabase.from("select_options").update({ ativo }).eq("id", item.id),
         "formasPagamento.toggle",
       );
       await reloadAll();
