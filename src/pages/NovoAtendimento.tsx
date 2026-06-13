@@ -773,42 +773,8 @@ const NovoAtendimento = () => {
           </div>
         </div>
 
-        {/* ── Sticky Stepper ── */}
-        <div className="sticky top-4 z-20 bg-card/95 backdrop-blur-sm border border-border/60 rounded-2xl p-1.5 mb-6 shadow-sm">
-          <div className="flex items-center gap-1">
-            {steps.map((step) => {
-              const isDone = stepDone[step.id as 1 | 2 | 3 | 4];
-              const isActive = activeStep === step.id;
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => scrollToStep(step.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : isDone
-                      ? "text-primary hover:bg-primary/5"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
-                  {isDone ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
-                      isActive ? "bg-primary-foreground/20" : "bg-muted"
-                    }`}>
-                      {step.id}
-                    </div>
-                  )}
-                  <span className="hidden sm:inline">{step.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── Single-form: todas as seções visíveis ── */}
-        <div className="space-y-6 pb-28">
+        {/* ── Single-form: todas as seções em um único card ── */}
+        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
 
             {/* ════ STEP 1: Paciente ════ */}
             <section id="step-paciente" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
