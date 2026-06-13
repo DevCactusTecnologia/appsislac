@@ -1887,9 +1887,9 @@ const NovoAtendimento = () => {
                             return (
                               <button
                                 key={opt.v}
-                                type="button"
+                              type="button"
                                 onClick={() => setPrioridade(opt.v)}
-                                className={`inline-flex flex-1 items-center justify-center gap-1.5 h-8 px-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
+                                className={`inline-flex flex-1 items-center justify-center gap-1 h-8 px-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 <Icon className="h-3.5 w-3.5 shrink-0" />
                                 {opt.label}
@@ -1898,7 +1898,7 @@ const NovoAtendimento = () => {
                           })}
                         </div>
                       </div>
-                      <div className="w-full lg:w-auto lg:min-w-[160px] lg:max-w-[180px] shrink-0">
+                      <div className="w-full lg:w-auto lg:min-w-[140px] lg:max-w-[160px] shrink-0">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Previsão de entrega
                         </label>
