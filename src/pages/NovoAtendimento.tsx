@@ -367,6 +367,29 @@ const NovoAtendimento = () => {
   const [jejum, setJejum] = useState<"sim" | "nao">("nao");
   const [prioridade, setPrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
 
+  // Unidade + data do atendimento (Horário de Brasília)
+  const [unidadesList, setUnidadesList] = useState(() => getUnidadesAtivas());
+  useEffect(() => {
+    setUnidadesList(getUnidadesAtivas());
+    return subscribeUnidades(() => setUnidadesList(getUnidadesAtivas()));
+  }, []);
+  const nowBrasiliaInputValue = () => {
+    // YYYY-MM-DDTHH:mm no fuso America/Sao_Paulo (para <input type="datetime-local">)
+    const parts = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date());
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? "00";
+    return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  };
+  const [selectedUnidadeId, setSelectedUnidadeId] = useState<string>(
+    () => user?.unidadeAtiva ?? (getUnidadesAtivas().find(u => u.padrao)?.id ?? getUnidadesAtivas()[0]?.id ?? "")
+  );
+  const [dataAtendimento, setDataAtendimento] = useState<string>(() => nowBrasiliaInputValue());
+  const [lastGuiaNumero, setLastGuiaNumero] = useState<string | null>(null);
+
+
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [lastProtocolo, setLastProtocolo] = useState<string | null>(null);
