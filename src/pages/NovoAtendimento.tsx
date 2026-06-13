@@ -392,7 +392,7 @@ const NovoAtendimento = () => {
   // Data/hora prevista de entrega = +2 dias úteis (Brasília), editável.
   // Data da coleta = hoje (Brasília), editável; só aparece quando há exames.
   const addBusinessDays = (input: string, days: number): string => {
-    const [d, t] = input.split("T");
+    const [d] = input.split("T");
     if (!d) return input;
     const [y, m, dd] = d.split("-").map(Number);
     const dt = new Date(Date.UTC(y, (m ?? 1) - 1, dd ?? 1));
