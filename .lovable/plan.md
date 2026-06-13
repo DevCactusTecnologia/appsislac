@@ -1,63 +1,50 @@
-# Plano — Unidade, Data e Número de Guia no /novo-atendimento
+## Objetivo
 
-Esta é uma mudança **estrutural** (banco + edge function + UI), por isso preciso da confirmação explícita antes de aplicar.
+Aplicar o **mesmo layout, theme e design system** da aba **Laboratório** (hero com gradiente sutil + ícone em pill arredondado + título com `uppercase tracking-widest` + blocos agrupados com cabeçalhos iconográficos + footer sticky quando há salvar/descartar) às 14 abas listadas em `/configuracoes`.
 
-## 1. UI — `src/pages/NovoAtendimento.tsx`
+## Abordagem
 
-Adicionar, no início do card único, uma linha com 2 campos lado a lado (acima da seção Paciente):
+A grande maioria das abas (10) já consome um único componente compartilhado: `src/components/configuracoes/_shared/SectionShell.tsx`. Vou **evoluir esse shell** para o novo visual — assim **todas as abas que já o usam são atualizadas automaticamente, sem mexer no conteúdo interno**. As demais (que renderizam container próprio) recebem um wrapper equivalente.
 
-- **Unidade de atendimento** (Select): lista `getUnidadesAtivas()` (SEDE + FILIAL + PONTO_DE_COLETA). Default = `user.unidadeAtiva` ou a unidade marcada `padrao`. Obrigatório.
-- **Data do atendimento** (Input `datetime-local`): default = "agora" no fuso `America/Sao_Paulo` (Horário de Brasília). Editável.
+### Etapa 1 — Upgrade do `SectionShell` (atinge 10 abas)
+Reescrever apenas o **chrome visual** preservando 100% da API (props `icon`, `title`, `description`, `meta`, `actions`, `toolbar`, `banner`, `children`, `footer`, `bodyless`):
 
-O número de **Guia** NÃO entra no formulário — é gerado server-side no momento do salvamento (igual ao protocolo) e exibido na tela de sucesso.
+- Container externo `rounded-2xl border border-border bg-card overflow-hidden`.
+- **Hero header**: faixa com `bg-gradient-to-br from-primary/5 via-card to-transparent`, ícone em pill `p-3 rounded-xl bg-primary/10 ring-1 ring-primary/20`, eyebrow `text-[11px] uppercase tracking-[0.18em] text-muted-foreground`, título `text-xl font-semibold`, descrição abaixo.
+- Toolbar e banner mantêm posição, mas com paddings e tipografia alinhados.
+- Footer ganha variante "sticky-like" (`bg-card/95 backdrop-blur`) quando solicitado.
 
-## 2. Backend — número de guia diário por unidade
+Abas beneficiadas direto: **Documentos, Site público, Exames, Tabelas de Preço, Convênio, Apoio Laboratorial, Unidades/Filiais, Mapas de Trabalho, Meu acesso (AdminTab), Setores** (também usa).
 
-### 2.1 Migration
-Criar tabela `guia_sequence` (contador diário por tenant + unidade):
+### Etapa 2 — Retrofit das abas sem `SectionShell` (4 abas)
+Envolver o conteúdo dessas abas no novo `SectionShell` (sem reescrever lógica/CRUDs/dialogs):
+
+- **FormasPagamentoTab.tsx**
+- **FornecedoresTab.tsx**
+- **IntegracoesApoioTab.tsx**
+- **GatewayPagamentoTab.tsx**
+- **NotificacoesTab.tsx** (hoje só placeholder de 12 linhas — vira um hero "Em breve").
+
+Cada uma recebe ícone Lucide adequado (Wallet, Truck, PlugZap, CreditCard, BellRing) + título + descrição curta. Nenhuma feature, RLS, query ou handler é alterado.
+
+### Garantias
+
+- **Sem mudanças funcionais**: somente layout/estilização.
+- **Sem mudanças em rotas, boot, deps ou contextos globais** (respeita a regra do projeto).
+- **Aba Laboratório intocada** — ela já está no padrão alvo e serve de referência.
+- Mobile/tablet/desktop continuam funcionando (breakpoints atuais preservados).
+
+## Arquivos modificados
 
 ```text
-guia_sequence
-  tenant_id    uuid
-  unidade_id   uuid
-  data         date           -- data local Brasília
-  ultimo       int  default 0
-  PK (tenant_id, unidade_id, data)
+src/components/configuracoes/_shared/SectionShell.tsx   (reescrita visual)
+src/components/configuracoes/FormasPagamentoTab.tsx     (wrap)
+src/components/configuracoes/FornecedoresTab.tsx        (wrap)
+src/components/configuracoes/IntegracoesApoioTab.tsx    (wrap)
+src/components/configuracoes/GatewayPagamentoTab.tsx    (wrap)
+src/components/configuracoes/NotificacoesTab.tsx        (wrap)
 ```
 
-Adicionar 2 colunas em `atendimentos`:
-- `guia_numero text` (ex.: `SE-001`)
-- `guia_data date`
+## Confirmação
 
-Função SQL `next_guia_numero(_tenant_id uuid, _unidade_id uuid)`:
-1. `data := (now() AT TIME ZONE 'America/Sao_Paulo')::date`
-2. `prefixo`: 2 primeiras letras (sem acento/espaço) da `unidades.nome` em uppercase — ex.: "SEDE" → `SE`, "João Pessoa" → `JP`.
-3. `INSERT … ON CONFLICT (tenant_id, unidade_id, data) DO UPDATE SET ultimo = guia_sequence.ultimo + 1 RETURNING ultimo`
-4. Retorna `prefixo || '-' || lpad(ultimo::text, 3, '0')`.
-
-Atualizar a RPC `create_atendimento_tx`:
-- aceitar `unidade_id` no payload `_atendimento` (já aceita), salvar
-- chamar `next_guia_numero(...)` e gravar `guia_numero`/`guia_data`
-- retornar `guia_numero` junto do `protocolo`
-
-GRANTs + RLS por `current_tenant_id()` na `guia_sequence` (sem acesso anon).
-
-### 2.2 Edge function
-Sem mudanças de contrato — só repassa `unidade_id` e `data` que já estão no payload.
-
-## 3. Store / tipos
-
-- `addAtendimento` (`src/data/atendimentoStore/mutations.ts`): incluir `unidade_id` e `data` no payload (já existe `unidadeId`/`data`, conferir mapeamento).
-- Após resposta da RPC, gravar `guiaNumero` no objeto de atendimento em memória.
-
-## 4. Exibição
-
-- Tela de sucesso do `/novo-atendimento`: mostrar `Protocolo: … • Guia: SE-001`.
-- Demais telas que listam atendimento ficam fora desse escopo (posso adicionar coluna depois, se pedir).
-
-## 5. Regras preservadas
-- `tenant_id` continua resolvido server-side.
-- RLS + GRANTs em toda tabela nova.
-- Sem mock; sem mexer em coleta/resultado.
-
-Confirma para eu aplicar (migration + edge function + UI)?
+Posso prosseguir com essa abordagem (evoluir o `SectionShell` + 5 wrappers), ou prefere que eu faça **redesign profundo página-a-página** dos 14 tabs (muito maior, ~9.500 linhas, alto risco de regressão)?
