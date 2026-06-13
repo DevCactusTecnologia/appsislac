@@ -362,6 +362,12 @@ const NovoAtendimento = () => {
   const [valorPago, setValorPago] = useState(0);
   const [desconto, setDesconto] = useState(0);
 
+  // Clinical info
+  const [observacoes, setObservacoes] = useState("");
+  const [jejum, setJejum] = useState<"sim" | "nao">("nao");
+  const [prioridade, setPrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
+
+
   const [successOpen, setSuccessOpen] = useState(false);
   const [lastProtocolo, setLastProtocolo] = useState<string | null>(null);
   const [lastHadTerceirizados, setLastHadTerceirizados] = useState(false);
