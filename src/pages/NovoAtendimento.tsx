@@ -987,7 +987,7 @@ const NovoAtendimento = () => {
 
                 {/* Search */}
                 {(!isEditing || showPacienteSearch) && !selectedPaciente && (
-                  <div ref={pacienteRef} className="relative max-w-xl">
+                  <div ref={pacienteRef} className="relative w-full">
                     <div className="relative" ref={pacienteAnchorRef}>
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <input
