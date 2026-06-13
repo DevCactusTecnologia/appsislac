@@ -12,6 +12,7 @@ import {
   reloadAll,
   type ListaItem,
 } from "@/data/financeiroListasStore";
+import SectionShell from "./_shared/SectionShell";
 
 type Forma = ListaItem;
 
