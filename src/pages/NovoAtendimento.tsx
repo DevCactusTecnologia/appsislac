@@ -850,13 +850,13 @@ const NovoAtendimento = () => {
         </div>
 
         {/* ── Single-form: todas as seções em um único card ── */}
-        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
+        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-8 space-y-8 pb-28">
 
-            {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
-            <section className="space-y-4">
+            {/* ════ Cabeçalho operacional: Unidade + Data + Entrega ════ */}
+            <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-5 bg-muted/30 border-b border-border/60 rounded-t-2xl">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                     Unidade de atendimento
                   </label>
                   <select
@@ -873,8 +873,8 @@ const NovoAtendimento = () => {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(Brasília)</span>
                   </label>
                   <input
                     type="datetime-local"
@@ -884,8 +884,8 @@ const NovoAtendimento = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal">(+2 dias úteis)</span>
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2 dias úteis · 17:00)</span>
                   </label>
                   <input
                     type="datetime-local"
@@ -896,6 +896,7 @@ const NovoAtendimento = () => {
                 </div>
               </div>
             </section>
+
 
             {/* ════ STEP 1: Paciente ════ */}
             <section id="step-paciente" className="scroll-mt-28 space-y-4">
