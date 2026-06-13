@@ -64,13 +64,18 @@ export function useRealtimeChannel(opts: UseRealtimeChannelOptions): void {
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
 
+    // Sufixo único por instância de hook para evitar colisão de tópicos
+    // (StrictMode double-mount, múltiplos consumidores, etc.) que dispara
+    // "cannot add postgres_changes callbacks after subscribe()".
+    const uniqueName = `${channelName}:${Math.random().toString(36).slice(2, 10)}`;
+
     const subscribe = () => {
       if (disposed) return;
       if (pauseOnHidden && typeof document !== "undefined" && document.hidden) return;
 
       const cfg: Record<string, unknown> = { event, schema, table };
       if (filter) cfg.filter = filter;
-      channel = supabase.channel(channelName).on(
+      channel = supabase.channel(uniqueName).on(
         "postgres_changes" as never,
         cfg as never,
         (payload: unknown) => {
