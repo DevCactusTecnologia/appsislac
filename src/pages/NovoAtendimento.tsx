@@ -1867,16 +1867,16 @@ const NovoAtendimento = () => {
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Observações & finalização</h2>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8">
                   {/* Left: Clinical info */}
-                  <div className="lg:col-span-3 space-y-5">
+                  <div className="xl:col-span-3 space-y-5 min-w-0">
                     {/* Linha 1: Prioridade (segmented) + Previsão de entrega (compacto) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
-                      <div>
+                    <div className="flex flex-col md:flex-row md:items-end gap-4">
+                      <div className="min-w-0 flex-1">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Prioridade clínica
                         </label>
-                        <div className="inline-flex p-1 rounded-lg bg-muted/50 border border-border/60">
+                        <div className="flex flex-wrap p-1 rounded-lg bg-muted/50 border border-border/60 gap-1">
                           {([
                             { v: "normal", label: "Normal", icon: Clock, active: "bg-background text-foreground shadow-sm" },
                             { v: "urgencia", label: "Urgência", icon: Zap, active: "bg-background text-[hsl(var(--status-warning))] shadow-sm" },
@@ -1889,7 +1889,7 @@ const NovoAtendimento = () => {
                                 key={opt.v}
                                 type="button"
                                 onClick={() => setPrioridade(opt.v)}
-                                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold transition-all ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
+                                className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 <Icon className="h-3.5 w-3.5" />
                                 {opt.label}
@@ -1898,7 +1898,7 @@ const NovoAtendimento = () => {
                           })}
                         </div>
                       </div>
-                      <div className="sm:min-w-[220px]">
+                      <div className="w-full md:w-auto md:min-w-[220px] md:max-w-[260px]">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Previsão de entrega
                         </label>
