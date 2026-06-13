@@ -16,16 +16,26 @@ import {
 type Forma = ListaItem;
 
 async function loadAllFormas(): Promise<Forma[]> {
+  // Lê de `select_options` (fonte canônica). Inclui inativas para o admin
+  // gerenciar via toggle. Tabela legada `financeiro_formas_pagamento` segue
+  // populada por trigger até remoção final.
   const { data, error } = await supabase
-    .from("financeiro_formas_pagamento")
-    .select("id, nome, sistema, ativo, ordem")
+    .from("select_options")
+    .select("id, label, sistema, ativo, ordem")
+    .eq("categoria", "financeiro_forma_pagamento")
     .order("ordem", { ascending: true })
-    .order("nome", { ascending: true });
+    .order("label", { ascending: true });
   if (error) {
     showError(error, { scope: "formasPagamento.loadAll", userMessage: "Não foi possível carregar as formas de pagamento." });
     return [];
   }
-  return (data ?? []).map((r) => ({ id: r.id, nome: r.nome, sistema: r.sistema, ativo: r.ativo, ordem: r.ordem }));
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    nome: r.label as string,
+    sistema: !!r.sistema,
+    ativo: !!r.ativo,
+    ordem: typeof r.ordem === "number" ? r.ordem : undefined,
+  }));
 }
 
 export default function FormasPagamentoTab() {
