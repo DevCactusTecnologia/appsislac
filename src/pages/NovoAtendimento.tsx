@@ -863,27 +863,64 @@ const NovoAtendimento = () => {
             <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-4 bg-muted/30 border-b border-border/60 rounded-t-2xl">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6">
                 {/* Unidade */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-2.5 transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40">
-                    <Building2 className="h-4 w-4 text-primary/70 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
-                        Unidade
-                      </label>
-                      <select
-                        value={selectedUnidadeId}
-                        onChange={(e) => setSelectedUnidadeId(e.target.value)}
-                        className="w-full bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer appearance-none py-0.5 -mx-0.5"
+                <div className="flex-1 min-w-0" ref={unidadeWrapperRef}>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setUnidadeDropdownOpen(o => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={unidadeDropdownOpen}
+                      className={`group w-full flex items-center gap-3 rounded-xl border bg-background/80 px-3 py-2.5 text-left transition-all hover:border-primary/40 hover:bg-background ${
+                        unidadeDropdownOpen
+                          ? "border-primary/40 ring-2 ring-primary/20"
+                          : "border-border/60"
+                      }`}
+                    >
+                      <Building2 className="h-4 w-4 text-primary/70 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+                          Unidade
+                        </span>
+                        <span className="block w-full text-sm font-semibold text-foreground truncate mt-1">
+                          {unidadesList.find(u => u.id === selectedUnidadeId)?.nome || "Nenhuma unidade cadastrada"}
+                        </span>
+                      </div>
+                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-200 ${unidadeDropdownOpen ? "rotate-180 text-primary" : ""}`} />
+                    </button>
+
+                    {unidadeDropdownOpen && unidadesList.length > 0 && (
+                      <ul
+                        role="listbox"
+                        aria-label="Selecionar unidade"
+                        className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/60 rounded-2xl shadow-[0_16px_48px_-12px_hsl(var(--foreground)/0.18)] z-50 max-h-64 overflow-y-auto py-1.5 origin-top animate-scale-in"
                       >
-                        {unidadesList.length === 0 && (
-                          <option value="">Nenhuma unidade cadastrada</option>
-                        )}
-                        {unidadesList.map((u) => (
-                          <option key={u.id} value={u.id}>{u.nome}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 pointer-events-none" />
+                        {unidadesList.map((u) => {
+                          const isSelected = u.id === selectedUnidadeId;
+                          return (
+                            <li key={u.id}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                onClick={() => {
+                                  setSelectedUnidadeId(u.id);
+                                  setUnidadeDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2.5 transition-colors outline-none ${
+                                  isSelected
+                                    ? "bg-primary/8 text-foreground"
+                                    : "text-foreground hover:bg-accent/60"
+                                }`}
+                              >
+                                <Building2 className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                                <span className="flex-1 truncate font-medium">{u.nome}</span>
+                                {isSelected && <Check className="h-4 w-4 text-primary shrink-0" />}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 </div>
 
