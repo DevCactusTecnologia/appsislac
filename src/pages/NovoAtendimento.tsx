@@ -854,7 +854,7 @@ const NovoAtendimento = () => {
 
             {/* ════ Cabeçalho operacional: Unidade + Data + Entrega ════ */}
             <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-5 bg-muted/30 border-b border-border/60 rounded-t-2xl">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                     Unidade de atendimento
@@ -883,18 +883,8 @@ const NovoAtendimento = () => {
                     className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2 dias úteis · 17:00)</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={dataEntrega}
-                    onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
               </div>
+
             </section>
 
 
