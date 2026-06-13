@@ -22,6 +22,8 @@ export interface AtendimentoTxResponse {
   error?: string;
   protocolo?: string;
   atendimento_id?: number;
+  guia_numero?: string;
+  guia_data?: string;
 }
 
 // ── Cache em memória ──
