@@ -4510,27 +4510,6 @@ export type Database = {
         }
         Relationships: []
       }
-      signup_rate_limit: {
-        Row: {
-          attempts: number
-          blocked_until: string | null
-          ip_address: string
-          window_start: string
-        }
-        Insert: {
-          attempts?: number
-          blocked_until?: string | null
-          ip_address: string
-          window_start?: string
-        }
-        Update: {
-          attempts?: number
-          blocked_until?: string | null
-          ip_address?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
       solicitacoes_publicas: {
         Row: {
           convertido_atendimento_id: string | null
@@ -5747,42 +5726,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tuss_catalogo: {
-        Row: {
-          capitulo: string
-          codigo: string
-          created_at: string
-          descricao: string
-          descricao_norm: string | null
-          grupo: string
-          updated_at: string
-          vigencia_fim: string | null
-          vigencia_inicio: string | null
-        }
-        Insert: {
-          capitulo?: string
-          codigo: string
-          created_at?: string
-          descricao: string
-          descricao_norm?: string | null
-          grupo?: string
-          updated_at?: string
-          vigencia_fim?: string | null
-          vigencia_inicio?: string | null
-        }
-        Update: {
-          capitulo?: string
-          codigo?: string
-          created_at?: string
-          descricao?: string
-          descricao_norm?: string | null
-          grupo?: string
-          updated_at?: string
-          vigencia_fim?: string | null
-          vigencia_inicio?: string | null
-        }
-        Relationships: []
       }
       unidades: {
         Row: {
