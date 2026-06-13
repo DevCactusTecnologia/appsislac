@@ -11,7 +11,8 @@ import { _initPacientesStore } from "./pacienteStore";
 import { _initEspecialistasStore } from "./especialistaStore";
 import { _initAtendimentosStore, installAtendimentosRealtime, stopAtendimentosRealtime } from "./atendimentoStore";
 import { _initUsuariosStore } from "./usuariosStore";
-import { _initMotivosCancelamentoStore } from "./motivosCancelamentoStore";
+// motivosCancelamentoStore removido — todas as leituras migraram para
+// `useDicionario("motivo_cancelamento")` (select_options).
 import { _initDocumentoTemplatesStore } from "./documentoTemplatesStore";
 import { _initRecoletasMotivosStore } from "./recoletasMotivosStore";
 import { _initRecoletasStore } from "./recoletasStore";
