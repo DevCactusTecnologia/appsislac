@@ -809,7 +809,7 @@ const NovoAtendimento = () => {
   /* ─── Render ─── */
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-10">
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -837,10 +837,10 @@ const NovoAtendimento = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setLeituraReqOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all"
               title="Ler exames a partir de foto ou PDF da requisição"
             >
               <FileScan className="h-4 w-4" />
@@ -848,7 +848,7 @@ const NovoAtendimento = () => {
             </button>
             <button
               onClick={() => setAvaliacaoIAOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)] hover:shadow-[0_4px_20px_-2px_hsl(var(--primary)/0.5)] transition-all"
+              className="inline-flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold bg-primary text-primary-foreground shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)] hover:shadow-[0_4px_20px_-2px_hsl(var(--primary)/0.5)] transition-all"
             >
               <Sparkles className="h-4 w-4" />
               Avaliação IA
@@ -857,7 +857,7 @@ const NovoAtendimento = () => {
         </div>
 
         {/* ── Single-form: todas as seções em um único card ── */}
-        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-8 space-y-8 pb-28">
+        <div className="bg-card border border-border/60 rounded-2xl p-4 sm:p-6 lg:p-8 space-y-8 pb-28 overflow-hidden">
 
             {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
             <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-4 bg-muted/30 border-b border-border/60 rounded-t-2xl">
@@ -1867,16 +1867,16 @@ const NovoAtendimento = () => {
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Observações & finalização</h2>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8">
                   {/* Left: Clinical info */}
-                  <div className="lg:col-span-3 space-y-5">
+                  <div className="xl:col-span-3 space-y-5 min-w-0">
                     {/* Linha 1: Prioridade (segmented) + Previsão de entrega (compacto) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
-                      <div>
+                    <div className="flex flex-col md:flex-row md:items-end gap-4">
+                      <div className="min-w-0 flex-1">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Prioridade clínica
                         </label>
-                        <div className="inline-flex p-1 rounded-lg bg-muted/50 border border-border/60">
+                        <div className="flex flex-wrap p-1 rounded-lg bg-muted/50 border border-border/60 gap-1">
                           {([
                             { v: "normal", label: "Normal", icon: Clock, active: "bg-background text-foreground shadow-sm" },
                             { v: "urgencia", label: "Urgência", icon: Zap, active: "bg-background text-[hsl(var(--status-warning))] shadow-sm" },
@@ -1889,7 +1889,7 @@ const NovoAtendimento = () => {
                                 key={opt.v}
                                 type="button"
                                 onClick={() => setPrioridade(opt.v)}
-                                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold transition-all ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
+                                className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 <Icon className="h-3.5 w-3.5" />
                                 {opt.label}
@@ -1898,7 +1898,7 @@ const NovoAtendimento = () => {
                           })}
                         </div>
                       </div>
-                      <div className="sm:min-w-[220px]">
+                      <div className="w-full md:w-auto md:min-w-[220px] md:max-w-[260px]">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Previsão de entrega
                         </label>
@@ -1990,8 +1990,8 @@ const NovoAtendimento = () => {
                   </div>
 
                   {/* Right: Financial */}
-                  <div className="lg:col-span-2">
-                    <div className="sticky top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 space-y-4">
+                  <div className="xl:col-span-2 min-w-0">
+                    <div className="xl:sticky xl:top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-5 sm:p-6 space-y-4">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resumo financeiro</p>
 
                       <div className="space-y-2.5">
