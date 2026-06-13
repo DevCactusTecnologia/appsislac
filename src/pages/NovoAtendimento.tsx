@@ -850,7 +850,7 @@ const NovoAtendimento = () => {
         </div>
 
         {/* ── Single-form: todas as seções em um único card ── */}
-        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
+        <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-8 space-y-8 pb-28">
 
             {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
             <section className="space-y-4">
