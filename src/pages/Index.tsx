@@ -47,7 +47,7 @@ const statusPagamentoFilters: { value: string; label: string }[] = [
   { value: "Pagamento cancelado", label: "Cancelado" },
 ];
 
-// Motivos de cancelamento agora vêm do store (tabela `motivos_cancelamento`).
+// Motivos de cancelamento vêm de `select_options` via useDicionario("motivo_cancelamento").
 // "Outro" é incluído sempre como opção final para permitir texto livre.
 
 /* ── Generic Filter Chip ── */

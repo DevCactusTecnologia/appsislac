@@ -16,9 +16,8 @@ import {
 type Forma = ListaItem;
 
 async function loadAllFormas(): Promise<Forma[]> {
-  // Lê de `select_options` (fonte canônica). Inclui inativas para o admin
-  // gerenciar via toggle. Tabela legada `financeiro_formas_pagamento` segue
-  // populada por trigger até remoção final.
+  // Lê de `select_options` (fonte canônica única). Inclui inativas para o admin
+  // gerenciar via toggle.
   const { data, error } = await supabase
     .from("select_options")
     .select("id, label, sistema, ativo, ordem")

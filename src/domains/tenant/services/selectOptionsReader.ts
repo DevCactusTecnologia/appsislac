@@ -1,12 +1,11 @@
 // Reader unificado de dicionários a partir de `public.select_options`.
 //
-// `select_options` é a fonte canônica futura para listas de domínio
+// `select_options` é a fonte canônica única para listas de domínio
 // (motivos de cancelamento, motivos de recoleta, formas/destinos de
-// pagamento, tipos de despesa, canais de comunicação). Os dicionários
-// legados (`motivos_cancelamento`, `recoletas_motivos`,
-// `financeiro_*`) continuam recebendo escrita pelas stores existentes;
-// triggers `fwd_legacy_dict_to_select_options` mantêm `select_options`
-// sincronizada — então este reader sempre vê o estado atual.
+// pagamento, tipos de despesa, canais de comunicação). As tabelas
+// dicionário legadas foram consolidadas/removidas (C.1 + C.3 — 2026-06-13).
+// `recoletas_motivos` ainda existe (FK ativa) e é espelhada para
+// `select_options` por trigger `trg_fwd_recoletas_motivos`.
 //
 // Tenant: a RLS de `select_options` já filtra por `tenant_id = current_tenant_id()`
 // e expõe linhas globais (`tenant_id IS NULL`) como dicionário compartilhado.

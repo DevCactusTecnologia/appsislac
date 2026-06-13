@@ -17,9 +17,8 @@ const TENANT_TABLES = [
   "exames_catalogo", "exame_parametros", "exame_layouts", "exame_pops",
   "tabela_preco_itens", "valores_referencia", "setores_laboratoriais",
   "documento_templates", "select_options",
-  // Dicionários legados (financeiro_formas_pagamento, financeiro_tipos_despesa,
-  // financeiro_destinos_pagamento, motivos_cancelamento) foram consolidados em
-  // `select_options` — não precisam ser exportados separadamente.
+  // Dicionários financeiros e motivos de cancelamento foram consolidados
+  // em `select_options` (migrações C.1 + C.3, 2026-06-13).
   "financeiro_saidas",
   "recoletas", "recoletas_motivos",
   "mapas_trabalho", "mapa_exames", "amostras",

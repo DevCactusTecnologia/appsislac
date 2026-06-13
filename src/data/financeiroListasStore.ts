@@ -1,17 +1,15 @@
-// Persistência das listas do Financeiro — agora apoiada na tabela canônica
+// Persistência das listas do Financeiro — apoiada na tabela canônica
 // `select_options` (categorias `financeiro_tipo_despesa`, `financeiro_destino_pagamento`,
 // `financeiro_forma_pagamento`).
 //
 // As tabelas legadas (`financeiro_tipos_despesa`, `financeiro_destinos_pagamento`,
-// `financeiro_formas_pagamento`) permanecem populadas pelos triggers
-// `trg_fwd_*` (sincronia 1:1) até serem removidas em migração final. Este
-// store NÃO escreve mais nelas.
+// `financeiro_formas_pagamento`) foram REMOVIDAS na migração C.3 (2026-06-13).
 //
 // API externa preservada: getTiposDespesa/getDestinosPagamento/getFormasPagamento,
 // subscribeListas, createItem, deleteItem, reloadAll, _initFinanceiroListasStore.
-// `ListaItem.id` agora é o `select_options.id` (uuid).
+// `ListaItem.id` é o `select_options.id` (uuid).
 //
-// Permissões: RLS de `select_options` já exige `has_permission('gestao_financeira')`
+// Permissões: RLS de `select_options` exige `has_permission('gestao_financeira')`
 // para estas categorias (ver migration 20260613_select_options_per_category_rls).
 
 import { supabase } from "@/integrations/supabase/client";
