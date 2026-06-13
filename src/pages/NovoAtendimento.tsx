@@ -391,7 +391,11 @@ const NovoAtendimento = () => {
     return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
   };
   const [selectedUnidadeId, setSelectedUnidadeId] = useState<string>(
-    () => user?.unidadeAtiva ?? (getUnidadesAtivas().find(u => u.padrao)?.id ?? getUnidadesAtivas()[0]?.id ?? "")
+    () => {
+      const unidades = getUnidadesAtivas();
+      const sede = unidades.find(u => u.tipo === "SEDE");
+      return sede?.id ?? user?.unidadeAtiva ?? unidades.find(u => u.padrao)?.id ?? unidades[0]?.id ?? "";
+    }
   );
   const [dataAtendimento, setDataAtendimento] = useState<string>(() => nowBrasiliaInputValue());
   const [lastGuiaNumero, setLastGuiaNumero] = useState<string | null>(null);
