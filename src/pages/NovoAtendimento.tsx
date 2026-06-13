@@ -1898,7 +1898,7 @@ const NovoAtendimento = () => {
                           })}
                         </div>
                       </div>
-                      <div className="w-full md:w-auto md:min-w-[220px] md:max-w-[260px]">
+                      <div className="w-full lg:w-auto lg:min-w-[220px] lg:max-w-[260px]">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Previsão de entrega
                         </label>
