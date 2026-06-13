@@ -1684,132 +1684,78 @@ const NovoAtendimento = () => {
 
             </section>
 
-            {/* ════ STEP 4: Resumo ════ */}
+            {/* ════ STEP 4: Observações & Financeiro ════ */}
             <section id="step-resumo" className="scroll-mt-28 space-y-4 pt-6 border-t border-border/60">
                 <div>
-                  <h2 className="text-lg font-bold text-foreground tracking-tight">Resumo do atendimento</h2>
+                  <h2 className="text-lg font-bold text-foreground tracking-tight">Observações & finalização</h2>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                  {/* Left: Details */}
+                  {/* Left: Clinical info */}
                   <div className="lg:col-span-3 space-y-5">
-                    {/* Patient */}
-                    {(() => {
-                      const nascimento = selectedPaciente?.dataNascimento || editAtendimentoData?.nascimento || "";
-                      const idadeStr = nascimento
-                        ? (formatIdadeDetalhada(nascimento) || selectedPaciente?.idade || editAtendimentoData?.idade || "")
-                        : (selectedPaciente?.idade || editAtendimentoData?.idade || "");
-                      const aniversario = nascimento ? isAniversarioHoje(nascimento) : false;
-                      const totalDebitos = pacienteDebitos.reduce((s, d) => s + d.saldo, 0);
-                      const cpf = selectedPaciente?.cpf || editAtendimentoData?.cpf;
-                      return (
-                        <>
-                          <div className="border border-border/60 rounded-2xl p-5">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Paciente</p>
-                            <p className="text-base font-bold text-foreground truncate">{pacienteQuery}</p>
-                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                              {cpf && (
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">CPF</span>
-                                  <span className="text-sm font-semibold text-foreground tabular-nums truncate">{cpf}</span>
-                                </div>
-                              )}
-                              {nascimento && (
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nascimento</span>
-                                  <span className="text-sm font-semibold text-foreground tabular-nums">{nascimento}</span>
-                                </div>
-                              )}
-                              {idadeStr && (
-                                <div className="flex flex-col gap-0.5 min-w-0 sm:col-span-2">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Idade</span>
-                                  <span className="text-sm font-semibold text-foreground">{idadeStr}</span>
-                                </div>
-                              )}
-                              {cpf && (
-                                <div className="flex flex-col gap-0.5 min-w-0 sm:col-span-2">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Telefone</span>
-                                  <PacienteTelefoneInline cpf={cpf} />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {aniversario && (
-                            <div className="border border-[hsl(var(--status-purple))]/30 rounded-2xl p-4 bg-[hsl(var(--status-purple-bg))]">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-[hsl(var(--status-purple))]/15 shrink-0">
-                                  <Cake className="h-4 w-4 text-[hsl(var(--status-purple))]" />
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-[hsl(var(--status-purple))]">Feliz aniversário! 🎉</p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {pacienteQuery.split(" ")[0]} está aniversariando hoje.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {pacienteDebitos.length > 0 && (
-                            <div className="border border-[hsl(var(--status-danger))]/30 rounded-2xl p-5 bg-[hsl(var(--status-danger-bg))]">
-                              <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-xl bg-[hsl(var(--status-danger))]/15 shrink-0">
-                                  <AlertTriangle className="h-4 w-4 text-[hsl(var(--status-danger))]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                                    <p className="text-sm font-bold text-[hsl(var(--status-danger))]">Débitos em aberto</p>
-                                    <span className="text-sm font-bold text-[hsl(var(--status-danger))] tabular-nums">{fmtBRL(totalDebitos)}</span>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-1">Este paciente possui pagamentos pendentes:</p>
-                                  <div className="mt-3 space-y-2">
-                                    {pacienteDebitos.map(d => (
-                                      <div key={d.protocolo} className="flex items-center justify-between text-xs bg-card/60 rounded-xl px-4 py-2.5 border border-border/60">
-                                        <span className="font-semibold text-foreground">{d.protocolo}</span>
-                                        <span className="font-bold text-[hsl(var(--status-danger))] tabular-nums">{fmtBRL(d.saldo)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-
-                    {/* Convênios + Solicitantes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="border border-border/60 rounded-2xl p-5">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Convênios</p>
-                        <div className="flex flex-wrap gap-2">
-                          {convenios.length > 0 ? convenios.map(c => (
-                            <span key={c} className="px-3 py-1.5 rounded-xl bg-primary/8 text-primary text-xs font-semibold">{c}</span>
-                          )) : <span className="text-sm text-muted-foreground">—</span>}
-                        </div>
-                      </div>
-                      <div className="border border-border/60 rounded-2xl p-5">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Solicitantes</p>
-                        <div className="flex flex-wrap gap-2">
-                          {solicitantes.length > 0 ? solicitantes.map(s => (
-                            <span key={s} className="px-3 py-1.5 rounded-xl bg-accent text-foreground text-xs font-semibold border border-border/60">{s}</span>
-                          )) : <span className="text-sm text-muted-foreground">—</span>}
-                        </div>
+                    {/* Prioridade */}
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                        Prioridade
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { v: "normal", label: "Normal", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-primary bg-primary/5 text-primary" },
+                          { v: "urgencia", label: "Urgência", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]" },
+                          { v: "emergencia", label: "Emergência", cls: "border-border/60 text-foreground hover:bg-accent/40", active: "border-[hsl(var(--status-danger))] bg-[hsl(var(--status-danger-bg))] text-[hsl(var(--status-danger))]" },
+                        ] as const).map(opt => {
+                          const isActive = prioridade === opt.v;
+                          return (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              onClick={() => setPrioridade(opt.v)}
+                              className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? opt.active : opt.cls}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* Exames */}
-                    <div className="border border-border/60 rounded-2xl p-5">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Exames ({exames.length})</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {exames.map(e => (
-                          <div key={e.id} className="flex justify-between items-center text-sm py-1.5">
-                            <span className="text-foreground truncate mr-3">{e.nome}</span>
-                            <span className="text-muted-foreground shrink-0 font-medium">{fmtBRL(e.valor)}</span>
-                          </div>
-                        ))}
+                    {/* Jejum */}
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                        Paciente em jejum?
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { v: "nao", label: "Não" },
+                          { v: "sim", label: "Sim" },
+                        ] as const).map(opt => {
+                          const isActive = jejum === opt.v;
+                          return (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              onClick={() => setJejum(opt.v)}
+                              className={`h-10 px-3 rounded-xl border text-sm font-semibold transition-all ${isActive ? "border-primary bg-primary/5 text-primary" : "border-border/60 text-foreground hover:bg-accent/40"}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
                       </div>
+                    </div>
+
+                    {/* Observações */}
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                        Observações, doenças e medicamentos
+                      </label>
+                      <textarea
+                        value={observacoes}
+                        onChange={e => setObservacoes(e.target.value)}
+                        rows={5}
+                        placeholder="Informe doenças preexistentes, medicamentos em uso, alergias e demais observações clínicas relevantes."
+                        className="w-full rounded-xl border border-border/60 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 resize-none"
+                      />
                     </div>
 
                     {/* Roteamento de apoio (Fase 3) — só renderiza se houver TERCEIRIZADO */}
@@ -1826,7 +1772,6 @@ const NovoAtendimento = () => {
                       onChange={(id, labApoioId) => {
                         setExames(prev => prev.map(e => {
                           if (e.id !== id) return e;
-                          // Se o usuário escolheu o mesmo lab do padrão, limpa override.
                           const mesmoPadrao = labApoioId && labApoioId === e.labApoioIdPadrao;
                           return { ...e, labApoioIdOverride: mesmoPadrao ? null : labApoioId };
                         }));
@@ -1921,6 +1866,7 @@ const NovoAtendimento = () => {
                 </div>
 
             </section>
+
 
         </div>
       </div>
