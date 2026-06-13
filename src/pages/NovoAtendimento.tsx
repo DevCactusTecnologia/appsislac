@@ -1867,7 +1867,7 @@ const NovoAtendimento = () => {
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Observações & finalização</h2>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 xl:gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
                   {/* Left: Clinical info */}
                   <div className="xl:col-span-3 space-y-5 min-w-0">
                     {/* Linha 1: Prioridade (segmented) + Previsão de entrega (compacto) */}
