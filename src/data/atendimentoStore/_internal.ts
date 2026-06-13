@@ -155,6 +155,7 @@ export function buildAtendimento(
       solicitante: (e as { solicitante?: string }).solicitante ?? "",
     })),
     unidadeId: atRow.unidade_id,
+    guiaNumero: (atRow as { guia_numero?: string | null }).guia_numero ?? undefined,
     pagamentosRealizados: pagamentosFmt.length > 0 ? pagamentosFmt : undefined,
     updatedAt: atRow.updated_at ? formatDateTimeBR(atRow.updated_at) : undefined,
     origem: ((atRow as { origem_atendimento?: string }).origem_atendimento ?? "INTERNO") as MockAtendimento["origem"],
