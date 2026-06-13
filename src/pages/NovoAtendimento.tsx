@@ -5,7 +5,7 @@ import {
   Search, X, CheckCircle2, Sparkles, Trash2, User, Stethoscope,
   FileText, CreditCard, Plus, UserPlus, Printer, Send,
   MessageCircle, AlertTriangle, Building2, ArrowLeft, Receipt, FlaskConical,
-  TestTube2, Cake, Calendar, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame
+  TestTube2, Cake, Calendar, CalendarClock, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame, ChevronDown
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -854,39 +854,52 @@ const NovoAtendimento = () => {
         {/* ── Single-form: todas as seções em um único card ── */}
         <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-8 space-y-8 pb-28">
 
-            {/* ════ Cabeçalho operacional: Unidade + Data + Entrega ════ */}
-            <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-5 bg-muted/30 border-b border-border/60 rounded-t-2xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Unidade de atendimento
-                  </label>
-                  <select
-                    value={selectedUnidadeId}
-                    onChange={(e) => setSelectedUnidadeId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    {unidadesList.length === 0 && (
-                      <option value="">Nenhuma unidade cadastrada</option>
-                    )}
-                    {unidadesList.map((u) => (
-                      <option key={u.id} value={u.id}>{u.nome}</option>
-                    ))}
-                  </select>
+            {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
+            <section className="-mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-4 bg-muted/30 border-b border-border/60 rounded-t-2xl">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6">
+                {/* Unidade */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-2.5 transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40">
+                    <Building2 className="h-4 w-4 text-primary/70 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+                        Unidade
+                      </label>
+                      <select
+                        value={selectedUnidadeId}
+                        onChange={(e) => setSelectedUnidadeId(e.target.value)}
+                        className="w-full bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer appearance-none py-0.5 -mx-0.5"
+                      >
+                        {unidadesList.length === 0 && (
+                          <option value="">Nenhuma unidade cadastrada</option>
+                        )}
+                        {unidadesList.map((u) => (
+                          <option key={u.id} value={u.id}>{u.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 pointer-events-none" />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(Brasília)</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={dataAtendimento}
-                    onChange={(e) => setDataAtendimento(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+
+                {/* Data */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-2.5 transition-all focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40">
+                    <CalendarClock className="h-4 w-4 text-primary/70 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-none">
+                        Data do atendimento <span className="normal-case font-normal tracking-normal">(Brasília)</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={dataAtendimento}
+                        onChange={(e) => setDataAtendimento(e.target.value)}
+                        className="w-full bg-transparent text-sm font-semibold text-foreground focus:outline-none py-0.5"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-
             </section>
 
 
@@ -974,7 +987,7 @@ const NovoAtendimento = () => {
 
                 {/* Search */}
                 {(!isEditing || showPacienteSearch) && !selectedPaciente && (
-                  <div ref={pacienteRef} className="relative max-w-xl">
+                  <div ref={pacienteRef} className="relative w-full">
                     <div className="relative" ref={pacienteAnchorRef}>
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <input
