@@ -1813,6 +1813,19 @@ const NovoAtendimento = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                   {/* Left: Clinical info */}
                   <div className="lg:col-span-3 space-y-5">
+                    {/* Previsão de entrega */}
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
+                        Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal tracking-normal">(+2 dias úteis · 17:00)</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={dataEntrega}
+                        onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+
                     {/* Prioridade */}
                     <div>
                       <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
