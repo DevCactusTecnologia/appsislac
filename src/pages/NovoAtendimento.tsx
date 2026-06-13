@@ -1914,11 +1914,12 @@ const NovoAtendimento = () => {
                           );
                         })}
                       </div>
-                      {entregaWhatsapp === "sim" && !telefone && (
-                        <p className="mt-2 text-[11px] text-[hsl(var(--status-warning))]">
-                          Cadastre um telefone no paciente para envio automático.
+                      {entregaWhatsapp === "sim" && (
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          O resultado será enviado ao telefone cadastrado no paciente assim que liberado.
                         </p>
                       )}
+
                     </div>
 
 
