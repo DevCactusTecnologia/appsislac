@@ -5,8 +5,9 @@ import {
   Search, X, CheckCircle2, Sparkles, Trash2, User, Stethoscope,
   FileText, CreditCard, Plus, UserPlus, Printer, Send,
   MessageCircle, AlertTriangle, Building2, ArrowLeft, Receipt, FlaskConical,
-  TestTube2, Cake, Calendar, ClipboardCheck, FileScan
+  TestTube2, Cake, Calendar, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUnidadeById, getUnidadesAtivas, subscribeUnidades } from "@/data/unidadeStore";
