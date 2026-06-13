@@ -138,6 +138,6 @@ export default function FornecedoresTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SectionShell>
   );
 }
