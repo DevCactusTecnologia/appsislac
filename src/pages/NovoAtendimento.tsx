@@ -310,6 +310,8 @@ const NovoAtendimento = () => {
   const solicitanteWrapperRef = useRef<HTMLDivElement>(null);
   const convenioInputRef = useRef<HTMLInputElement>(null);
   const solicitanteInputRef = useRef<HTMLInputElement>(null);
+  const unidadeWrapperRef = useRef<HTMLDivElement>(null);
+  const [unidadeDropdownOpen, setUnidadeDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -320,10 +322,13 @@ const NovoAtendimento = () => {
       if (solicitanteDropdownOpen && solicitanteWrapperRef.current && !solicitanteWrapperRef.current.contains(target)) {
         setSolicitanteDropdownOpen(false);
       }
+      if (unidadeDropdownOpen && unidadeWrapperRef.current && !unidadeWrapperRef.current.contains(target)) {
+        setUnidadeDropdownOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [convenioDropdownOpen, solicitanteDropdownOpen]);
+  }, [convenioDropdownOpen, solicitanteDropdownOpen, unidadeDropdownOpen]);
 
   useEffect(() => {
     if (!convenioDropdownOpen) return;
