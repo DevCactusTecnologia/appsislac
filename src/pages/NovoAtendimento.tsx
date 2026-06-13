@@ -365,6 +365,7 @@ const NovoAtendimento = () => {
   // Clinical info
   const [observacoes, setObservacoes] = useState("");
   const [jejum, setJejum] = useState<"sim" | "nao">("nao");
+  const [entregaWhatsapp, setEntregaWhatsapp] = useState<"sim" | "nao">("nao");
   const [prioridade, setPrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
 
   // Unidade + data do atendimento (Horário de Brasília)
