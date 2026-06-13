@@ -1889,16 +1889,16 @@ const NovoAtendimento = () => {
                                 key={opt.v}
                                 type="button"
                                 onClick={() => setPrioridade(opt.v)}
-                                className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 lg:px-2 rounded-md text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
+                                className={`inline-flex flex-1 lg:flex-initial items-center justify-center gap-1 h-8 px-2 lg:px-1.5 rounded-md text-[11px] lg:text-xs font-semibold transition-all whitespace-nowrap ${isActive ? opt.active : "text-muted-foreground hover:text-foreground"}`}
                               >
-                                <Icon className="h-3.5 w-3.5" />
+                                <Icon className="h-3.5 w-3.5 shrink-0" />
                                 {opt.label}
                               </button>
                             );
                           })}
                         </div>
                       </div>
-                      <div className="w-full lg:w-auto lg:min-w-[170px] lg:max-w-[200px]">
+                      <div className="w-full lg:w-auto lg:min-w-[160px] lg:max-w-[180px] shrink-0">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">
                           Previsão de entrega
                         </label>
