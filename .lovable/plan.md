@@ -1,89 +1,63 @@
+# Plano — Unidade, Data e Número de Guia no /novo-atendimento
 
-# Fatiamento de `Financeiro.tsx` por abas
+Esta é uma mudança **estrutural** (banco + edge function + UI), por isso preciso da confirmação explícita antes de aplicar.
 
-## Objetivo
-Reduzir `src/pages/Financeiro.tsx` (1.899 linhas) para um orquestrador (~300-400 linhas) que carrega 4 sub-componentes de aba, compartilhando estado/filtros via um contexto interno do módulo. Comportamento e UI **idênticos**.
+## 1. UI — `src/pages/NovoAtendimento.tsx`
 
-## Estrutura alvo
+Adicionar, no início do card único, uma linha com 2 campos lado a lado (acima da seção Paciente):
+
+- **Unidade de atendimento** (Select): lista `getUnidadesAtivas()` (SEDE + FILIAL + PONTO_DE_COLETA). Default = `user.unidadeAtiva` ou a unidade marcada `padrao`. Obrigatório.
+- **Data do atendimento** (Input `datetime-local`): default = "agora" no fuso `America/Sao_Paulo` (Horário de Brasília). Editável.
+
+O número de **Guia** NÃO entra no formulário — é gerado server-side no momento do salvamento (igual ao protocolo) e exibido na tela de sucesso.
+
+## 2. Backend — número de guia diário por unidade
+
+### 2.1 Migration
+Criar tabela `guia_sequence` (contador diário por tenant + unidade):
 
 ```text
-src/pages/Financeiro/
-  page.tsx                       (novo orquestrador, substitui Financeiro.tsx)
-  FinanceiroContext.tsx          (novo — estado e filtros compartilhados)
-  components/
-    CaixaTab.tsx                 (já existe)
-    EntradasTab.tsx              (novo)
-    SaidasTab.tsx                (novo)
-    AReceberTab.tsx              (novo)
-    FinanceiroHeader.tsx         (novo — PageHeader + tabs + busca + filtros de período)
-    SummaryBar.tsx               (novo — cards de totais por forma de pagamento)
-    dialogs/
-      EditEntryDialog.tsx        (novo)
-      DeleteEntryDialog.tsx      (novo)
-      DetailEntryDialog.tsx      (novo)
-      PagarDespesaDialog.tsx     (novo)
+guia_sequence
+  tenant_id    uuid
+  unidade_id   uuid
+  data         date           -- data local Brasília
+  ultimo       int  default 0
+  PK (tenant_id, unidade_id, data)
 ```
 
-`src/pages/Financeiro.tsx` vira um re-export de `./Financeiro/page` (mantém rota `/financeiro` sem mexer em `App.tsx` — **não é mudança estrutural de rota**).
+Adicionar 2 colunas em `atendimentos`:
+- `guia_numero text` (ex.: `SE-001`)
+- `guia_data date`
 
-## Contexto compartilhado (`FinanceiroContext.tsx`)
+Função SQL `next_guia_numero(_tenant_id uuid, _unidade_id uuid)`:
+1. `data := (now() AT TIME ZONE 'America/Sao_Paulo')::date`
+2. `prefixo`: 2 primeiras letras (sem acento/espaço) da `unidades.nome` em uppercase — ex.: "SEDE" → `SE`, "João Pessoa" → `JP`.
+3. `INSERT … ON CONFLICT (tenant_id, unidade_id, data) DO UPDATE SET ultimo = guia_sequence.ultimo + 1 RETURNING ultimo`
+4. Retorna `prefixo || '-' || lpad(ultimo::text, 3, '0')`.
 
-Expõe um único provider com:
+Atualizar a RPC `create_atendimento_tx`:
+- aceitar `unidade_id` no payload `_atendimento` (já aceita), salvar
+- chamar `next_guia_numero(...)` e gravar `guia_numero`/`guia_data`
+- retornar `guia_numero` junto do `protocolo`
 
-- **Filtros globais**: `searchQuery`, `dateFrom`, `dateTo`, `periodoRapido`, `convenioFilter`, `saidaStatusFilter`, `currentPage` + setters.
-- **Dados derivados**: `entradas`, `saidas`, `aReceberRows`, `aReceberConvenioRows`, `allEntries`, `filtered`, `summary`, `caixa*`, `counts` (já calculados via os services existentes).
-- **Ações**: `openNovaEntradaSaida(tipo)`, `openEdit(entry)`, `openDelete(protocolo)`, `openDetail(entry)`, `openPagar(saida)`.
-- **Dicionários**: `tiposDespesa`, `destinosPagamento`, `formasPagamento` (já vindos de `useDicionario`).
+GRANTs + RLS por `current_tenant_id()` na `guia_sequence` (sem acesso anon).
 
-Cada aba consome via `useFinanceiro()` — zero props drilling.
+### 2.2 Edge function
+Sem mudanças de contrato — só repassa `unidade_id` e `data` que já estão no payload.
 
-## Distribuição de responsabilidades
+## 3. Store / tipos
 
-| Componente | Conteúdo movido de Financeiro.tsx |
-|---|---|
-| `FinanceiroHeader` | tabs, busca, calendário from/to, chips de período rápido |
-| `EntradasTab` | tabela/lista de `filtered` quando `activeTab="entrada"` + paginação |
-| `SaidasTab` | tabela/lista de saídas + filtro de status + ações pagar/editar/excluir |
-| `AReceberTab` | sub-abas pacientes/convênios + diálogos `FecharFatura`/`FaturaDetalhe` |
-| `CaixaTab` | já existe — passa a consumir contexto |
-| `SummaryBar` | cards de `summary.byMethod` + total |
-| dialogs/ | 4 diálogos extraídos (cada um ~50-100 linhas) |
+- `addAtendimento` (`src/data/atendimentoStore/mutations.ts`): incluir `unidade_id` e `data` no payload (já existe `unidadeId`/`data`, conferir mapeamento).
+- Após resposta da RPC, gravar `guiaNumero` no objeto de atendimento em memória.
 
-## Detalhes técnicos
+## 4. Exibição
 
-1. **Não criar barrel** (`index.ts`) — regra do `module-structure-standard.md`.
-2. **Manter lazy imports** dos diálogos existentes (`CriarItemDialog`, `FecharFaturaDialog`, `FaturaDetalheDialog`, `NovaEntradaSaidaDialog`).
-3. **Realtime/effects** (`subscribeAtendimentos`, `subscribeFinanceiro`, `fetchEntradasView`) ficam no provider — só executa uma vez.
-4. **`useEnsureStore`, `useAuth`, `useFeatureFlag`, `useAReceberPacientes`** permanecem no `page.tsx` orquestrador e descem via contexto.
-5. **CSS/JSX preservados literalmente** — só recortar.
-6. **Sem alteração de comportamento**: handlers continuam chamando os mesmos services puros (`validateSaidaEdit`, `validatePayment`, `computeDetailExames`, etc.).
-7. **Verificação**: tsc + abrir cada aba no preview para conferir paridade visual.
+- Tela de sucesso do `/novo-atendimento`: mostrar `Protocolo: … • Guia: SE-001`.
+- Demais telas que listam atendimento ficam fora desse escopo (posso adicionar coluna depois, se pedir).
 
-## Plano de execução (sequencial, 1 PR mental)
+## 5. Regras preservadas
+- `tenant_id` continua resolvido server-side.
+- RLS + GRANTs em toda tabela nova.
+- Sem mock; sem mexer em coleta/resultado.
 
-1. Criar `FinanceiroContext.tsx` movendo states/effects/useMemos.
-2. Extrair `FinanceiroHeader.tsx` e `SummaryBar.tsx`.
-3. Extrair `EntradasTab.tsx` (mais simples — primeiro teste de paridade).
-4. Extrair `SaidasTab.tsx` + `dialogs/EditEntryDialog`, `DeleteEntryDialog`, `DetailEntryDialog`, `PagarDespesaDialog`.
-5. Extrair `AReceberTab.tsx`.
-6. Reescrever `Financeiro.tsx` → `page.tsx` orquestrador com `<FinanceiroProvider>` + switch de aba.
-7. Compilar, abrir preview, conferir as 4 abas.
-
-## Resultado esperado
-
-- `page.tsx`: ~300 linhas (header + provider + switch).
-- Cada `*Tab.tsx`: 200-400 linhas focadas.
-- Cada `dialogs/*.tsx`: 50-120 linhas.
-- Zero props drilling além de 1 nível (Tab → Dialog quando dialog é local da aba).
-
-## Riscos / mitigação
-
-- **Risco**: quebrar ordem de hooks ao mover effects. **Mitigação**: copiar effects em bloco para o provider preservando ordem.
-- **Risco**: ciclos de import. **Mitigação**: contexto importa dos services; tabs importam contexto + ui; dialogs importam contexto.
-- **Risco**: regressão silenciosa em filtros. **Mitigação**: services puros já cobrem a lógica — recorte é mecânico.
-
-## Fora de escopo
-
-- Não mexer em `financeiroStore.ts` nem em services já criados.
-- Não alterar rotas em `App.tsx`.
-- Não tocar em RLS, edge functions, ou layout impresso (laudo travado).
+Confirma para eu aplicar (migration + edge function + UI)?

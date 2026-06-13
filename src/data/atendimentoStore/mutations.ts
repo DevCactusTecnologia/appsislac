@@ -146,6 +146,15 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
       cache.idByProtocolo.set(protocoloOficial, atendimentoId);
     }
 
+    // Guia diária (gerada server-side) — propaga para o cache e para o objeto.
+    if (resp.guia_numero) {
+      at.guiaNumero = resp.guia_numero;
+      cache.atendimentos = cache.atendimentos.map((a) =>
+        a.protocolo === at.protocolo ? { ...a, guiaNumero: resp.guia_numero } : a,
+      );
+      notify();
+    }
+
     // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO).
     if (atendimentoId && at.origem && at.origem !== "INTERNO") {
       const { error: origemErr } = await supabase

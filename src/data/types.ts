@@ -80,6 +80,8 @@ export interface MockAtendimento {
   /** Metadados de cobrança alinhados por nome com `exames` (mesmo índice). */
   examesCobranca?: ExameCobrancaInfo[];
   unidadeId?: string;
+  /** Número da guia diária por unidade (ex.: "SE-001"). Gerado server-side. */
+  guiaNumero?: string;
   pagamentosRealizados?: PagamentoRealizado[];
   updatedAt?: string;
   /**

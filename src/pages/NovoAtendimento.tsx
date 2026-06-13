@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUnidadeById } from "@/data/unidadeStore";
+import { getUnidadeById, getUnidadesAtivas, subscribeUnidades } from "@/data/unidadeStore";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import type { AddExameLeituraOptions } from "@/components/LeituraRequisicaoDialog";
 import StandardDialog from "@/components/ui/standard-dialog";
@@ -367,6 +367,29 @@ const NovoAtendimento = () => {
   const [jejum, setJejum] = useState<"sim" | "nao">("nao");
   const [prioridade, setPrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
 
+  // Unidade + data do atendimento (Horário de Brasília)
+  const [unidadesList, setUnidadesList] = useState(() => getUnidadesAtivas());
+  useEffect(() => {
+    setUnidadesList(getUnidadesAtivas());
+    return subscribeUnidades(() => setUnidadesList(getUnidadesAtivas()));
+  }, []);
+  const nowBrasiliaInputValue = () => {
+    // YYYY-MM-DDTHH:mm no fuso America/Sao_Paulo (para <input type="datetime-local">)
+    const parts = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date());
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? "00";
+    return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  };
+  const [selectedUnidadeId, setSelectedUnidadeId] = useState<string>(
+    () => user?.unidadeAtiva ?? (getUnidadesAtivas().find(u => u.padrao)?.id ?? getUnidadesAtivas()[0]?.id ?? "")
+  );
+  const [dataAtendimento, setDataAtendimento] = useState<string>(() => nowBrasiliaInputValue());
+  const [lastGuiaNumero, setLastGuiaNumero] = useState<string | null>(null);
+
+
 
   const [successOpen, setSuccessOpen] = useState(false);
   const [lastProtocolo, setLastProtocolo] = useState<string | null>(null);
@@ -489,8 +512,20 @@ const NovoAtendimento = () => {
   const hasChangesStep3 = examesChanged;
 
   const finalizarAtendimento = async (pagamentoEfetuado: boolean) => {
-    const today = new Date();
-    const dataStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
+    // Converte o input datetime-local (interpretado como horário de Brasília)
+    // para o formato BR usado pelo store ("dd/MM/yyyy HH:mm:ss").
+    const buildDataStr = (): string => {
+      const raw = dataAtendimento || nowBrasiliaInputValue();
+      const [d, t] = raw.split("T");
+      if (!d || !t) {
+        const today = new Date();
+        return `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
+      }
+      const [yyyy, mm, dd] = d.split("-");
+      const [hh, mi] = t.split(":");
+      return `${dd}/${mm}/${yyyy} ${hh}:${mi}:00`;
+    };
+    const dataStr = buildDataStr();
     let novoProtocolo: string | null = null;
     // Desconto proporcional entre exames do paciente — pipeline puro extraído
     // para ./NovoAtendimento/services/distribuirDesconto.ts (Fase 2).
@@ -515,7 +550,7 @@ const NovoAtendimento = () => {
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
         pagamentosRealizados,
-        unidadeId: user?.unidadeAtiva,
+        unidadeId: selectedUnidadeId || user?.unidadeAtiva,
       });
       } else {
       const protocolo = getNextProtocolo();
@@ -526,7 +561,7 @@ const NovoAtendimento = () => {
         : valorPago > 0
           ? { label: "Pagamento parcial", type: "info" as const }
           : { label: "Pagamento pendente", type: "warning" as const };
-      await addAtendimento({
+      const novoAt: MockAtendimento = {
         protocolo, data: dataStr,
         nome: pacienteQuery || "Paciente",
         cpf: paciente?.cpf || "",
@@ -538,10 +573,12 @@ const NovoAtendimento = () => {
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
-        unidadeId: user?.unidadeAtiva,
+        unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
-      });
+      };
+      await addAtendimento(novoAt);
+      setLastGuiaNumero(novoAt.guiaNumero ?? null);
       }
       const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
         contarEtiquetas(exames, getExamesCatalogo());
@@ -782,8 +819,43 @@ const NovoAtendimento = () => {
         {/* ── Single-form: todas as seções em um único card ── */}
         <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
 
+            {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
+            <section className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Unidade de atendimento
+                  </label>
+                  <select
+                    value={selectedUnidadeId}
+                    onChange={(e) => setSelectedUnidadeId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {unidadesList.length === 0 && (
+                      <option value="">Nenhuma unidade cadastrada</option>
+                    )}
+                    {unidadesList.map((u) => (
+                      <option key={u.id} value={u.id}>{u.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Horário de Brasília)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={dataAtendimento}
+                    onChange={(e) => setDataAtendimento(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+            </section>
+
             {/* ════ STEP 1: Paciente ════ */}
             <section id="step-paciente" className="scroll-mt-28 space-y-4">
+
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">
                     {isEditing ? "Paciente vinculado" : "Selecionar paciente"}
@@ -2162,7 +2234,7 @@ const NovoAtendimento = () => {
         onOpenChange={open => { setSuccessOpen(open); if (!open) navigate("/atendimentos"); }}
         variant="success"
         title={isEditing ? "Atendimento atualizado!" : "Pedido realizado!"}
-        description={isEditing ? "As alterações foram salvas." : "O atendimento foi registrado com sucesso."}
+        description={isEditing ? "As alterações foram salvas." : `O atendimento foi registrado com sucesso.${lastProtocolo ? ` Protocolo: ${lastProtocolo}` : ""}${lastGuiaNumero ? ` • Guia: ${lastGuiaNumero}` : ""}`}
         children={
           !isEditing && lastEtiquetasTotal > 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-left">

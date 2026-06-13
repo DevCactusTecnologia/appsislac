@@ -560,6 +560,8 @@ export type Database = {
           convenio_nome: string
           created_at: string
           data: string
+          guia_data: string | null
+          guia_numero: string | null
           id: number
           motivo_cancelamento: string | null
           origem_atendimento: string
@@ -582,6 +584,8 @@ export type Database = {
           convenio_nome?: string
           created_at?: string
           data?: string
+          guia_data?: string | null
+          guia_numero?: string | null
           id?: number
           motivo_cancelamento?: string | null
           origem_atendimento?: string
@@ -604,6 +608,8 @@ export type Database = {
           convenio_nome?: string
           created_at?: string
           data?: string
+          guia_data?: string | null
+          guia_numero?: string | null
           id?: number
           motivo_cancelamento?: string | null
           origem_atendimento?: string
@@ -2247,6 +2253,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      guia_sequence: {
+        Row: {
+          created_at: string
+          data: string
+          tenant_id: string
+          ultimo: number
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          tenant_id: string
+          ultimo?: number
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          tenant_id?: string
+          ultimo?: number
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       identidade_confirmacoes: {
         Row: {
@@ -6444,6 +6477,10 @@ export type Database = {
         Args: { _prefix: string; _scope: string; _tenant_id: string }
         Returns: string
       }
+      next_guia_numero: {
+        Args: { _tenant_id: string; _unidade_id: string }
+        Returns: Json
+      }
       ocorrencias_page: {
         Args: {
           _busca?: string
@@ -6562,6 +6599,7 @@ export type Database = {
         }[]
       }
       unaccent_safe: { Args: { _text: string }; Returns: string }
+      unidade_prefixo: { Args: { _nome: string }; Returns: string }
       update_atendimento_exame_tx: {
         Args: { _exame_id: number; _justificativa?: string; _patch: Json }
         Returns: {
