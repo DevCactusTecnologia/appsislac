@@ -461,11 +461,29 @@ const GatewayPagamentoTab = () => {
     history.find((h) => h.provider === p);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Hero unificado com identidade de /configuracoes */}
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-transparent overflow-hidden">
+        <div className="px-5 sm:px-7 py-5 sm:py-6 flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 ring-1 ring-primary/20 text-primary shrink-0">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Financeiro</p>
+            <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight mt-0.5">
+              Gateway de Pagamento
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5 max-w-2xl">
+              Conecte provedores de pagamento, configure ambientes e gerencie webhooks com segurança Nível P0.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 flex items-start gap-3">
         <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
         <div className="text-[12px] text-foreground/80 leading-relaxed">
-          <strong className="text-foreground">Segurança Nível P0:</strong> Suas credenciais agora são armazenadas 
+          <strong className="text-foreground">Segurança Nível P0:</strong> Suas credenciais agora são armazenadas
           exclusivamente no servidor com Row Level Security (RLS) habilitado. O armazenamento local foi descontinuado.
         </div>
       </div>
