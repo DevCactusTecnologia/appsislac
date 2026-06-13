@@ -853,7 +853,7 @@ const NovoAtendimento = () => {
 
             {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
             <section className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Unidade de atendimento
@@ -873,12 +873,23 @@ const NovoAtendimento = () => {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Horário de Brasília)</span>
+                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={dataAtendimento}
                     onChange={(e) => setDataAtendimento(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal">(+2 dias úteis)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={dataEntrega}
+                    onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
                     className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
