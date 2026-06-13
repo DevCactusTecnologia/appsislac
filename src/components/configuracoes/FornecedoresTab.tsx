@@ -50,22 +50,23 @@ export default function FornecedoresTab() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 sm:p-6 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Fornecedores</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Cadastro de fornecedores usados em insumos e lotes do estoque.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+    <SectionShell
+      icon={<Building2 className="h-5 w-5" />}
+      eyebrow="Cadastros auxiliares"
+      title="Fornecedores"
+      description="Cadastro de fornecedores usados em insumos e lotes do estoque."
+      toolbar={
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="relative w-full sm:w-72">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar..." className="pl-9 h-9 w-56 rounded-xl" />
+            <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar fornecedor..." className="pl-9 h-9 rounded-xl" />
           </div>
           <Button size="sm" onClick={() => setDialog({ open: true, fornecedor: null })}>
             <Plus className="w-4 h-4 mr-2" /> Novo fornecedor
           </Button>
         </div>
-      </div>
+      }
+    >
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
