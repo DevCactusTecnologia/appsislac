@@ -844,8 +844,7 @@ const NovoAtendimento = () => {
               title="Ler exames a partir de foto ou PDF da requisição"
             >
               <FileScan className="h-4 w-4" />
-              <span className="hidden xs:inline">Ler requisição</span>
-              <span className="xs:hidden">Ler req.</span>
+              Ler requisição
             </button>
             <button
               onClick={() => setAvaliacaoIAOpen(true)}
