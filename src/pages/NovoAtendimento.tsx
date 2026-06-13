@@ -5,7 +5,7 @@ import {
   Search, X, CheckCircle2, Sparkles, Trash2, User, Stethoscope,
   FileText, CreditCard, Plus, UserPlus, Printer, Send,
   MessageCircle, AlertTriangle, Building2, ArrowLeft, Receipt, FlaskConical,
-  TestTube2, Cake, Calendar, CalendarClock, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame, ChevronDown
+  TestTube2, Cake, Calendar, CalendarClock, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame, ChevronDown, Check
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
