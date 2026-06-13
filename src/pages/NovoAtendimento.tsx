@@ -777,7 +777,7 @@ const NovoAtendimento = () => {
         <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
 
             {/* ════ STEP 1: Paciente ════ */}
-            <section id="step-paciente" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
+            <section id="step-paciente" className="scroll-mt-28 space-y-8">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">
                     {isEditing ? "Paciente vinculado" : "Selecionar paciente"}
@@ -1070,7 +1070,7 @@ const NovoAtendimento = () => {
             </section>
 
             {/* ════ STEP 2: Convênio & Solicitante ════ */}
-            <section id="step-convenio" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
+            <section id="step-convenio" className="scroll-mt-28 space-y-8 pt-10 border-t border-border/60">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Convênio & Solicitante</h2>
                   <p className="text-sm text-muted-foreground mt-1">Adicione os convênios e médicos solicitantes</p>
@@ -1359,7 +1359,7 @@ const NovoAtendimento = () => {
             </section>
 
             {/* ════ STEP 3: Exames ════ */}
-            <section id="step-exames" className="scroll-mt-28 space-y-6 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
+            <section id="step-exames" className="scroll-mt-28 space-y-6 pt-10 border-t border-border/60">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Solicitar exames</h2>
                   <p className="text-sm text-muted-foreground mt-1">Pesquise e adicione os exames necessários</p>
@@ -1684,7 +1684,7 @@ const NovoAtendimento = () => {
             </section>
 
             {/* ════ STEP 4: Resumo ════ */}
-            <section id="step-resumo" className="scroll-mt-28 space-y-8 bg-card border border-border/60 rounded-2xl p-6 sm:p-8">
+            <section id="step-resumo" className="scroll-mt-28 space-y-8 pt-10 border-t border-border/60">
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Resumo do atendimento</h2>
                   <p className="text-sm text-muted-foreground mt-1">Confira os dados e finalize</p>
