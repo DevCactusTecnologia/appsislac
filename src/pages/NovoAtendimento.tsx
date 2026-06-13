@@ -837,18 +837,19 @@ const NovoAtendimento = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setLeituraReqOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all"
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all"
               title="Ler exames a partir de foto ou PDF da requisição"
             >
               <FileScan className="h-4 w-4" />
-              Ler requisição
+              <span className="hidden xs:inline">Ler requisição</span>
+              <span className="xs:hidden">Ler req.</span>
             </button>
             <button
               onClick={() => setAvaliacaoIAOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)] hover:shadow-[0_4px_20px_-2px_hsl(var(--primary)/0.5)] transition-all"
+              className="inline-flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold bg-primary text-primary-foreground shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)] hover:shadow-[0_4px_20px_-2px_hsl(var(--primary)/0.5)] transition-all"
             >
               <Sparkles className="h-4 w-4" />
               Avaliação IA
