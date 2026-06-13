@@ -179,19 +179,10 @@ const DocumentosTab = () => {
 
               return (
                 <div key={tipo} className="py-1">
-                  <div className="px-5 sm:px-6 py-2 flex items-center justify-between bg-muted/20">
+                  <div className="px-5 sm:px-6 py-2 bg-muted/20">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {DOCUMENTO_TIPO_LABELS[tipo]}
                     </p>
-                    {tipo !== "documento" && (
-                      <Button
-                        variant="ghost" size="sm"
-                        className="h-6 px-2 text-[11px] gap-1"
-                        onClick={() => handleNovo(tipo)}
-                      >
-                        <Plus className="h-3 w-3" /> Novo
-                      </Button>
-                    )}
                   </div>
                   {lista.length === 0 ? (
                     tipo === "documento" ? null : (
