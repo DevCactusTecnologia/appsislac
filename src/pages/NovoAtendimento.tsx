@@ -3,9 +3,9 @@ import { createPortal } from "react-dom";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Search, X, CheckCircle2, Sparkles, Trash2, User, Stethoscope,
-  FileText, CreditCard, Plus, ChevronRight, UserPlus, Printer, Send,
+  FileText, CreditCard, Plus, UserPlus, Printer, Send,
   MessageCircle, AlertTriangle, Building2, ArrowLeft, Receipt, FlaskConical,
-  ChevronLeft, TestTube2, Cake, Calendar, ClipboardCheck, FileScan
+  TestTube2, Cake, Calendar, ClipboardCheck, FileScan
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -670,36 +670,8 @@ const NovoAtendimento = () => {
 
   const filteredExames = exames.filter(e => !selectedConvenioFilter || e.convenio === selectedConvenioFilter);
 
-  const goNext = (target: number) => {
-    if (target > 1 && !selectedPaciente && !(!showPacienteSearch && pacienteQuery)) {
-      toast({ title: "Paciente obrigatório", description: "Selecione um paciente antes de avançar.", variant: "destructive" });
-      setActiveStep(1); return;
-    }
-    if (target > 2 && convenios.length === 0) {
-      toast({ title: "Convênio obrigatório", description: "Selecione ao menos um convênio.", variant: "destructive" });
-      setActiveStep(2); return;
-    }
-    if (target > 2 && solicitantes.length === 0) {
-      toast({ title: "Solicitante obrigatório", description: "Selecione ao menos um solicitante.", variant: "destructive" });
-      setActiveStep(2); return;
-    }
-    if (target > 3 && exames.length === 0) {
-      toast({ title: "Exames obrigatórios", description: "Adicione ao menos um exame.", variant: "destructive" });
-      setActiveStep(3); return;
-    }
-    if (target > 3 && solicitantes.length > 1) {
-      const semSolicitante = exames.filter(e => !e.solicitanteExame || !e.solicitanteExame.trim());
-      if (semSolicitante.length > 0) {
-        toast({
-          title: "Defina o solicitante de cada exame",
-          description: `${semSolicitante.length} exame(s) sem solicitante. Como há mais de um solicitante no atendimento, é obrigatório informar quem pediu cada exame (ou marcar como "Ambos").`,
-          variant: "destructive",
-        });
-        setActiveStep(3); return;
-      }
-    }
-    setActiveStep(target);
-  };
+
+
 
   // Status derivado de cada seção (preenchimento), para o stepper sticky.
   const stepDone: Record<1 | 2 | 3 | 4, boolean> = {
