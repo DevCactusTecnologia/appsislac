@@ -12,6 +12,7 @@ import {
   reloadAll,
   type ListaItem,
 } from "@/data/financeiroListasStore";
+import SectionShell from "./_shared/SectionShell";
 
 type Forma = ListaItem;
 
@@ -90,75 +91,66 @@ export default function FormasPagamentoTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <CreditCard className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Formas de Pagamento</h2>
-            <p className="text-xs text-muted-foreground">
-              Ative, desative ou cadastre novas formas usadas em entradas e saídas do financeiro.
-            </p>
-          </div>
+    <SectionShell
+      icon={<CreditCard className="h-5 w-5" />}
+      eyebrow="Financeiro"
+      title="Formas de Pagamento"
+      description="Ative, desative ou cadastre novas formas usadas em entradas e saídas do financeiro."
+    >
+      <form onSubmit={handleCreate} className="flex gap-2 mb-6">
+        <Input
+          value={novoNome}
+          onChange={(e) => setNovoNome(e.target.value)}
+          placeholder="Ex.: PIX, Dinheiro, Crédito..."
+          maxLength={60}
+          className="h-10"
+        />
+        <Button type="submit" disabled={creating || !novoNome.trim()} className="h-10 gap-2 shrink-0">
+          <Plus className="h-4 w-4" />
+          Adicionar
+        </Button>
+      </form>
+
+      {loading ? (
+        <div className="py-10 text-center text-sm text-muted-foreground">Carregando...</div>
+      ) : items.length === 0 ? (
+        <div className="py-10 text-center text-sm text-muted-foreground">
+          Nenhuma forma de pagamento cadastrada.
         </div>
-
-        <form onSubmit={handleCreate} className="flex gap-2 mb-6">
-          <Input
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
-            placeholder="Ex.: PIX, Dinheiro, Crédito..."
-            maxLength={60}
-            className="h-10"
-          />
-          <Button type="submit" disabled={creating || !novoNome.trim()} className="h-10 gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
-            Adicionar
-          </Button>
-        </form>
-
-        {loading ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">Carregando...</div>
-        ) : items.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">
-            Nenhuma forma de pagamento cadastrada.
-          </div>
-        ) : (
-          <ul className="divide-y divide-border border border-border rounded-xl overflow-hidden">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
+      ) : (
+        <ul className="divide-y divide-border border border-border rounded-xl overflow-hidden">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center gap-3 px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                    <p className={`text-sm font-medium ${item.ativo ? "text-foreground" : "text-muted-foreground line-through"}`}>
-                      {item.nome}
-                    </p>
-                    {item.sistema && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wide">
-                        Padrão
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {item.ativo ? "Disponível para uso" : "Desativada"}
+                  <p className={`text-sm font-medium ${item.ativo ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                    {item.nome}
                   </p>
+                  {item.sistema && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wide">
+                      Padrão
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={item.ativo}
-                    disabled={togglingId === item.id || item.sistema}
-                    onCheckedChange={(v) => handleToggle(item, v)}
-                    aria-label={`Ativar ${item.nome}`}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {item.ativo ? "Disponível para uso" : "Desativada"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={item.ativo}
+                  disabled={togglingId === item.id || item.sistema}
+                  onCheckedChange={(v) => handleToggle(item, v)}
+                  aria-label={`Ativar ${item.nome}`}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SectionShell>
   );
 }

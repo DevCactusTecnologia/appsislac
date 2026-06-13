@@ -246,24 +246,29 @@ const IntegracoesApoioTab = () => {
   }, [kpis.ultimoJob]);
 
   return (
-    <div className="space-y-6">
-      {/* Header moderno: identidade + ação rápida */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Plug className="h-5 w-5 text-primary" />
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Hero unificado com identidade de /configuracoes */}
+      <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-transparent overflow-hidden">
+        <div className="px-5 sm:px-7 py-5 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="p-3 rounded-xl bg-primary/10 ring-1 ring-primary/20 text-primary shrink-0">
+              <Plug className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Integrações</p>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight leading-tight mt-0.5">
+                Integrações de Apoio
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1.5 max-w-2xl">
+                Conecte seu laboratório a redes de apoio e acompanhe a saúde das integrações em tempo real.
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">Integrações de Apoio</h2>
-            <p className="text-sm text-muted-foreground">
-              Conecte seu laboratório a redes de apoio e acompanhe a saúde das integrações em tempo real.
-            </p>
-          </div>
+          <Button variant="outline" size="sm" onClick={reload} className="shrink-0 gap-2">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={reload} className="shrink-0 gap-2">
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
       </div>
 
       {/* KPI strip */}

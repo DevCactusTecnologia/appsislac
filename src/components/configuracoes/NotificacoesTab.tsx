@@ -1,12 +1,17 @@
+import { BellRing } from "lucide-react";
 import WhatsappCloudConfig from "./WhatsappCloudConfig";
+import SectionShell from "./_shared/SectionShell";
 
 const NotificacoesTab = () => {
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <WhatsappCloudConfig />
-      </div>
-    </div>
+    <SectionShell
+      icon={<BellRing className="h-5 w-5" />}
+      eyebrow="Comunicação"
+      title="Notificações"
+      description="Configure como o laboratório envia avisos automáticos para pacientes e equipe via WhatsApp Cloud API."
+    >
+      <WhatsappCloudConfig />
+    </SectionShell>
   );
 };
 
