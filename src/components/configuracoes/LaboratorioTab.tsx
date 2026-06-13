@@ -300,77 +300,83 @@ const LaboratorioTab = () => {
       </p>
     ) : null;
 
+  const hasRtData =
+    !!form.responsavelTecnico.trim() ||
+    !!form.responsavelTecnicoConselho.trim() ||
+    !!form.responsavelTecnicoNumero.trim() ||
+    !!form.responsavelTecnicoUf.trim();
+
   return (
-    <SectionShell
-      icon={<Building2 className="h-5 w-5 text-primary" />}
-      title="Dados do Laboratório"
-      description="Informações gerais e identidade visual exibidas em laudos e comprovantes"
-      footer={
-        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 w-full">
-          <div className="flex flex-col-reverse sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            className="rounded-xl px-6 w-full sm:w-auto"
-            onClick={handleReset}
-          >
-            Descartar
-          </Button>
-          <Button
-            className="rounded-xl px-6 w-full sm:w-auto"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "Salvando..." : "Salvar alterações"}
-          </Button>
-          </div>
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        {/* Logo */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted/30 rounded-2xl border border-border/40">
-          <div className="h-20 w-20 rounded-2xl bg-card border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0">
-            {logoPreview ? (
-              <img src={logoPreview} alt="Logo" className="h-full w-full object-cover" />
-            ) : (
-              <Camera className="h-6 w-6 text-muted-foreground/50" />
-            )}
+    <div className="space-y-6 pb-28 animate-in fade-in duration-300">
+      {/* ─── Hero identitário ───────────────────────────────── */}
+      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/5 via-card to-transparent">
+        <div className="p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-5">
+          <div className="relative shrink-0">
+            <div className="h-24 w-24 rounded-2xl bg-card border border-border/60 shadow-sm flex items-center justify-center overflow-hidden">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo do laboratório" className="h-full w-full object-cover" />
+              ) : (
+                <Camera className="h-7 w-7 text-muted-foreground/40" />
+              )}
+            </div>
+            <label
+              htmlFor="lab-logo-input"
+              className={`absolute -bottom-2 -right-2 h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:opacity-90 transition-all ${uploadingLogo ? "cursor-wait opacity-60 pointer-events-none" : "cursor-pointer"}`}
+              title="Trocar logo"
+            >
+              <Upload className="h-4 w-4" />
+              <input
+                id="lab-logo-input"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleLogoUpload}
+                className="hidden"
+                disabled={uploadingLogo}
+              />
+            </label>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Logomarca</p>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-              PNG, JPG ou WEBP até 2MB. Armazenado com segurança.
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Identidade do laboratório</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-1 truncate">
+              {form.nome || "Seu laboratório"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1.5 max-w-xl">
+              Dados gerais e identidade visual exibidos em laudos, comprovantes e no portal do paciente.
             </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <label className={uploadingLogo ? "cursor-wait opacity-60 pointer-events-none" : "cursor-pointer"}>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                  disabled={uploadingLogo}
-                />
-                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-xs font-semibold text-primary-foreground hover:opacity-90 transition-opacity">
-                  <Upload className="h-3.5 w-3.5" /> {uploadingLogo ? "Enviando..." : "Upload"}
-                </span>
-              </label>
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <span className="text-[11px] text-muted-foreground">
+                PNG, JPG ou WEBP até 2MB
+              </span>
               {(logoPreview || logoKey) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl text-xs h-8"
+                <button
+                  type="button"
                   onClick={handleLogoRemove}
                   disabled={uploadingLogo}
+                  className="text-[11px] font-medium text-destructive hover:underline disabled:opacity-50"
                 >
-                  Remover
-                </Button>
+                  Remover logo
+                </button>
+              )}
+              {uploadingLogo && (
+                <span className="text-[11px] font-medium text-primary">Enviando…</span>
               )}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Fields */}
-        <div className="space-y-4">
+      {/* ─── Bloco: Contato & localização ──────────────────── */}
+      <section className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <header className="px-6 pt-5 pb-4 flex items-center gap-3 border-b border-border/40">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Building2 className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Dados de contato</h3>
+            <p className="text-[11px] text-muted-foreground">Nome fantasia, telefone e endereço operacional</p>
+          </div>
+        </header>
+        <div className="p-6 space-y-5">
           <div>
             <label className={labelClass}>Nome do laboratório *</label>
             <input
@@ -382,9 +388,77 @@ const LaboratorioTab = () => {
             />
             <FieldError k="nome" />
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>CNPJ</label>
+              <label className={labelClass}><Phone className="inline h-3 w-3 mr-1" />Telefone</label>
+              <input
+                type="text"
+                value={form.telefone}
+                onChange={(e) => updateField("telefone", formatPhone(e.target.value))}
+                placeholder="(99) 9 9999-9999"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}><Mail className="inline h-3 w-3 mr-1" />Email</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                placeholder="contato@lab.com"
+                className={fieldCls("email")}
+              />
+              <FieldError k="email" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Endereço</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <EstadoCidadeFields
+                estado={form.estado}
+                cidade={form.cidade}
+                onChange={({ estado, cidade }) => setForm((prev) => ({ ...prev, estado, cidade }))}
+                inputClassName={inputClass}
+                labelClassName={labelClass}
+                cidadeWrapperClassName="sm:col-span-2"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Logradouro</label>
+              <input
+                type="text"
+                value={form.endereco}
+                onChange={(e) => updateField("endereco", e.target.value)}
+                placeholder="Rua, nº, Bairro"
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Bloco: Documentos legais ───────────────────────── */}
+      <section className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <header className="px-6 pt-5 pb-4 flex items-center gap-3 border-b border-border/40">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <FileText className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Documentos legais</h3>
+            <p className="text-[11px] text-muted-foreground">
+              Impressos em comprovantes, declarações e laudos — atendem à RDC ANVISA 302/2005
+            </p>
+          </div>
+        </header>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}><IdCard className="inline h-3 w-3 mr-1" />CNPJ</label>
               <input
                 type="text"
                 value={form.cnpj}
@@ -395,154 +469,144 @@ const LaboratorioTab = () => {
               <FieldError k="cnpj" />
             </div>
             <div>
-              <label className={labelClass}>Telefone</label>
+              <label className={labelClass}>Razão social</label>
               <input
                 type="text"
-                value={form.telefone}
-                onChange={(e) => updateField("telefone", formatPhone(e.target.value))}
-                placeholder="(99) 9 9999-9999"
+                value={form.razaoSocial}
+                onChange={(e) => updateField("razaoSocial", e.target.value)}
+                placeholder="Ex: Lab Cactus Análises Clínicas Ltda."
                 className={inputClass}
               />
             </div>
           </div>
-          <div>
-            <label className={labelClass}>Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              placeholder="contato@lab.com"
-              className={fieldCls("email")}
-            />
-            <FieldError k="email" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <EstadoCidadeFields
-              estado={form.estado}
-              cidade={form.cidade}
-              onChange={({ estado, cidade }) => setForm((prev) => ({ ...prev, estado, cidade }))}
-              inputClassName={inputClass}
-              labelClassName={labelClass}
-              cidadeWrapperClassName="sm:col-span-2"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>Endereço</label>
-            <input
-              type="text"
-              value={form.endereco}
-              onChange={(e) => updateField("endereco", e.target.value)}
-              placeholder="Rua, nº, Bairro"
-              className={inputClass}
-            />
-          </div>
-
-          {/* Documentos legais — exibido em comprovantes/declarações */}
-          <div className="pt-6 mt-2 border-t border-border/40">
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              <p className="text-sm font-semibold text-foreground">
-                Documentos legais
-              </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Inscrição municipal</label>
+              <input
+                type="text"
+                value={form.inscricaoMunicipal}
+                onChange={(e) => updateField("inscricaoMunicipal", e.target.value)}
+                placeholder="0000000-0"
+                className={inputClass}
+              />
             </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              Esses dados são impressos em comprovantes, declarações e laudos. Quando preenchidos, dão valor probante e atendem à RDC ANVISA 302/2005.
-            </p>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Razão social</label>
-                  <input
-                    type="text"
-                    value={form.razaoSocial}
-                    onChange={(e) => updateField("razaoSocial", e.target.value)}
-                    placeholder="Ex: Lab Cactus Análises Clínicas Ltda."
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Inscrição municipal</label>
-                  <input
-                    type="text"
-                    value={form.inscricaoMunicipal}
-                    onChange={(e) => updateField("inscricaoMunicipal", e.target.value)}
-                    placeholder="0000000-0"
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>CNES</label>
-                <input
-                  type="text"
-                  value={form.cnes}
-                  onChange={(e) => updateField("cnes", formatCnes(e.target.value))}
-                  placeholder="0000000"
-                  className={fieldCls("cnes")}
-                  inputMode="numeric"
-                />
-                <FieldError k="cnes" />
-              </div>
-
-              <div>
-                <label className={labelClass}>Responsável técnico (RT)</label>
-                <input
-                  type="text"
-                  value={form.responsavelTecnico}
-                  onChange={(e) => updateField("responsavelTecnico", e.target.value)}
-                  placeholder="Nome completo do RT"
-                  className={fieldCls("responsavelTecnico")}
-                />
-                <FieldError k="responsavelTecnico" />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className={labelClass}>Conselho</label>
-                  <input
-                    type="text"
-                    value={form.responsavelTecnicoConselho}
-                    onChange={(e) =>
-                      updateField("responsavelTecnicoConselho", formatConselho(e.target.value))
-                    }
-                    placeholder="CRBM"
-                    className={fieldCls("responsavelTecnicoConselho")}
-                  />
-                  <FieldError k="responsavelTecnicoConselho" />
-                </div>
-                <div>
-                  <label className={labelClass}>Nº registro</label>
-                  <input
-                    type="text"
-                    value={form.responsavelTecnicoNumero}
-                    onChange={(e) => updateField("responsavelTecnicoNumero", formatRtNumero(e.target.value))}
-                    placeholder="00000"
-                    className={fieldCls("responsavelTecnicoNumero")}
-                    inputMode="numeric"
-                  />
-                  <FieldError k="responsavelTecnicoNumero" />
-                </div>
-                <div>
-                  <label className={labelClass}>UF</label>
-                  <input
-                    type="text"
-                    value={form.responsavelTecnicoUf}
-                    onChange={(e) =>
-                      updateField("responsavelTecnicoUf", formatUf(e.target.value))
-                    }
-                    placeholder="GO"
-                    className={fieldCls("responsavelTecnicoUf")}
-                  />
-                  <FieldError k="responsavelTecnicoUf" />
-                </div>
-              </div>
+            <div>
+              <label className={labelClass}>CNES</label>
+              <input
+                type="text"
+                value={form.cnes}
+                onChange={(e) => updateField("cnes", formatCnes(e.target.value))}
+                placeholder="0000000"
+                className={fieldCls("cnes")}
+                inputMode="numeric"
+              />
+              <FieldError k="cnes" />
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ─── Bloco: Responsável técnico ─────────────────────── */}
+      <section className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <header className="px-6 pt-5 pb-4 flex items-center justify-between gap-3 border-b border-border/40">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Stethoscope className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-foreground">Responsável técnico (RT)</h3>
+              <p className="text-[11px] text-muted-foreground">
+                Profissional habilitado pelo conselho regulador da bioanálise
+              </p>
+            </div>
+          </div>
+          {hasRtData && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-md">
+              <ShieldCheck className="h-3 w-3" /> Cadastrado
+            </span>
+          )}
+        </header>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className={labelClass}>Nome completo</label>
+            <input
+              type="text"
+              value={form.responsavelTecnico}
+              onChange={(e) => updateField("responsavelTecnico", e.target.value)}
+              placeholder="Nome completo do RT"
+              className={fieldCls("responsavelTecnico")}
+            />
+            <FieldError k="responsavelTecnico" />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Conselho</label>
+              <input
+                type="text"
+                value={form.responsavelTecnicoConselho}
+                onChange={(e) =>
+                  updateField("responsavelTecnicoConselho", formatConselho(e.target.value))
+                }
+                placeholder="CRBM"
+                className={fieldCls("responsavelTecnicoConselho")}
+              />
+              <FieldError k="responsavelTecnicoConselho" />
+            </div>
+            <div>
+              <label className={labelClass}>Nº registro</label>
+              <input
+                type="text"
+                value={form.responsavelTecnicoNumero}
+                onChange={(e) => updateField("responsavelTecnicoNumero", formatRtNumero(e.target.value))}
+                placeholder="00000"
+                className={fieldCls("responsavelTecnicoNumero")}
+                inputMode="numeric"
+              />
+              <FieldError k="responsavelTecnicoNumero" />
+            </div>
+            <div>
+              <label className={labelClass}>UF</label>
+              <input
+                type="text"
+                value={form.responsavelTecnicoUf}
+                onChange={(e) =>
+                  updateField("responsavelTecnicoUf", formatUf(e.target.value))
+                }
+                placeholder="GO"
+                className={fieldCls("responsavelTecnicoUf")}
+              />
+              <FieldError k="responsavelTecnicoUf" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Barra de ações fixa ───────────────────────────── */}
+      <div className="sticky bottom-4 z-10 mt-2">
+        <div className="rounded-2xl border border-border/60 bg-card/95 backdrop-blur shadow-lg p-3 sm:p-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <p className="text-[11px] text-muted-foreground px-2 hidden sm:block">
+            As alterações são aplicadas em laudos e comprovantes imediatamente após salvar.
+          </p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              className="rounded-xl h-10 px-5 flex-1 sm:flex-initial"
+              onClick={handleReset}
+              disabled={saving}
+            >
+              Descartar
+            </Button>
+            <Button
+              className="rounded-xl h-10 px-6 flex-1 sm:flex-initial"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? "Salvando…" : "Salvar alterações"}
+            </Button>
+          </div>
+        </div>
       </div>
-    </SectionShell>
+    </div>
   );
 };
 
