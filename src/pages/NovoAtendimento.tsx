@@ -2234,7 +2234,7 @@ const NovoAtendimento = () => {
         onOpenChange={open => { setSuccessOpen(open); if (!open) navigate("/atendimentos"); }}
         variant="success"
         title={isEditing ? "Atendimento atualizado!" : "Pedido realizado!"}
-        description={isEditing ? "As alterações foram salvas." : "O atendimento foi registrado com sucesso."}
+        description={isEditing ? "As alterações foram salvas." : `O atendimento foi registrado com sucesso.${lastProtocolo ? ` Protocolo: ${lastProtocolo}` : ""}${lastGuiaNumero ? ` • Guia: ${lastGuiaNumero}` : ""}`}
         children={
           !isEditing && lastEtiquetasTotal > 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-left">
