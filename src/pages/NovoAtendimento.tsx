@@ -512,8 +512,20 @@ const NovoAtendimento = () => {
   const hasChangesStep3 = examesChanged;
 
   const finalizarAtendimento = async (pagamentoEfetuado: boolean) => {
-    const today = new Date();
-    const dataStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
+    // Converte o input datetime-local (interpretado como horário de Brasília)
+    // para o formato BR usado pelo store ("dd/MM/yyyy HH:mm:ss").
+    const buildDataStr = (): string => {
+      const raw = dataAtendimento || nowBrasiliaInputValue();
+      const [d, t] = raw.split("T");
+      if (!d || !t) {
+        const today = new Date();
+        return `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
+      }
+      const [yyyy, mm, dd] = d.split("-");
+      const [hh, mi] = t.split(":");
+      return `${dd}/${mm}/${yyyy} ${hh}:${mi}:00`;
+    };
+    const dataStr = buildDataStr();
     let novoProtocolo: string | null = null;
     // Desconto proporcional entre exames do paciente — pipeline puro extraído
     // para ./NovoAtendimento/services/distribuirDesconto.ts (Fase 2).
@@ -538,7 +550,7 @@ const NovoAtendimento = () => {
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
         pagamentosRealizados,
-        unidadeId: user?.unidadeAtiva,
+        unidadeId: selectedUnidadeId || user?.unidadeAtiva,
       });
       } else {
       const protocolo = getNextProtocolo();
@@ -549,7 +561,7 @@ const NovoAtendimento = () => {
         : valorPago > 0
           ? { label: "Pagamento parcial", type: "info" as const }
           : { label: "Pagamento pendente", type: "warning" as const };
-      await addAtendimento({
+      const novoAt: MockAtendimento = {
         protocolo, data: dataStr,
         nome: pacienteQuery || "Paciente",
         cpf: paciente?.cpf || "",
@@ -561,10 +573,12 @@ const NovoAtendimento = () => {
         convenio: convenios[0] || "Particular",
         exames: examesParaSalvar.map(e => e.nome),
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
-        unidadeId: user?.unidadeAtiva,
+        unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
-      });
+      };
+      await addAtendimento(novoAt);
+      setLastGuiaNumero(novoAt.guiaNumero ?? null);
       }
       const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
         contarEtiquetas(exames, getExamesCatalogo());
