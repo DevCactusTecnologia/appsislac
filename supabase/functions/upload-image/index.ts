@@ -147,10 +147,52 @@ Deno.serve(async (req) => {
   if (bytes.byteLength > MAX_BYTES) return errorResponse(400, "Arquivo excede 2 MB", requestId, log);
 
   const s3 = await loadS3Config(SUPABASE_URL, SERVICE_KEY);
-  if (!s3) return errorResponse(500, "Bucket de imagens não configurado", requestId, log);
 
   const storageCategory: StorageCategory = category === "logo" ? "logo" : "avatares";
   const namedFile = category === "logo" ? filename : `${targetUserId}-${filename}`;
+
+  // ---------------- Fallback: Supabase Storage quando S3 não configurado ----------------
+  if (!s3) {
+    const extFromType = (contentType.split("/")[1] || "png").toLowerCase().replace("jpeg", "jpg");
+    const bucket = "tenant-assets";
+    const safe = namedFile.replace(/\.[^/.]+$/, "").replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120) || "file";
+    const path = `${tenantId}/${storageCategory}/${crypto.randomUUID()}-${safe}.${extFromType}`;
+
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": contentType,
+        "x-upsert": "true",
+      },
+      body: bytes,
+    });
+    if (!uploadRes.ok) {
+      const txt = await uploadRes.text();
+      log.error("storage upload failed", { status: uploadRes.status, txt });
+      return errorResponse(502, "Falha ao enviar para storage: " + txt, requestId, log);
+    }
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+
+    if (category === "logo") {
+      const { error } = await admin
+        .from("tenant_lab_config")
+        .update({ logo: publicUrl, logo_key: null })
+        .eq("tenant_id", tenantId);
+      if (error) return errorResponse(500, "Falha ao gravar logo: " + error.message, requestId, log);
+    } else {
+      const { error } = await admin
+        .from("profiles")
+        .update({ avatar: publicUrl, avatar_key: null })
+        .eq("user_id", targetUserId);
+      if (error) return errorResponse(500, "Falha ao gravar avatar: " + error.message, requestId, log);
+    }
+
+    log.info("imagem enviada (storage fallback)", { category, path });
+    return jsonResponse(200, { ok: true, key: null, logo: publicUrl, url: publicUrl, backend: "storage" }, requestId);
+  }
+
+  // ---------------- Padrão: S3 ----------------
   const objectKey = buildObjectKey({
     tenantId,
     cnpj,
