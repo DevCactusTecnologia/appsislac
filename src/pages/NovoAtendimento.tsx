@@ -1317,7 +1317,7 @@ const NovoAtendimento = () => {
                           <ul
                             role="listbox"
                             aria-label="Convênios disponíveis"
-                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/60 rounded-2xl shadow-[0_16px_48px_-12px_hsl(var(--foreground)/0.12)] z-50 max-h-48 overflow-y-auto py-2"
+                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/60 rounded-2xl shadow-[0_16px_48px_-12px_hsl(var(--foreground)/0.12)] z-50 max-h-56 overflow-y-auto py-1.5 origin-top animate-scale-in"
                           >
                             {filtered.map((c, idx) => {
                               const isLastSelected = lastSelectedConvenio
@@ -1456,7 +1456,7 @@ const NovoAtendimento = () => {
                           <ul
                             role="listbox"
                             aria-label="Solicitantes disponíveis"
-                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/60 rounded-2xl shadow-[0_16px_48px_-12px_hsl(var(--foreground)/0.12)] z-50 max-h-48 overflow-y-auto py-2"
+                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border/60 rounded-2xl shadow-[0_16px_48px_-12px_hsl(var(--foreground)/0.12)] z-50 max-h-56 overflow-y-auto py-1.5 origin-top animate-scale-in"
                           >
                             {filtered.map((s, idx) => {
                               const isLastSelected = lastSelectedSolicitante
