@@ -224,20 +224,16 @@ const WhatsappCloudConfig = () => {
   }
 
   return (
-    <section className="space-y-5">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg border border-border flex items-center justify-center">
-            <MessageCircle className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Envio por WhatsApp</h3>
-            <p className="text-xs text-muted-foreground">
-              Escolha como o laboratório envia comprovantes para o paciente.
-            </p>
-          </div>
+    <section className="space-y-6">
+      {/* Toggle de ativação — linha única, flat */}
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">Envio automático por WhatsApp</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Quando ativo, comprovantes e avisos são enviados conforme o modo selecionado abaixo.
+          </p>
         </div>
-        <label className="inline-flex items-center gap-2 cursor-pointer">
+        <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
           <input
             type="checkbox"
             checked={cfg.ativo}
@@ -248,38 +244,44 @@ const WhatsappCloudConfig = () => {
             {cfg.ativo ? "Ativo" : "Desativado"}
           </span>
         </label>
-      </header>
+      </div>
 
       {/* Seletor de modo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <ModoCard
-          ativo={cfg.modo === "simples"}
-          onClick={() => setCfg({ ...cfg, modo: "simples" })}
-          icon={<Smartphone className="h-4 w-4" />}
-          titulo="Simples"
-          badge="Pronto em 30s"
-          badgeTone="success"
-          descricao="O atendente clica em Enviar e abre o WhatsApp Web/App com a mensagem e o link curto do PDF prontos. Sem conta Meta, sem token."
-        />
-        <ModoCard
-          ativo={cfg.modo === "cloud_api"}
-          onClick={() => setCfg({ ...cfg, modo: "cloud_api" })}
-          icon={<Building2 className="h-4 w-4" />}
-          titulo="Cloud API (Meta)"
-          badge="Oficial"
-          badgeTone="primary"
-          descricao="Anexo nativo automático, sem intervenção do atendente. Exige conta Meta Business e token permanente."
-        />
-        <ModoCard
-          ativo={cfg.modo === "zapi"}
-          onClick={() => setCfg({ ...cfg, modo: "zapi" })}
-          icon={<Zap className="h-4 w-4" />}
-          titulo="Z-API"
-          badge="Plug & play"
-          badgeTone="muted"
-          descricao="Anexo nativo via gateway Z-API: faça login com QR Code no painel deles e cole instância + token aqui."
-        />
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          Modo de envio
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <ModoCard
+            ativo={cfg.modo === "simples"}
+            onClick={() => setCfg({ ...cfg, modo: "simples" })}
+            icon={<Smartphone className="h-4 w-4" />}
+            titulo="Simples"
+            badge="Pronto em 30s"
+            badgeTone="success"
+            descricao="O atendente clica em Enviar e abre o WhatsApp Web/App com a mensagem e o link curto do PDF prontos. Sem conta Meta, sem token."
+          />
+          <ModoCard
+            ativo={cfg.modo === "cloud_api"}
+            onClick={() => setCfg({ ...cfg, modo: "cloud_api" })}
+            icon={<Building2 className="h-4 w-4" />}
+            titulo="Cloud API (Meta)"
+            badge="Oficial"
+            badgeTone="primary"
+            descricao="Anexo nativo automático, sem intervenção do atendente. Exige conta Meta Business e token permanente."
+          />
+          <ModoCard
+            ativo={cfg.modo === "zapi"}
+            onClick={() => setCfg({ ...cfg, modo: "zapi" })}
+            icon={<Zap className="h-4 w-4" />}
+            titulo="Z-API"
+            badge="Plug & play"
+            badgeTone="muted"
+            descricao="Anexo nativo via gateway Z-API: faça login com QR Code no painel deles e cole instância + token aqui."
+          />
+        </div>
       </div>
+
 
       {/* ===== MODO SIMPLES ===== */}
       {cfg.modo === "simples" && (
