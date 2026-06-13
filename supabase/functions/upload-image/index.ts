@@ -103,7 +103,8 @@ Deno.serve(async (req) => {
   if (category === "logo") {
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: caller.id, _role: "admin" });
     const { data: isManager } = await admin.rpc("has_role", { _user_id: caller.id, _role: "manager" });
-    if (!isAdmin && !isManager) return errorResponse(403, "Sem permissão para alterar logo", requestId, log);
+    const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: caller.id });
+    if (!isAdmin && !isManager && !isSuper) return errorResponse(403, "Sem permissão para alterar logo", requestId, log);
   }
 
   // Carrega CNPJ do tenant
