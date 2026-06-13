@@ -100,7 +100,7 @@ export function bootDataStores(): Promise<void> {
     _initTabelaPrecoStore(),
     _initValoresReferenciaStore(),
     _initEspecialistasStore(),
-    _initMotivosCancelamentoStore(),
+    // motivos de cancelamento: lidos via useDicionario; sem boot dedicado.
     _initDocumentoTemplatesStore(),
     _initRecoletasMotivosStore(),
     _initRecoletasStore(),
