@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUnidadeById } from "@/data/unidadeStore";
+import { getUnidadeById, getUnidadesAtivas, subscribeUnidades } from "@/data/unidadeStore";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import type { AddExameLeituraOptions } from "@/components/LeituraRequisicaoDialog";
 import StandardDialog from "@/components/ui/standard-dialog";
