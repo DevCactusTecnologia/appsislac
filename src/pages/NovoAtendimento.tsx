@@ -1477,8 +1477,21 @@ const NovoAtendimento = () => {
 
             {/* ════ STEP 3: Exames ════ */}
             <section id="step-exames" className="scroll-mt-28 space-y-4 pt-6 border-t border-border/60">
-                <div>
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Solicitar exames</h2>
+                  {exames.length > 0 && (
+                    <div className="space-y-1.5 sm:w-64">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Data da coleta <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={dataColeta}
+                        onChange={(e) => { setDataColeta(e.target.value); setDataColetaTouched(true); }}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Convênio filter */}
