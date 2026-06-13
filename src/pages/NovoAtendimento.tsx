@@ -1990,8 +1990,8 @@ const NovoAtendimento = () => {
                   </div>
 
                   {/* Right: Financial */}
-                  <div className="lg:col-span-2">
-                    <div className="sticky top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-6 space-y-4">
+                  <div className="xl:col-span-2 min-w-0">
+                    <div className="xl:sticky xl:top-6 bg-gradient-to-br from-primary/5 to-transparent border border-primary/15 rounded-2xl p-5 sm:p-6 space-y-4">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resumo financeiro</p>
 
                       <div className="space-y-2.5">
