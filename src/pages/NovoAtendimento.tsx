@@ -819,8 +819,43 @@ const NovoAtendimento = () => {
         {/* ── Single-form: todas as seções em um único card ── */}
         <div className="bg-card border border-border/60 rounded-2xl p-6 sm:p-10 space-y-10 pb-28">
 
+            {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
+            <section className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Unidade de atendimento
+                  </label>
+                  <select
+                    value={selectedUnidadeId}
+                    onChange={(e) => setSelectedUnidadeId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    {unidadesList.length === 0 && (
+                      <option value="">Nenhuma unidade cadastrada</option>
+                    )}
+                    {unidadesList.map((u) => (
+                      <option key={u.id} value={u.id}>{u.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Horário de Brasília)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={dataAtendimento}
+                    onChange={(e) => setDataAtendimento(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+            </section>
+
             {/* ════ STEP 1: Paciente ════ */}
             <section id="step-paciente" className="scroll-mt-28 space-y-4">
+
                 <div>
                   <h2 className="text-lg font-bold text-foreground tracking-tight">
                     {isEditing ? "Paciente vinculado" : "Selecionar paciente"}
