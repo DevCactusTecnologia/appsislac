@@ -389,6 +389,38 @@ const NovoAtendimento = () => {
   const [dataAtendimento, setDataAtendimento] = useState<string>(() => nowBrasiliaInputValue());
   const [lastGuiaNumero, setLastGuiaNumero] = useState<string | null>(null);
 
+  // Data/hora prevista de entrega = +2 dias úteis (Brasília), editável.
+  // Data da coleta = hoje (Brasília), editável; só aparece quando há exames.
+  const addBusinessDays = (input: string, days: number): string => {
+    const [d, t] = input.split("T");
+    if (!d) return input;
+    const [y, m, dd] = d.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, (m ?? 1) - 1, dd ?? 1));
+    let added = 0;
+    while (added < days) {
+      dt.setUTCDate(dt.getUTCDate() + 1);
+      const dow = dt.getUTCDay();
+      if (dow !== 0 && dow !== 6) added++;
+    }
+    const yyyy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(dt.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${day}T${t ?? "18:00"}`;
+  };
+  const todayBrasiliaDate = () => nowBrasiliaInputValue().split("T")[0];
+  const [dataEntrega, setDataEntrega] = useState<string>(() => addBusinessDays(nowBrasiliaInputValue(), 2));
+  const [dataEntregaTouched, setDataEntregaTouched] = useState(false);
+  const [dataColeta, setDataColeta] = useState<string>(() => todayBrasiliaDate());
+  const [dataColetaTouched, setDataColetaTouched] = useState(false);
+
+  // Quando a data do atendimento muda e o usuário não tocou na entrega, recalcula +2 úteis.
+  useEffect(() => {
+    if (!dataEntregaTouched) setDataEntrega(addBusinessDays(dataAtendimento, 2));
+    if (!dataColetaTouched) setDataColeta(dataAtendimento.split("T")[0] || todayBrasiliaDate());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataAtendimento]);
+
+
 
 
   const [successOpen, setSuccessOpen] = useState(false);
@@ -821,7 +853,7 @@ const NovoAtendimento = () => {
 
             {/* ════ Cabeçalho operacional: Unidade + Data ════ */}
             <section className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Unidade de atendimento
@@ -841,12 +873,23 @@ const NovoAtendimento = () => {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Horário de Brasília)</span>
+                    Data do atendimento <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={dataAtendimento}
                     onChange={(e) => setDataAtendimento(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Previsão de entrega <span className="text-muted-foreground/70 normal-case font-normal">(+2 dias úteis)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={dataEntrega}
+                    onChange={(e) => { setDataEntrega(e.target.value); setDataEntregaTouched(true); }}
                     className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
@@ -1434,8 +1477,21 @@ const NovoAtendimento = () => {
 
             {/* ════ STEP 3: Exames ════ */}
             <section id="step-exames" className="scroll-mt-28 space-y-4 pt-6 border-t border-border/60">
-                <div>
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Solicitar exames</h2>
+                  {exames.length > 0 && (
+                    <div className="space-y-1.5 sm:w-64">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Data da coleta <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={dataColeta}
+                        onChange={(e) => { setDataColeta(e.target.value); setDataColetaTouched(true); }}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Convênio filter */}
