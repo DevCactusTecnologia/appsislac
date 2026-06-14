@@ -295,7 +295,7 @@ const DocumentoTemplateDialog = ({
   }, [conteudo, tipo, template?.config]);
 
   const headerActions = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       <Select value={tipo} onValueChange={(v) => handleTipoChange(v as DocumentoTipo)}>
         <SelectTrigger className="h-9 w-[200px] text-[12.5px]" title="Tipo de documento">
           <SelectValue placeholder="Tipo de documento" />
@@ -317,12 +317,7 @@ const DocumentoTemplateDialog = ({
         title="Nome do template"
         className="h-9 w-[240px] px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
       />
-    </div>
-  );
-
-  const footer = (
-    <>
-      <label className="flex items-center gap-2 text-[11.5px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer mr-auto">
+      <label className="flex items-center gap-2 text-[11.5px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer">
         <Switch checked={ativo} onCheckedChange={setAtivo} />
         <span className="text-muted-foreground">Ativo</span>
       </label>
@@ -330,6 +325,11 @@ const DocumentoTemplateDialog = ({
         <Switch checked={padrao} onCheckedChange={setPadrao} />
         <span className="text-muted-foreground">Padrão</span>
       </label>
+    </div>
+  );
+
+  const footer = (
+    <>
       <button
         onClick={() => onOpenChange(false)}
         disabled={saving}
