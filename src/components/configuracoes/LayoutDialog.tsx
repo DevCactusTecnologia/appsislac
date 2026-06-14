@@ -179,7 +179,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       allowMaximize
       defaultMaximized={defaultMaximized}
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-5 py-4 space-y-5">
         {/* Identification */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
           <div>
@@ -196,15 +196,15 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           <button
             type="button"
             onClick={() => setPadrao(!padrao)}
-            className={`h-[42px] px-4 rounded-xl border text-[12px] font-medium flex items-center gap-2 transition-all duration-200 ${
+            className={`h-9 px-3 rounded-md border text-[12px] font-medium flex items-center gap-2 transition-colors ${
               padrao
                 ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground"
+                : "border-border bg-background text-muted-foreground hover:text-foreground"
             }`}
             title={padrao ? "Este será o layout padrão de impressão" : "Definir como layout padrão"}
           >
             <Star className={`h-4 w-4 ${padrao ? "fill-primary" : ""}`} />
-            {padrao ? "Layout padrão" : "Definir como padrão"}
+            {padrao ? "Padrão" : "Definir padrão"}
           </button>
         </div>
 
@@ -212,15 +212,15 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
         <div className="flex items-center gap-1 border-b border-border/50">
           <button
             onClick={() => setTab("editor")}
-            className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-all ${tab === "editor" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${tab === "editor" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             <Code2 className="h-3.5 w-3.5" /> Editor
           </button>
           <button
             onClick={() => setTab("preview")}
-            className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-all ${tab === "preview" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${tab === "preview" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
-            <Eye className="h-3.5 w-3.5" /> Pré-visualização
+            <Eye className="h-3.5 w-3.5" /> Pré-visualizar
           </button>
         </div>
 
