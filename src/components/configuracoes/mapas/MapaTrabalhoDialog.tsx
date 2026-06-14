@@ -341,126 +341,103 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
           </div>
         )}
 
-        <div className="border border-border rounded-lg overflow-hidden bg-card min-w-0">
-          {tab === "editor" && !loteBloqueado ? (
-            <CKEditor
-              value={conteudo}
-              onChange={setConteudo}
-              placeholder="Comece a digitar ou aplique um template…"
-              toolbarRight={
-                <div className="flex items-center gap-1">
-                  <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => !loteBloqueado && setTab("editor")}
-                      disabled={loteBloqueado}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
-                        tab === "editor" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground",
-                        loteBloqueado && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTab("preview")}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
-                        (tab as string) === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <Eye className="h-3 w-3" /> Pré-visualizar
-                    </button>
-                  </div>
-                  {validacao.used.length > 0 && (
-                    <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
-                      {validacao.used.length} var.
-                    </span>
+        <div>
+          {/* Tabs bar — sempre visível, acima do editor/preview (mesmo padrão de Documentos) */}
+          <div className="flex items-center justify-between px-3 py-1.5 border border-border border-b-0 rounded-t-lg bg-muted/20">
+            <div className="inline-flex rounded-md border border-border bg-background p-0.5">
+              <button
+                type="button"
+                onClick={() => !loteBloqueado && setTab("editor")}
+                disabled={loteBloqueado}
+                title={loteBloqueado ? "O Mapa do Analista (Lote) tem renderização automática." : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                  tab === "editor" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                  loteBloqueado && "opacity-50 cursor-not-allowed",
+                )}
+              >
+                {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("preview")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                  tab === "preview" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Eye className="h-3 w-3" /> Pré-visualizar
+              </button>
+            </div>
+            {tab === "preview" && (
+              <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
+                <button
+                  type="button"
+                  onClick={() => setPreviewOrientation("portrait")}
+                  className={cn(
+                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                    previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                   )}
-                </div>
-              }
-            />
-          ) : (
-            <div className="flex flex-col">
-              {/* Tabs também presentes no modo preview */}
-              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/20">
-                <div className="inline-flex rounded-md border border-border bg-background p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => !loteBloqueado && setTab("editor")}
-                    disabled={loteBloqueado}
-                    title={loteBloqueado ? "O Mapa do Analista (Lote) tem renderização automática." : undefined}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
-                      tab === "editor" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
-                      loteBloqueado && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTab("preview")}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
-                      tab === "preview" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Eye className="h-3 w-3" /> Pré-visualizar
-                  </button>
-                </div>
-                <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewOrientation("portrait")}
-                    className={cn(
-                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                      previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    )}
-                    aria-label="Orientação retrato"
-                  >
-                    <RectangleVertical className="h-3 w-3" />
-                    Retrato
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewOrientation("landscape")}
-                    className={cn(
-                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                      previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    )}
-                    aria-label="Orientação paisagem"
-                  >
-                    <RectangleHorizontal className="h-3 w-3" />
-                    Paisagem
-                  </button>
-                </div>
+                  aria-label="Orientação retrato"
+                >
+                  <RectangleVertical className="h-3 w-3" />
+                  Retrato
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewOrientation("landscape")}
+                  className={cn(
+                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                    previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                  aria-label="Orientação paisagem"
+                >
+                  <RectangleHorizontal className="h-3 w-3" />
+                  Paisagem
+                </button>
               </div>
-              {loteBloqueado && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
-                  <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                  <span>
-                    O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico: a tabela é montada automaticamente a partir dos pacientes, exames e parâmetros do dia.
-                  </span>
-                </div>
-              )}
-              <div className="bg-muted/30 h-[560px] overflow-auto">
-                {previewHtml ? (
-                  <iframe
-                    key={previewOrientation}
-                    title="Pré-visualização A4 do mapa"
-                    srcDoc={previewA4Html}
-                    className="w-full h-full border-0 bg-background"
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic px-6 text-center">
-                    Nada para pré-visualizar — escreva algo no editor ou aplique um template.
+            )}
+            {tab === "editor" && validacao.used.length > 0 && (
+              <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
+                {validacao.used.length} var.
+              </span>
+            )}
+          </div>
+
+          <div className="border border-border border-t-0 rounded-b-lg overflow-hidden bg-card min-w-0">
+            {tab === "editor" && !loteBloqueado ? (
+              <CKEditor
+                value={conteudo}
+                onChange={setConteudo}
+                placeholder="Comece a digitar ou aplique um template…"
+              />
+            ) : (
+              <div className="flex flex-col">
+                {loteBloqueado && (
+                  <div className="flex items-start gap-2 px-3 py-2 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
+                    <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                    <span>
+                      O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico: a tabela é montada automaticamente a partir dos pacientes, exames e parâmetros do dia.
+                    </span>
                   </div>
                 )}
+                <div className="bg-muted/30 h-[560px] overflow-auto">
+                  {previewHtml ? (
+                    <iframe
+                      key={previewOrientation}
+                      title="Pré-visualização A4 do mapa"
+                      srcDoc={previewA4Html}
+                      className="w-full h-full border-0 bg-background"
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic px-6 text-center">
+                      Nada para pré-visualizar — escreva algo no editor ou aplique um template.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
