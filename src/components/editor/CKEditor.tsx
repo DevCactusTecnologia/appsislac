@@ -54,9 +54,11 @@ export interface CKEditorProps {
   onChange: (html: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Orientação da folha A4 simulada na área de edição. Default: portrait. */
+  orientation?: "portrait" | "landscape";
 }
 
-const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorProps) => {
+const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation = "portrait" }: CKEditorProps) => {
   // Config memoizada — recriar a cada render destrói o editor.
   const config = useMemo<EditorConfig>(
     () => ({
@@ -144,7 +146,7 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorP
   );
 
   return (
-    <div className="sislac-ckeditor">
+    <div className="sislac-ckeditor" data-orientation={orientation}>
       <CKEditor
         editor={ClassicEditor}
         data={value ?? ""}
