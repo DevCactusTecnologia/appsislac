@@ -2,9 +2,9 @@
 // Redesign 2026-04: padrão Lovable minimalist flat com seleção de tipo via cards,
 // editor visual de tabela e preview lado-a-lado.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  FileText, Sparkles, Eye, Pencil, AlertTriangle, Save, ChevronDown,
+  FileText, Sparkles, Eye, Pencil, Save, ChevronDown, Scaling,
   User, Layers, CheckCircle2, RectangleVertical, RectangleHorizontal, Lock,
 } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
@@ -12,12 +12,13 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import CKEditor from "@/components/editor/CKEditor";
+import CKEditor, { type CKEditorApi } from "@/components/editor/CKEditor";
+import EditorVariablesPopover from "@/components/editor/EditorVariablesPopover";
 import {
   addMapaTrabalho, updateMapaTrabalho, type MapaTrabalho, type MapaTipo,
 } from "@/data/mapaTrabalhoStore";
 import { MAPA_TEMPLATES } from "@/lib/mapaTemplates";
-import { renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders";
+import { PLACEHOLDERS, renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders";
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
 import { buildLotePreviewBlock } from "@/lib/mapaLotePreview";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   const [salvando, setSalvando] = useState(false);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [previewOrientation, setPreviewOrientation] = useState<MapaOrientation>("portrait");
+  const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
+    top: "15", right: "12", bottom: "15", left: "12",
+  });
+  const editorApiRef = useRef<CKEditorApi | null>(null);
 
   // Mapas LOTE têm renderização automática (layout fixo do "Mapa do Analista").
   // O HTML do editor é ignorado pelo motor de impressão — bloqueamos a edição
@@ -104,6 +109,15 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       setTipo(t);
       setConteudo(mapa?.conteudo ?? "");
       setTab(t === "LOTE" ? "preview" : "editor");
+      const m = (mapa?.config as Record<string, unknown> | undefined)?.margins as
+        | Record<string, number>
+        | undefined;
+      setMargins({
+        top: String(m?.top ?? 15),
+        right: String(m?.right ?? 12),
+        bottom: String(m?.bottom ?? 15),
+        left: String(m?.left ?? 12),
+      });
     }
   }, [open, mapa]);
 
@@ -161,12 +175,24 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       return;
     }
     setSalvando(true);
+    const sanitize = (v: string, fb: number) => {
+      const n = Number(String(v).replace(",", "."));
+      return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
+    };
+    const marginsConfig = {
+      top: sanitize(margins.top, 15),
+      right: sanitize(margins.right, 12),
+      bottom: sanitize(margins.bottom, 15),
+      left: sanitize(margins.left, 12),
+    };
     if (mapa) {
+      const prevConfig = (mapa.config as Record<string, unknown>) ?? {};
       const ok = await updateMapaTrabalho(mapa.id, {
         nome: nomeNorm,
         descricao: descricao.trim(),
         tipo,
         conteudo,
+        config: { ...prevConfig, margins: marginsConfig },
       });
       setSalvando(false);
       if (ok) {
@@ -177,6 +203,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
           descricao,
           tipo,
           conteudo,
+          config: { ...prevConfig, margins: marginsConfig },
         });
         onOpenChange(false);
       } else {
@@ -196,7 +223,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
         templateKey: "auto",
         source: "legacy_html",
         layoutJson: {},
-        config: {},
+        config: { margins: marginsConfig },
       });
       setSalvando(false);
       if (novo) {
@@ -369,39 +396,91 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 <Eye className="h-3 w-3" /> Pré-visualizar
               </button>
             </div>
-            {tab === "preview" && (
-              <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
-                <button
-                  type="button"
-                  onClick={() => setPreviewOrientation("portrait")}
-                  className={cn(
-                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                    previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-label="Orientação retrato"
-                >
-                  <RectangleVertical className="h-3 w-3" />
-                  Retrato
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewOrientation("landscape")}
-                  className={cn(
-                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                    previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-label="Orientação paisagem"
-                >
-                  <RectangleHorizontal className="h-3 w-3" />
-                  Paisagem
-                </button>
-              </div>
-            )}
-            {tab === "editor" && validacao.used.length > 0 && (
-              <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
-                {validacao.used.length} var.
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {tab === "editor" && !loteBloqueado && (
+                <>
+                  <EditorVariablesPopover
+                    items={PLACEHOLDERS.map((p) => ({
+                      tag: p.tag,
+                      label: p.label,
+                      group: p.group,
+                      description: p.description,
+                    }))}
+                    onInsert={(tag) => editorApiRef.current?.insertHtml(`{{${tag}}}`)}
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        title="Margens de impressão (mm)"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
+                      >
+                        <Scaling className="h-3.5 w-3.5" />
+                        Margens
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[260px] p-2.5" align="end">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                        Margens de impressão (mm)
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["top", "right", "bottom", "left"] as const).map((side) => (
+                          <label key={side} className="flex flex-col gap-1">
+                            <span className="text-[10px] text-muted-foreground">
+                              {side === "top" ? "Superior" : side === "right" ? "Direita" : side === "bottom" ? "Inferior" : "Esquerda"}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={50}
+                              step={0.5}
+                              value={margins[side]}
+                              onChange={(e) => setMargins((p) => ({ ...p, [side]: e.target.value }))}
+                              className="w-full h-8 px-2 bg-background border border-border rounded-md text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                              inputMode="decimal"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </>
+              )}
+              {tab === "preview" && (
+                <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("portrait")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label="Orientação retrato"
+                  >
+                    <RectangleVertical className="h-3 w-3" />
+                    Retrato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("landscape")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label="Orientação paisagem"
+                  >
+                    <RectangleHorizontal className="h-3 w-3" />
+                    Paisagem
+                  </button>
+                </div>
+              )}
+              {tab === "editor" && validacao.used.length > 0 && (
+                <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
+                  {validacao.used.length} var.
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="border border-border border-t-0 rounded-b-lg overflow-hidden bg-card min-w-0">
@@ -410,6 +489,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 value={conteudo}
                 onChange={setConteudo}
                 placeholder="Comece a digitar ou aplique um template…"
+                onEditorReady={(api) => { editorApiRef.current = api; }}
               />
             ) : (
               <div className="flex flex-col">

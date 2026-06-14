@@ -1,13 +1,14 @@
 // Dialog para criar / editar um template de documento.
 // Editor oficial: CKEditor 5.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import CKEditor from "@/components/editor/CKEditor";
+import CKEditor, { type CKEditorApi } from "@/components/editor/CKEditor";
+import EditorVariablesPopover from "@/components/editor/EditorVariablesPopover";
 import { normalizeMapaHtml } from "@/lib/mapaSharedStyles";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -59,6 +60,7 @@ const DocumentoTemplateDialog = ({
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
     top: "18", right: "18", bottom: "22", left: "18",
   });
+  const editorApiRef = useRef<CKEditorApi | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -387,43 +389,54 @@ const DocumentoTemplateDialog = ({
               </button>
             </div>
             {tab === "editor" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    title="Margens de impressão (mm)"
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
-                  >
-                    <Scaling className="h-3.5 w-3.5" />
-                    Margens
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[260px] p-2.5" align="end">
-                  <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
-                    Margens de impressão (mm)
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["top", "right", "bottom", "left"] as const).map((side) => (
-                      <label key={side} className="flex flex-col gap-1">
-                        <span className="text-[10px] text-muted-foreground">
-                          {side === "top" ? "Superior" : side === "right" ? "Direita" : side === "bottom" ? "Inferior" : "Esquerda"}
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={50}
-                          step={0.5}
-                          value={margins[side]}
-                          onChange={(e) => setMargins((p) => ({ ...p, [side]: e.target.value }))}
-                          className="w-full h-8 px-2 bg-background border border-border rounded-md text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
-                          inputMode="decimal"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-1.5">
+                <EditorVariablesPopover
+                  items={DOCUMENTO_PLACEHOLDERS.map((p) => ({
+                    tag: p.tag,
+                    label: p.label,
+                    group: p.group,
+                    description: p.description,
+                  }))}
+                  onInsert={(tag) => editorApiRef.current?.insertHtml(`{{${tag}}}`)}
+                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      title="Margens de impressão (mm)"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
+                    >
+                      <Scaling className="h-3.5 w-3.5" />
+                      Margens
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[260px] p-2.5" align="end">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                      Margens de impressão (mm)
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["top", "right", "bottom", "left"] as const).map((side) => (
+                        <label key={side} className="flex flex-col gap-1">
+                          <span className="text-[10px] text-muted-foreground">
+                            {side === "top" ? "Superior" : side === "right" ? "Direita" : side === "bottom" ? "Inferior" : "Esquerda"}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={50}
+                            step={0.5}
+                            value={margins[side]}
+                            onChange={(e) => setMargins((p) => ({ ...p, [side]: e.target.value }))}
+                            className="w-full h-8 px-2 bg-background border border-border rounded-md text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                            inputMode="decimal"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             )}
           </div>
 
@@ -432,6 +445,7 @@ const DocumentoTemplateDialog = ({
               <CKEditor
                 value={removerLinhasHorizontaisDocumento(conteudo)}
                 onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
+                onEditorReady={(api) => { editorApiRef.current = api; }}
               />
             ) : (
               <div className="a4-stage">

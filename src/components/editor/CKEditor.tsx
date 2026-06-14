@@ -59,6 +59,11 @@ import ptBrTranslations from "ckeditor5/translations/pt-br.js";
 import "ckeditor5/ckeditor5.css";
 import "./ckeditor.css";
 
+export interface CKEditorApi {
+  insertHtml: (html: string) => void;
+  focus: () => void;
+}
+
 export interface CKEditorProps {
   value: string;
   onChange: (html: string) => void;
@@ -66,6 +71,7 @@ export interface CKEditorProps {
   placeholder?: string;
   orientation?: "portrait" | "landscape";
   toolbarRight?: ReactNode;
+  onEditorReady?: (api: CKEditorApi) => void;
 }
 
 const FONT_FAMILIES = [
@@ -91,7 +97,7 @@ const FONT_FAMILIES = [
 const FONT_SIZES = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
 
 const CKEditorComponent = ({
-  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight,
+  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight, onEditorReady,
 }: CKEditorProps) => {
   const config = useMemo<EditorConfig>(
     () => ({
@@ -194,7 +200,22 @@ const CKEditorComponent = ({
           const root = editor.editing.view.getDomRoot();
           if (!root) return;
 
-          // Helpers para o menu de contexto.
+          // Expor API imperativa (inserir HTML / foco) para botões externos.
+          onEditorReady?.({
+            insertHtml: (html: string) => {
+              try {
+                const viewFragment = editor.data.processor.toView(html);
+                const modelFragment = editor.data.toModel(viewFragment);
+                editor.model.insertContent(modelFragment);
+                editor.editing.view.focus();
+              } catch {
+                /* noop */
+              }
+            },
+            focus: () => editor.editing.view.focus(),
+          });
+
+
           const closeMenu = () => {
             document
               .querySelectorAll(".sislac-ck-ctx-menu")
