@@ -1,10 +1,7 @@
 // Editor oficial do SISLAC — CKEditor 5 (licença GPL).
-// Único editor de texto rico do sistema; substitui o antigo RichTextEditorPro.
-//
-// Compatibilidade obrigatória:
-//   • Preserva placeholders {{...}} (PACIENTE, IDADE, SEXO, EXAME, RESULTADO,
-//     ASSINATURA, DATA_COLETA, DATA_RESULTADO etc.) sem escapar/remover.
-//   • Saída em HTML limpo, pronta para impressão / PDF / Portal do Paciente.
+// Idioma: Português do Brasil (pt-BR).
+// Recursos: fontes, cor de texto, cor de fundo, realce, e barra flutuante
+// de formatação que aparece com clique direito (e na seleção de texto).
 
 import type { ReactNode } from "react";
 import { useMemo } from "react";
@@ -15,13 +12,20 @@ import {
   Alignment,
   Autoformat,
   AutoLink,
+  BalloonToolbar,
   Base64UploadAdapter,
   BlockQuote,
   Bold,
   ClipboardPipeline,
   Essentials,
+  FontBackgroundColor,
+  FontColor,
+  FontFamily,
+  FontSize,
   GeneralHtmlSupport,
   Heading,
+  Highlight,
+  HorizontalLine,
   Image,
   ImageCaption,
   ImageInsert,
@@ -29,6 +33,7 @@ import {
   ImageStyle,
   ImageToolbar,
   ImageUpload,
+  Indent,
   Italic,
   Link,
   List,
@@ -37,6 +42,8 @@ import {
   RemoveFormat,
   SourceEditing,
   Strikethrough,
+  Subscript,
+  Superscript,
   Table,
   TableCaption,
   TableCellProperties,
@@ -46,6 +53,8 @@ import {
   Underline,
   Undo,
 } from "ckeditor5";
+// Traduções oficiais pt-BR.
+import ptBrTranslations from "ckeditor5/translations/pt-br.js";
 
 import "ckeditor5/ckeditor5.css";
 import "./ckeditor.css";
@@ -55,49 +64,79 @@ export interface CKEditorProps {
   onChange: (html: string) => void;
   disabled?: boolean;
   placeholder?: string;
-  /** Orientação da folha A4 simulada na área de edição. Default: portrait. */
   orientation?: "portrait" | "landscape";
-  /** Elemento renderizado no canto direito da barra de ferramentas (mesma linha). */
   toolbarRight?: ReactNode;
 }
 
-const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight }: CKEditorProps) => {
-  // Config memoizada — recriar a cada render destrói o editor.
+const FONT_FAMILIES = [
+  "default",
+  "Inter, system-ui, sans-serif",
+  "Arial, Helvetica, sans-serif",
+  "Calibri, sans-serif",
+  "Georgia, serif",
+  "Times New Roman, Times, serif",
+  "Courier New, Courier, monospace",
+  "Verdana, Geneva, sans-serif",
+  "Tahoma, Geneva, sans-serif",
+  "Trebuchet MS, sans-serif",
+  "Lucida Sans Unicode, sans-serif",
+  "Comic Sans MS, cursive",
+  "Roboto, sans-serif",
+  "Open Sans, sans-serif",
+  "Montserrat, sans-serif",
+  "Poppins, sans-serif",
+  "Lato, sans-serif",
+];
+
+const FONT_SIZES = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
+
+const CKEditorComponent = ({
+  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight,
+}: CKEditorProps) => {
   const config = useMemo<EditorConfig>(
     () => ({
-      // Licença GPL pública (sem custo) para projetos open-source / internos.
       licenseKey: "GPL" as const,
+      language: "pt-br",
+      translations: [ptBrTranslations],
       placeholder,
       plugins: [
         Essentials, Paragraph, Autoformat, Undo, ClipboardPipeline,
-        Bold, Italic, Underline, Strikethrough, RemoveFormat,
-        Heading, BlockQuote,
-        List, Alignment,
+        Bold, Italic, Underline, Strikethrough, Subscript, Superscript, RemoveFormat,
+        FontFamily, FontSize, FontColor, FontBackgroundColor, Highlight,
+        Heading, BlockQuote, HorizontalLine,
+        List, Indent, Alignment,
         Link, AutoLink,
         Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, ImageUpload, Base64UploadAdapter,
         Table, TableToolbar, TableProperties, TableCellProperties, TableColumnResize, TableCaption,
-        PasteFromOffice,
-        GeneralHtmlSupport,
-        SourceEditing,
+        PasteFromOffice, GeneralHtmlSupport, SourceEditing,
+        BalloonToolbar,
       ],
       toolbar: {
         items: [
-          "undo", "redo",
-          "|",
-          "heading",
-          "|",
-          "bold", "italic", "underline", "strikethrough", "removeFormat",
-          "|",
-          "bulletedList", "numberedList",
-          "|",
-          "alignment",
-          "|",
-          "link", "insertImage", "insertTable", "blockQuote",
-          "|",
+          "undo", "redo", "|",
+          "heading", "|",
+          "fontFamily", "fontSize", "fontColor", "fontBackgroundColor", "highlight", "|",
+          "bold", "italic", "underline", "strikethrough", "subscript", "superscript", "removeFormat", "|",
+          "bulletedList", "numberedList", "outdent", "indent", "|",
+          "alignment", "|",
+          "link", "insertImage", "insertTable", "blockQuote", "horizontalLine", "|",
           "sourceEditing",
         ],
         shouldNotGroupWhenFull: true,
       },
+      // Barra flutuante (aparece na seleção e no clique direito).
+      balloonToolbar: [
+        "fontFamily", "fontSize", "|",
+        "bold", "italic", "underline", "strikethrough", "|",
+        "fontColor", "fontBackgroundColor", "highlight", "|",
+        "alignment", "|",
+        "bulletedList", "numberedList", "|",
+        "link", "removeFormat",
+      ],
+      fontFamily: { options: FONT_FAMILIES, supportAllValues: true },
+      fontSize: { options: FONT_SIZES, supportAllValues: true },
+      fontColor: { columns: 6, documentColors: 12 },
+      fontBackgroundColor: { columns: 6, documentColors: 12 },
       heading: {
         options: [
           { model: "paragraph", title: "Parágrafo", class: "ck-heading_paragraph" },
@@ -132,17 +171,8 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation
           "toggleTableCaption",
         ],
       },
-      // Mantém o HTML colado do Word/Excel o mais fiel possível,
-      // permitindo classes/estilos comuns sem rejeitar o conteúdo.
       htmlSupport: {
-        allow: [
-          {
-            name: /.*/,
-            attributes: true,
-            classes: true,
-            styles: true,
-          },
-        ],
+        allow: [{ name: /.*/, attributes: true, classes: true, styles: true }],
       },
     }),
     [placeholder],
@@ -160,8 +190,24 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation
         data={value ?? ""}
         disabled={disabled}
         config={config}
+        onReady={(editor) => {
+          // Clique direito abre a barra flutuante de formatação.
+          const root = editor.editing.view.getDomRoot();
+          if (root) {
+            root.addEventListener("contextmenu", (ev) => {
+              ev.preventDefault();
+              try {
+                const balloon = editor.plugins.get("BalloonToolbar") as
+                  | { show: (showForCollapsedSelection?: boolean) => void }
+                  | undefined;
+                balloon?.show(true);
+              } catch {
+                /* noop */
+              }
+            });
+          }
+        }}
         onChange={(_evt, editor) => {
-          // Placeholders {{...}} são texto puro — CKEditor preserva sem alterar.
           onChange(editor.getData());
         }}
       />
