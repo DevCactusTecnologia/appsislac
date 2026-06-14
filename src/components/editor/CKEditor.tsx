@@ -115,7 +115,7 @@ const CKEditorComponent = ({
         items: [
           "undo", "redo", "|",
           "heading", "|",
-          "fontFamily", "fontSize", "fontColor", "fontBackgroundColor", "highlight", "|",
+          "fontFamily", "fontSize", "fontColor", "fontBackgroundColor", "|",
           "bold", "italic", "underline", "strikethrough", "subscript", "superscript", "removeFormat", "|",
           "bulletedList", "numberedList", "outdent", "indent", "|",
           "alignment", "|",
@@ -128,7 +128,7 @@ const CKEditorComponent = ({
       balloonToolbar: [
         "fontFamily", "fontSize", "|",
         "bold", "italic", "underline", "strikethrough", "|",
-        "fontColor", "fontBackgroundColor", "highlight", "|",
+        "fontColor", "fontBackgroundColor", "|",
         "alignment", "|",
         "bulletedList", "numberedList", "|",
         "link", "removeFormat",
