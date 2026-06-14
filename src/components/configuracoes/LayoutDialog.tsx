@@ -235,13 +235,14 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
                   <button
                     type="button"
                     title="Margens de impressão (mm)"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
                   >
                     <Scaling className="h-3.5 w-3.5" />
                     Margens
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-3" align="end">
+                <PopoverContent className="w-[260px] p-2.5" align="end">
                   <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
                     Margens de impressão (mm)
                   </p>
@@ -269,7 +270,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             }
           />
         ) : (
-          <div className="a4-stage border border-border/60 rounded-xl">
+          <div className="a4-stage border border-border/60 rounded-lg">
             <div
               className="prose-mapa a4-sheet text-[13px] leading-snug"
               style={{ fontFamily: '"Courier New", Courier, monospace' }}
@@ -278,9 +279,9 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           </div>
         )}
         {tab === "preview" && (
-          <p className="pt-2 text-[10px] text-muted-foreground italic">
-              Pré-visualização com dados-exemplo. Os valores reais aparecem no laudo final do paciente.
-            </p>
+          <p className="pt-1 text-[10px] text-muted-foreground italic">
+            Pré-visualização com dados-exemplo. Os valores reais aparecem no laudo final do paciente.
+          </p>
         )}
       </div>
     </StandardDialog>
