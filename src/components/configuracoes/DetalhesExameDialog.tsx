@@ -17,7 +17,7 @@ import {
 interface DetalhesExameDialogProps {
   open: boolean;
   onClose: () => void;
-  exame: { id: string; mnemonico: string; nome: string; categoria: string; codigo: string } | null;
+  exame: { id: string; mnemonico: string; nome: string; categoria: string; codigo: string; setorNome?: string } | null;
   onEdit: () => void;
 }
 
