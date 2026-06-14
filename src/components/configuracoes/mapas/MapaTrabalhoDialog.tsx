@@ -78,8 +78,8 @@ const PREVIEW_DATA = {
 };
 
 const inputClass =
-  "w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
-const labelClass = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block";
+  "w-full h-9 px-3 bg-background border border-border rounded-md text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all";
+const labelClass = "text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80 mb-1.5 block";
 
 const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Props) => {
   const { toast } = useToast();
