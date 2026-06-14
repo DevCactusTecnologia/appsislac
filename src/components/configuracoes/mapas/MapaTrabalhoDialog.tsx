@@ -217,7 +217,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="h-9 px-3 rounded-lg border border-primary/30 bg-primary/5 text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
+          className="h-8 px-2.5 rounded-md text-[11.5px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
           title="Inserir template pronto no editor"
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -225,8 +225,8 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
           <ChevronDown className="h-3 w-3 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[360px] p-2" align="end">
-        <p className="text-[10px] font-bold uppercase text-muted-foreground px-2 py-1.5">
+      <PopoverContent className="w-[340px] p-1.5" align="end">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 px-2 py-1.5">
           Templates {tipo === "INDIVIDUAL" ? "individuais" : "de lote"}
         </p>
         <div className="flex flex-col gap-0.5">
@@ -235,10 +235,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
               key={t.id}
               type="button"
               onClick={() => aplicarTemplate(t.id)}
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent transition-colors"
+              className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent transition-colors"
             >
-              <p className="text-sm font-medium text-foreground">{t.nome}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t.descricao}</p>
+              <p className="text-[13px] font-medium text-foreground">{t.nome}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{t.descricao}</p>
             </button>
           ))}
         </div>
