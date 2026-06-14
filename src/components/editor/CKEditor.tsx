@@ -146,7 +146,7 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation
   );
 
   return (
-    <div className="sislac-ckeditor">
+    <div className="sislac-ckeditor" data-orientation={orientation}>
       <CKEditor
         editor={ClassicEditor}
         data={value ?? ""}
