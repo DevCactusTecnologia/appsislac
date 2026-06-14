@@ -121,7 +121,7 @@ function gerarQrSvg(payload: string): string {
       }
     }
     const total = size + 2;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 ${total} ${total}" shape-rendering="geometricPrecision" width="128" height="128" style="display:block;background:#fff;border:1px solid #f0f0f0;"><g fill="#000">${cells.join("")}</g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 ${total} ${total}" shape-rendering="geometricPrecision" width="64" height="64" style="display:block;width:64px;height:64px;background:#fff;border:1px solid #f0f0f0;"><g fill="#000">${cells.join("")}</g></svg>`;
   } catch {
     return "";
   }
