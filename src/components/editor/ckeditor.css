@@ -1,0 +1,27 @@
+/* Tema SISLAC para o CKEditor 5 — flat, indigo #4D41F3, sem sombras. */
+.sislac-ckeditor {
+  --ck-color-base-border: hsl(var(--border));
+  --ck-color-base-background: hsl(var(--card));
+  --ck-color-base-foreground: hsl(var(--foreground));
+  --ck-color-focus-border: hsl(var(--primary));
+  --ck-color-focus-outer-shadow: hsl(var(--primary) / 0.15);
+  --ck-color-button-on-background: hsl(var(--primary) / 0.1);
+  --ck-color-button-on-color: hsl(var(--primary));
+  --ck-color-button-default-hover-background: hsl(var(--muted));
+  --ck-border-radius: 8px;
+}
+.sislac-ckeditor .ck.ck-editor__main > .ck-editor__editable {
+  min-height: 320px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sislac-ckeditor .ck.ck-toolbar {
+  background: hsl(var(--muted) / 0.4);
+  border-color: hsl(var(--border));
+}
+.sislac-ckeditor .ck.ck-editor__main > .ck-editor__editable.ck-focused {
+  box-shadow: none;
+}
