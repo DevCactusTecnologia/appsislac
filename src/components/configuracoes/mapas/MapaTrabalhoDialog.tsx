@@ -175,12 +175,24 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       return;
     }
     setSalvando(true);
+    const sanitize = (v: string, fb: number) => {
+      const n = Number(String(v).replace(",", "."));
+      return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
+    };
+    const marginsConfig = {
+      top: sanitize(margins.top, 15),
+      right: sanitize(margins.right, 12),
+      bottom: sanitize(margins.bottom, 15),
+      left: sanitize(margins.left, 12),
+    };
     if (mapa) {
+      const prevConfig = (mapa.config as Record<string, unknown>) ?? {};
       const ok = await updateMapaTrabalho(mapa.id, {
         nome: nomeNorm,
         descricao: descricao.trim(),
         tipo,
         conteudo,
+        config: { ...prevConfig, margins: marginsConfig },
       });
       setSalvando(false);
       if (ok) {
@@ -191,6 +203,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
           descricao,
           tipo,
           conteudo,
+          config: { ...prevConfig, margins: marginsConfig },
         });
         onOpenChange(false);
       } else {
@@ -210,7 +223,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
         templateKey: "auto",
         source: "legacy_html",
         layoutJson: {},
-        config: {},
+        config: { margins: marginsConfig },
       });
       setSalvando(false);
       if (novo) {
