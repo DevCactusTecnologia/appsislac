@@ -1,6 +1,7 @@
 /* Tema SISLAC para o CKEditor 5 — flat, indigo #4D41F3, sem sombras.
    Área de edição renderiza como folha A4 (igual à pré-visualização). */
 .sislac-ckeditor {
+  position: relative;
   --ck-color-base-border: hsl(var(--border));
   --ck-color-base-background: hsl(var(--card));
   --ck-color-base-foreground: hsl(var(--foreground));
@@ -22,6 +23,42 @@
 
 .sislac-ckeditor .ck.ck-toolbar {
   background: hsl(var(--muted) / 0.4);
+  border-color: hsl(var(--border));
+  /* Garante espaço para o slot direito */
+  padding-right: 110px;
+}
+
+/* Slot customizado no canto direito da toolbar */
+.sislac-ckeditor__toolbar-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: var(--ck-toolbar-height, 40px);
+  padding-right: 6px;
+  pointer-events: auto;
+}
+.sislac-ckeditor__toolbar-right > button,
+.sislac-ckeditor__toolbar-right > [data-slot-root] > button {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: hsl(var(--foreground));
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 150ms ease;
+  cursor: pointer;
+}
+.sislac-ckeditor__toolbar-right > button:hover,
+.sislac-ckeditor__toolbar-right > [data-slot-root] > button:hover {
+  background: hsl(var(--muted));
   border-color: hsl(var(--border));
 }
 
