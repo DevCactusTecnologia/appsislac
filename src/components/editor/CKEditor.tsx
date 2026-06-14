@@ -59,6 +59,11 @@ import ptBrTranslations from "ckeditor5/translations/pt-br.js";
 import "ckeditor5/ckeditor5.css";
 import "./ckeditor.css";
 
+export interface CKEditorApi {
+  insertHtml: (html: string) => void;
+  focus: () => void;
+}
+
 export interface CKEditorProps {
   value: string;
   onChange: (html: string) => void;
@@ -66,6 +71,7 @@ export interface CKEditorProps {
   placeholder?: string;
   orientation?: "portrait" | "landscape";
   toolbarRight?: ReactNode;
+  onEditorReady?: (api: CKEditorApi) => void;
 }
 
 const FONT_FAMILIES = [
