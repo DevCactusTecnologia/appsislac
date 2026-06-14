@@ -91,6 +91,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   const [salvando, setSalvando] = useState(false);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [previewOrientation, setPreviewOrientation] = useState<MapaOrientation>("portrait");
+  const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
+    top: "15", right: "12", bottom: "15", left: "12",
+  });
+  const editorApiRef = useRef<CKEditorApi | null>(null);
 
   // Mapas LOTE têm renderização automática (layout fixo do "Mapa do Analista").
   // O HTML do editor é ignorado pelo motor de impressão — bloqueamos a edição
