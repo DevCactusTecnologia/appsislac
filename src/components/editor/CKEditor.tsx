@@ -58,7 +58,7 @@ export interface CKEditorProps {
   orientation?: "portrait" | "landscape";
 }
 
-const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorProps) => {
+const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation = "portrait" }: CKEditorProps) => {
   // Config memoizada — recriar a cada render destrói o editor.
   const config = useMemo<EditorConfig>(
     () => ({
