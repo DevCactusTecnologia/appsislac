@@ -101,7 +101,7 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorP
         ],
       },
       list: { properties: { styles: true, startIndex: true, reversed: true } },
-      alignment: { options: ["left", "center", "right", "justify"] },
+      alignment: { options: ["left", "center", "right", "justify"] as const },
       link: {
         defaultProtocol: "https://",
         decorators: {
