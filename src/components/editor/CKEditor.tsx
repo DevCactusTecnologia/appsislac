@@ -6,6 +6,7 @@
 //     ASSINATURA, DATA_COLETA, DATA_RESULTADO etc.) sem escapar/remover.
 //   • Saída em HTML limpo, pronta para impressão / PDF / Portal do Paciente.
 
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import {
@@ -56,9 +57,11 @@ export interface CKEditorProps {
   placeholder?: string;
   /** Orientação da folha A4 simulada na área de edição. Default: portrait. */
   orientation?: "portrait" | "landscape";
+  /** Elemento renderizado no canto direito da barra de ferramentas (mesma linha). */
+  toolbarRight?: ReactNode;
 }
 
-const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation = "portrait" }: CKEditorProps) => {
+const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight }: CKEditorProps) => {
   // Config memoizada — recriar a cada render destrói o editor.
   const config = useMemo<EditorConfig>(
     () => ({
@@ -147,6 +150,11 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder, orientation
 
   return (
     <div className="sislac-ckeditor" data-orientation={orientation}>
+      {toolbarRight && (
+        <div className="sislac-ckeditor__toolbar-right">
+          {toolbarRight}
+        </div>
+      )}
       <CKEditor
         editor={ClassicEditor}
         data={value ?? ""}
