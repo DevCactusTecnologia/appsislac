@@ -2,9 +2,9 @@
 // Redesign 2026-04: padrão Lovable minimalist flat com seleção de tipo via cards,
 // editor visual de tabela e preview lado-a-lado.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  FileText, Sparkles, Eye, Pencil, AlertTriangle, Save, ChevronDown,
+  FileText, Sparkles, Eye, Pencil, Save, ChevronDown, Scaling,
   User, Layers, CheckCircle2, RectangleVertical, RectangleHorizontal, Lock,
 } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
@@ -12,12 +12,13 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import CKEditor from "@/components/editor/CKEditor";
+import CKEditor, { type CKEditorApi } from "@/components/editor/CKEditor";
+import EditorVariablesPopover from "@/components/editor/EditorVariablesPopover";
 import {
   addMapaTrabalho, updateMapaTrabalho, type MapaTrabalho, type MapaTipo,
 } from "@/data/mapaTrabalhoStore";
 import { MAPA_TEMPLATES } from "@/lib/mapaTemplates";
-import { renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders";
+import { PLACEHOLDERS, renderPlaceholders, validatePlaceholders } from "@/lib/mapaPlaceholders";
 import { wrapHtmlAsA4Preview, type MapaOrientation } from "@/lib/mapaA4Preview";
 import { buildLotePreviewBlock } from "@/lib/mapaLotePreview";
 import { cn } from "@/lib/utils";
