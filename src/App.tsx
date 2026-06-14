@@ -39,6 +39,7 @@ const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const SolicitacoesSite = lazy(() => import("./pages/SolicitacoesSite"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Perfil = lazy(() => import("./pages/Perfil"));
+const CKEditorTest = lazy(() => import("./pages/admin/CKEditorTest"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
@@ -353,6 +354,7 @@ function AppRoutes() {
             <Route path="/equipe" element={<ProtectedRoute permissao="gestao_usuarios"><Usuarios /></ProtectedRoute>} />
             <Route path="/usuarios" element={<Navigate to="/equipe" replace />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+            <Route path="/admin/ckeditor-test" element={<ProtectedRoute><CKEditorTest /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
