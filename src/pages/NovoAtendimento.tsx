@@ -38,7 +38,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buscarAmostrasReutilizaveisPorNome, reutilizarAmostra, type Amostra } from "@/data/sorotecaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { getLabsApoio } from "@/data/labApoioStore";
 import { showError } from "@/lib/showError";
+import LabBadge from "@/components/LabBadge";
 
 // ── Code-splitting: dialogs/painéis pesados só baixam quando realmente abrem.
 // Mantém a rota /novo-atendimento leve no carregamento inicial.
