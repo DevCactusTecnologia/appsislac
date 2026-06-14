@@ -348,28 +348,6 @@ const DocumentoTemplateDialog = ({
     </>
   );
 
-  const tabsSlot = (
-    <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 mr-1">
-      <button
-        type="button"
-        onClick={() => setTab("editor")}
-        className={`inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors ${
-          tab === "editor" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        <Pencil className="h-3 w-3" /> Editor
-      </button>
-      <button
-        type="button"
-        onClick={() => setTab("preview")}
-        className={`inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors ${
-          tab === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        <Eye className="h-3 w-3" /> Pré-visualizar
-      </button>
-    </div>
-  );
 
     return (
     <StandardDialog
