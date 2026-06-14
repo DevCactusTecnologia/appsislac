@@ -122,7 +122,7 @@ const CKEditorComponent = ({
           "link", "insertImage", "insertTable", "blockQuote", "horizontalLine", "|",
           "sourceEditing",
         ],
-        shouldNotGroupWhenFull: true,
+        shouldNotGroupWhenFull: false,
       },
       // Barra flutuante (aparece na seleção e no clique direito).
       balloonToolbar: [

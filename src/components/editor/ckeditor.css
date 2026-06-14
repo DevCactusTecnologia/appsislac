@@ -24,8 +24,8 @@
 .sislac-ckeditor .ck.ck-toolbar {
   background: hsl(var(--muted) / 0.4);
   border-color: hsl(var(--border));
-  /* Garante espaço para o slot direito */
-  padding-right: 110px;
+  /* Reserva espaço para o slot direito (Tabs Editor/Pré-visualizar + Margens) */
+  padding-right: 260px;
 }
 
 /* Slot customizado no canto direito da toolbar */
