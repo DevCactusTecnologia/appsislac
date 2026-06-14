@@ -200,7 +200,22 @@ const CKEditorComponent = ({
           const root = editor.editing.view.getDomRoot();
           if (!root) return;
 
-          // Helpers para o menu de contexto.
+          // Expor API imperativa (inserir HTML / foco) para botões externos.
+          onEditorReady?.({
+            insertHtml: (html: string) => {
+              try {
+                const viewFragment = editor.data.processor.toView(html);
+                const modelFragment = editor.data.toModel(viewFragment);
+                editor.model.insertContent(modelFragment);
+                editor.editing.view.focus();
+              } catch {
+                /* noop */
+              }
+            },
+            focus: () => editor.editing.view.focus(),
+          });
+
+
           const closeMenu = () => {
             document
               .querySelectorAll(".sislac-ck-ctx-menu")
