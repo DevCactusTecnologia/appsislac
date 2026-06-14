@@ -90,3 +90,44 @@
   box-shadow: 0 2px 8px hsl(var(--foreground) / 0.15);
   border-color: hsl(var(--primary) / 0.4);
 }
+
+/* Menu de contexto customizado (clique direito em tabelas). */
+.sislac-ck-ctx-menu {
+  min-width: 220px;
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sislac-ck-ctx-menu .sislac-ck-ctx-item {
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: background 120ms ease;
+}
+.sislac-ck-ctx-menu .sislac-ck-ctx-item:hover {
+  background: hsl(var(--accent));
+}
+.sislac-ck-ctx-menu .sislac-ck-ctx-item.is-danger {
+  color: hsl(var(--destructive));
+}
+.sislac-ck-ctx-menu .sislac-ck-ctx-item.is-danger:hover {
+  background: hsl(var(--destructive) / 0.1);
+}
+.sislac-ck-ctx-menu .sislac-ck-ctx-sep {
+  height: 1px;
+  background: hsl(var(--border));
+  margin: 4px 2px;
+}

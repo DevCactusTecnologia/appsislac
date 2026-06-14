@@ -212,39 +212,83 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
     }
   };
 
-  const headerActions = templatesDoTipo.length > 0 && !loteBloqueado ? (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="h-8 px-2.5 rounded-md text-[11.5px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
-          title="Inserir template pronto no editor"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          Templates
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[340px] p-1.5" align="end">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 px-2 py-1.5">
-          Templates {tipo === "INDIVIDUAL" ? "individuais" : "de lote"}
-        </p>
-        <div className="flex flex-col gap-0.5">
-          {templatesDoTipo.map((t) => (
+  const headerActions = (
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Tipo — segmented compacto */}
+      <div className="inline-flex h-9 p-0.5 bg-muted/50 border border-border/60 rounded-md">
+        {tiposMapa.map((t) => {
+          const Icon = t.icon;
+          const ativo = tipo === t.value;
+          return (
             <button
-              key={t.id}
+              key={t.value}
               type="button"
-              onClick={() => aplicarTemplate(t.id)}
-              className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent transition-colors"
+              onClick={() => setTipo(t.value)}
+              title={`${t.description} — ${t.hint}`}
+              className={cn(
+                "flex items-center gap-1.5 px-3 rounded text-[12.5px] font-medium transition-all",
+                ativo
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <p className="text-[13px] font-medium text-foreground">{t.nome}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{t.descricao}</p>
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+              {ativo && <CheckCircle2 className="h-3 w-3 text-primary" />}
             </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  ) : null;
+          );
+        })}
+      </div>
+
+      <input
+        type="text"
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        maxLength={120}
+        readOnly={!!mapa?.sistema}
+        placeholder="Nome do mapa"
+        title="Nome do mapa"
+        className={
+          "h-9 w-[240px] px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all" +
+          (mapa?.sistema ? " opacity-70 cursor-not-allowed" : "")
+        }
+      />
+
+      {templatesDoTipo.length > 0 && !loteBloqueado && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="h-9 px-3 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
+              title="Inserir template pronto no editor"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Templates
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[340px] p-1.5" align="end">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 px-2 py-1.5">
+              Templates {tipo === "INDIVIDUAL" ? "individuais" : "de lote"}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {templatesDoTipo.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => aplicarTemplate(t.id)}
+                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent transition-colors"
+                >
+                  <p className="text-[13px] font-medium text-foreground">{t.nome}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{t.descricao}</p>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
 
   const footer = (
     <>
@@ -282,194 +326,144 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       maxWidth="5xl"
       allowMaximize
     >
-      <div className="px-5 py-4 space-y-4">
-        {/* Linha única compacta: Tipo (segmented) + Nome */}
-        <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-4 items-end">
-          {/* Tipo do mapa — segmented control compacto */}
-          <div>
-            <label className={labelClass}>Tipo</label>
-            <div className="inline-flex h-9 p-0.5 bg-muted/50 border border-border/60 rounded-md">
-              {tiposMapa.map((t) => {
-                const Icon = t.icon;
-                const ativo = tipo === t.value;
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setTipo(t.value)}
-                    title={`${t.description} — ${t.hint}`}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 rounded text-[12.5px] font-medium transition-all",
-                      ativo
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {t.label}
-                    {ativo && <CheckCircle2 className="h-3 w-3 text-primary" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Nome do mapa */}
-          <div>
-            <label className={labelClass}>Nome do mapa</label>
-            <input
-              type="text"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              maxLength={120}
-              readOnly={!!mapa?.sistema}
-              className={inputClass + (mapa?.sistema ? " opacity-70 cursor-not-allowed" : "")}
-              placeholder="Ex.: Mapa de Hemograma"
-              autoFocus
-            />
-          </div>
-        </div>
-
+      <div className="px-5 py-4 space-y-3">
         {mapa?.sistema && (
-          <p className="text-[11px] text-muted-foreground -mt-2 flex items-center gap-1.5">
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
             <Lock className="h-3 w-3" />
             Mapa do sistema — nome bloqueado. Conteúdo e vínculos podem ser editados.
           </p>
         )}
 
-        {/* Layout — tabs editor / preview */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className={`${labelClass} mb-0`}>Layout</label>
-            <div className="flex items-center gap-1.5">
-              {validacao.used.length > 0 && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
-                  {validacao.used.length} variável(is)
-                </span>
-              )}
-              {!validacao.valid && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {validacao.invalid.length} inválida(s)
-                </span>
-              )}
-            </div>
+        {!validacao.valid && (
+          <div className="border border-destructive/30 bg-destructive/5 rounded-md px-3 py-1.5 text-[11px] text-destructive">
+            <strong>Variáveis não reconhecidas:</strong>{" "}
+            {validacao.invalid.map((v) => `{{${v}}}`).join(", ")}
           </div>
+        )}
 
-          <div className="border border-border rounded-md overflow-hidden bg-card">
-            {/* Tabs interno */}
-            <div className="flex items-center border-b border-border bg-muted/20">
-              <button
-                onClick={() => !loteBloqueado && setTab("editor")}
-                disabled={loteBloqueado}
-                title={loteBloqueado ? "O Mapa do Analista (Lote) tem renderização automática — o editor está bloqueado." : undefined}
-                className={cn(
-                  "h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors",
-                  tab === "editor"
-                    ? "border-primary text-foreground bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                  loteBloqueado && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
-              </button>
-              <button
-                onClick={() => setTab("preview")}
-                className={cn(
-                  "h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors",
-                  tab === "preview"
-                    ? "border-primary text-foreground bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Eye className="h-3 w-3" /> Pré-visualização
-              </button>
-              {loteBloqueado && (
-                <span className="ml-auto mr-3 text-[10px] font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Lock className="h-3 w-3" />
-                  Renderização automática
-                </span>
-              )}
-            </div>
-
-            {!validacao.valid && (
-              <div className="border-b border-destructive/30 bg-destructive/5 px-3.5 py-1.5 text-[11px] text-destructive">
-                <strong>Variáveis não reconhecidas:</strong>{" "}
-                {validacao.invalid.map((v) => `{{${v}}}`).join(", ")}
-              </div>
-            )}
-
-            {tab === "editor" && !loteBloqueado ? (
-              <CKEditor
-                value={conteudo}
-                onChange={setConteudo}
-                placeholder="Comece a digitar ou aplique um template…"
-              />
-            ) : (
-              <div className="flex flex-col">
-                {loteBloqueado && (
-                  <div className="flex items-start gap-2 px-3.5 py-2 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
-                    <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-                    <span>
-                      O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico: a tabela é montada automaticamente a partir dos pacientes, exames e parâmetros do dia.
+        <div className="border border-border rounded-lg overflow-hidden bg-card min-w-0">
+          {tab === "editor" && !loteBloqueado ? (
+            <CKEditor
+              value={conteudo}
+              onChange={setConteudo}
+              placeholder="Comece a digitar ou aplique um template…"
+              toolbarRight={
+                <div className="flex items-center gap-1">
+                  <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => !loteBloqueado && setTab("editor")}
+                      disabled={loteBloqueado}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                        tab === "editor" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground",
+                        loteBloqueado && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab("preview")}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                        (tab as string) === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Eye className="h-3 w-3" /> Pré-visualizar
+                    </button>
+                  </div>
+                  {validacao.used.length > 0 && (
+                    <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
+                      {validacao.used.length} var.
                     </span>
-                  </div>
-                )}
-                {/* Barra de orientação A4 */}
-                <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border bg-muted/20">
-                  <p className="text-[10.5px] text-muted-foreground italic">
-                    Pré-visualização A4 com dados fictícios.
-                  </p>
-                  <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewOrientation("portrait")}
-                      className={cn(
-                        "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                        previewOrientation === "portrait"
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      aria-label="Orientação retrato"
-                    >
-                      <RectangleVertical className="h-3 w-3" />
-                      Retrato
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewOrientation("landscape")}
-                      className={cn(
-                        "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                        previewOrientation === "landscape"
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                      aria-label="Orientação paisagem"
-                    >
-                      <RectangleHorizontal className="h-3 w-3" />
-                      Paisagem
-                    </button>
-                  </div>
-                </div>
-                <div className="bg-muted/30 h-[480px] overflow-auto">
-                  {previewHtml ? (
-                    <iframe
-                      key={previewOrientation}
-                      title="Pré-visualização A4 do mapa"
-                      srcDoc={previewA4Html}
-                      className="w-full h-full border-0 bg-background"
-                    />
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic px-6 text-center">
-                      Nada para pré-visualizar — escreva algo no editor ou aplique um template.
-                    </div>
                   )}
                 </div>
+              }
+            />
+          ) : (
+            <div className="flex flex-col">
+              {/* Tabs também presentes no modo preview */}
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/20">
+                <div className="inline-flex rounded-md border border-border bg-background p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => !loteBloqueado && setTab("editor")}
+                    disabled={loteBloqueado}
+                    title={loteBloqueado ? "O Mapa do Analista (Lote) tem renderização automática." : undefined}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                      tab === "editor" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                      loteBloqueado && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab("preview")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
+                      tab === "preview" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Eye className="h-3 w-3" /> Pré-visualizar
+                  </button>
+                </div>
+                <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("portrait")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    aria-label="Orientação retrato"
+                  >
+                    <RectangleVertical className="h-3 w-3" />
+                    Retrato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("landscape")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    aria-label="Orientação paisagem"
+                  >
+                    <RectangleHorizontal className="h-3 w-3" />
+                    Paisagem
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
+              {loteBloqueado && (
+                <div className="flex items-start gap-2 px-3 py-2 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
+                  <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                  <span>
+                    O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico: a tabela é montada automaticamente a partir dos pacientes, exames e parâmetros do dia.
+                  </span>
+                </div>
+              )}
+              <div className="bg-muted/30 h-[560px] overflow-auto">
+                {previewHtml ? (
+                  <iframe
+                    key={previewOrientation}
+                    title="Pré-visualização A4 do mapa"
+                    srcDoc={previewA4Html}
+                    className="w-full h-full border-0 bg-background"
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs text-muted-foreground italic px-6 text-center">
+                    Nada para pré-visualizar — escreva algo no editor ou aplique um template.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
     </StandardDialog>
   );
 };
