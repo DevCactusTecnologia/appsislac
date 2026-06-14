@@ -1,5 +1,5 @@
 // Dialog para criar / editar um template de documento.
-// O editor rich-text foi removido; usa placeholder até o novo editor ser integrado.
+// Editor oficial: CKEditor 5.
 
 import { useEffect, useMemo, useState } from "react";
 import StandardDialog from "@/components/ui/standard-dialog";
@@ -21,7 +21,9 @@ import { getTemplatePadraoHtml, removerLinhasHorizontaisDocumento } from "@/lib/
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { getLabConfig } from "@/data/labConfigStore";
 import { fmtBRL } from "@/lib/utils";
-import { Eye, Pencil, FileText, Save, Scaling, ChevronDown } from "lucide-react";
+import {
+  Eye, Pencil, FileText, Save, Scaling, ChevronDown, CheckCircle2,
+} from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface Props {
@@ -42,10 +44,6 @@ const tiposOptions: DocumentoTipo[] = [
   "rodape",
   "documento",
 ];
-
-const inputClass =
-  "w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
-const labelClass = "text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block";
 
 const DocumentoTemplateDialog = ({
   open, onOpenChange, template, tipoInicial, criadoPor, onSaved,
@@ -68,18 +66,15 @@ const DocumentoTemplateDialog = ({
     if (template) {
       setTipo(template.tipo);
       setNome(template.nome);
-      // Se o template salvo está vazio, carrega o layout padrão do tipo
-      // para que o usuário sempre veja o documento renderizado.
       setConteudo(removerLinhasHorizontaisDocumento(template.conteudo?.trim() ? template.conteudo : getTemplatePadraoHtml(template.tipo)));
       setAtivo(template.ativo);
       setPadrao(template.padrao);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const m = (template.config as any)?.margins ?? {};
+      const m = (template.config as Record<string, unknown>)?.margins as Record<string, number> | undefined;
       setMargins({
-        top: String(m.top ?? 18),
-        right: String(m.right ?? 18),
-        bottom: String(m.bottom ?? 22),
-      left: String(m.left ?? 18),
+        top: String(m?.top ?? 18),
+        right: String(m?.right ?? 18),
+        bottom: String(m?.bottom ?? 22),
+        left: String(m?.left ?? 18),
       });
     } else {
       const t = tipoInicial ?? "comprovante_pagamento";
@@ -92,17 +87,16 @@ const DocumentoTemplateDialog = ({
     }
   }, [open, template, tipoInicial]);
 
-  // Quando o usuário troca o TIPO e o conteúdo ainda está vazio (ou é
-  // exatamente o padrão de outro tipo), recarrega o padrão do novo tipo.
   const handleTipoChange = (novo: DocumentoTipo) => {
     setTipo(novo);
     const atual = conteudo.trim();
     const ehPadraoDeOutro = Object.values<string>(
-      // qualquer template padrão conhecido
-      { p: getTemplatePadraoHtml("comprovante_pagamento"),
+      {
+        p: getTemplatePadraoHtml("comprovante_pagamento"),
         a: getTemplatePadraoHtml("comprovante_atendimento"),
         c: getTemplatePadraoHtml("declaracao_comparecimento"),
-        o: getTemplatePadraoHtml("orcamento") },
+        o: getTemplatePadraoHtml("orcamento"),
+      },
     ).some((html) => html.trim() === atual);
     if (!atual || ehPadraoDeOutro) {
       setConteudo(removerLinhasHorizontaisDocumento(getTemplatePadraoHtml(novo)));
@@ -127,8 +121,7 @@ const DocumentoTemplateDialog = ({
     };
     try {
       if (template) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prevConfig = (template.config as any) ?? {};
+        const prevConfig = (template.config as Record<string, unknown>) ?? {};
         const ok = await updateDocumentoTemplate(template.id, {
           tipo, nome: nome.trim(), descricao: template.descricao ?? "",
           conteudo: removerLinhasHorizontaisDocumento(conteudo), ativo, padrao,
@@ -237,9 +230,6 @@ const DocumentoTemplateDialog = ({
         saldo: fmtBRL(50),
       },
     };
-    // Placeholders de "bloco" (que serão substituídos por <table>) não podem
-    // ficar dentro de <p>…</p> — o navegador "expulsaria" a tabela quebrando o layout.
-    // Removemos o <p> wrapper apenas quando ele contém só o placeholder de bloco.
     const BLOCK_PLACEHOLDERS = ["exames.lista", "pagamentos.lista"];
     let html = normalizeMapaHtml(removerLinhasHorizontaisDocumento(conteudo));
     for (const tag of BLOCK_PLACEHOLDERS) {
@@ -251,9 +241,6 @@ const DocumentoTemplateDialog = ({
     }
     const corpo = renderPlaceholders(html, sample);
 
-    // Anexa o rodapé padrão (QR + cód. verificação + assinatura RT) — mesmo
-    // comportamento do renderer real para que a pré-visualização reflita
-    // exatamente o documento que será impresso.
     const tipoToComprovante: Partial<Record<DocumentoTipo, ComprovanteTipo>> = {
       comprovante_pagamento: "pagamento",
       comprovante_atendimento: "atendimento",
@@ -293,8 +280,9 @@ const DocumentoTemplateDialog = ({
       totais: { subtotal: 130, desconto: 0, pago: 80, total: 130, saldo: 50 },
     };
 
-    const header = (template?.config as any)?.exibirCabecalho ? renderCabecalhoPadrao(ctx) : "";
-    const footer = (template?.config as any)?.exibirRodape ? renderRodapePadrao(ctx) : "";
+    const cfg = template?.config as Record<string, unknown> | undefined;
+    const header = cfg?.exibirCabecalho ? renderCabecalhoPadrao(ctx) : "";
+    const footer = cfg?.exibirRodape ? renderRodapePadrao(ctx) : "";
 
     return `
       <div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#fff;padding:20px;border-radius:12px;">
@@ -307,12 +295,11 @@ const DocumentoTemplateDialog = ({
   }, [conteudo, tipo, template?.config]);
 
   const headerActions = (
-    <div className="flex items-center gap-2">
-      <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+    <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
       <button
         type="button"
         onClick={() => setTab("editor")}
-        className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md transition-colors ${
+        className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-[11.5px] font-medium rounded-md transition-colors ${
           tab === "editor"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"
@@ -323,7 +310,7 @@ const DocumentoTemplateDialog = ({
       <button
         type="button"
         onClick={() => setTab("preview")}
-        className={`inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-md transition-colors ${
+        className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-[11.5px] font-medium rounded-md transition-colors ${
           tab === "preview"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"
@@ -331,7 +318,6 @@ const DocumentoTemplateDialog = ({
       >
         <Eye className="h-3.5 w-3.5" /> Pré-visualizar
       </button>
-      </div>
     </div>
   );
 
@@ -340,20 +326,23 @@ const DocumentoTemplateDialog = ({
       <button
         onClick={() => onOpenChange(false)}
         disabled={saving}
-        className="h-10 px-5 rounded-lg border border-border bg-background text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
+        className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
       >
         Cancelar
       </button>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         <Save className="h-4 w-4" />
-        {saving ? "Salvando..." : template ? "Salvar alterações" : "Criar template"}
+        {saving ? "Salvando..." : template ? "Salvar" : "Criar template"}
       </button>
     </>
   );
+
+  const labelBase = "text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
+  const inputBase = "w-full h-9 px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
 
   return (
     <StandardDialog
@@ -368,47 +357,51 @@ const DocumentoTemplateDialog = ({
       allowMaximize
       defaultMaximized={true}
     >
-      <div className="px-6 py-5 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(220px,0.9fr)_minmax(260px,1.1fr)_auto_auto] gap-4 items-end">
+      <div className="px-5 py-4 space-y-5">
+        {/* Linha de configuração compacta */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(200px,1fr)_minmax(240px,1.2fr)_auto_auto] gap-3 items-end">
           <div>
-            <label className={labelClass}>1. Tipo de documento</label>
+            <label className={labelBase}>Tipo de documento</label>
             <Select value={tipo} onValueChange={(v) => handleTipoChange(v as DocumentoTipo)}>
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="h-9 text-[12.5px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {tiposOptions.map((t) => (
-                  <SelectItem key={t} value={t}>{DOCUMENTO_TIPO_LABELS[t]}</SelectItem>
+                  <SelectItem key={t} value={t} className="text-[12.5px]">
+                    {DOCUMENTO_TIPO_LABELS[t]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className={labelClass}>2. Nome do template</label>
+            <label className={labelBase}>Nome do template</label>
             <input
               type="text"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               maxLength={120}
               placeholder="Ex.: Recibo padrão 2026"
-              className={inputClass}
+              className={inputBase}
               autoFocus
             />
-        </div>
+          </div>
 
-          <label className="flex items-center justify-between gap-2 text-xs font-medium h-10 px-3 rounded-lg border border-border bg-background cursor-pointer sm:min-w-[104px]">
+          <label className="flex items-center justify-between gap-2 text-[11px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer sm:min-w-[92px]">
             <Switch checked={ativo} onCheckedChange={setAtivo} />
-            Ativo
+            <span className="text-muted-foreground">Ativo</span>
           </label>
-          <label className="flex items-center justify-between gap-2 text-xs font-medium h-10 px-3 rounded-lg border border-border bg-background cursor-pointer sm:min-w-[112px]">
+          <label className="flex items-center justify-between gap-2 text-[11px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer sm:min-w-[100px]">
             <Switch checked={padrao} onCheckedChange={setPadrao} />
-            Padrão
+            <span className="text-muted-foreground">Padrão</span>
           </label>
         </div>
 
+        {/* Conteúdo */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className={`${labelClass} mb-0`}>3. Conteúdo do documento</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className={`${labelBase} mb-0`}>Conteúdo do documento</label>
             <p className="text-[10px] text-muted-foreground">
               {tab === "editor"
                 ? 'Use "Inserir campo" para adicionar dados dinâmicos.'
@@ -426,13 +419,14 @@ const DocumentoTemplateDialog = ({
                       <button
                         type="button"
                         title="Margens de impressão (mm)"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
                       >
                         <Scaling className="h-3.5 w-3.5" />
                         Margens
                         <ChevronDown className="h-3 w-3 opacity-60" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-3" align="end">
+                    <PopoverContent className="w-[260px] p-2.5" align="end">
                       <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
                         Margens de impressão (mm)
                       </p>

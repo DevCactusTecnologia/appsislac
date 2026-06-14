@@ -142,13 +142,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200";
-  const labelClass = "text-[11px] font-medium text-muted-foreground mb-1.5 block";
+  const inputClass = "w-full h-9 px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
+  const labelClass = "text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
 
   const headerActions = !editData ? (
     <button
       onClick={handleInserirTemplate}
-      className="h-9 px-3 rounded-xl border border-primary/40 bg-primary/5 text-[12px] font-medium text-primary hover:bg-primary/10 transition-all duration-200 flex items-center gap-1.5"
+      className="h-8 px-3 rounded-md border border-primary/30 bg-primary/5 text-[11.5px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
       title="Insere um template institucional padronizado com cabeçalho, dados do paciente e tabela de resultados"
     >
       <Sparkles className="h-3.5 w-3.5" /> Template padrão
@@ -157,10 +157,10 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const footer = (
     <>
-      <button onClick={onClose} className="h-10 px-5 rounded-xl border border-border/60 bg-background text-[13px] font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200">
+      <button onClick={onClose} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
         Cancelar
       </button>
-      <button onClick={handleSave} disabled={saving} className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all duration-200">
+      <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity">
         <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar layout"}
       </button>
     </>
@@ -179,7 +179,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       allowMaximize
       defaultMaximized={defaultMaximized}
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-5 py-4 space-y-5">
         {/* Identification */}
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
           <div>
@@ -196,15 +196,15 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           <button
             type="button"
             onClick={() => setPadrao(!padrao)}
-            className={`h-[42px] px-4 rounded-xl border text-[12px] font-medium flex items-center gap-2 transition-all duration-200 ${
+            className={`h-9 px-3 rounded-md border text-[12px] font-medium flex items-center gap-2 transition-colors ${
               padrao
                 ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground"
+                : "border-border bg-background text-muted-foreground hover:text-foreground"
             }`}
             title={padrao ? "Este será o layout padrão de impressão" : "Definir como layout padrão"}
           >
             <Star className={`h-4 w-4 ${padrao ? "fill-primary" : ""}`} />
-            {padrao ? "Layout padrão" : "Definir como padrão"}
+            {padrao ? "Padrão" : "Definir padrão"}
           </button>
         </div>
 
@@ -212,15 +212,15 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
         <div className="flex items-center gap-1 border-b border-border/50">
           <button
             onClick={() => setTab("editor")}
-            className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-all ${tab === "editor" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${tab === "editor" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             <Code2 className="h-3.5 w-3.5" /> Editor
           </button>
           <button
             onClick={() => setTab("preview")}
-            className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-all ${tab === "preview" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${tab === "preview" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
-            <Eye className="h-3.5 w-3.5" /> Pré-visualização
+            <Eye className="h-3.5 w-3.5" /> Pré-visualizar
           </button>
         </div>
 
@@ -235,13 +235,14 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
                   <button
                     type="button"
                     title="Margens de impressão (mm)"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
                   >
                     <Scaling className="h-3.5 w-3.5" />
                     Margens
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-3" align="end">
+                <PopoverContent className="w-[260px] p-2.5" align="end">
                   <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
                     Margens de impressão (mm)
                   </p>
@@ -269,7 +270,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             }
           />
         ) : (
-          <div className="a4-stage border border-border/60 rounded-xl">
+          <div className="a4-stage border border-border/60 rounded-lg">
             <div
               className="prose-mapa a4-sheet text-[13px] leading-snug"
               style={{ fontFamily: '"Courier New", Courier, monospace' }}
@@ -278,9 +279,9 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           </div>
         )}
         {tab === "preview" && (
-          <p className="pt-2 text-[10px] text-muted-foreground italic">
-              Pré-visualização com dados-exemplo. Os valores reais aparecem no laudo final do paciente.
-            </p>
+          <p className="pt-1 text-[10px] text-muted-foreground italic">
+            Pré-visualização com dados-exemplo. Os valores reais aparecem no laudo final do paciente.
+          </p>
         )}
       </div>
     </StandardDialog>
