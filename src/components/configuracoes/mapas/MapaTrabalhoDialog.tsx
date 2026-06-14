@@ -282,13 +282,13 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       maxWidth="5xl"
       allowMaximize
     >
-      <div className="px-6 py-5 space-y-6">
-        {/* SEÇÕES 1 + 2: Tipo do mapa + Identificação na mesma linha */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* SEÇÃO 1: Tipo do mapa — cards compactos */}
+      <div className="px-5 py-4 space-y-4">
+        {/* Linha única compacta: Tipo (segmented) + Nome */}
+        <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-4 items-end">
+          {/* Tipo do mapa — segmented control compacto */}
           <div>
-            <label className={labelClass}>1. Tipo do mapa</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className={labelClass}>Tipo</label>
+            <div className="inline-flex h-9 p-0.5 bg-muted/50 border border-border/60 rounded-md">
               {tiposMapa.map((t) => {
                 const Icon = t.icon;
                 const ativo = tipo === t.value;
@@ -298,47 +298,25 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                     type="button"
                     onClick={() => setTipo(t.value)}
                     title={`${t.description} — ${t.hint}`}
-                    className={`relative text-left px-3 py-2.5 rounded-lg border transition-all ${
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 rounded text-[12.5px] font-medium transition-all",
                       ativo
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-background hover:border-border/80 hover:bg-muted/30"
-                    }`}
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`shrink-0 h-8 w-8 rounded-md flex items-center justify-center ${
-                          ativo ? "bg-primary/10" : "bg-muted"
-                        }`}
-                      >
-                        <Icon
-                          className={`h-3.5 w-3.5 ${
-                            ativo ? "text-primary" : "text-muted-foreground"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-[13px] font-semibold text-foreground truncate">
-                            {t.label}
-                          </p>
-                          {ativo && (
-                            <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground truncate">
-                          {t.description}
-                        </p>
-                      </div>
-                    </div>
+                    <Icon className="h-3.5 w-3.5" />
+                    {t.label}
+                    {ativo && <CheckCircle2 className="h-3 w-3 text-primary" />}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* SEÇÃO 2: Identificação */}
+          {/* Nome do mapa */}
           <div>
-            <label className={labelClass}>2. Identificação</label>
+            <label className={labelClass}>Nome do mapa</label>
             <input
               type="text"
               value={nome}
@@ -346,29 +324,31 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
               maxLength={120}
               readOnly={!!mapa?.sistema}
               className={inputClass + (mapa?.sistema ? " opacity-70 cursor-not-allowed" : "")}
-              placeholder="Nome do mapa (ex.: Mapa de Hemograma)"
+              placeholder="Ex.: Mapa de Hemograma"
               autoFocus
             />
-            {mapa?.sistema && (
-              <p className="text-[11px] text-muted-foreground mt-1.5">
-                Mapa do sistema — o nome não pode ser alterado, mas o conteúdo e os vínculos podem ser editados normalmente.
-              </p>
-            )}
           </div>
         </div>
 
-        {/* SEÇÃO 3: Layout — tabs editor / preview */}
+        {mapa?.sistema && (
+          <p className="text-[11px] text-muted-foreground -mt-2 flex items-center gap-1.5">
+            <Lock className="h-3 w-3" />
+            Mapa do sistema — nome bloqueado. Conteúdo e vínculos podem ser editados.
+          </p>
+        )}
+
+        {/* Layout — tabs editor / preview */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className={`${labelClass} mb-0`}>3. Layout do mapa</label>
-            <div className="flex items-center gap-2">
+            <label className={`${labelClass} mb-0`}>Layout</label>
+            <div className="flex items-center gap-1.5">
               {validacao.used.length > 0 && (
-                <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
                   {validacao.used.length} variável(is)
                 </span>
               )}
               {!validacao.valid && (
-                <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-destructive/10 text-destructive flex items-center gap-1">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   {validacao.invalid.length} inválida(s)
                 </span>
@@ -376,30 +356,33 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
             </div>
           </div>
 
-          <div className="border border-border rounded-lg overflow-hidden bg-card">
+          <div className="border border-border rounded-md overflow-hidden bg-card">
             {/* Tabs interno */}
             <div className="flex items-center border-b border-border bg-muted/20">
               <button
                 onClick={() => !loteBloqueado && setTab("editor")}
                 disabled={loteBloqueado}
                 title={loteBloqueado ? "O Mapa do Analista (Lote) tem renderização automática — o editor está bloqueado." : undefined}
-                className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${
+                className={cn(
+                  "h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors",
                   tab === "editor"
                     ? "border-primary text-foreground bg-background"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                } ${loteBloqueado ? "opacity-50 cursor-not-allowed" : ""}`}
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                  loteBloqueado && "opacity-50 cursor-not-allowed"
+                )}
               >
-                {loteBloqueado ? <Lock className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />} Editor
+                {loteBloqueado ? <Lock className="h-3 w-3" /> : <Pencil className="h-3 w-3" />} Editor
               </button>
               <button
                 onClick={() => setTab("preview")}
-                className={`h-9 px-4 text-[12px] font-medium flex items-center gap-1.5 border-b-2 transition-colors ${
+                className={cn(
+                  "h-8 px-3.5 text-[11.5px] font-medium flex items-center gap-1.5 border-b-2 transition-colors",
                   tab === "preview"
                     ? "border-primary text-foreground bg-background"
                     : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
+                )}
               >
-                <Eye className="h-3.5 w-3.5" /> Pré-visualização
+                <Eye className="h-3 w-3" /> Pré-visualização
               </button>
               {loteBloqueado && (
                 <span className="ml-auto mr-3 text-[10px] font-medium text-muted-foreground flex items-center gap-1.5">
@@ -410,7 +393,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
             </div>
 
             {!validacao.valid && (
-              <div className="border-b border-destructive/30 bg-destructive/5 px-4 py-2 text-xs text-destructive">
+              <div className="border-b border-destructive/30 bg-destructive/5 px-3.5 py-1.5 text-[11px] text-destructive">
                 <strong>Variáveis não reconhecidas:</strong>{" "}
                 {validacao.invalid.map((v) => `{{${v}}}`).join(", ")}
               </div>
@@ -425,28 +408,26 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
             ) : (
               <div className="flex flex-col">
                 {loteBloqueado && (
-                  <div className="flex items-start gap-2 px-4 py-2.5 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
-                    <Lock className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                  <div className="flex items-start gap-2 px-3.5 py-2 bg-primary/5 border-b border-primary/15 text-[11px] text-foreground/80">
+                    <Lock className="h-3 w-3 text-primary mt-0.5 shrink-0" />
                     <span>
-                      O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico:
-                      a tabela é montada automaticamente a partir dos pacientes, exames e
-                      parâmetros do dia. Por isso a edição do HTML está bloqueada.
+                      O <strong>Mapa do Analista — Lote</strong> tem layout fixo e dinâmico: a tabela é montada automaticamente a partir dos pacientes, exames e parâmetros do dia.
                     </span>
                   </div>
                 )}
                 {/* Barra de orientação A4 */}
-                <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/20">
-                  <p className="text-[11px] text-muted-foreground italic">
-                    Pré-visualização A4 com dados fictícios — fiel ao PDF gerado.
+                <div className="flex items-center justify-between px-3.5 py-1.5 border-b border-border bg-muted/20">
+                  <p className="text-[10.5px] text-muted-foreground italic">
+                    Pré-visualização A4 com dados fictícios.
                   </p>
-                  <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-lg border border-border/30">
+                  <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
                     <button
                       type="button"
                       onClick={() => setPreviewOrientation("portrait")}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
                         previewOrientation === "portrait"
-                          ? "bg-card text-foreground shadow-sm"
+                          ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                       aria-label="Orientação retrato"
@@ -458,9 +439,9 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                       type="button"
                       onClick={() => setPreviewOrientation("landscape")}
                       className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all",
+                        "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
                         previewOrientation === "landscape"
-                          ? "bg-card text-foreground shadow-sm"
+                          ? "bg-background text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                       aria-label="Orientação paisagem"
@@ -470,10 +451,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                     </button>
                   </div>
                 </div>
-                <div className="bg-muted/30 h-[520px] overflow-auto">
+                <div className="bg-muted/30 h-[480px] overflow-auto">
                   {previewHtml ? (
                     <iframe
-                        key={previewOrientation}
+                      key={previewOrientation}
                       title="Pré-visualização A4 do mapa"
                       srcDoc={previewA4Html}
                       className="w-full h-full border-0 bg-background"
