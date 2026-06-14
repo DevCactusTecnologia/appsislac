@@ -212,39 +212,83 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
     }
   };
 
-  const headerActions = templatesDoTipo.length > 0 && !loteBloqueado ? (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="h-8 px-2.5 rounded-md text-[11.5px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
-          title="Inserir template pronto no editor"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          Templates
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[340px] p-1.5" align="end">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 px-2 py-1.5">
-          Templates {tipo === "INDIVIDUAL" ? "individuais" : "de lote"}
-        </p>
-        <div className="flex flex-col gap-0.5">
-          {templatesDoTipo.map((t) => (
+  const headerActions = (
+    <div className="flex items-center gap-2 flex-wrap">
+      {/* Tipo — segmented compacto */}
+      <div className="inline-flex h-9 p-0.5 bg-muted/50 border border-border/60 rounded-md">
+        {tiposMapa.map((t) => {
+          const Icon = t.icon;
+          const ativo = tipo === t.value;
+          return (
             <button
-              key={t.id}
+              key={t.value}
               type="button"
-              onClick={() => aplicarTemplate(t.id)}
-              className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent transition-colors"
+              onClick={() => setTipo(t.value)}
+              title={`${t.description} — ${t.hint}`}
+              className={cn(
+                "flex items-center gap-1.5 px-3 rounded text-[12.5px] font-medium transition-all",
+                ativo
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <p className="text-[13px] font-medium text-foreground">{t.nome}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{t.descricao}</p>
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+              {ativo && <CheckCircle2 className="h-3 w-3 text-primary" />}
             </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
-  ) : null;
+          );
+        })}
+      </div>
+
+      <input
+        type="text"
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        maxLength={120}
+        readOnly={!!mapa?.sistema}
+        placeholder="Nome do mapa"
+        title="Nome do mapa"
+        className={
+          "h-9 w-[240px] px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all" +
+          (mapa?.sistema ? " opacity-70 cursor-not-allowed" : "")
+        }
+      />
+
+      {templatesDoTipo.length > 0 && !loteBloqueado && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="h-9 px-3 rounded-md text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
+              title="Inserir template pronto no editor"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Templates
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[340px] p-1.5" align="end">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 px-2 py-1.5">
+              Templates {tipo === "INDIVIDUAL" ? "individuais" : "de lote"}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {templatesDoTipo.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => aplicarTemplate(t.id)}
+                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-accent transition-colors"
+                >
+                  <p className="text-[13px] font-medium text-foreground">{t.nome}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{t.descricao}</p>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
 
   const footer = (
     <>
