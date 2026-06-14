@@ -367,7 +367,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                       onClick={() => setTab("preview")}
                       className={cn(
                         "inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors",
-                        tab === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
+                        (tab as string) === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <Eye className="h-3 w-3" /> Pré-visualizar
