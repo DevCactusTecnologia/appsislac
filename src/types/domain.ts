@@ -17,7 +17,7 @@ export interface JsonObject {
 /** Configuração genérica de mapas/templates (orientação, agrupamento, etc.). */
 export type DocumentoConfig = JsonObject;
 
-/** Estrutura serializada do builder visual de mapas (TipTap → JSON). */
+/** Estrutura serializada do builder visual de mapas (editor → JSON). */
 export type LayoutJson = JsonObject;
 
 /**

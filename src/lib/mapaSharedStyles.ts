@@ -109,7 +109,7 @@ export function colgroupHasUsableWidths(colgroupHtml: string): boolean {
  *      contrário, retorna `null` (deixa o navegador inferir).
  *
  * Não lida com `<thead>/<tbody>/<tfoot>` separadamente — apenas considera as
- * `<tr>` na ordem de aparição (suficiente para tabelas de mapa do TipTap).
+ * `<tr>` na ordem de aparição (suficiente para tabelas de mapa do editor).
  */
 export function inferColgroupFromCells(tableHtml: string): string | null {
   if (!tableHtml) return null;
@@ -282,7 +282,7 @@ export function annotateTables(html: string): string {
     // ─── Limpeza de colgroup conflitante ──────────────────────────────────
     // Quando o usuário definiu width:% nas células via "Propriedades da
     // tabela", um <colgroup> com larguras em PIXELS (legado do columnResizing
-    // do TipTap) sobrepõe esse intent no preview/print A4. Detectamos esse
+    // do editor) sobrepõe esse intent no preview/print A4. Detectamos esse
     // conflito e removemos o <colgroup> px para que as larguras % das células
     // vençam (combinadas com `table-layout: fixed`).
     let workingHtml = tableHtml;
@@ -298,7 +298,7 @@ export function annotateTables(html: string): string {
     }
 
     // ─── Override de width:Xpx na própria <table> ─────────────────────────
-    // O TipTap (com columnResizing) frequentemente persiste a largura total
+    // O editor (com columnResizing) frequentemente persiste a largura total
     // da tabela em PIXELS no editor (ex.: <table style="width:199px">). No
     // editor isso reflete o tamanho do canvas; no preview/print A4, essa
     // medida em px aprisiona a tabela em uma faixa minúscula da folha (199px
@@ -411,7 +411,7 @@ export function annotateTables(html: string): string {
   });
 }
 
-// ─── Normalização do HTML do TipTap ────────────────────────────────────────
+// ─── Normalização do HTML do editor ────────────────────────────────────────
 
 /** Estilo inline-reset aplicado em qualquer wrapper de bloco normalizado (legado HTML).
  *
@@ -432,7 +432,7 @@ function mergeWithReset(attrs: string): { otherAttrs: string; finalStyle: string
 }
 
 /**
- * Limpa estruturas indesejadas geradas pelo TipTap dentro de `<td>`/`<th>` que
+ * Limpa estruturas indesejadas geradas pelo editor dentro de `<td>`/`<th>` que
  * possuem altura definida pelo usuário no editor. Cobre múltiplas tags-bloco,
  * todas substituídas por `<span>` inline com reset de margem/padding/line-height
  * — a única forma de impedir que a line-height padrão do navegador (~19px) ou
@@ -445,7 +445,7 @@ function mergeWithReset(attrs: string): { otherAttrs: string; finalStyle: string
  * complementa com `overflow:hidden` e zera padding/margin de descendentes.
  *
  * Tags normalizadas (em QUALQUER célula com height definido):
- *   • `<p>`              → `<span>` (caso clássico do TipTap em cada célula)
+ *   • `<p>`              → `<span>` (caso clássico do editor em cada célula)
  *   • `<h1>`..`<h6>`     → `<span>` preservando o style autoral
  *   • `<ul>` / `<ol>`    → `<span>` com itens unidos por separador inline
  *   • `<li>`             → `<span>` (quando órfão, sem `<ul>`/`<ol>` pai)
@@ -501,7 +501,7 @@ export function normalizeMapaHtml(html: string): string {
       },
     );
 
-    // 4) <p> direto vira span (caso clássico TipTap).
+    // 4) <p> direto vira span (caso clássico editor).
     cleaned = cleaned.replace(
       /<p\b([^>]*)>([\s\S]*?)<\/p>/gi,
       (_m: string, pAttrs: string, pInner: string) => {
@@ -511,7 +511,7 @@ export function normalizeMapaHtml(html: string): string {
       },
     );
 
-    // 5) <div> vira span (TipTap pode emitir wrappers em alguns casos).
+    // 5) <div> vira span (editor pode emitir wrappers em alguns casos).
     cleaned = cleaned.replace(
       /<div\b([^>]*)>([\s\S]*?)<\/div>/gi,
       (_m: string, dAttrs: string, dInner: string) => {

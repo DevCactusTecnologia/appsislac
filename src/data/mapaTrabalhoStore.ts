@@ -46,7 +46,7 @@ export interface MapaTrabalho {
   nome: string;
   descricao: string;
   tipo: MapaTipo;
-  conteudo: string; // HTML do TipTap com {{placeholders}}
+  conteudo: string; // HTML do editor com {{placeholders}}
   /** Catch-all oficial: o mapa LOTE com isCatchAll=true recebe todos os exames sem vínculo. */
   isCatchAll: boolean;
   ativo: boolean;

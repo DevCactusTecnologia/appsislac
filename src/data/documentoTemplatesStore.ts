@@ -33,7 +33,7 @@ export interface DocumentoTemplate {
   tipo: DocumentoTipo;
   nome: string;
   descricao: string;
-  conteudo: string; // HTML do TipTap com {{placeholders}}
+  conteudo: string; // HTML do editor com {{placeholders}}
   placeholdersUsados: string[];
   config: DocumentoConfig;
   ativo: boolean;

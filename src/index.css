@@ -213,40 +213,6 @@
   overflow-wrap: normal;
   word-break: normal;
 }
-.ProseMirror.prose-mapa table td,
-.ProseMirror.prose-mapa table th {
-  outline: 1px dashed hsl(var(--border));
-  outline-offset: -1px;
-}
-.ProseMirror.prose-mapa table th {
-  background: hsl(var(--muted) / 0.5);
-  font-weight: 600;
-}
-.prose-mapa .selectedCell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: hsl(var(--primary) / 0.12);
-  pointer-events: none;
-}
-.prose-mapa .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: -2px;
-  width: 4px;
-  background: hsl(var(--primary) / 0.5);
-  pointer-events: none;
-  z-index: 20;
-  transition: background 120ms ease, width 120ms ease;
-}
-.prose-mapa table:hover .column-resize-handle {
-  background: hsl(var(--primary) / 0.85);
-  width: 5px;
-}
-.prose-mapa .tableWrapper { overflow-x: auto; position: relative; }
-.prose-mapa.resize-cursor,
-.prose-mapa .resize-cursor { cursor: col-resize; }
 .prose-mapa blockquote {
   border-left: 3px solid hsl(var(--primary) / 0.5);
   padding-left: 0.75em;

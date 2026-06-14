@@ -1,4 +1,4 @@
-// Placeholder temporário no lugar do antigo editor rich-text (RichTextEditorPro).
+// Placeholder temporário exibido onde o antigo editor de texto rico era usado.
 // O editor anterior foi removido por completo; um novo editor será integrado.
 // Este componente apenas exibe um aviso visual e ignora `content`/`onChange`
 // para manter as telas que o referenciavam funcionais (sem quebrar imports).
