@@ -38,7 +38,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { buscarAmostrasReutilizaveisPorNome, reutilizarAmostra, type Amostra } from "@/data/sorotecaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { getLabsApoio } from "@/data/labApoioStore";
 import { showError } from "@/lib/showError";
+import LabBadge from "@/components/LabBadge";
 
 // ── Code-splitting: dialogs/painéis pesados só baixam quando realmente abrem.
 // Mantém a rota /novo-atendimento leve no carregamento inicial.
@@ -1648,6 +1650,13 @@ const NovoAtendimento = () => {
                         {linhas.map(({ exame: e, convenioNome }) => {
                           const key = `${e.id}-${convenioNome}`;
                           const isLastSelected = lastSelectedExameKey === key;
+                          const cat = getExamesCatalogo().find(
+                            (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
+                          );
+                          const labApoioNome =
+                            cat?.labApoioId
+                              ? getLabsApoio().find((l) => l.id === cat.labApoioId)?.nome ?? undefined
+                              : undefined;
                           return (
                           <li key={`${e.id}-${convenioNome}`}>
                             <button
@@ -1680,7 +1689,17 @@ const NovoAtendimento = () => {
                                   </span>
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">{e.material} — {fmtBRL(e.valor)}</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <LabBadge
+                                  compact
+                                  tipoProcesso={cat?.tipoProcesso ?? "INTERNO"}
+                                  labApoioId={cat?.labApoioId ?? null}
+                                  labApoioNome={labApoioNome ?? null}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {e.material} — {fmtBRL(e.valor)}
+                                </span>
+                              </div>
                             </button>
                           </li>
                           );
