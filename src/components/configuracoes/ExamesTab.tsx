@@ -927,7 +927,7 @@ const ExamesTab = () => {
       <DetalhesExameDialog
         open={detalhesOpen}
         onClose={() => setDetalhesOpen(false)}
-        exame={viewingExame}
+        exame={viewingExame ? { ...viewingExame, setorNome: resolveSetorNome(viewingExame.setorId) } : null}
         onEdit={() => { setDetalhesOpen(false); if (viewingExame) openEdit(viewingExame); }}
       />
 

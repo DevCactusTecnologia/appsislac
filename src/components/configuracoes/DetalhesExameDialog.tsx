@@ -17,7 +17,7 @@ import {
 interface DetalhesExameDialogProps {
   open: boolean;
   onClose: () => void;
-  exame: { id: string; mnemonico: string; nome: string; categoria: string; codigo: string } | null;
+  exame: { id: string; mnemonico: string; nome: string; categoria: string; codigo: string; setorNome?: string } | null;
   onEdit: () => void;
 }
 
@@ -90,7 +90,7 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
         onClose={onClose}
         icon={<FlaskConical className="h-5 w-5 text-primary" />}
         title={exame.nome}
-        subtitle={`${exame.mnemonico} • ${exame.categoria || "Sem setor"}`}
+        subtitle={`${exame.mnemonico} • ${exame.setorNome || exame.categoria || "Sem setor"}`}
         headerActions={headerActions}
         maxWidth="3xl"
       >
