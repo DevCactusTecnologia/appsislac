@@ -251,16 +251,16 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       <button
         onClick={() => onOpenChange(false)}
         disabled={salvando}
-        className="h-10 px-5 rounded-lg border border-border bg-background text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
+        className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
       >
         Cancelar
       </button>
       <button
         onClick={handleSalvar}
         disabled={salvando}
-        className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
-        <Save className="h-4 w-4" />
+        <Save className="h-3.5 w-3.5" />
         {salvando ? "Salvando..." : mapa ? "Salvar alterações" : "Criar mapa"}
       </button>
     </>
