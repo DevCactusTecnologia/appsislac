@@ -396,39 +396,91 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 <Eye className="h-3 w-3" /> Pré-visualizar
               </button>
             </div>
-            {tab === "preview" && (
-              <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
-                <button
-                  type="button"
-                  onClick={() => setPreviewOrientation("portrait")}
-                  className={cn(
-                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                    previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-label="Orientação retrato"
-                >
-                  <RectangleVertical className="h-3 w-3" />
-                  Retrato
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewOrientation("landscape")}
-                  className={cn(
-                    "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
-                    previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                  )}
-                  aria-label="Orientação paisagem"
-                >
-                  <RectangleHorizontal className="h-3 w-3" />
-                  Paisagem
-                </button>
-              </div>
-            )}
-            {tab === "editor" && validacao.used.length > 0 && (
-              <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
-                {validacao.used.length} var.
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {tab === "editor" && !loteBloqueado && (
+                <>
+                  <EditorVariablesPopover
+                    items={PLACEHOLDERS.map((p) => ({
+                      tag: p.tag,
+                      label: p.label,
+                      group: p.group,
+                      description: p.description,
+                    }))}
+                    onInsert={(tag) => editorApiRef.current?.insertHtml(`{{${tag}}}`)}
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        title="Margens de impressão (mm)"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground px-2 h-7 rounded-md hover:bg-muted/60 transition-colors"
+                      >
+                        <Scaling className="h-3.5 w-3.5" />
+                        Margens
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[260px] p-2.5" align="end">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                        Margens de impressão (mm)
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["top", "right", "bottom", "left"] as const).map((side) => (
+                          <label key={side} className="flex flex-col gap-1">
+                            <span className="text-[10px] text-muted-foreground">
+                              {side === "top" ? "Superior" : side === "right" ? "Direita" : side === "bottom" ? "Inferior" : "Esquerda"}
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={50}
+                              step={0.5}
+                              value={margins[side]}
+                              onChange={(e) => setMargins((p) => ({ ...p, [side]: e.target.value }))}
+                              className="w-full h-8 px-2 bg-background border border-border rounded-md text-xs text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                              inputMode="decimal"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </>
+              )}
+              {tab === "preview" && (
+                <div className="inline-flex h-7 p-0.5 bg-muted/50 border border-border/60 rounded">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("portrait")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "portrait" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label="Orientação retrato"
+                  >
+                    <RectangleVertical className="h-3 w-3" />
+                    Retrato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOrientation("landscape")}
+                    className={cn(
+                      "flex items-center gap-1 px-2 rounded-sm text-[10.5px] font-medium transition-all",
+                      previewOrientation === "landscape" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-label="Orientação paisagem"
+                  >
+                    <RectangleHorizontal className="h-3 w-3" />
+                    Paisagem
+                  </button>
+                </div>
+              )}
+              {tab === "editor" && validacao.used.length > 0 && (
+                <span className="hidden md:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded text-muted-foreground">
+                  {validacao.used.length} var.
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="border border-border border-t-0 rounded-b-lg overflow-hidden bg-card min-w-0">
@@ -437,6 +489,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
                 value={conteudo}
                 onChange={setConteudo}
                 placeholder="Comece a digitar ou aplique um template…"
+                onEditorReady={(api) => { editorApiRef.current = api; }}
               />
             ) : (
               <div className="flex flex-col">
