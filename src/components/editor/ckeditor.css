@@ -25,7 +25,27 @@
   background: hsl(var(--muted) / 0.4);
   border-color: hsl(var(--border));
   /* Reserva espaço para o slot direito (Tabs Editor/Pré-visualizar + Margens) */
-  padding-right: 260px;
+  padding-right: 220px;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+/* Reduz o tamanho dos botões/icones da toolbar para caberem melhor */
+.sislac-ckeditor .ck.ck-toolbar .ck-button,
+.sislac-ckeditor .ck.ck-toolbar .ck-dropdown__button {
+  min-height: 26px;
+  padding: 2px 4px;
+}
+.sislac-ckeditor .ck.ck-toolbar .ck-button .ck-icon,
+.sislac-ckeditor .ck.ck-toolbar .ck-dropdown .ck-icon {
+  width: 14px;
+  height: 14px;
+}
+.sislac-ckeditor .ck.ck-toolbar .ck-toolbar__separator {
+  margin: 0 2px;
+}
+.sislac-ckeditor .ck.ck-toolbar .ck-dropdown .ck-button__label {
+  font-size: 11px;
 }
 
 /* Slot customizado no canto direito da toolbar */
@@ -36,14 +56,18 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  height: var(--ck-toolbar-height, 40px);
+  height: var(--ck-toolbar-height, 36px);
   padding-right: 6px;
   pointer-events: auto;
+  background: hsl(var(--muted) / 0.95);
+  backdrop-filter: blur(4px);
+  padding-left: 8px;
+  border-left: 1px solid hsl(var(--border));
 }
 .sislac-ckeditor__toolbar-right > button,
 .sislac-ckeditor__toolbar-right > [data-slot-root] > button {
-  height: 28px;
-  padding: 0 8px;
+  height: 26px;
+  padding: 0 7px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
