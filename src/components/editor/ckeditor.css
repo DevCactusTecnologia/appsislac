@@ -29,17 +29,41 @@
   flex-wrap: nowrap;
   min-height: 38px;
 }
+.sislac-ckeditor .ck.ck-toolbar > .ck-toolbar__items {
+  row-gap: 1px;
+  min-width: 0;
+}
+
+/* Mantém a toolbar fixa no fluxo do editor: evita o salto ao focar a folha
+   e impede a criação da faixa vazia do sticky toolbar do CKEditor. */
+.sislac-ckeditor .ck.ck-sticky-panel,
+.sislac-ckeditor .ck.ck-editor__top {
+  position: relative;
+  z-index: 2;
+}
+.sislac-ckeditor .ck.ck-sticky-panel .ck-sticky-panel__content,
+.sislac-ckeditor .ck.ck-sticky-panel .ck-sticky-panel__content_sticky {
+  position: static !important;
+  top: auto !important;
+  width: auto !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.sislac-ckeditor .ck.ck-sticky-panel .ck-sticky-panel__placeholder {
+  display: none !important;
+  height: 0 !important;
+}
 
 /* Reduz o tamanho dos botões/icones da toolbar para caberem melhor */
 .sislac-ckeditor .ck.ck-toolbar .ck-button,
 .sislac-ckeditor .ck.ck-toolbar .ck-dropdown__button {
-  min-height: 26px;
-  padding: 2px 4px;
+  min-height: 24px;
+  padding: 1px 3px;
 }
 .sislac-ckeditor .ck.ck-toolbar .ck-button .ck-icon,
 .sislac-ckeditor .ck.ck-toolbar .ck-dropdown .ck-icon {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 .sislac-ckeditor .ck.ck-toolbar .ck-toolbar__separator {
   margin: 0 2px;
@@ -84,6 +108,23 @@
 .sislac-ckeditor__toolbar-right > [data-slot-root] > button:hover {
   background: hsl(var(--muted));
   border-color: hsl(var(--border));
+}
+
+@media (max-width: 1440px) {
+  .sislac-ckeditor .ck.ck-toolbar {
+    padding-right: 0;
+  }
+
+  .sislac-ckeditor__toolbar-right {
+    position: static;
+    justify-content: flex-end;
+    min-height: 32px;
+    height: auto;
+    padding: 4px 6px;
+    border: 1px solid hsl(var(--border));
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+  }
 }
 
 /* "Mesa" cinza ao redor da folha — simula o papel da pré-visualização. */
