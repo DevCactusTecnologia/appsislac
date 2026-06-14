@@ -109,6 +109,15 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       setTipo(t);
       setConteudo(mapa?.conteudo ?? "");
       setTab(t === "LOTE" ? "preview" : "editor");
+      const m = (mapa?.config as Record<string, unknown> | undefined)?.margins as
+        | Record<string, number>
+        | undefined;
+      setMargins({
+        top: String(m?.top ?? 15),
+        right: String(m?.right ?? 12),
+        bottom: String(m?.bottom ?? 15),
+        left: String(m?.left ?? 12),
+      });
     }
   }, [open, mapa]);
 
