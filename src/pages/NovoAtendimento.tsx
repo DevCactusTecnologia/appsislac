@@ -5,7 +5,7 @@ import {
   Search, X, CheckCircle2, Sparkles, Trash2, User, Stethoscope,
   FileText, CreditCard, Plus, UserPlus, Printer, Send,
   MessageCircle, AlertTriangle, Building2, ArrowLeft, Receipt, FlaskConical,
-  TestTube2, Cake, Calendar, CalendarClock, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame, ChevronDown, Check
+  TestTube2, Cake, Calendar, CalendarClock, ClipboardCheck, FileScan, Coffee, Clock, Zap, Flame, ChevronDown, Check, MapPin
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -1178,6 +1178,23 @@ const NovoAtendimento = () => {
                                 <div className="text-xs">
                                   <PacienteTelefoneInline cpf={selectedPaciente.cpf} />
                                 </div>
+                                {(selectedPaciente.endereco || selectedPaciente.cidade || selectedPaciente.estado) && (
+                                  <div className="flex items-center gap-2 text-xs min-w-0">
+                                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                    <span className="text-muted-foreground">Endereço:</span>
+                                    <span className="font-semibold text-foreground truncate">
+                                      {[
+                                        selectedPaciente.endereco,
+                                        selectedPaciente.numero,
+                                        selectedPaciente.bairro,
+                                        selectedPaciente.complemento,
+                                      ].filter(Boolean).join(", ")}
+                                      {selectedPaciente.cidade || selectedPaciente.estado
+                                        ? ` — ${selectedPaciente.cidade || ""}${selectedPaciente.cidade && selectedPaciente.estado ? "/" : ""}${selectedPaciente.estado || ""}`
+                                        : ""}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
