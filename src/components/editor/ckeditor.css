@@ -25,9 +25,9 @@
   background: hsl(var(--muted) / 0.4);
   border-color: hsl(var(--border));
   /* Reserva espaço para o slot direito (Tabs Editor/Pré-visualizar + Margens) */
-  padding-right: 220px;
-  flex-wrap: wrap;
-  row-gap: 2px;
+  padding-right: 230px;
+  flex-wrap: nowrap;
+  min-height: 38px;
 }
 
 /* Reduz o tamanho dos botões/icones da toolbar para caberem melhor */
