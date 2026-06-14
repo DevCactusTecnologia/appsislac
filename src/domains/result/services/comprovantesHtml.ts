@@ -178,10 +178,16 @@ export function buildAssinaturaRodape(codigo: string, qrSvg: string): string {
   return `
   <div class="no-break" style="margin-top:24px;page-break-inside:avoid;break-inside:avoid;">
     <p style="font-size:11px;color:#333;margin:0;">${esc(local)}</p>
-    <table style="width:100%;margin-top:14px;padding-top:10px;border-collapse:collapse;">
+    <table style="width:100%;margin-top:14px;padding-top:10px;border-collapse:collapse;table-layout:fixed;">
+      <colgroup>
+        <col style="width:76px;" />
+        <col />
+      </colgroup>
       <tr>
-        <td style="vertical-align:top;width:74px;padding-right:10px;">${qrSvg}</td>
-        <td style="vertical-align:top;font-size:9px;color:#777;line-height:1.5;">
+        <td style="vertical-align:top;width:76px;padding-right:12px;">
+          <div style="width:64px;height:64px;overflow:hidden;">${qrSvg}</div>
+        </td>
+        <td style="vertical-align:top;font-size:9px;color:#777;line-height:1.5;word-wrap:break-word;overflow-wrap:break-word;">
           <p style="margin:0;">Documento emitido eletronicamente em <strong style="color:#333;">${esc(new Date().toLocaleString("pt-BR"))}</strong>.</p>
           <p style="margin:3px 0 0 0;">Cód. verificação: <strong style="color:#111;font-family:'Courier New',monospace;font-variant-numeric:tabular-nums;">${esc(codigo)}</strong></p>
           <p style="margin:3px 0 0 0;color:#999;">Aponte a câmera no QR para abrir a página de verificação on-line deste documento.</p>
