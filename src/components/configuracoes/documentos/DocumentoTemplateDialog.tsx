@@ -1,13 +1,14 @@
 // Dialog para criar / editar um template de documento.
 // Editor oficial: CKEditor 5.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import CKEditor from "@/components/editor/CKEditor";
+import CKEditor, { type CKEditorApi } from "@/components/editor/CKEditor";
+import EditorVariablesPopover from "@/components/editor/EditorVariablesPopover";
 import { normalizeMapaHtml } from "@/lib/mapaSharedStyles";
 import { useToast } from "@/hooks/use-toast";
 import {
