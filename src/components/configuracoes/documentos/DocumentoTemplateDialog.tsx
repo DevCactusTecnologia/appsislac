@@ -1,6 +1,5 @@
 // Dialog para criar / editar um template de documento.
-// Usa o mesmo editor visual rich-text dos Mapas de Trabalho (RichTextEditorPro),
-// com a lista de placeholders específicos de documentos.
+// O editor rich-text foi removido; usa placeholder até o novo editor ser integrado.
 
 import { useEffect, useMemo, useState } from "react";
 import StandardDialog from "@/components/ui/standard-dialog";
@@ -8,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import RichTextEditorPro, { normalizeMapaHtml } from "@/components/configuracoes/mapas/RichTextEditorPro";
+import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
+import { normalizeMapaHtml } from "@/lib/mapaSharedStyles";
 import { useToast } from "@/hooks/use-toast";
 import {
   addDocumentoTemplate, updateDocumentoTemplate,
@@ -417,7 +417,7 @@ const DocumentoTemplateDialog = ({
           </div>
           <div className="border border-border rounded-lg overflow-hidden bg-card min-w-0">
             {tab === "editor" ? (
-              <RichTextEditorPro
+              <EditorPlaceholder
                 content={removerLinhasHorizontaisDocumento(conteudo)}
                 onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
                 placeholders={DOCUMENTO_PLACEHOLDERS}

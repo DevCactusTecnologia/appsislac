@@ -12,7 +12,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import RichTextEditorPro from "./RichTextEditorPro";
+import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
 import {
   addMapaTrabalho, updateMapaTrabalho, type MapaTrabalho, type MapaTipo,
 } from "@/data/mapaTrabalhoStore";
@@ -417,7 +417,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
             )}
 
             {tab === "editor" && !loteBloqueado ? (
-              <RichTextEditorPro
+              <EditorPlaceholder
                 content={conteudo}
                 onChange={setConteudo}
                 placeholder="Comece a digitar ou aplique um template…"

@@ -8,7 +8,7 @@
 //      tipos com padrão configurado.
 
 import { renderPlaceholders } from "@/lib/mapaPlaceholders";
-import { normalizeMapaHtml } from "@/components/configuracoes/mapas/RichTextEditorPro";
+import { normalizeMapaHtml } from "@/lib/mapaSharedStyles";
 import {
   getTemplatePadrao,
   type DocumentoTipo,
@@ -270,8 +270,7 @@ function unwrapBlockPlaceholders(html: string): string {
   return out;
 }
 
-/** Lista de placeholders aceitos no editor de documentos, agrupados
- *  para o popover "Variável" do RichTextEditorPro. */
+/** Lista de placeholders aceitos no editor de documentos. */
 import type { PlaceholderDef } from "./mapaPlaceholders";
 
 export const DOCUMENTO_PLACEHOLDERS: PlaceholderDef[] = [

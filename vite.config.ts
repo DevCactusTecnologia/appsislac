@@ -20,16 +20,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: [
-      "react", "react-dom",
-      "@tiptap/core", "@tiptap/pm", "@tiptap/react", "@tiptap/starter-kit",
-      "@tiptap/extension-paragraph",
-      "@tiptap/extension-table", "@tiptap/extension-table-row",
-      "@tiptap/extension-table-cell", "@tiptap/extension-table-header",
-      "@tiptap/extension-text-style", "@tiptap/extension-color",
-      "@tiptap/extension-highlight", "@tiptap/extension-text-align",
-      "@tiptap/extension-underline", "@tiptap/extension-font-family",
-    ],
+    dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
     include: ["react", "react-dom"],
