@@ -295,34 +295,41 @@ const DocumentoTemplateDialog = ({
   }, [conteudo, tipo, template?.config]);
 
   const headerActions = (
-    <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-      <button
-        type="button"
-        onClick={() => setTab("editor")}
-        className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-[11.5px] font-medium rounded-md transition-colors ${
-          tab === "editor"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        <Pencil className="h-3.5 w-3.5" /> Editor
-      </button>
-      <button
-        type="button"
-        onClick={() => setTab("preview")}
-        className={`inline-flex items-center gap-1.5 h-8 px-3.5 text-[11.5px] font-medium rounded-md transition-colors ${
-          tab === "preview"
-            ? "bg-background text-foreground shadow-sm"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
-      >
-        <Eye className="h-3.5 w-3.5" /> Pré-visualizar
-      </button>
+    <div className="flex items-center gap-2">
+      <Select value={tipo} onValueChange={(v) => handleTipoChange(v as DocumentoTipo)}>
+        <SelectTrigger className="h-9 w-[200px] text-[12.5px]" title="Tipo de documento">
+          <SelectValue placeholder="Tipo de documento" />
+        </SelectTrigger>
+        <SelectContent>
+          {tiposOptions.map((t) => (
+            <SelectItem key={t} value={t} className="text-[12.5px]">
+              {DOCUMENTO_TIPO_LABELS[t]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <input
+        type="text"
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        maxLength={120}
+        placeholder="Nome do template"
+        title="Nome do template"
+        className="h-9 w-[240px] px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+      />
     </div>
   );
 
   const footer = (
     <>
+      <label className="flex items-center gap-2 text-[11.5px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer mr-auto">
+        <Switch checked={ativo} onCheckedChange={setAtivo} />
+        <span className="text-muted-foreground">Ativo</span>
+      </label>
+      <label className="flex items-center gap-2 text-[11.5px] font-medium h-9 px-3 rounded-md border border-border bg-background cursor-pointer">
+        <Switch checked={padrao} onCheckedChange={setPadrao} />
+        <span className="text-muted-foreground">Padrão</span>
+      </label>
       <button
         onClick={() => onOpenChange(false)}
         disabled={saving}
@@ -341,8 +348,28 @@ const DocumentoTemplateDialog = ({
     </>
   );
 
-  const labelBase = "text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
-  const inputBase = "w-full h-9 px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
+  const tabsSlot = (
+    <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 mr-1">
+      <button
+        type="button"
+        onClick={() => setTab("editor")}
+        className={`inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors ${
+          tab === "editor" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <Pencil className="h-3 w-3" /> Editor
+      </button>
+      <button
+        type="button"
+        onClick={() => setTab("preview")}
+        className={`inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-[5px] transition-colors ${
+          tab === "preview" ? "bg-background text-foreground" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <Eye className="h-3 w-3" /> Pré-visualizar
+      </button>
+    </div>
+  );
 
   return (
     <StandardDialog
@@ -350,7 +377,6 @@ const DocumentoTemplateDialog = ({
       onClose={() => onOpenChange(false)}
       icon={<FileText className="h-5 w-5 text-primary" />}
       title={template ? "Editar template" : "Novo template de documento"}
-      subtitle="Configure o conteúdo e o estilo do documento gerado pelo sistema"
       headerActions={headerActions}
       footer={footer}
       maxWidth="5xl"
