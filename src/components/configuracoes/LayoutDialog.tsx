@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FlaskConical, Save, Sparkles, Eye, Code2, Star, Scaling, ChevronDown } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
-import RichTextEditorPro from "@/components/configuracoes/mapas/RichTextEditorPro";
+import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
 import { useToast } from "@/hooks/use-toast";
 import { ExameLayout, addLayout, updateLayout, getLayouts } from "@/data/exameLayoutsStore";
 import { getParametros, loadParametros, ExameParametro } from "@/data/exameParametrosStore";
@@ -225,7 +225,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
         </div>
 
         {tab === "editor" ? (
-          <RichTextEditorPro
+          <EditorPlaceholder
             content={editorContent}
             onChange={setEditorContent}
             placeholder="Escreva o conteúdo do laudo, insira tabelas e use os placeholders…"

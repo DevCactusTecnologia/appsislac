@@ -183,7 +183,7 @@
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
 }
 
-/* ── RichTextEditorPro / TipTap — padrão visual unificado ─────────── */
+/* ── Mapas / Documentos — estilos compartilhados de preview/print A4 ─────── */
 .prose-mapa {
   outline: none;
   max-width: 100%;
