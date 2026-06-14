@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { FlaskConical, Save, Sparkles, Eye, Code2, Star, Scaling, ChevronDown } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
-import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
+import CKEditor from "@/components/editor/CKEditor";
 import { useToast } from "@/hooks/use-toast";
 import { ExameLayout, addLayout, updateLayout, getLayouts } from "@/data/exameLayoutsStore";
 import { getParametros, loadParametros, ExameParametro } from "@/data/exameParametrosStore";
@@ -225,18 +225,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
         </div>
 
         {tab === "editor" ? (
-          <EditorPlaceholder
-            content={editorContent}
-            onChange={setEditorContent}
-            placeholder="Escreva o conteúdo do laudo, insira tabelas e use os placeholders…"
-            defaultFontFamily={{ label: "Courier New", value: '"Courier New", Courier, monospace' }}
-            placeholders={LAUDO_PLACEHOLDERS}
-            toolbarExtras={
+          <div className="flex flex-col">
+            <div className="flex items-center justify-end gap-2 border-b border-border bg-muted/30 px-2 py-1.5">
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    onMouseDown={(e) => e.preventDefault()}
                     className="h-8 px-2 rounded-md text-[11px] font-medium text-foreground hover:bg-muted flex items-center gap-1"
                     title="Margens de impressão (mm)"
                   >
@@ -270,8 +264,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
                   </div>
                 </PopoverContent>
               </Popover>
-            }
-          />
+            </div>
+            <CKEditor
+              value={editorContent}
+              onChange={setEditorContent}
+              placeholder="Escreva o conteúdo do laudo, insira tabelas e use os placeholders…"
+            />
+          </div>
         ) : (
           <div className="a4-stage border border-border/60 rounded-xl">
             <div

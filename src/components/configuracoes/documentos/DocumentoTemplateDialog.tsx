@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
+import CKEditor from "@/components/editor/CKEditor";
 import { normalizeMapaHtml } from "@/lib/mapaSharedStyles";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -417,16 +417,12 @@ const DocumentoTemplateDialog = ({
           </div>
           <div className="border border-border rounded-lg overflow-hidden bg-card min-w-0">
             {tab === "editor" ? (
-              <EditorPlaceholder
-                content={removerLinhasHorizontaisDocumento(conteudo)}
-                onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
-                placeholders={DOCUMENTO_PLACEHOLDERS}
-                toolbarExtras={
+              <div className="flex flex-col">
+                <div className="flex items-center justify-end gap-2 border-b border-border bg-muted/30 px-2 py-1.5">
                   <Popover>
                     <PopoverTrigger asChild>
                       <button
                         type="button"
-                        onMouseDown={(e) => e.preventDefault()}
                         className="h-8 px-2 rounded-md text-[11px] font-medium text-foreground hover:bg-muted flex items-center gap-1"
                         title="Margens de impressão (mm)"
                       >
@@ -460,8 +456,12 @@ const DocumentoTemplateDialog = ({
                       </div>
                     </PopoverContent>
                   </Popover>
-                }
-              />
+                </div>
+                <CKEditor
+                  value={removerLinhasHorizontaisDocumento(conteudo)}
+                  onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
+                />
+              </div>
             ) : (
               <div className="a4-stage">
                 {conteudo.trim() ? (
