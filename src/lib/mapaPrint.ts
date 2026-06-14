@@ -7,7 +7,7 @@
 // Catch-all: o mapa LOTE com `isCatchAll = true` recebe todos os exames sem
 // vínculo (substitui heurística textual antiga sobre o nome).
 //
-// Single renderer: legacy_html (TipTap). O caminho `visual_builder` foi
+// Single renderer: legacy_html (editor). O caminho `visual_builder` foi
 // removido (era dead-code — nenhum mapa em produção o usava).
 //
 // Ver: .lovable/memory/architecture/mapa-trabalho-runtime.md
@@ -382,7 +382,7 @@ export function buildMapasHtml({
   }
 
   // 2) Renderiza cada grupo de mapa individual como UMA folha (uma linha por
-  //    ticket). Renderer único: legacy_html (TipTap).
+  //    ticket). Renderer único: legacy_html (editor).
   const blocosIndividuais = Array.from(grupoIndividual.values())
     .map(({ mapa, tickets: ts }) => renderMapaIndividualFromTemplate(mapa, ts, usuario))
     .join("");
