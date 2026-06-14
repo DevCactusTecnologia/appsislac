@@ -12,7 +12,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import EditorPlaceholder from "@/components/configuracoes/editor/EditorPlaceholder";
+import CKEditor from "@/components/editor/CKEditor";
 import {
   addMapaTrabalho, updateMapaTrabalho, type MapaTrabalho, type MapaTipo,
 } from "@/data/mapaTrabalhoStore";
@@ -417,8 +417,8 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
             )}
 
             {tab === "editor" && !loteBloqueado ? (
-              <EditorPlaceholder
-                content={conteudo}
+              <CKEditor
+                value={conteudo}
                 onChange={setConteudo}
                 placeholder="Comece a digitar ou aplique um template…"
               />
