@@ -142,13 +142,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
     }
   };
 
-  const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200";
-  const labelClass = "text-[11px] font-medium text-muted-foreground mb-1.5 block";
+  const inputClass = "w-full h-9 px-3 bg-background border border-border rounded-md text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
+  const labelClass = "text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
 
   const headerActions = !editData ? (
     <button
       onClick={handleInserirTemplate}
-      className="h-9 px-3 rounded-xl border border-primary/40 bg-primary/5 text-[12px] font-medium text-primary hover:bg-primary/10 transition-all duration-200 flex items-center gap-1.5"
+      className="h-8 px-3 rounded-md border border-primary/30 bg-primary/5 text-[11.5px] font-medium text-primary hover:bg-primary/10 transition-colors flex items-center gap-1.5"
       title="Insere um template institucional padronizado com cabeçalho, dados do paciente e tabela de resultados"
     >
       <Sparkles className="h-3.5 w-3.5" /> Template padrão
@@ -157,10 +157,10 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const footer = (
     <>
-      <button onClick={onClose} className="h-10 px-5 rounded-xl border border-border/60 bg-background text-[13px] font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200">
+      <button onClick={onClose} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
         Cancelar
       </button>
-      <button onClick={handleSave} disabled={saving} className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all duration-200">
+      <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity">
         <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar layout"}
       </button>
     </>
