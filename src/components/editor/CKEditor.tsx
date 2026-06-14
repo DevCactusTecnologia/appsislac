@@ -54,6 +54,8 @@ export interface CKEditorProps {
   onChange: (html: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Orientação da folha A4 simulada na área de edição. Default: portrait. */
+  orientation?: "portrait" | "landscape";
 }
 
 const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorProps) => {
