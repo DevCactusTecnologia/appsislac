@@ -60,6 +60,7 @@ const DocumentoTemplateDialog = ({
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
     top: "18", right: "18", bottom: "22", left: "18",
   });
+  const editorApiRef = useRef<CKEditorApi | null>(null);
 
   useEffect(() => {
     if (!open) return;
