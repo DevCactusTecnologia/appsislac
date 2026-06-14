@@ -10,6 +10,7 @@ import { useMemo } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import {
   ClassicEditor,
+  type EditorConfig,
   Alignment,
   Autoformat,
   AutoLink,
@@ -57,7 +58,7 @@ export interface CKEditorProps {
 
 const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorProps) => {
   // Config memoizada — recriar a cada render destrói o editor.
-  const config = useMemo(
+  const config = useMemo<EditorConfig>(
     () => ({
       // Licença GPL pública (sem custo) para projetos open-source / internos.
       licenseKey: "GPL" as const,
@@ -95,9 +96,9 @@ const CKEditorComponent = ({ value, onChange, disabled, placeholder }: CKEditorP
       heading: {
         options: [
           { model: "paragraph", title: "Parágrafo", class: "ck-heading_paragraph" },
-          { model: "heading1", view: "h1", title: "Título 1", class: "ck-heading_heading1" },
-          { model: "heading2", view: "h2", title: "Título 2", class: "ck-heading_heading2" },
-          { model: "heading3", view: "h3", title: "Título 3", class: "ck-heading_heading3" },
+          { model: "heading1" as const, view: "h1", title: "Título 1", class: "ck-heading_heading1" },
+          { model: "heading2" as const, view: "h2", title: "Título 2", class: "ck-heading_heading2" },
+          { model: "heading3" as const, view: "h3", title: "Título 3", class: "ck-heading_heading3" },
         ],
       },
       list: { properties: { styles: true, startIndex: true, reversed: true } },
