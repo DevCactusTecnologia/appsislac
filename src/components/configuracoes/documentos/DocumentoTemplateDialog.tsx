@@ -431,6 +431,7 @@ const DocumentoTemplateDialog = ({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  </div>
                 }
               />
             ) : (
