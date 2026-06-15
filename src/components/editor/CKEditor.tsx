@@ -289,6 +289,21 @@ const CKEditorComponent = ({
             document.addEventListener("keydown", onKey, true);
           };
 
+          // Evita que o right-click colapse a seleção (inclui multi-seleção de células)
+          // antes do nosso menu de contexto. Preserva a seleção atual do editor.
+          root.addEventListener(
+            "mousedown",
+            (ev) => {
+              if (ev.button !== 2) return;
+              const t = ev.target as HTMLElement | null;
+              if (t?.closest("table")) {
+                ev.preventDefault();
+                ev.stopPropagation();
+              }
+            },
+            true,
+          );
+
           root.addEventListener("contextmenu", (ev) => {
             const target = ev.target as HTMLElement | null;
             const inTable = !!target?.closest("table");
