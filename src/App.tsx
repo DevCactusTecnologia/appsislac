@@ -75,6 +75,22 @@ function PageLoader() {
   );
 }
 
+// Redirects legados — Fase A (Domain Driven Routes). Preservam o parâmetro.
+function LegacyEditarAtendimentoRedirect() {
+  const { protocolo } = useParams();
+  return <Navigate to={`/atendimentos/${encodeURIComponent(protocolo ?? "")}/editar`} replace />;
+}
+function LegacyConsultarResultadoRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/resultados/${encodeURIComponent(id ?? "")}/consulta`} replace />;
+}
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
 function ProtectedRoute({ children, permissao, bloqueadoPontoColeta }: { children: React.ReactNode; permissao?: string; bloqueadoPontoColeta?: boolean }) {
   const { isAuthenticated, hasPermission, user } = useAuth();
   const [isPontoColeta, setIsPontoColeta] = useState(false);
