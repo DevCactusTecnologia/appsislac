@@ -112,6 +112,7 @@ const Configuracoes = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pillsRef = useRef<HTMLDivElement>(null);
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const redirectTo = TAB_REDIRECT[tabParam];
 
   // Auto-scroll the active pill into the center on mobile/tablet
   useEffect(() => {
