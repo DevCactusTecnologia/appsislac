@@ -394,7 +394,7 @@ const AnalistaDashboard = () => {
                 <h3 className="text-sm font-semibold text-foreground">Minha produtividade</h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">Atividade vinculada a você</p>
               </div>
-              <Link to="/consultar-resultados" className="shrink-0 text-xs font-medium text-primary hover:underline">
+              <Link to="/resultados/consulta" className="shrink-0 text-xs font-medium text-primary hover:underline">
                 <Search className="inline h-3 w-3" />
               </Link>
             </div>
