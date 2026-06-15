@@ -91,6 +91,11 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
         `<span style="color:#94a3b8;font-style:italic;">${valor}</span>`,
       );
     });
+    // Preserva runs de 2+ espaços digitados no editor (HTML colapsa por padrão).
+    // Só age em nós de texto (entre `>` e `<`), nunca em tags/atributos.
+    html = html.replace(/>([^<]*)</g, (_m, txt: string) =>
+      ">" + txt.replace(/ {2,}/g, (s) => "\u00a0".repeat(s.length)) + "<",
+    );
     return html;
   }, [editorContent, parametros]);
 

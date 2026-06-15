@@ -186,6 +186,16 @@ const normalizeLeadingCellWhitespace = (html: string): string =>
   );
 
 /**
+ * Preserva runs de 2+ espaços (digitados pelo usuário no editor) nos nós de
+ * texto do HTML. Necessário porque o navegador colapsa whitespace consecutivo
+ * por padrão, fazendo "  mg/dL" virar "mg/dL" no PDF.
+ */
+const preserveTextSpacing = (html: string): string =>
+  html.replace(/>([^<]*)</g, (_m, txt: string) =>
+    ">" + txt.replace(/ {2,}/g, (s) => "\u00a0".repeat(s.length)) + "<",
+  );
+
+/**
  * Renderiza o bloco HTML de UM exame usando seu layout padrão persistido.
  * Retorna `{ html: null, margins: DEFAULT_MARGINS }` quando o exame não tem
  * layout cadastrado — nesse caso o caller deve cair para o renderizador de
@@ -214,7 +224,9 @@ export async function renderExameComLayout(
   }
 
   const valueMap = buildValueMap(exameNome, resultados, parametros, pacienteSexo, pacienteIdade, pacienteExtra);
-  const corpo = normalizeLeadingCellWhitespace(applyPlaceholders(layoutPadrao.conteudo, valueMap));
+  const corpo = preserveTextSpacing(
+    normalizeLeadingCellWhitespace(applyPlaceholders(layoutPadrao.conteudo, valueMap)),
+  );
 
   // Margens institucionais de impressão do laudo: 4mm topo, 11mm laterais e 9mm inferior.
   // Ignora margens herdadas de layouts antigos para manter a página centralizada.
