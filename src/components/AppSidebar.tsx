@@ -8,6 +8,7 @@ import {
   Map, ShieldCheck, UserRound, Stethoscope, Wallet, Snowflake, Boxes,
   Users2, UserCog, Settings, ChevronDown, LogOut,
   Building2, ChevronsLeft, ChevronsRight,
+  CreditCard, MapPin, FileText, DollarSign, BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,16 @@ const navItems: NavItem[] = [
   { label: "Soroteca", icon: Snowflake, path: "/soroteca" },
   { label: "Estoque", icon: Boxes, path: "/estoque" },
   { label: "Equipe", icon: Users2, path: "/equipe" },
+  {
+    label: "Cadastros", icon: BookOpen,
+    children: [
+      { label: "Exames", icon: FlaskConical, path: "/exames" },
+      { label: "Convênios", icon: CreditCard, path: "/convenios" },
+      { label: "Unidades", icon: MapPin, path: "/unidades" },
+      { label: "Documentos", icon: FileText, path: "/documentos" },
+      { label: "Tabelas de Preço", icon: DollarSign, path: "/tabelas-preco" },
+    ],
+  },
 ];
 
 export { navItems };
@@ -110,6 +121,11 @@ const PERMISSION_BY_PATH: Record<string, string> = {
   "/soroteca": "registrar_coleta",
   "/estoque": "configuracoes_sistema",
   "/equipe": "gestao_usuarios",
+  "/exames": "configuracoes_sistema",
+  "/convenios": "configuracoes_sistema",
+  "/unidades": "configuracoes_sistema",
+  "/documentos": "configuracoes_sistema",
+  "/tabelas-preco": "configuracoes_sistema",
 };
 
 export function filterNavByPermissions(

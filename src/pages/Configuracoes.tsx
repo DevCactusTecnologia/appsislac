@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Navigate } from "react-router-dom";
 import {
   Building2,
   UserCog,
@@ -93,7 +93,16 @@ const normalize = (s: string) =>
 
 const Configuracoes = () => {
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "laboratorio";
+  const tabParam = searchParams.get("tab") || "laboratorio";
+  // Fase B — redirect de compatibilidade: tabs promovidas a rotas próprias.
+  const TAB_REDIRECT: Record<string, string> = {
+    exames: "/exames",
+    convenios: "/convenios",
+    unidades: "/unidades",
+    documentos: "/documentos",
+    tabelas: "/tabelas-preco",
+  };
+  const initialTab = tabParam;
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -103,6 +112,7 @@ const Configuracoes = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pillsRef = useRef<HTMLDivElement>(null);
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const redirectTo = TAB_REDIRECT[tabParam];
 
   // Auto-scroll the active pill into the center on mobile/tablet
   useEffect(() => {
@@ -225,6 +235,8 @@ const Configuracoes = () => {
       }
     }
   };
+
+  if (redirectTo) return <Navigate to={redirectTo} replace />;
 
   return (
     <div className="min-h-screen bg-background">
