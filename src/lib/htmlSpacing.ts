@@ -15,6 +15,9 @@ export function splitPlaceholderSpacing(raw: string): { leading: string; key: st
  */
 export function preserveVisibleTextSpacing(html: string): string {
   return html.replace(/>([^<]*)</g, (_match, text: string) => {
+    const hasExplicitNbsp = /&nbsp;|&#160;|&#x0*a0;|\u00a0/i.test(text);
+    if (!hasExplicitNbsp && !/[^\s]/.test(text)) return `>${text}<`;
+
     const normalized = text
       .replace(HTML_SPACE_ENTITY_RE, "\u00a0")
       .replace(/ {2,}/g, (spaces) => "\u00a0".repeat(spaces.length))
