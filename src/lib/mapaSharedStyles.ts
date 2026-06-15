@@ -595,8 +595,10 @@ export const MAPA_BASE_CSS = `
     width: 100%;
   }
   /* Células: sem defaults visuais — borda, padding, vertical-align, background
-     vêm APENAS do template autoral. Mantemos só word-wrap. */
-  td, th { word-wrap: break-word; position: relative; }
+     vêm APENAS do template autoral. Mantemos só word-wrap e preservação dos
+     espaços/tabs digitados pelo usuário (preview = print). */
+  td, th { word-wrap: break-word; position: relative; white-space: break-spaces; }
+  td p, th p, td span, th span { white-space: inherit; }
   td[style*="vertical-align: middle"], th[style*="vertical-align: middle"] { vertical-align: middle !important; }
   td[style*="vertical-align: top"], th[style*="vertical-align: top"] { vertical-align: top !important; }
   td[style*="vertical-align: bottom"], th[style*="vertical-align: bottom"] { vertical-align: bottom !important; }

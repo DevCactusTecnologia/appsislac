@@ -191,9 +191,11 @@
   line-height: 1.6;
   letter-spacing: 0.005em;
   color: #1a1a2e;
+  /* Preserva espaçamentos múltiplos digitados no editor (ex.: "  mg/dL"). */
+  white-space: break-spaces;
 }
 .prose-mapa ::selection { background: hsl(var(--primary) / 0.18); }
-.prose-mapa p { margin: 0 0 0.6em; }
+.prose-mapa p { margin: 0 0 0.6em; white-space: break-spaces; }
 .prose-mapa p:last-child { margin-bottom: 0; }
 .prose-mapa h1 { font-size: 1.55em; font-weight: 600; letter-spacing: -0.01em; margin: 0.6em 0 0.3em; line-height: 1.2; }
 .prose-mapa h2 { font-size: 1.25em; font-weight: 600; letter-spacing: -0.005em; margin: 0.5em 0 0.25em; line-height: 1.25; }
@@ -212,6 +214,8 @@
   min-width: 1em;
   overflow-wrap: normal;
   word-break: normal;
+  /* Mantém runs de espaços / tabs digitados pelo usuário no editor. */
+  white-space: break-spaces;
 }
 .prose-mapa blockquote {
   border-left: 3px solid hsl(var(--primary) / 0.5);
