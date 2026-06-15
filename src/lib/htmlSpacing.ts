@@ -88,7 +88,7 @@ export function preserveVisibleTextSpacing(html: string): string {
   return parts.map((part, index) => {
     if (!part || part.startsWith("<")) return part;
 
-    const hasExplicitNbsp = /&nbsp;|&#160;|&#x0*a0;|\u00a0/i.test(text);
+    const hasExplicitNbsp = /&nbsp;|&#160;|&#x0*a0;|\u00a0/i.test(part);
     const prevTag = parts.slice(0, index).reverse().find((item) => item.startsWith("<")) ?? "";
     const nextTag = parts.slice(index + 1).find((item) => item.startsWith("<")) ?? "";
     const preservePureSpacing = shouldPreservePureSpacing(part, prevTag, nextTag);
