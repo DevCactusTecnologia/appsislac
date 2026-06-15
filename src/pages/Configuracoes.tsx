@@ -93,7 +93,18 @@ const normalize = (s: string) =>
 
 const Configuracoes = () => {
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "laboratorio";
+  const tabParam = searchParams.get("tab") || "laboratorio";
+  // Fase B — redirect de compatibilidade: tabs promovidas a rotas próprias.
+  const TAB_REDIRECT: Record<string, string> = {
+    exames: "/exames",
+    convenios: "/convenios",
+    unidades: "/unidades",
+    documentos: "/documentos",
+    tabelas: "/tabelas-preco",
+  };
+  const redirectTo = TAB_REDIRECT[tabParam];
+  if (redirectTo) return <Navigate to={redirectTo} replace />;
+  const initialTab = tabParam;
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => {
     const t = searchParams.get("tab");
