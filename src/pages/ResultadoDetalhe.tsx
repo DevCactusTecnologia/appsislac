@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, Send } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
+import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
 import { isValueInRange } from "@/components/ResultadoValidationBar";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import CelebracaoLiberacaoDialog from "@/components/CelebracaoLiberacaoDialog";
@@ -894,6 +895,20 @@ const ResultadoDetalhe = () => {
         {/* ===== STACKED VIEW (below xl: mobile + tablet + small laptops) ===== */}
         <div className="lg:hidden">
           {/* Patient header — compartilhado, à prova de overflow */}
+          <div className="mb-2 flex justify-end">
+            <MaisAcoesMenu
+              modoConsulta={modoConsulta}
+              semExameSelecionado={!selectedExame}
+              canRetificar={canLiberar}
+              canCancelar={canCancelarExame}
+              onAuditoria={() => setShowAuditoria(true)}
+              onCritico={() => setShowCriticoDialog(true)}
+              onEntrega={() => setShowEntregaDialog(true)}
+              onRetificar={() => setShowRetificarDialog(true)}
+              onRecoleta={() => setShowRecoletaDialog(true)}
+              onCancelarAnalise={handleCancelarAnalise}
+            />
+          </div>
           <div className="mb-4">
             <PacienteHeaderCard
               nome={paciente.nome}
@@ -904,56 +919,17 @@ const ResultadoDetalhe = () => {
               statusLabel={paciente.statusGeral}
               statusType={statusGeralType(paciente.statusGeral)}
               actionsInline={modoConsulta}
-              actions={(modoConsulta
-                ? [
-                    {
-                      key: "auditoria",
-                      label: "Auditoria",
-                      icon: <ClipboardList className="h-4 w-4" />,
-                      onClick: () => setShowAuditoria(true),
-                      variant: "ghost",
-                    },
-                    {
-                      key: "imprimir",
-                      label: "Imprimir todos",
-                      icon: <Printer className="h-4 w-4" />,
-                      onClick: () => handleImprimir(paciente.exames),
-                      variant: "primary",
-                      title: "Imprime apenas exames Assinados e Liberados",
-                      disabled: !podeImprimirTodos,
-                    },
-                  ]
-                : [
-                    {
-                      key: "auditoria",
-                      label: "Auditoria",
-                      icon: <ClipboardList className="h-4 w-4" />,
-                      onClick: () => setShowAuditoria(true),
-                      variant: "ghost",
-                    },
-                    {
-                      key: "critico",
-                      label: "Comunicar valor crítico",
-                      icon: <AlertTriangle className="h-4 w-4" />,
-                      onClick: () => setShowCriticoDialog(true),
-                      variant: "danger",
-                    },
-                    {
-                      key: "entrega",
-                      label: "Registrar entrega",
-                      icon: <Send className="h-4 w-4" />,
-                      onClick: () => setShowEntregaDialog(true),
-                      variant: "ghost",
-                    },
-                    {
-                      key: "imprimir",
-                      label: "Imprimir todos",
-                      icon: <Printer className="h-4 w-4" />,
-                      onClick: () => handleImprimir(paciente.exames),
-                      variant: "primary",
-                      disabled: !podeImprimirTodos,
-                    },
-                  ]) as PacienteHeaderAction[]}
+              actions={([
+                {
+                  key: "imprimir",
+                  label: "Imprimir todos",
+                  icon: <Printer className="h-4 w-4" />,
+                  onClick: () => handleImprimir(paciente.exames),
+                  variant: "primary",
+                  title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined,
+                  disabled: !podeImprimirTodos,
+                },
+              ]) as PacienteHeaderAction[]}
             />
           </div>
 
@@ -1363,7 +1339,21 @@ const ResultadoDetalhe = () => {
           {/* Main content */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/30">
             {/* Patient header — componente compartilhado, sem sobreposição */}
-            <div className="px-4 sm:px-6 py-3 border-b bg-card">
+            <div className="px-4 sm:px-6 py-3 border-b bg-card space-y-2">
+              <div className="flex justify-end">
+                <MaisAcoesMenu
+                  modoConsulta={modoConsulta}
+                  semExameSelecionado={!selectedExame}
+                  canRetificar={canLiberar}
+                  canCancelar={canCancelarExame}
+                  onAuditoria={() => setShowAuditoria(true)}
+                  onCritico={() => setShowCriticoDialog(true)}
+                  onEntrega={() => setShowEntregaDialog(true)}
+                  onRetificar={() => setShowRetificarDialog(true)}
+                  onRecoleta={() => setShowRecoletaDialog(true)}
+                  onCancelarAnalise={handleCancelarAnalise}
+                />
+              </div>
               <PacienteHeaderCard
                 nome={paciente.nome}
                 sexo={paciente.sexo}
@@ -1373,19 +1363,12 @@ const ResultadoDetalhe = () => {
                 statusLabel={paciente.statusGeral}
                 statusType={statusGeralType(paciente.statusGeral)}
                 actionsInline={modoConsulta}
-                actions={(modoConsulta
-                  ? [
-                      { key: "auditoria", label: "Auditoria", icon: <ClipboardList className="h-4 w-4" />, onClick: () => setShowAuditoria(true), variant: "ghost" },
-                      { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: "Imprime apenas exames Assinados e Liberados", disabled: !podeImprimirTodos },
-                    ]
-                  : [
-                      { key: "auditoria", label: "Auditoria", icon: <ClipboardList className="h-4 w-4" />, onClick: () => setShowAuditoria(true), variant: "ghost" },
-                      { key: "critico", label: "Comunicar valor crítico", icon: <AlertTriangle className="h-4 w-4" />, onClick: () => setShowCriticoDialog(true), variant: "danger" },
-                      { key: "entrega", label: "Registrar entrega", icon: <Send className="h-4 w-4" />, onClick: () => setShowEntregaDialog(true), variant: "ghost" },
-                      { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", disabled: !podeImprimirTodos },
-                    ]) as PacienteHeaderAction[]}
+                actions={([
+                  { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined, disabled: !podeImprimirTodos },
+                ]) as PacienteHeaderAction[]}
               />
             </div>
+
 
             {/* Exam detail */}
             {selectedExame ? (

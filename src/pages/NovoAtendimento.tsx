@@ -51,6 +51,7 @@ const CadastroPacienteDialog = lazy(() => import("@/components/CadastroPacienteD
 const PdfPreviewDialog = lazy(() => import("@/components/PdfPreviewDialog"));
 const ReutilizarAmostraDialog = lazy(() => import("@/components/soroteca/ReutilizarAmostraDialog"));
 const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPanel"));
+import FerramentasAvancadasMenu from "@/components/atendimento/FerramentasAvancadasMenu";
 
 // Types, helpers puros, DropdownStatus e highlightMatch foram extraídos para
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
@@ -369,6 +370,11 @@ const NovoAtendimento = () => {
   // Financial
   const [valorPago, setValorPago] = useState(0);
   const [desconto, setDesconto] = useState(0);
+
+  // UX: ajustes avançados por exame (Solicitante por exame + Cobrança híbrida).
+  // Colapsados por padrão para reduzir carga cognitiva da lista de exames.
+  // Não altera estado dos campos — apenas a visibilidade dos controles.
+  const [mostrarAjustesPorExame, setMostrarAjustesPorExame] = useState(false);
 
   // Clinical info
   const [observacoes, setObservacoes] = useState("");
@@ -844,21 +850,10 @@ const NovoAtendimento = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setLeituraReqOpen(true)}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold border border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all"
-              title="Ler exames a partir de foto ou PDF da requisição"
-            >
-              <FileScan className="h-4 w-4" />
-              Ler requisição
-            </button>
-            <button
-              onClick={() => setAvaliacaoIAOpen(true)}
-              className="inline-flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold bg-primary text-primary-foreground shadow-[0_2px_12px_-2px_hsl(var(--primary)/0.4)] hover:shadow-[0_4px_20px_-2px_hsl(var(--primary)/0.5)] transition-all"
-            >
-              <Sparkles className="h-4 w-4" />
-              Avaliação IA
-            </button>
+            <FerramentasAvancadasMenu
+              onAbrirOCR={() => setLeituraReqOpen(true)}
+              onAbrirIA={() => setAvaliacaoIAOpen(true)}
+            />
           </div>
         </div>
 
@@ -1551,19 +1546,31 @@ const NovoAtendimento = () => {
             <section id="step-exames" className="scroll-mt-28 space-y-4 pt-6 border-t border-border/60">
                 <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                   <h2 className="text-lg font-bold text-foreground tracking-tight">Solicitar exames</h2>
-                  {exames.length > 0 && (
-                    <div className="space-y-1.5 sm:w-64">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Data da coleta <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={dataColeta}
-                        onChange={(e) => { setDataColeta(e.target.value); setDataColetaTouched(true); }}
-                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  )}
+                  <div className="flex items-end gap-3 flex-wrap">
+                    {exames.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMostrarAjustesPorExame(v => !v)}
+                        className="h-10 px-3 inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background text-xs font-semibold text-foreground hover:bg-accent transition-all"
+                        title="Mostrar/ocultar Solicitante por exame e Cobrança híbrida"
+                      >
+                        {mostrarAjustesPorExame ? "Ocultar ajustes por exame" : "Ajustes por exame"}
+                      </button>
+                    )}
+                    {exames.length > 0 && (
+                      <div className="space-y-1.5 sm:w-64">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Data da coleta <span className="text-muted-foreground/70 normal-case font-normal">(Brasília)</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={dataColeta}
+                          onChange={(e) => { setDataColeta(e.target.value); setDataColetaTouched(true); }}
+                          className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Convênio filter */}
@@ -1805,21 +1812,23 @@ const NovoAtendimento = () => {
 
                             {/* Controles inline */}
                             <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3 basis-full md:basis-auto md:flex-none md:flex-nowrap justify-end shrink-0 w-full md:w-auto">
-                              <select
-                                value={cobrancaValue}
-                                onChange={e => onCobrancaChange(e.target.value)}
-                                disabled={conveniosNaoParticulares.length === 0}
-                                aria-label="Cobrar de"
-                                className="h-9 flex-1 md:flex-none md:w-[140px] lg:w-[170px] min-w-0 px-2.5 pr-7 rounded-xl text-xs font-semibold bg-background border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all truncate"
-                                title={conveniosNaoParticulares.length === 0 ? "Sem convênio selecionado — só é possível cobrar do paciente" : "Cobrar de quem"}
-                              >
-                                <option value="p">Paciente</option>
-                                {conveniosNaoParticulares.map(c => (
-                                  <option key={c.id} value={`c:${c.id}`}>{c.nome}</option>
-                                ))}
-                              </select>
+                              {mostrarAjustesPorExame && (
+                                <select
+                                  value={cobrancaValue}
+                                  onChange={e => onCobrancaChange(e.target.value)}
+                                  disabled={conveniosNaoParticulares.length === 0}
+                                  aria-label="Cobrar de"
+                                  className="h-9 flex-1 md:flex-none md:w-[140px] lg:w-[170px] min-w-0 px-2.5 pr-7 rounded-xl text-xs font-semibold bg-background border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all truncate"
+                                  title={conveniosNaoParticulares.length === 0 ? "Sem convênio selecionado — só é possível cobrar do paciente" : "Cobrar de quem"}
+                                >
+                                  <option value="p">Paciente</option>
+                                  {conveniosNaoParticulares.map(c => (
+                                    <option key={c.id} value={`c:${c.id}`}>{c.nome}</option>
+                                  ))}
+                                </select>
+                              )}
 
-                              {solicitantes.length > 1 && (
+                              {mostrarAjustesPorExame && solicitantes.length > 1 && (
                                 <select
                                   value={exame.solicitanteExame === "__ambos" ? "__ambos" : (exame.solicitanteExame ?? "")}
                                   onChange={ev => {
