@@ -92,7 +92,7 @@ const PERMISSION_BY_PATH: Record<string, string> = {
   "/dashboard": "visualizar_dashboard",
   "/atendimentos": "visualizar_atendimentos",
   "/pedidos-site": "solicitacoes_site_acesso",
-  "/consultar-resultados": "consultar_resultados",
+  "/resultados/consulta": "consultar_resultados",
   "/lab-apoio": "lab_apoio_acesso",
   "/registrar-coleta": "registrar_coleta",
   "/analisar-amostra": "analisar_amostra",
