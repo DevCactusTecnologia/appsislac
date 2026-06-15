@@ -86,10 +86,13 @@ const ResultadoDetalhe = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { hasPermission, user: authUser } = useAuth();
-  // Modo consulta: rota /consultar-resultado/:id renderiza tudo somente leitura
+  // Modo consulta: rotas canônica `/resultados/:id/consulta` e legada
+  // `/consultar-resultado/:id` (redirecionada) renderizam tudo somente leitura
   // (sem salvar, liberar, recoletar ou cancelar análise). Usado pela página
-  // /consultar-resultados — voltada para conferência e impressão de laudos.
-  const modoConsulta = location.pathname.startsWith("/consultar-resultado/");
+  // /resultados/consulta — voltada para conferência e impressão de laudos.
+  const modoConsulta =
+    location.pathname.startsWith("/consultar-resultado/") ||
+    /^\/resultados\/[^/]+\/consulta\/?$/.test(location.pathname);
   // RBAC visual — backend revalida via trigger BEFORE UPDATE em atendimento_exames.
   // Em modo consulta, todas as ações já são desabilitadas; aqui ajustamos as ações
   // mutativas conforme o perfil do usuário (analista pode liberar/retificar; recepção,
