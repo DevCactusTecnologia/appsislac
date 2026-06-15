@@ -276,8 +276,14 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           />
         ) : (
           <div className="a4-stage border border-border/60 rounded-lg">
+            {/*
+              `ck-content` aplica as MESMAS regras visuais do CKEditor (cell padding,
+              white-space, tabelas). Isso garante WYSIWYG real: o que aparece no editor
+              é exatamente o que aparece aqui — sem hacks de padding ou normalização
+              de espaços que mudem o conteúdo digitado.
+            */}
             <div
-              className="prose-mapa a4-sheet text-[13px] leading-snug"
+              className="ck-content prose-mapa a4-sheet text-[13px] leading-snug"
               style={{ fontFamily: '"Courier New", Courier, monospace' }}
               dangerouslySetInnerHTML={{ __html: previewHtml || "<p style='color:#94a3b8;'>Nada para pré-visualizar — escreva algo no editor.</p>" }}
             />
