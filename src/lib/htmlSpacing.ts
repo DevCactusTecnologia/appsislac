@@ -83,15 +83,17 @@ export function splitPlaceholderSpacing(raw: string): { leading: string; key: st
  * tags/atributos nem na indentação estrutural entre elementos.
  */
 export function preserveVisibleTextSpacing(html: string): string {
-  return html.replace(/>([^<]*)</g, (match, text: string, offset: number, fullHtml: string) => {
+  const parts = html.split(/(<[^>]*>)/g);
+
+  return parts.map((part, index) => {
+    if (!part || part.startsWith("<")) return part;
+
     const hasExplicitNbsp = /&nbsp;|&#160;|&#x0*a0;|\u00a0/i.test(text);
-    const prevTag = fullHtml.slice(0, offset + 1).match(/<[^>]+>$/)?.[0] ?? "";
-    const nextTag = fullHtml.slice(offset + match.length - 1).match(/^<[^>]+>/)?.[0] ?? "";
-    const preservePureSpacing = shouldPreservePureSpacing(text, prevTag, nextTag);
-    if (!hasExplicitNbsp && !preservePureSpacing && !/[^\s]/.test(text)) return `>${text}<`;
+    const prevTag = parts.slice(0, index).reverse().find((item) => item.startsWith("<")) ?? "";
+    const nextTag = parts.slice(index + 1).find((item) => item.startsWith("<")) ?? "";
+    const preservePureSpacing = shouldPreservePureSpacing(part, prevTag, nextTag);
+    if (!hasExplicitNbsp && !preservePureSpacing && !/[^\s]/.test(part)) return part;
 
-    const normalized = normalizeVisibleSpaces(text, preservePureSpacing);
-
-    return `>${normalized}<`;
-  });
+    return normalizeVisibleSpaces(part, preservePureSpacing);
+  }).join("");
 }
