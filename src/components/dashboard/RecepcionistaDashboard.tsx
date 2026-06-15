@@ -247,7 +247,7 @@ const RecepcionistaDashboard = () => {
             <p className="mt-1 text-sm text-muted-foreground capitalize">{dataFmt}</p>
           </div>
           <Button
-            onClick={() => navigate("/novo-atendimento")}
+            onClick={() => navigate("/atendimentos/novo")}
             className="h-10 gap-2 self-start sm:self-auto"
           >
             <Plus className="h-4 w-4" />
@@ -317,7 +317,7 @@ const RecepcionistaDashboard = () => {
               <div className="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center">
                 <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground">Nenhum atendimento registrado hoje.</p>
-                <Button size="sm" variant="outline" onClick={() => navigate("/novo-atendimento")} className="mt-2 gap-2">
+                <Button size="sm" variant="outline" onClick={() => navigate("/atendimentos/novo")} className="mt-2 gap-2">
                   <Plus className="h-4 w-4" /> Iniciar atendimento
                 </Button>
               </div>
