@@ -371,6 +371,11 @@ const NovoAtendimento = () => {
   const [valorPago, setValorPago] = useState(0);
   const [desconto, setDesconto] = useState(0);
 
+  // UX: ajustes avançados por exame (Solicitante por exame + Cobrança híbrida).
+  // Colapsados por padrão para reduzir carga cognitiva da lista de exames.
+  // Não altera estado dos campos — apenas a visibilidade dos controles.
+  const [mostrarAjustesPorExame, setMostrarAjustesPorExame] = useState(false);
+
   // Clinical info
   const [observacoes, setObservacoes] = useState("");
   const [jejum, setJejum] = useState<"sim" | "nao">("nao");
