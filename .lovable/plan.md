@@ -1,50 +1,74 @@
-## Objetivo
 
-Aplicar o **mesmo layout, theme e design system** da aba **Laboratório** (hero com gradiente sutil + ícone em pill arredondado + título com `uppercase tracking-widest` + blocos agrupados com cabeçalhos iconográficos + footer sticky quando há salvar/descartar) às 14 abas listadas em `/configuracoes`.
+# SISLAC — UX & Operational Simplification Program
 
-## Abordagem
+Antes de executar, preciso alinhar o escopo porque a missão colide com **constraints duras** já salvas em memória do projeto. Vou listar o estado real, o que é seguro fazer agora, e o que exige seu "sim" explícito.
 
-A grande maioria das abas (10) já consome um único componente compartilhado: `src/components/configuracoes/_shared/SectionShell.tsx`. Vou **evoluir esse shell** para o novo visual — assim **todas as abas que já o usam são atualizadas automaticamente, sem mexer no conteúdo interno**. As demais (que renderizam container próprio) recebem um wrapper equivalente.
+---
 
-### Etapa 1 — Upgrade do `SectionShell` (atinge 10 abas)
-Reescrever apenas o **chrome visual** preservando 100% da API (props `icon`, `title`, `description`, `meta`, `actions`, `toolbar`, `banner`, `children`, `footer`, `bodyless`):
+## Estado atual (verificado em memória/docs)
 
-- Container externo `rounded-2xl border border-border bg-card overflow-hidden`.
-- **Hero header**: faixa com `bg-gradient-to-br from-primary/5 via-card to-transparent`, ícone em pill `p-3 rounded-xl bg-primary/10 ring-1 ring-primary/20`, eyebrow `text-[11px] uppercase tracking-[0.18em] text-muted-foreground`, título `text-xl font-semibold`, descrição abaixo.
-- Toolbar e banner mantêm posição, mas com paddings e tipografia alinhados.
-- Footer ganha variante "sticky-like" (`bg-card/95 backdrop-blur`) quando solicitado.
+| Fase pedida | Situação real no repo |
+|---|---|
+| **Fase 1 — CKEditor 5** | **Já está instalado e é o editor oficial** (`src/components/editor/CKEditor.tsx`, rota `/admin/ckeditor-test`, integrado em `MapaTrabalhoDialog`, `DocumentoTemplateDialog`, `LayoutDialog`). Toolbar, tabelas (mesclar/dividir/resize), Word/Excel paste, fontes, cores, BalloonToolbar, variáveis `{{...}}` preservadas, GPL. Relatório em `docs/editor/ckeditor-install-report.md`. |
+| **Fase 2 — ResultadoDetalhe V2 (abas Resultado/Impressão/Histórico/Anexos)** | Reorganização estrutural de página crítica. Existe constraint **`layout-impressao-travado`** congelando margens, rodapé 4mm, assinatura e CSS de impressão em `ResultadoDetalhe.tsx`. |
+| **Fase 3 — NovoAtendimento V2** | Existe constraint **"Wizard de 4 steps do NovoAtendimento como estrutura — só polimento interno é seguro sem aprovação"** (`docs/ux/essencial-secundario-avancado.md`). Reestruturar para "Paciente/Exames/Pagamento/Observações/Resumo" muda a estrutura. |
+| **Fase 4 — Auditoria operacional (tempos, cliques)** | Mensurável só com instrumentação ou medição manual (sem analytics de UX no projeto). |
+| **Fase 5 — Relatório executivo** | Documento puro, seguro. |
 
-Abas beneficiadas direto: **Documentos, Site público, Exames, Tabelas de Preço, Convênio, Apoio Laboratorial, Unidades/Filiais, Mapas de Trabalho, Meu acesso (AdminTab), Setores** (também usa).
+E há a regra global de memória: *"Mudanças estruturais (rotas, remoção/renomeação de páginas, boot, deps, contextos globais) só com confirmação explícita."*
 
-### Etapa 2 — Retrofit das abas sem `SectionShell` (4 abas)
-Envolver o conteúdo dessas abas no novo `SectionShell` (sem reescrever lógica/CRUDs/dialogs):
+---
 
-- **FormasPagamentoTab.tsx**
-- **FornecedoresTab.tsx**
-- **IntegracoesApoioTab.tsx**
-- **GatewayPagamentoTab.tsx**
-- **NotificacoesTab.tsx** (hoje só placeholder de 12 linhas — vira um hero "Em breve").
+## Plano proposto (faseado e reversível)
 
-Cada uma recebe ícone Lucide adequado (Wallet, Truck, PlugZap, CreditCard, BellRing) + título + descrição curta. Nenhuma feature, RLS, query ou handler é alterado.
+### Etapa 0 — Confirmação de escopo (agora, sem código)
+Responder às perguntas no final deste plano. Sem elas, eu **não** mexo em `ResultadoDetalhe.tsx` nem no wizard de `NovoAtendimento`.
 
-### Garantias
+### Etapa 1 — Fase 1 (CKEditor) → fechar formalmente
+Como já está pronto, eu:
+- Reviso a integração ponta-a-ponta (test rendering, variáveis, paste, PDF/print) e abro um **changelog curto** em `docs/editor/ckeditor-status-2026-06.md` confirmando que a Fase 1 está **concluída**.
+- **Não** reinstalo, não troco config, não mexo em CSS de impressão.
 
-- **Sem mudanças funcionais**: somente layout/estilização.
-- **Sem mudanças em rotas, boot, deps ou contextos globais** (respeita a regra do projeto).
-- **Aba Laboratório intocada** — ela já está no padrão alvo e serve de referência.
-- Mobile/tablet/desktop continuam funcionando (breakpoints atuais preservados).
+### Etapa 2 — Fase 2 (ResultadoDetalhe V2) — somente após "sim"
+Modo **aditivo, zero risco de impressão**:
+- Envolver o conteúdo **atual** da página em um `Tabs` (`Resultado | Impressão | Histórico | Anexos`) **sem reescrever** o markup existente.
+- Aba **Impressão** = **mesmo** componente/handler atual (botão "Imprimir/Gerar PDF" exatamente como hoje). **Nada do CSS @print, rodapé 4mm, assinatura, margens** é tocado — respeita `mem://constraints/layout-impressao-travado.md`.
+- Abas **Histórico** e **Anexos** = só realocam blocos que já existem na tela (timeline de retificações, lista de anexos). Sem novo backend.
+- Modo `?modoConsulta` e regex de leitura preservados.
+- Critério de aceite: diff de impressão (HTML do laudo) **byte-a-byte idêntico** antes/depois.
 
-## Arquivos modificados
+### Etapa 3 — Fase 3 (NovoAtendimento V2) — somente após "sim"
+Modo **polimento interno** dentro do wizard atual (não substituo o wizard):
+- Aplico a classificação **Essencial/Secundário/Avançado** já documentada em `docs/ux/essencial-secundario-avancado.md`:
+  - **Essencial** sobe (busca paciente, lista exames + total, convênio, botão finalizar).
+  - **Secundário** vira accordion fechado por padrão (solicitante por exame, cobrança híbrida, desconto, forma de pagamento).
+  - **Avançado** vira botões discretos no header (OCR, Avaliação IA, Soroteca, cadastro paciente inline).
+- **Nada** muda em: `atendimentoStore`, cálculos de preço (CBHPM/TUSS/Própria), regras de cobrança híbrida, validações, persistência, rotas Phase-A (`/atendimentos/novo`, `/atendimentos/:protocolo/editar`).
+- Se você quiser realmente substituir o wizard pelo formato Laravel (single-page com 5 blocos), me confirme — é mudança estrutural e abro um plano separado.
 
-```text
-src/components/configuracoes/_shared/SectionShell.tsx   (reescrita visual)
-src/components/configuracoes/FormasPagamentoTab.tsx     (wrap)
-src/components/configuracoes/FornecedoresTab.tsx        (wrap)
-src/components/configuracoes/IntegracoesApoioTab.tsx    (wrap)
-src/components/configuracoes/GatewayPagamentoTab.tsx    (wrap)
-src/components/configuracoes/NotificacoesTab.tsx        (wrap)
-```
+### Etapa 4 — Auditoria operacional (Fase 4)
+Sem analytics no projeto, faço auditoria **qualitativa**: contagem de cliques/campos/etapas via leitura de código + comparação com a baseline Laravel já documentada (`docs/audits/laravel-vs-lovable-comparativo.md`, `docs/ux/comparativo-coremas.md`). Sem números fabricados.
 
-## Confirmação
+### Etapa 5 — Relatório executivo
+Gerar `docs/ux/sislac-operational-simplification-report.md` consolidando Fases 1–4, com seções pedidas (complexidade removida, ganho operacional, comparação Laravel, próximos passos, prontidão para homologação). **Sem** afirmar regressão zero antes de validar Fase 2/3.
 
-Posso prosseguir com essa abordagem (evoluir o `SectionShell` + 5 wrappers), ou prefere que eu faça **redesign profundo página-a-página** dos 14 tabs (muito maior, ~9.500 linhas, alto risco de regressão)?
+---
+
+## O que **não** farei sem ordem explícita
+
+- Trocar CSS de impressão do laudo, rodapé, margens ou assinatura.
+- Substituir o wizard atual de `NovoAtendimento` por uma página única.
+- Remover/renomear rotas, páginas, stores ou contextos.
+- Reintroduzir PWA, dashboard legada, fallback mock de auth, ou qualquer item em `constraints/`.
+- Alterar banco, RLS, edge functions, RPCs.
+
+---
+
+## Perguntas para destravar a execução
+
+1. **Fase 2 (ResultadoDetalhe V2):** posso envolver o conteúdo em abas `Resultado | Impressão | Histórico | Anexos` **mantendo** o CSS/HTML de impressão e o handler de PDF intactos? (sim/não)
+2. **Fase 3 (NovoAtendimento V2):** prefere **(A)** polimento interno dentro do wizard atual (Essencial/Secundário/Avançado, sem trocar estrutura) **ou (B)** reestruturação real para single-page estilo Laravel (Paciente / Exames / Pagamento / Observações / Resumo) — esta segunda derruba a constraint atual e exige plano dedicado.
+3. **Fase 4:** aceita auditoria **qualitativa** (baseada em leitura de código + docs comparativos já existentes), já que o projeto não tem instrumentação de cliques/tempo?
+4. **Fase 1:** confirma que considero **encerrada** (CKEditor já é o editor oficial) e só gero o changelog de status, sem retrabalho?
+
+Respondendo essas 4, eu começo pela Etapa 1 já e sigo na ordem aprovada.
