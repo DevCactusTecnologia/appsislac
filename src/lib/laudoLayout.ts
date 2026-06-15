@@ -172,7 +172,7 @@ function applyPlaceholders(
     // {{chave}}
     .replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => lookup(key))
     // {chave}    (apenas se for token "limpo", evita conflito com CSS/JSON)
-    .replace(/\{([A-Za-zÀ-ÿ0-9_\-#]+?)\}/g, (m, key) => {
+    .replace(/\{([A-Za-zÀ-ÿ0-9_#-]+?)\}/g, (m, key) => {
       const v = lookup(key);
       return v || m; // se não casou, devolve o token original (não estraga CSS inline)
     })
