@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import type { PlaceholderDef } from "@/lib/mapaPlaceholders";
 import { preserveVisibleTextSpacing, splitPlaceholderSpacing } from "@/lib/htmlSpacing";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 // Placeholders específicos do editor de laudo (independente dos mapas de trabalho).
 const LAUDO_PLACEHOLDERS: PlaceholderDef[] = [
@@ -285,7 +286,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             <div
               className="ck-content prose-mapa a4-sheet text-[13px] leading-snug"
               style={{ fontFamily: '"Courier New", Courier, monospace' }}
-              dangerouslySetInnerHTML={{ __html: previewHtml || "<p style='color:#94a3b8;'>Nada para pré-visualizar — escreva algo no editor.</p>" }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) || "<p style='color:#94a3b8;'>Nada para pré-visualizar — escreva algo no editor.</p>" }}
             />
           </div>
         )}

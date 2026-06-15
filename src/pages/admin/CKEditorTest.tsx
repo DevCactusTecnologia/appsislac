@@ -5,6 +5,7 @@
 import { useState } from "react";
 import CKEditor from "@/components/editor/CKEditor";
 import { Button } from "@/components/ui/button";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 const TEMPLATE_INICIAL = `
 <h1>Laudo de Exame — Teste</h1>
@@ -72,7 +73,7 @@ const CKEditorTest = () => {
           </div>
           <div
             className="prose-mapa a4-sheet text-[13px] leading-snug p-4"
-            dangerouslySetInnerHTML={{ __html: html }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
           />
         </div>
 

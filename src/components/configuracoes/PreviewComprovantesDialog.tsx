@@ -3,6 +3,7 @@ import { FileText, Receipt, ClipboardCheck, AlertTriangle } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { buildComprovanteHtml } from "@/lib/comprovantes";
 import { getLabConfig } from "@/data/labConfigStore";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 interface PreviewComprovantesDialogProps {
   open: boolean;
@@ -113,7 +114,7 @@ const PreviewComprovantesDialog = ({ open, onClose }: PreviewComprovantesDialogP
               boxSizing: "border-box",
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: html }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
           </div>
         </div>
       </div>

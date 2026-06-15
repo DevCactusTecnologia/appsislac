@@ -5403,7 +5403,6 @@ export type Database = {
         Row: {
           admin_email: string
           admin_nome: string
-          admin_senha_hash: string
           approved_tenant_id: string | null
           approved_user_id: string | null
           cnpj: string
@@ -5420,7 +5419,6 @@ export type Database = {
         Insert: {
           admin_email: string
           admin_nome: string
-          admin_senha_hash: string
           approved_tenant_id?: string | null
           approved_user_id?: string | null
           cnpj: string
@@ -5437,7 +5435,6 @@ export type Database = {
         Update: {
           admin_email?: string
           admin_nome?: string
-          admin_senha_hash?: string
           approved_tenant_id?: string | null
           approved_user_id?: string | null
           cnpj?: string

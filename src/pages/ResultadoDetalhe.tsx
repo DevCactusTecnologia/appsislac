@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolverReferencia } from "@/data/valoresReferenciaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
@@ -775,7 +776,13 @@ const ResultadoDetalhe = () => {
   const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const container = document.createElement("div");
-    container.innerHTML = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
+    // Sanitiza HTML antes do innerHTML para neutralizar qualquer XSS armazenado
+    // (templates de laudo são HTML editáveis). Não altera formatação visível
+    // (preserva tabelas, classes, estilos inline) — apenas remove scripts e
+    // handlers de evento.
+    container.innerHTML = sanitizeHtml(
+      buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+    );
     // html2pdf aplica as margens no jsPDF; o DOM precisa estar na largura útil
     // exata da página, sem margem/padding próprios, para não somar/desbalancear.
     container.style.position = "fixed";
