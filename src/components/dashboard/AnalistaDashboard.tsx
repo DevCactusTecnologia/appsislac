@@ -326,7 +326,7 @@ const AnalistaDashboard = () => {
             value={data.liberadosHoje}
             hint="Resultados entregues"
             icon={CheckCircle2}
-            to="/consultar-resultados"
+            to="/resultados/consulta"
             accent="success"
           />
         </section>
