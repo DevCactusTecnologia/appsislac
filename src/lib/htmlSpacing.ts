@@ -53,8 +53,8 @@ function shouldPreservePureSpacing(text: string, prevTag: string, nextTag: strin
   const prevInline = !!prev && INLINE_TAGS.has(prev.name);
   const nextInline = !!next && INLINE_TAGS.has(next.name);
   const insideCellEdge =
-    (prev?.opening && (prev.name === "td" || prev.name === "th")) ||
-    (next?.closing && (next.name === "td" || next.name === "th"));
+    (!!prev?.opening && (prev.name === "td" || prev.name === "th")) ||
+    (!!next?.closing && (next.name === "td" || next.name === "th"));
 
   return prevInline || nextInline || insideCellEdge;
 }
