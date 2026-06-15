@@ -9,6 +9,7 @@ import { buildLayoutTemplate } from "@/lib/laudoTemplate";
 import { useAuth } from "@/contexts/AuthContext";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import type { PlaceholderDef } from "@/lib/mapaPlaceholders";
+import { preserveVisibleTextSpacing, splitPlaceholderSpacing } from "@/lib/htmlSpacing";
 
 // Placeholders específicos do editor de laudo (independente dos mapas de trabalho).
 const LAUDO_PLACEHOLDERS: PlaceholderDef[] = [
@@ -86,17 +87,14 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
     });
     parametros.forEach((p) => {
       const valor = p.tipo === "Número" ? "0,00" : p.opcoesSelect?.[0] ?? "—";
-      html = html.replace(
-        new RegExp(`##${escapeRegex(p.chave)}##`, "g"),
-        `<span style="color:#94a3b8;font-style:italic;">${valor}</span>`,
-      );
+      html = html.replace(/##([^#]*?)##/g, (match, raw) => {
+        const { leading, key, trailing } = splitPlaceholderSpacing(raw);
+        return key === p.chave
+          ? `${leading}<span style="color:#94a3b8;font-style:italic;">${valor}</span>${trailing}`
+          : match;
+      });
     });
-    // Preserva runs de 2+ espaços digitados no editor (HTML colapsa por padrão).
-    // Só age em nós de texto (entre `>` e `<`), nunca em tags/atributos.
-    html = html.replace(/>([^<]*)</g, (_m, txt: string) =>
-      ">" + txt.replace(/ {2,}/g, (s) => "\u00a0".repeat(s.length)) + "<",
-    );
-    return html;
+    return preserveVisibleTextSpacing(html);
   }, [editorContent, parametros]);
 
   const handleInserirTemplate = () => {
