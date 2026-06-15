@@ -1800,21 +1800,23 @@ const NovoAtendimento = () => {
 
                             {/* Controles inline */}
                             <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3 basis-full md:basis-auto md:flex-none md:flex-nowrap justify-end shrink-0 w-full md:w-auto">
-                              <select
-                                value={cobrancaValue}
-                                onChange={e => onCobrancaChange(e.target.value)}
-                                disabled={conveniosNaoParticulares.length === 0}
-                                aria-label="Cobrar de"
-                                className="h-9 flex-1 md:flex-none md:w-[140px] lg:w-[170px] min-w-0 px-2.5 pr-7 rounded-xl text-xs font-semibold bg-background border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all truncate"
-                                title={conveniosNaoParticulares.length === 0 ? "Sem convênio selecionado — só é possível cobrar do paciente" : "Cobrar de quem"}
-                              >
-                                <option value="p">Paciente</option>
-                                {conveniosNaoParticulares.map(c => (
-                                  <option key={c.id} value={`c:${c.id}`}>{c.nome}</option>
-                                ))}
-                              </select>
+                              {mostrarAjustesPorExame && (
+                                <select
+                                  value={cobrancaValue}
+                                  onChange={e => onCobrancaChange(e.target.value)}
+                                  disabled={conveniosNaoParticulares.length === 0}
+                                  aria-label="Cobrar de"
+                                  className="h-9 flex-1 md:flex-none md:w-[140px] lg:w-[170px] min-w-0 px-2.5 pr-7 rounded-xl text-xs font-semibold bg-background border border-border/60 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all truncate"
+                                  title={conveniosNaoParticulares.length === 0 ? "Sem convênio selecionado — só é possível cobrar do paciente" : "Cobrar de quem"}
+                                >
+                                  <option value="p">Paciente</option>
+                                  {conveniosNaoParticulares.map(c => (
+                                    <option key={c.id} value={`c:${c.id}`}>{c.nome}</option>
+                                  ))}
+                                </select>
+                              )}
 
-                              {solicitantes.length > 1 && (
+                              {mostrarAjustesPorExame && solicitantes.length > 1 && (
                                 <select
                                   value={exame.solicitanteExame === "__ambos" ? "__ambos" : (exame.solicitanteExame ?? "")}
                                   onChange={ev => {
