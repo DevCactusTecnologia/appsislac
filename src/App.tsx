@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient, installQueryClientTenantReset } from "@/lib/queryClient";
-import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation, useParams } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -73,6 +73,16 @@ function PageLoader() {
       <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
     </div>
   );
+}
+
+// Redirects legados — Fase A (Domain Driven Routes). Preservam o parâmetro.
+function LegacyEditarAtendimentoRedirect() {
+  const { protocolo } = useParams();
+  return <Navigate to={`/atendimentos/${encodeURIComponent(protocolo ?? "")}/editar`} replace />;
+}
+function LegacyConsultarResultadoRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/resultados/${encodeURIComponent(id ?? "")}/consulta`} replace />;
 }
 
 function ProtectedRoute({ children, permissao, bloqueadoPontoColeta }: { children: React.ReactNode; permissao?: string; bloqueadoPontoColeta?: boolean }) {
@@ -326,14 +336,22 @@ function AppRoutes() {
           <Routes>
             <Route path="/dashboard" element={<ProtectedRoute permissao="visualizar_dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/atendimentos" element={<ProtectedRoute permissao="visualizar_atendimentos"><Index /></ProtectedRoute>} />
-            <Route path="/novo-atendimento" element={<ProtectedRoute permissao="criar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
-            <Route path="/editar-atendimento/:protocolo" element={<ProtectedRoute permissao="editar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
+            {/* Domain Driven Routes — Fase A (canônicas) */}
+            <Route path="/atendimentos/novo" element={<ProtectedRoute permissao="criar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
+            <Route path="/atendimentos/:protocolo/editar" element={<ProtectedRoute permissao="editar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
+            {/* Redirects legados (Fase A — compatibilidade total) */}
+            <Route path="/novo-atendimento" element={<Navigate to="/atendimentos/novo" replace />} />
+            <Route path="/editar-atendimento/:protocolo" element={<LegacyEditarAtendimentoRedirect />} />
             <Route path="/registrar-coleta" element={<ProtectedRoute permissao="registrar_coleta"><RegistrarColeta /></ProtectedRoute>} />
             <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><AnalisarAmostra /></ProtectedRoute>} />
             <Route path="/resultados" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><Resultados /></ProtectedRoute>} />
             <Route path="/resultado/:id" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><ResultadoDetalhe /></ProtectedRoute>} />
-            <Route path="/consultar-resultados" element={<ProtectedRoute permissao="consultar_resultados"><ConsultarResultados /></ProtectedRoute>} />
-            <Route path="/consultar-resultado/:id" element={<ProtectedRoute permissao="consultar_resultados"><ResultadoDetalhe /></ProtectedRoute>} />
+            {/* Domain Driven Routes — Fase A (canônicas) */}
+            <Route path="/resultados/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ConsultarResultados /></ProtectedRoute>} />
+            <Route path="/resultados/:id/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ResultadoDetalhe /></ProtectedRoute>} />
+            {/* Redirects legados (Fase A — compatibilidade total) */}
+            <Route path="/consultar-resultados" element={<Navigate to="/resultados/consulta" replace />} />
+            <Route path="/consultar-resultado/:id" element={<LegacyConsultarResultadoRedirect />} />
             <Route path="/lab-apoio" element={<ProtectedRoute permissao="lab_apoio_acesso"><LabApoio /></ProtectedRoute>} />
             <Route path="/pacientes" element={<ProtectedRoute permissao="visualizar_pacientes"><Pacientes /></ProtectedRoute>} />
             <Route path="/especialistas" element={<ProtectedRoute permissao="visualizar_pacientes"><Especialistas /></ProtectedRoute>} />

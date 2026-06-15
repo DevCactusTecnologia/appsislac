@@ -149,7 +149,7 @@ function SolicitacoesSiteInner() {
     if (!r.ok) { toast({ title: "Erro ao converter", description: r.error, variant: "destructive" }); return; }
     refreshBadge();
     toast({ title: "Solicitação convertida", description: "Abrindo novo atendimento com os dados do paciente." });
-    navigate("/novo-atendimento", {
+    navigate("/atendimentos/novo", {
       state: {
         from: "solicitacao",
         solicitacao_id: l.id,

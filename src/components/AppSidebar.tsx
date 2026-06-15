@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
   {
     label: "Resultados", icon: FileCheck2,
     children: [
-      { label: "Consultar", icon: Search, path: "/consultar-resultados" },
+      { label: "Consultar", icon: Search, path: "/resultados/consulta" },
       { label: "Apoio Laboratorial", icon: Network, path: "/lab-apoio" },
     ],
   },
@@ -92,7 +92,7 @@ const PERMISSION_BY_PATH: Record<string, string> = {
   "/dashboard": "visualizar_dashboard",
   "/atendimentos": "visualizar_atendimentos",
   "/pedidos-site": "solicitacoes_site_acesso",
-  "/consultar-resultados": "consultar_resultados",
+  "/resultados/consulta": "consultar_resultados",
   "/lab-apoio": "lab_apoio_acesso",
   "/registrar-coleta": "registrar_coleta",
   "/analisar-amostra": "analisar_amostra",

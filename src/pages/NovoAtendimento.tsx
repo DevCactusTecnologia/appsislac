@@ -2449,7 +2449,7 @@ const NovoAtendimento = () => {
             )}
             {!isEditing && (
               <button
-                onClick={() => { setSuccessOpen(false); navigate("/novo-atendimento", { replace: true }); window.location.reload(); }}
+                onClick={() => { setSuccessOpen(false); navigate("/atendimentos/novo", { replace: true }); window.location.reload(); }}
                 className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${lastHadTerceirizados && lastProtocolo ? "border border-border/60 text-foreground hover:bg-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
               >
                 Novo atendimento
@@ -2525,7 +2525,7 @@ const NovoAtendimento = () => {
                   Ver orçamentos
                 </button>
                 <button
-                  onClick={() => { setOrcamentoSuccessOpen(false); navigate("/novo-atendimento", { replace: true }); window.location.reload(); }}
+                  onClick={() => { setOrcamentoSuccessOpen(false); navigate("/atendimentos/novo", { replace: true }); window.location.reload(); }}
                   className="flex-1 py-2.5 rounded-2xl text-sm font-medium border border-border/60 text-foreground hover:bg-accent transition-colors"
                 >
                   Novo atendimento

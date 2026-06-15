@@ -196,7 +196,7 @@ const ConsultarResultados = () => {
   const pendentesCount   = resultados.filter(r => r.status === "Pendente").length;
   const canceladosCount  = resultados.filter(r => r.status === "Cancelado").length;
 
-  const abrirDetalhe = (protocolo: string) => navigate(`/consultar-resultado/${protocolo}`);
+  const abrirDetalhe = (protocolo: string) => navigate(`/resultados/${protocolo}/consulta`);
 
   const StatusPill = ({ status }: { status: ResultStatus }) => {
     const c = statusConfig[status];
