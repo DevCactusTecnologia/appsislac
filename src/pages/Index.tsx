@@ -757,7 +757,7 @@ const Index = () => {
       setPendingEdit(item);
       return;
     }
-    navigate(`/editar-atendimento/${encodeURIComponent(item.protocolo)}`);
+    navigate(`/atendimentos/${encodeURIComponent(item.protocolo)}/editar`);
   };
   const proceedEdit = async (justificativa: string) => {
     if (pendingEdit) {
@@ -766,7 +766,7 @@ const Index = () => {
       // Registra a justificativa para a sessão atual; será capturada
       // pelos próximos triggers de auditoria executados nesta página de edição.
       await setAuditJustificativa(justificativa);
-      navigate(`/editar-atendimento/${encodeURIComponent(target.protocolo)}`);
+      navigate(`/atendimentos/${encodeURIComponent(target.protocolo)}/editar`);
     }
   };
 
@@ -792,7 +792,7 @@ const Index = () => {
             )}
             {canCreate && (
               <button
-                onClick={() => navigate("/novo-atendimento")}
+                onClick={() => navigate("/atendimentos/novo")}
                 className="inline-flex items-center gap-2 h-10 px-4 bg-primary text-primary-foreground text-[13px] font-semibold rounded-xl hover:bg-primary/90 transition-colors shadow-[0_2px_8px_-2px_hsl(var(--primary)/0.4)]"
               >
                 <Plus className="w-4 h-4" />
@@ -907,7 +907,7 @@ const Index = () => {
                 </p>
                 {canCreate && (
                   <button
-                    onClick={() => navigate("/novo-atendimento")}
+                    onClick={() => navigate("/atendimentos/novo")}
                     className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" /> Novo atendimento

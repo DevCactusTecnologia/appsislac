@@ -547,7 +547,7 @@ const LabApoio = () => {
                           </div>
                           <div className="flex items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground flex-wrap">
                             <button
-                              onClick={() => navigate(`/consultar-resultado/${encodeURIComponent(row.protocolo)}`)}
+                              onClick={() => navigate(`/resultados/${encodeURIComponent(row.protocolo)}/consulta`)}
                               className="font-medium text-foreground hover:text-primary truncate max-w-[200px]"
                               title={row.paciente_nome}
                             >
