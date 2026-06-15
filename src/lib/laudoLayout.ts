@@ -25,6 +25,7 @@ import { loadLayouts, type LayoutMargins } from "@/data/exameLayoutsStore";
 import { loadParametros, ExameParametro } from "@/data/exameParametrosStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { resolverReferencia } from "@/data/valoresReferenciaStore";
+import { preserveVisibleTextSpacing, splitPlaceholderSpacing } from "@/lib/htmlSpacing";
 
 const DEFAULT_MARGINS: LayoutMargins = { top: 4, right: 11, bottom: 4, left: 11 };
 
@@ -164,7 +165,10 @@ function applyPlaceholders(
 
   return html
     // ##CHAVE##  (não-greedy, aceita letras/números/_/- entre as ##)
-    .replace(/##([^#\s]+?)##/g, (_, key) => lookup(key))
+    .replace(/##([^#]*?)##/g, (_, raw) => {
+      const { leading, key, trailing } = splitPlaceholderSpacing(raw);
+      return `${leading}${lookup(key)}${trailing}`;
+    })
     // {{chave}}
     .replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => lookup(key))
     // {chave}    (apenas se for token "limpo", evita conflito com CSS/JSON)
@@ -178,22 +182,6 @@ function applyPlaceholders(
       return v || m;
     });
 }
-
-const normalizeLeadingCellWhitespace = (html: string): string =>
-  html.replace(
-    /(<(?:td|th)\b[^>]*>\s*(?:<(?:span|strong|b)\b[^>]*>\s*)*)(?:&nbsp;|&#160;|\u00a0|\s)+(?=(?:<(?:strong|b)\b[^>]*>\s*)?[A-ZÀ-Ÿ])/gi,
-    "$1",
-  );
-
-/**
- * Preserva runs de 2+ espaços (digitados pelo usuário no editor) nos nós de
- * texto do HTML. Necessário porque o navegador colapsa whitespace consecutivo
- * por padrão, fazendo "  mg/dL" virar "mg/dL" no PDF.
- */
-const preserveTextSpacing = (html: string): string =>
-  html.replace(/>([^<]*)</g, (_m, txt: string) =>
-    ">" + txt.replace(/ {2,}/g, (s) => "\u00a0".repeat(s.length)) + "<",
-  );
 
 /**
  * Renderiza o bloco HTML de UM exame usando seu layout padrão persistido.
@@ -224,9 +212,7 @@ export async function renderExameComLayout(
   }
 
   const valueMap = buildValueMap(exameNome, resultados, parametros, pacienteSexo, pacienteIdade, pacienteExtra);
-  const corpo = preserveTextSpacing(
-    normalizeLeadingCellWhitespace(applyPlaceholders(layoutPadrao.conteudo, valueMap)),
-  );
+  const corpo = preserveVisibleTextSpacing(applyPlaceholders(layoutPadrao.conteudo, valueMap));
 
   // Margens institucionais de impressão do laudo: 4mm topo, 11mm laterais e 9mm inferior.
   // Ignora margens herdadas de layouts antigos para manter a página centralizada.
