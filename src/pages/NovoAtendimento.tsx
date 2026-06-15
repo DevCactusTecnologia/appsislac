@@ -51,6 +51,7 @@ const CadastroPacienteDialog = lazy(() => import("@/components/CadastroPacienteD
 const PdfPreviewDialog = lazy(() => import("@/components/PdfPreviewDialog"));
 const ReutilizarAmostraDialog = lazy(() => import("@/components/soroteca/ReutilizarAmostraDialog"));
 const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPanel"));
+import FerramentasAvancadasMenu from "@/components/atendimento/FerramentasAvancadasMenu";
 
 // Types, helpers puros, DropdownStatus e highlightMatch foram extraídos para
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
