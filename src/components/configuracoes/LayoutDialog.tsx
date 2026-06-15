@@ -82,8 +82,10 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const previewHtml = useMemo(() => {
     let html = editorContent;
-    Object.entries(PREVIEW_DEMO).forEach(([k, v]) => {
-      html = html.replace(new RegExp(`##${escapeRegex(k)}##`, "g"), v);
+    html = html.replace(/##([^#]*?)##/g, (match, raw) => {
+      const { leading, key, trailing } = splitPlaceholderSpacing(raw);
+      const valor = PREVIEW_DEMO[key];
+      return valor !== undefined ? `${leading}${valor}${trailing}` : match;
     });
     parametros.forEach((p) => {
       const valor = p.tipo === "Número" ? "0,00" : p.opcoesSelect?.[0] ?? "—";
