@@ -15,11 +15,14 @@ export function splitPlaceholderSpacing(raw: string): { leading: string; key: st
  */
 export function preserveVisibleTextSpacing(html: string): string {
   return html.replace(/>([^<]*)</g, (_match, text: string) => {
-    const hasNbspEntity = /&nbsp;|&#160;|&#x0*a0;/i.test(text);
-    const textWithoutEntities = text.replace(HTML_SPACE_ENTITY_RE, "");
-    const hasContent = /[^\s\u00a0]/.test(textWithoutEntities);
-    if (!hasNbspEntity && !hasContent) return `>${text}<`;
+    const normalized = text
+      .replace(HTML_SPACE_ENTITY_RE, "\u00a0")
+      .replace(/ {2,}/g, (spaces) => "\u00a0".repeat(spaces.length))
+      .replace(/ +(?=\u00a0)/g, (spaces) => "\u00a0".repeat(spaces.length))
+      .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length))
+      .replace(/^ +/g, (spaces) => "\u00a0".repeat(spaces.length))
+      .replace(/ +$/g, (spaces) => "\u00a0".repeat(spaces.length));
 
-    return `>${text.replace(HTML_SPACE_ENTITY_RE, "\u00a0").replace(/ /g, "\u00a0")}<`;
+    return `>${normalized}<`;
   });
 }
