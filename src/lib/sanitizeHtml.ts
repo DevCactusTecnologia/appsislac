@@ -6,15 +6,12 @@
 
 import DOMPurify from "dompurify";
 
-const sharedConfig: DOMPurify.Config = {
-  // Bloqueio explícito de vetores comuns (DOMPurify já bloqueia por padrão,
-  // mas reforçamos para deixar a intenção visível na auditoria).
+const sharedConfig = {
   FORBID_TAGS: ["script", "iframe", "object", "embed", "link", "meta", "base"],
   FORBID_ATTR: ["srcdoc", "formaction"],
   ALLOW_DATA_ATTR: true,
-  // Mantém atributos do CKEditor (classes, estilos, colspan, etc.).
   KEEP_CONTENT: true,
-};
+} as const;
 
 /** Sanitiza HTML preservando formatação visível. Use sempre antes de
  *  renderizar HTML vindo do editor / banco. */
