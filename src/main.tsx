@@ -122,6 +122,8 @@ if (typeof window !== "undefined") {
       if (sessionStorage.getItem(RELOAD_FLAG)) return;
       sessionStorage.setItem(RELOAD_FLAG, "1");
     } catch { /* ignore */ }
+    // eslint-disable-next-line no-console
+    console.warn("[sislac] chunk-reload acionado por:", msg);
     window.location.reload();
   };
 
