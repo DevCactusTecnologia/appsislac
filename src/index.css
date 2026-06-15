@@ -276,25 +276,10 @@
 .a4-sheet table {
   width: 100% !important;
   table-layout: fixed !important;
-  border-collapse: collapse;
 }
 .a4-sheet table td,
 .a4-sheet table th {
   overflow-wrap: break-word;
   word-break: break-word;
-  /* Garante separação visual entre células no preview, espelhando o editor. */
-  padding: 6px 10px !important;
-  vertical-align: top;
-}
-/* CKEditor envolve tabelas em <figure class="table">; preserva a largura total. */
-.a4-sheet figure.table,
-.prose-mapa figure.table {
-  margin: 0.6em 0;
-  width: 100%;
-  display: block;
-}
-.a4-sheet figure.table > table,
-.prose-mapa figure.table > table {
-  width: 100% !important;
 }
 
