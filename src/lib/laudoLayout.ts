@@ -177,7 +177,7 @@ function applyPlaceholders(
       return v || m; // se não casou, devolve o token original (não estraga CSS inline)
     })
     // #chave  (token de uma palavra; usado pelo editor padrão "#parâmetro")
-    .replace(/#([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9_\-]*)/g, (m, key) => {
+    .replace(/#([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9_-]*)/g, (m, key) => {
       const v = lookup(key);
       return v || m;
     });
