@@ -69,18 +69,23 @@ export async function validarCredenciaisAnalista(
       return { ok: false, error: "E-mail ou senha incorretos." };
     }
 
-    // Verifica se o usuário existe no tenant atual (cache de usuariosStore)
+    // Verificação de role server-side via RPC SECURITY DEFINER `has_role`.
+    // Não confiamos no cache local (`usuariosStore`): o cache pode estar vazio
+    // ou pertencer a outro tenant. A RPC roda no banco com o JWT recém-emitido
+    // pelo signIn transitório e responde "true" apenas se o user tiver o role
+    // pedido (admin OU analista) — qualquer outra resposta = rejeição.
+    const [{ data: isAnalista }, { data: isAdmin }] = await Promise.all([
+      transient.rpc("has_role", { _user_id: data.user.id, _role: "analista" }),
+      transient.rpc("has_role", { _user_id: data.user.id, _role: "admin" }),
+    ]);
+    if (!isAnalista && !isAdmin) {
+      return { ok: false, error: "Este usuário não tem perfil de analista." };
+    }
+
     const cache = getUsuarios();
     const found = cache.find((u) => u.email.toLowerCase() === emailNorm);
     const meta = (data.user.user_metadata ?? {}) as { nome?: string; full_name?: string };
     const nome = found?.nome || meta.nome || meta.full_name || emailNorm.split("@")[0];
-
-    if (found) {
-      const perfilOk = found.perfil === "analista" || found.perfil === "admin" || found.isAdmin;
-      if (!perfilOk) {
-        return { ok: false, error: "Este usuário não tem perfil de analista." };
-      }
-    }
 
     return {
       ok: true,

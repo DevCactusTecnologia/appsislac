@@ -11,7 +11,7 @@ const sharedConfig = {
   FORBID_ATTR: ["srcdoc", "formaction"],
   ALLOW_DATA_ATTR: true,
   KEEP_CONTENT: true,
-} as const;
+};
 
 /** Sanitiza HTML preservando formatação visível. Use sempre antes de
  *  renderizar HTML vindo do editor / banco. */
