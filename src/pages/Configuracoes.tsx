@@ -236,6 +236,8 @@ const Configuracoes = () => {
     }
   };
 
+  if (redirectTo) return <Navigate to={redirectTo} replace />;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
