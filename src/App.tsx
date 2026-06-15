@@ -36,6 +36,12 @@ const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Soroteca = lazy(() => import("./pages/Soroteca"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
+// Fase B — Domain Driven Routes (entidades promovidas)
+const ExamesPage = lazy(() => import("./pages/Exames"));
+const ConveniosPage = lazy(() => import("./pages/Convenios"));
+const UnidadesPage = lazy(() => import("./pages/Unidades"));
+const DocumentosPage = lazy(() => import("./pages/Documentos"));
+const TabelasPrecoPage = lazy(() => import("./pages/TabelasPreco"));
 const SolicitacoesSite = lazy(() => import("./pages/SolicitacoesSite"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Perfil = lazy(() => import("./pages/Perfil"));
@@ -366,6 +372,30 @@ function AppRoutes() {
             <Route path="/soroteca" element={<ProtectedRoute permissao="registrar_coleta"><Soroteca /></ProtectedRoute>} />
             <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute permissao="configuracoes_sistema"><Configuracoes /></ProtectedRoute>} />
+            {/* Domain Driven Routes — Fase B (entidades de domínio promovidas) */}
+            <Route path="/exames" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id/modelos" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id/modelos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id/modelos/:modelId" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/exames/:id/modelos/:modelId/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+            <Route path="/convenios" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+            <Route path="/convenios/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+            <Route path="/convenios/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+            <Route path="/convenios/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+            <Route path="/unidades" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+            <Route path="/unidades/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+            <Route path="/unidades/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+            <Route path="/unidades/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+            <Route path="/documentos" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+            <Route path="/documentos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+            <Route path="/documentos/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+            <Route path="/documentos/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+            <Route path="/tabelas-preco" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
+            <Route path="/tabelas-preco/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
+            <Route path="/tabelas-preco/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
             <Route path="/pedidos-site" element={<ProtectedRoute permissao="solicitacoes_site_acesso"><SolicitacoesSite /></ProtectedRoute>} />
             {/* Backwards-compat: rota antiga `/solicitacoes-site` redireciona */}
             <Route path="/solicitacoes-site" element={<Navigate to="/pedidos-site" replace />} />
