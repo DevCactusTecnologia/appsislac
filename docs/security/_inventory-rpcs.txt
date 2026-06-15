@@ -1,0 +1,151 @@
+_calc_dv_amostra|_digitos text|plpgsql|f
+_get_audit_justificativa||plpgsql|f
+_get_protocolo_hmac_key|_tenant_id uuid|plpgsql|t
+_import_legacy_exec|sql text|plpgsql|t
+_is_post_finalizacao|_at_id bigint|sql|f
+a_receber_pacientes_page|p_search text, p_date_from timestamp with time zone, p_date_to timestamp with time zone, p_status text, p_cursor_data timestamp with time zone, p_cursor_id bigint, p_limit integer|sql|f
+aplicar_enriquecimento_exame|p_id uuid, p_fields jsonb|plpgsql|t
+atendimento_assign_protocolo||plpgsql|t
+atendimento_exames_rbac_check||plpgsql|t
+atendimento_exames_snapshot_regulatorio||plpgsql|t
+atendimento_sign_protocolo||plpgsql|t
+atendimentos_kpis|_status text, _pagamento text, _unidade_id text, _q text|plpgsql|t
+atendimentos_page|_status text, _pagamento text, _unidade_id text, _q text, _cursor_data timestamp with time zone, _cursor_id bigint, _page_size integer|plpgsql|t
+audit_app_settings||plpgsql|t
+audit_atendimento_exames||plpgsql|t
+audit_atendimento_pagamentos||plpgsql|t
+audit_atendimentos||plpgsql|t
+audit_trigger||plpgsql|t
+block_friendly_id_update||plpgsql|f
+bootstrap_set_cron_secret|p_value text|plpgsql|t
+circuit_record_failure|p_tenant uuid, p_provider text, p_kind text|plpgsql|t
+circuit_record_success|p_tenant uuid, p_provider text|plpgsql|t
+circuit_should_allow|p_tenant uuid, p_provider text|plpgsql|t
+claim_integration_jobs|p_batch integer|plpgsql|t
+cnpj_digits|_cnpj text|sql|f
+convenio_fatura_assign_codigo||plpgsql|t
+convenio_fatura_sign_codigo||plpgsql|t
+create_atendimento_tx|_atendimento jsonb, _exames jsonb, _pagamentos jsonb|plpgsql|t
+cron_health_record|p_job_name text, p_started_at timestamp with time zone, p_duration_ms integer, p_status text, p_items_processed integer, p_error_message text, p_context jsonb|plpgsql|t
+current_tenant_feature_flags||sql|t
+current_tenant_id||plpgsql|t
+current_user_email||plpgsql|t
+dashboard_daily_series|_inicio timestamp with time zone, _fim timestamp with time zone, _nome_exame text, _convenio text, _analista text, _material text|plpgsql|t
+dashboard_kpis||plpgsql|t
+dashboard_metrics|_inicio timestamp with time zone, _fim timestamp with time zone|plpgsql|t
+documento_templates_unico_padrao||plpgsql|t
+enrich_tuss_em_lote|_threshold real, _limit integer|plpgsql|f
+ensure_default_user_role||plpgsql|t
+ensure_recoleta_motivo_nome||plpgsql|t
+ensure_tenant_billing||plpgsql|t
+ensure_tenant_hmac_key|_tenant_id uuid|plpgsql|t
+estoque_aplicar_movimentacao||plpgsql|t
+estoque_marcar_lotes_vencidos||plpgsql|t
+financeiro_resumo|p_date_from timestamp with time zone, p_date_to timestamp with time zone, p_convenio text|sql|f
+financeiro_saida_assign_protocolo||plpgsql|t
+financeiro_saida_sign_protocolo||plpgsql|t
+fwd_app_settings_audit_to_platform||plpgsql|t
+fwd_atendimento_audit_to_operational||plpgsql|t
+fwd_audit_logs_split||plpgsql|t
+fwd_criticos_comunicacoes_to_operational||plpgsql|t
+fwd_legacy_dict_to_select_options||plpgsql|t
+fwd_pdf_override_audit_to_operational||plpgsql|t
+fwd_protocolo_auditoria_to_operational||plpgsql|t
+fwd_storage_audit_to_operational||plpgsql|t
+fwd_to_platform_audit_generic||plpgsql|t
+generate_next_lab_code||plpgsql|t
+generate_protocolo_sequencial|_prefixo text, _ano integer|plpgsql|t
+gerar_assinatura_protocolo|_tenant_id uuid, _protocolo text, _registro_id bigint, _timestamp timestamp with time zone|plpgsql|t
+gerar_codigo_amostra|_tenant_id uuid, _data date|plpgsql|t
+get_published_tenant_page|p_tenant_id uuid, p_slug text|sql|t
+grupo_exame_para|_atendimento_id bigint, _exame_id uuid, _nome_exame text|sql|t
+handle_auth_user_deleted||plpgsql|t
+handle_default_payment_gateway||plpgsql|f
+handle_new_user||plpgsql|t
+handle_tenant_identifiers||plpgsql|f
+has_permission|_user_id uuid, _permission text|plpgsql|t
+has_role|_user_id uuid, _role app_role|sql|t
+health_record_sample|p_tenant uuid, p_provider text, p_latency_ms integer, p_outcome text, p_was_retry boolean|plpgsql|t
+impressao_geral_resumo|_date date, _unidade_id text|sql|t
+is_super_admin|_user_id uuid|sql|t
+is_super_admin||sql|t
+log_tenant_provisioning_transition||plpgsql|t
+lookup_paciente_publico|p_tenant_id uuid, p_cpf text|sql|t
+marcar_amostras_vencidas||plpgsql|t
+match_tuss_estrito|_nome text, _threshold real|plpgsql|f
+match_tuss_por_nome|_nome text, _threshold real, _limit integer|plpgsql|f
+match_tuss_v2|_nome text, _threshold real|plpgsql|f
+next_friendly_id|_tenant_id uuid, _scope text, _prefix text|plpgsql|t
+next_guia_numero|_tenant_id uuid, _unidade_id text|plpgsql|t
+ocorrencias_page|_cursor_occurred_at timestamp with time zone, _cursor_id bigint, _cursor_kind text, _limit integer, _date_from timestamp with time zone, _date_to timestamp with time zone, _busca text|plpgsql|t
+orcamento_assign_codigo||plpgsql|t
+orcamento_sign_codigo||plpgsql|t
+profiles_require_auth_user||plpgsql|t
+propagate_integration_result_to_exame||plpgsql|t
+protect_atendimento_protocolo||plpgsql|f
+protect_convenio_fatura_codigo||plpgsql|f
+protect_convenio_fatura_paga||plpgsql|f
+protect_default_unidade||plpgsql|f
+protect_financeiro_listas_sistema||plpgsql|f
+protect_financeiro_saida_protocolo||plpgsql|f
+protect_mapas_trabalho_sistema||plpgsql|f
+protect_orcamento_codigo||plpgsql|f
+protect_particular_convenio||plpgsql|f
+protect_profile_privileged_columns||plpgsql|t
+protect_recoletas_motivos_sistema||plpgsql|f
+protect_select_options_sistema||plpgsql|f
+proxima_amostra_seq|_atendimento_id bigint, _exame_id uuid, _nome_exame text|sql|t
+purge_integration_logs|p_retention_days integer|plpgsql|t
+purge_old_signup_attempts||plpgsql|t
+realtime_topic_uuid|topic text, seg integer|plpgsql|f
+recompute_atendimento_status|_atendimento_id bigint|plpgsql|t
+require_justificativa_pos_finalizacao||plpgsql|t
+resultados_page|_cursor_data timestamp with time zone, _cursor_id bigint, _limit integer, _status text, _busca text|sql|f
+seed_default_formas_pagamento_for_tenant|_tenant_id uuid|plpgsql|t
+seed_default_listas_globais_on_tenant_create||plpgsql|t
+seed_default_mapas_for_tenant|_tenant_id uuid|plpgsql|t
+seed_default_mapas_trabalho_for_tenant|_tenant_id uuid|plpgsql|t
+seed_default_motivos_cancelamento_for_tenant|_tenant_id uuid|plpgsql|t
+seed_default_recoletas_motivos_for_tenant|_tenant_id uuid|plpgsql|t
+seed_tenant_default_lists|p_tenant uuid|plpgsql|t
+set_audit_justificativa|_text text|plpgsql|t
+set_especialista_friendly_id||plpgsql|t
+set_paciente_friendly_id||plpgsql|t
+set_profile_friendly_id||plpgsql|t
+set_updated_at_timestamp||plpgsql|f
+snapshot_exame_terceirizado||plpgsql|t
+solicitacao_publica_validate||plpgsql|t
+super_admin_tenants_metrics||sql|t
+sync_exame_analise_legacy||plpgsql|f
+sync_tenant_registry_runtime_status||plpgsql|t
+tenant_registry_autoinsert||plpgsql|t
+tenant_registry_lab_code_guard||plpgsql|t
+tenant_users_integrity||plpgsql|t
+tg_amostras_updated_at||plpgsql|f
+tg_set_updated_at||plpgsql|t
+touch_app_settings_updated_at||plpgsql|f
+touch_convenio_faturas_updated_at||plpgsql|f
+touch_documento_templates_updated_at||plpgsql|f
+touch_exame_pops_updated_at||plpgsql|f
+touch_financeiro_listas_updated_at||plpgsql|f
+touch_profiles_updated_at||plpgsql|f
+touch_recoletas_motivos_updated_at||plpgsql|f
+touch_recoletas_updated_at||plpgsql|f
+touch_saas_settings||plpgsql|t
+touch_select_options_updated_at||plpgsql|f
+touch_tenants_updated_at||plpgsql|f
+touch_transporte_remessas_updated_at||plpgsql|f
+touch_updated_at||plpgsql|f
+trg_recompute_on_exame_change||plpgsql|t
+trg_recompute_on_pagamento_change||plpgsql|t
+trigger_seed_tenant_default_lists||plpgsql|t
+unaccent_safe|_text text|sql|f
+unidade_prefixo|_nome text|sql|f
+update_atendimento_exame_tx|_exame_id bigint, _patch jsonb, _justificativa text|plpgsql|f
+update_atendimento_tx|_atendimento_id bigint, _patch jsonb, _exames jsonb, _pagamentos jsonb, _cancelar_tudo boolean, _motivo_cancel text, _justificativa text|plpgsql|f
+update_own_tenant_site_config|p_slug text, p_dominio_custom text|plpgsql|t
+update_updated_at_column||plpgsql|f
+validate_protocolo_atendimento|_protocolo text|plpgsql|t
+validate_protocolo_fatura|_codigo text|plpgsql|t
+validate_protocolo_orcamento|_codigo text|plpgsql|t
+validate_protocolo_saida|_protocolo text|plpgsql|t
