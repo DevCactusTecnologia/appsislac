@@ -102,8 +102,6 @@ const Configuracoes = () => {
     documentos: "/documentos",
     tabelas: "/tabelas-preco",
   };
-  const redirectTo = TAB_REDIRECT[tabParam];
-  if (redirectTo) return <Navigate to={redirectTo} replace />;
   const initialTab = tabParam;
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => {
