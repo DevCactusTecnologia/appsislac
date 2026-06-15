@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
   {
     label: "Resultados", icon: FileCheck2,
     children: [
-      { label: "Consultar", icon: Search, path: "/consultar-resultados" },
+      { label: "Consultar", icon: Search, path: "/resultados/consulta" },
       { label: "Apoio Laboratorial", icon: Network, path: "/lab-apoio" },
     ],
   },
