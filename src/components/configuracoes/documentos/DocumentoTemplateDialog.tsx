@@ -18,6 +18,7 @@ import {
 } from "@/data/documentoTemplatesStore";
 import { DOCUMENTO_PLACEHOLDERS, renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { renderPlaceholders } from "@/lib/mapaPlaceholders";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getTemplatePadraoHtml, removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { getLabConfig } from "@/data/labConfigStore";
@@ -453,7 +454,7 @@ const DocumentoTemplateDialog = ({
                   <div
                     className="prose-mapa prose-mapa-document a4-sheet text-[13px] leading-snug"
                     style={{ fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
                   />
                 ) : (
                   <p className="text-xs text-muted-foreground text-center py-12">

@@ -178,7 +178,23 @@ const CKEditorComponent = ({
         ],
       },
       htmlSupport: {
-        allow: [{ name: /.*/, attributes: true, classes: true, styles: true }],
+        // Allowlist restrita: blocos de formatação/estrutura usados em laudos,
+        // mapas e documentos. NÃO inclui <script>, <iframe>, <object>,
+        // <embed>, <form> ou atributos de evento (on*). Para evitar XSS
+        // armazenado, qualquer conteúdo gerado aqui também passa por
+        // sanitizeHtml() antes de ser renderizado.
+        allow: [
+          {
+            name: /^(p|div|span|section|article|header|footer|main|aside|h[1-6]|blockquote|hr|br|pre|code|em|strong|b|i|u|s|sub|sup|small|mark|ul|ol|li|dl|dt|dd|figure|figcaption|img|a|table|thead|tbody|tfoot|tr|th|td|caption|colgroup|col)$/i,
+            attributes: /^(class|style|colspan|rowspan|align|valign|width|height|src|alt|title|href|target|rel|data-[\w-]+|id|lang|dir)$/i,
+            classes: true,
+            styles: true,
+          },
+        ],
+        disallow: [
+          { name: /^(script|iframe|object|embed|form|input|button|select|textarea|link|meta|base|svg|math)$/i },
+          { attributes: /^on/i },
+        ],
       },
     }),
     [placeholder],
