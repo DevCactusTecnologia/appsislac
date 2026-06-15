@@ -224,7 +224,9 @@ export async function renderExameComLayout(
   }
 
   const valueMap = buildValueMap(exameNome, resultados, parametros, pacienteSexo, pacienteIdade, pacienteExtra);
-  const corpo = normalizeLeadingCellWhitespace(applyPlaceholders(layoutPadrao.conteudo, valueMap));
+  const corpo = preserveTextSpacing(
+    normalizeLeadingCellWhitespace(applyPlaceholders(layoutPadrao.conteudo, valueMap)),
+  );
 
   // Margens institucionais de impressão do laudo: 4mm topo, 11mm laterais e 9mm inferior.
   // Ignora margens herdadas de layouts antigos para manter a página centralizada.
