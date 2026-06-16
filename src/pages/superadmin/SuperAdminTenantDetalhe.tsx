@@ -135,6 +135,7 @@ export default function SuperAdminTenantDetalhe() {
   const [newPassword, setNewPassword] = useState("");
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
   // Plan change
