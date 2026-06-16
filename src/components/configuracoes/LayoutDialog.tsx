@@ -55,6 +55,25 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
     top: "5", right: "5", bottom: "5", left: "5",
   });
 
+  // [DIAG-AUTOCLOSE] Investigação de fechamento espontâneo. Remover após resolver.
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.info(`[DIAG LayoutDialog] open=${open}`, new Date().toISOString());
+    if (!open) {
+      // eslint-disable-next-line no-console
+      console.trace("[DIAG LayoutDialog] fechou — stack:");
+    }
+  }, [open]);
+
+  const onCloseDiag = () => {
+    // eslint-disable-next-line no-console
+    console.warn("[DIAG LayoutDialog] onClose chamado", new Date().toISOString());
+    // eslint-disable-next-line no-console
+    console.trace("[DIAG LayoutDialog] origem do onClose:");
+    onClose();
+  };
+
+
   useEffect(() => {
     if (!open) return;
     if (editData) {
@@ -164,7 +183,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const footer = (
     <>
-      <button onClick={onClose} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+      <button onClick={onCloseDiag} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
         Cancelar
       </button>
       <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity">
@@ -176,7 +195,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   return (
     <StandardDialog
       open={open}
-      onClose={onClose}
+      onClose={onCloseDiag}
       icon={<FlaskConical className="h-5 w-5 text-primary" />}
       title={editData ? "Editar layout científico" : "Novo layout científico"}
       subtitle={exame?.nome ? `${exame.nome} — motor científico do laudo (metodologia, unidade, VR, cálculo, renderização)` : "Motor científico do laudo (metodologia, unidade, VR, cálculo, renderização)"}
