@@ -235,6 +235,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             value={editorContent}
             onChange={setEditorContent}
             placeholder="Escreva o conteúdo do laudo, insira tabelas e use os placeholders…"
+            marginsMm={{
+              top: Number(margins.top) || 0,
+              right: Number(margins.right) || 0,
+              bottom: Number(margins.bottom) || 0,
+              left: Number(margins.left) || 0,
+            }}
             toolbarRight={
               <Popover>
                 <PopoverTrigger asChild>
@@ -285,7 +291,10 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             */}
             <div
               className="ck-content prose-mapa a4-sheet text-[13px] leading-snug"
-              style={{ fontFamily: '"Courier New", Courier, monospace' }}
+              style={{
+                fontFamily: '"Courier New", Courier, monospace',
+                padding: `${Number(margins.top) || 0}mm ${Number(margins.right) || 0}mm ${Number(margins.bottom) || 0}mm ${Number(margins.left) || 0}mm`,
+              }}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) || "<p style='color:#94a3b8;'>Nada para pré-visualizar — escreva algo no editor.</p>" }}
             />
           </div>
