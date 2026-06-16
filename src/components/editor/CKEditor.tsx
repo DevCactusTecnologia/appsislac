@@ -72,6 +72,8 @@ export interface CKEditorProps {
   orientation?: "portrait" | "landscape";
   toolbarRight?: ReactNode;
   onEditorReady?: (api: CKEditorApi) => void;
+  /** Margens internas da "folha" (em mm). Default 10mm em todos os lados. */
+  marginsMm?: { top: number; right: number; bottom: number; left: number };
 }
 
 const FONT_FAMILIES = [
