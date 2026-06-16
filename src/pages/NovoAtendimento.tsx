@@ -1611,18 +1611,23 @@ const NovoAtendimento = () => {
                     value={exameQuery}
                     onChange={e => { setExameQuery(e.target.value); setExameDropdownOpen(true); }}
                     onFocus={() => setExameDropdownOpen(true)}
-                    placeholder="Pesquisar exame por nome ou código..."
+                    placeholder="Pesquisar exame por nome ou mnemônico..."
                     className="w-full pl-11 pr-4 py-3.5 bg-background border border-border/60 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
                   />
                   {exameDropdownOpen && (exameQuery.trim() || exameLoading || exameError) && (() => {
                     const q = searchNormalize(exameQuery);
                     const filtered = availableExames.filter(e => {
                       const matchesName = !q || searchNormalize(e.nome).includes(q);
+                      const cat = getExamesCatalogo().find(
+                        (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
+                      );
+                      const matchesMnemonico = !q || (cat?.mnemonico ? searchNormalize(cat.mnemonico).includes(q) : false);
+                      const matches = matchesName || matchesMnemonico;
                       const convenioTabelas = convenios.map(c => getTabelaByConvenioNome(c));
                       const inSelectedConvenios = convenios.length === 0 || convenioTabelas.includes(e.convenio);
                       const filterTabela = selectedConvenioFilter ? getTabelaByConvenioNome(selectedConvenioFilter) : null;
                       const matchesConvenio = !filterTabela || e.convenio === filterTabela;
-                      return matchesName && inSelectedConvenios && matchesConvenio;
+                      return matches && inSelectedConvenios && matchesConvenio;
                     });
                     const seen = new Set<string>();
                     const deduped = filtered.filter(e => {
