@@ -1,6 +1,7 @@
 // Detalhe do Laboratório — Control Plane SaaS.
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,7 +111,6 @@ export default function SuperAdminTenantDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [tenant, setTenant] = useState<Tenant | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("identidade");
   const [showTechnical, setShowTechnical] = useState(false);
 
@@ -126,7 +126,6 @@ export default function SuperAdminTenantDetalhe() {
 
   // Snapshot
   const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [snapLoading, setSnapLoading] = useState(false);
 
   // Dialogs
   const [resetOpen, setResetOpen] = useState(false);
@@ -149,34 +148,47 @@ export default function SuperAdminTenantDetalhe() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminTelefone, setAdminTelefone] = useState("");
 
-  const loadTenant = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const isNumeric = /^[0-9]+$/.test(id);
-    let query = supabase.from("tenants").select("*");
-    if (isUUID) query = query.eq("id", id);
-    else if (isNumeric) query = query.eq("lab_code", id);
-    else query = query.eq("slug", id);
-    const { data, error } = await query.maybeSingle();
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    const t = data as Tenant;
-    setTenant(t);
-    setNome(t?.nome ?? "");
-    setCnpj(maskCNPJ(t?.cnpj ?? ""));
-    setEmailContato(t?.email_contato ?? "");
-    setTelefone(maskPhoneBR(t?.telefone ?? ""));
-    setCidade(t?.cidade ?? "");
-    setEstado(t?.estado ?? "");
-    setLoading(false);
-  }, [id]);
+  // Tenant query (cached)
+  const { data: tenantData, isLoading: loading, refetch: refetchTenant } = useQuery<Tenant | null>({
+    queryKey: ["super-admin", "tenant", id],
+    enabled: !!id,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    queryFn: async () => {
+      if (!id) return null;
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const isNumeric = /^[0-9]+$/.test(id);
+      let query = supabase.from("tenants").select("*");
+      if (isUUID) query = query.eq("id", id);
+      else if (isNumeric) query = query.eq("lab_code", id);
+      else query = query.eq("slug", id);
+      const { data, error } = await query.maybeSingle();
+      if (error) { toast.error(error.message); throw error; }
+      return data as Tenant | null;
+    },
+  });
 
-  useEffect(() => { loadTenant(); }, [loadTenant]);
+  useEffect(() => {
+    if (!tenantData) { setTenant(null); return; }
+    setTenant(tenantData);
+    setNome(tenantData.nome ?? "");
+    setCnpj(maskCNPJ(tenantData.cnpj ?? ""));
+    setEmailContato(tenantData.email_contato ?? "");
+    setTelefone(maskPhoneBR(tenantData.telefone ?? ""));
+    setCidade(tenantData.cidade ?? "");
+    setEstado(tenantData.estado ?? "");
+  }, [tenantData]);
 
-  const loadSnapshot = useCallback(async () => {
-    if (!tenant?.id) return;
-    setSnapLoading(true);
-    try {
+  const loadTenant = useCallback(async () => { await refetchTenant(); }, [refetchTenant]);
+
+  // Snapshot query (cached per tenant)
+  const { data: snapData, isFetching: snapFetching, refetch: refetchSnapshot } = useQuery<Snapshot | null>({
+    queryKey: ["super-admin", "tenant-snapshot", tenant?.id],
+    enabled: !!tenant?.id,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    queryFn: async () => {
+      if (!tenant?.id) return null;
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/super-admin-tenant-snapshot?tenantId=${tenant.id}`;
@@ -187,23 +199,25 @@ export default function SuperAdminTenantDetalhe() {
         },
       });
       const json = await res.json();
-      if (json?.ok) setSnap(json as Snapshot);
-    } catch (e) {
-      console.error("[snapshot]", e);
-    } finally {
-      setSnapLoading(false);
-    }
-  }, [tenant?.id]);
+      return json?.ok ? (json as Snapshot) : null;
+    },
+  });
+  const snapLoading = snapFetching && !snapData;
+  useEffect(() => { if (snapData) setSnap(snapData); }, [snapData]);
+  const loadSnapshot = useCallback(async () => { await refetchSnapshot(); }, [refetchSnapshot]);
 
-  useEffect(() => { loadSnapshot(); }, [loadSnapshot]);
-
-  // Load plans
-  useEffect(() => {
-    (async () => {
+  // Load plans (cached globally)
+  const { data: plansData } = useQuery<SubscriptionPlan[]>({
+    queryKey: ["super-admin", "plans"],
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    queryFn: async () => {
       const { data } = await supabase.functions.invoke("super-admin-plans", { body: { action: "list" } });
-      if (data?.plans) setPlans(data.plans as SubscriptionPlan[]);
-    })();
-  }, []);
+      return (data?.plans ?? []) as SubscriptionPlan[];
+    },
+  });
+  useEffect(() => { if (plansData) setPlans(plansData); }, [plansData]);
+
 
   const openChangePlan = () => {
     setSelectedPlanCode(snap?.billing?.plan_code ?? plans.find(p => p.is_default)?.code ?? plans[0]?.code ?? "");
