@@ -1,6 +1,7 @@
 // Lista de Laboratórios (Tenants) — Control Plane SaaS.
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,23 +38,21 @@ type StatusFilter = "todos" | "ativo" | "suspenso" | "inativo";
 
 export default function SuperAdminTenants() {
   const navigate = useNavigate();
-  const [tenants, setTenants] = useState<TenantRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
-  const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
-    if (tenants.length === 0) setLoading(true);
-    else setRefreshing(true);
-    const { data, error } = await supabase.functions.invoke("super-admin-list-tenants");
-    if (error) { toast.error(error.message); setLoading(false); setRefreshing(false); return; }
-    setTenants((data?.tenants ?? []) as TenantRow[]);
-    setLoading(false);
-    setRefreshing(false);
-  };
-
-  useEffect(() => { load(); }, []);
+  const { data: tenants = [], isLoading: loading, isFetching, refetch } = useQuery<TenantRow[]>({
+    queryKey: ["super-admin", "tenants-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("super-admin-list-tenants");
+      if (error) { toast.error(error.message); throw error; }
+      return (data?.tenants ?? []) as TenantRow[];
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  });
+  const refreshing = isFetching && !loading;
+  const load = () => { void refetch(); };
 
   const filtered = useMemo(() => {
     const term = searchNormalize(q);
