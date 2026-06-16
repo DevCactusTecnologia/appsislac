@@ -52,7 +52,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   const [parametros, setParametros] = useState<ExameParametro[]>([]);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
-    top: "10", right: "10", bottom: "10", left: "10",
+    top: "5", right: "5", bottom: "5", left: "5",
   });
 
   useEffect(() => {
@@ -63,9 +63,9 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setEditorContent(editData.conteudo || "<p></p>");
       const m = (editData.config?.margins ?? {}) as Partial<{ top: number; right: number; bottom: number; left: number }>;
       setMargins({
-        top: String(m.top ?? 10),
-        right: String(m.right ?? 10),
-        bottom: String(m.bottom ?? 10),
+        top: String(m.top ?? 5),
+        right: String(m.right ?? 5),
+        bottom: String(m.bottom ?? 5),
         left: String(m.left ?? 5),
       });
     } else {
@@ -75,6 +75,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setEditorContent("<p></p>");
       setMargins({ top: "5", right: "5", bottom: "5", left: "5" });
     }
+
     setTab("editor");
     if (exame?.id) {
       loadParametros(exame.id).then(() => setParametros(getParametros(exame.id)));
