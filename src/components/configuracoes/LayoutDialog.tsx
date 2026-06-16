@@ -183,7 +183,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const footer = (
     <>
-      <button onClick={onClose} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
+      <button onClick={onCloseDiag} className="h-9 px-4 rounded-md text-[12.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors">
         Cancelar
       </button>
       <button onClick={handleSave} disabled={saving} className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12.5px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-opacity">
@@ -195,7 +195,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   return (
     <StandardDialog
       open={open}
-      onClose={onClose}
+      onClose={onCloseDiag}
       icon={<FlaskConical className="h-5 w-5 text-primary" />}
       title={editData ? "Editar layout científico" : "Novo layout científico"}
       subtitle={exame?.nome ? `${exame.nome} — motor científico do laudo (metodologia, unidade, VR, cálculo, renderização)` : "Motor científico do laudo (metodologia, unidade, VR, cálculo, renderização)"}
