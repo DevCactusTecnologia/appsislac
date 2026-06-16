@@ -1680,13 +1680,12 @@ const NovoAtendimento = () => {
                         {linhas.map(({ exame: e, convenioNome }) => {
                           const key = `${e.id}-${convenioNome}`;
                           const isLastSelected = lastSelectedExameKey === key;
-                          const cat = getExamesCatalogo().find(
-                            (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
-                          );
+                          const cat = catByNorm.get(searchNormalize(e.nome));
                           const labApoioNome =
                             cat?.labApoioId
                               ? getLabsApoio().find((l) => l.id === cat.labApoioId)?.nome ?? undefined
                               : undefined;
+                          const mnem = cat?.mnemonico?.trim() || "";
                           return (
                           <li key={`${e.id}-${convenioNome}`}>
                             <button
@@ -1704,6 +1703,9 @@ const NovoAtendimento = () => {
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-foreground truncate">
                                   {highlightMatch(e.nome, exameQuery)}
+                                  {mnem && (
+                                    <span className="text-muted-foreground font-normal"> — {highlightMatch(mnem, exameQuery)}</span>
+                                  )}
                                 </p>
                                 <div className="flex items-center gap-2 shrink-0 ml-3">
                                   {isLastSelected && (
