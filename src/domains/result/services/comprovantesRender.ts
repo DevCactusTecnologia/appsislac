@@ -251,7 +251,7 @@ export async function renderAndSave(
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = sanitizeHtml(html);
   document.body.appendChild(wrapper);
   try {
     const html2pdf = await loadHtml2Pdf();
