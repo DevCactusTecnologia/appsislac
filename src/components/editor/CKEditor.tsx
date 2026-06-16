@@ -208,7 +208,7 @@ const CKEditorComponent = ({
         "--sislac-pad-right": `${marginsMm.right}mm`,
         "--sislac-pad-bottom": `${marginsMm.bottom}mm`,
         "--sislac-pad-left": `${marginsMm.left}mm`,
-      } as React.CSSProperties)
+      } as CSSProperties)
     : undefined;
 
   return (
