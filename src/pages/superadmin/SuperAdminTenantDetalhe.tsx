@@ -1050,6 +1050,39 @@ export default function SuperAdminTenantDetalhe() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmação de impersonação */}
+      <Dialog open={impersonateOpen} onOpenChange={setImpersonateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-4 w-4" /> Acessar como administrador
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Será gerado um link de acesso único para o administrador de
+                  <span className="font-semibold"> {tenant.nome}</span> e aberto em uma nova aba.
+                </p>
+                <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-100">
+                  <p className="font-semibold mb-1">Atenção</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Sua sessão Super Admin <strong>atual neste navegador</strong> será substituída pela sessão do laboratório.</li>
+                    <li>Toda ação executada ficará registrada na auditoria como impersonação.</li>
+                    <li>Para voltar, use o botão <em>“Voltar ao Super Admin”</em> no banner amarelo do topo.</li>
+                  </ul>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImpersonateOpen(false)} disabled={actionBusy}>Cancelar</Button>
+            <Button onClick={handleImpersonate} disabled={actionBusy}>
+              {actionBusy ? "Gerando link..." : "Acessar laboratório"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
