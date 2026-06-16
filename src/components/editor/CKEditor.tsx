@@ -202,8 +202,17 @@ const CKEditorComponent = ({
     [placeholder],
   );
 
+  const sheetStyle = marginsMm
+    ? ({
+        "--sislac-pad-top": `${marginsMm.top}mm`,
+        "--sislac-pad-right": `${marginsMm.right}mm`,
+        "--sislac-pad-bottom": `${marginsMm.bottom}mm`,
+        "--sislac-pad-left": `${marginsMm.left}mm`,
+      } as React.CSSProperties)
+    : undefined;
+
   return (
-    <div className="sislac-ckeditor" data-orientation={orientation}>
+    <div className="sislac-ckeditor" data-orientation={orientation} style={sheetStyle}>
       {toolbarRight && (
         <div className="sislac-ckeditor__toolbar-right">
           {toolbarRight}
