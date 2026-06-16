@@ -1616,11 +1616,12 @@ const NovoAtendimento = () => {
                   />
                   {exameDropdownOpen && (exameQuery.trim() || exameLoading || exameError) && (() => {
                     const q = searchNormalize(exameQuery);
+                    const catalogo = getExamesCatalogo();
+                    const catByNorm = new Map<string, typeof catalogo[number]>();
+                    catalogo.forEach(c => { catByNorm.set(searchNormalize(c.nome), c); });
                     const filtered = availableExames.filter(e => {
                       const matchesName = !q || searchNormalize(e.nome).includes(q);
-                      const cat = getExamesCatalogo().find(
-                        (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
-                      );
+                      const cat = catByNorm.get(searchNormalize(e.nome));
                       const matchesMnemonico = !q || (cat?.mnemonico ? searchNormalize(cat.mnemonico).includes(q) : false);
                       const matches = matchesName || matchesMnemonico;
                       const convenioTabelas = convenios.map(c => getTabelaByConvenioNome(c));
