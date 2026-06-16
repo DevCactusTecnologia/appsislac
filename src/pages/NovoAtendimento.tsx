@@ -2573,8 +2573,8 @@ const NovoAtendimento = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
+            {(() => {
+              const buildOrcPayload = () => {
                 const today = new Date();
                 const dataStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()} ${String(today.getHours()).padStart(2, "0")}:${String(today.getMinutes()).padStart(2, "0")}:${String(today.getSeconds()).padStart(2, "0")}`;
                 const telefoneFromPaciente = selectedPaciente
@@ -2582,24 +2582,59 @@ const NovoAtendimento = () => {
                       || getPacienteByCPF((selectedPaciente.cpf || "").replace(/\D/g, ""))?.telefone
                       || "")
                   : "";
-                addOrcamento({
+                return {
                   data: dataStr,
                   nome: selectedPaciente?.nome || pacienteQuery || "Paciente",
                   cpf: selectedPaciente?.cpf || "",
                   telefone: telefoneFromPaciente,
-                  convenio: convenios[0] || "Particular", solicitante: solicitantes[0] || "",
-                  exames: exames.map(e => e.nome), subtotal, desconto, total,
-                }).then((id) => {
+                  convenio: convenios[0] || "Particular",
+                  solicitante: solicitantes[0] || "",
+                  exames: exames.map(e => e.nome),
+                  subtotal, desconto, total,
+                };
+              };
+              const criarOrcamento = (alsoPrint: boolean) => {
+                const payload = buildOrcPayload();
+                addOrcamento(payload).then((id) => {
                   setOrcamentoId(id);
                   setOrcamentoConfirmOpen(false);
                   setOrcamentoSuccessOpen(true);
+                  if (alsoPrint) {
+                    const orcData = {
+                      id,
+                      data: new Date().toLocaleDateString("pt-BR"),
+                      paciente: payload.nome,
+                      convenio: payload.convenio,
+                      solicitante: payload.solicitante || undefined,
+                      exames: payload.exames,
+                      subtotal, desconto, total,
+                    };
+                    setTimeout(() => {
+                      printHtmlInHiddenFrame({
+                        html: buildOrcamentoHtmlPublic(orcData),
+                        documentTitle: `orcamento-${id}`,
+                      });
+                    }, 200);
+                  }
                 }).catch((err) => {
                   showError(err, { scope: "NovoAtendimento.criarOrcamento" });
                 });
-              }}
-            >
-              Confirmar envio
-            </AlertDialogAction>
+              };
+              return (
+                <>
+                  <AlertDialogAction
+                    onClick={() => criarOrcamento(true)}
+                    className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimir e enviar
+                  </AlertDialogAction>
+                  <AlertDialogAction onClick={() => criarOrcamento(false)}>
+                    Confirmar envio
+                  </AlertDialogAction>
+                </>
+              );
+            })()}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
