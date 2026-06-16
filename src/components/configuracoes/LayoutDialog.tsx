@@ -235,6 +235,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             value={editorContent}
             onChange={setEditorContent}
             placeholder="Escreva o conteúdo do laudo, insira tabelas e use os placeholders…"
+            marginsMm={{
+              top: Number(margins.top) || 0,
+              right: Number(margins.right) || 0,
+              bottom: Number(margins.bottom) || 0,
+              left: Number(margins.left) || 0,
+            }}
             toolbarRight={
               <Popover>
                 <PopoverTrigger asChild>
