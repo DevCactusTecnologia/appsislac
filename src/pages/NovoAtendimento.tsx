@@ -271,7 +271,7 @@ const NovoAtendimento = () => {
   }, [location.state, isEditing]);
 
   // Convênios
-  const [convenios, setConvenios] = useState<string[]>([]);
+  const [convenios, setConvenios] = useState<string[]>(() => isEditing ? [] : ["Particular"]);
   const [convenioQuery, setConvenioQuery] = useState("");
   const [convenioDropdownOpen, setConvenioDropdownOpen] = useState(false);
   const [convenioHighlight, setConvenioHighlight] = useState(0);
