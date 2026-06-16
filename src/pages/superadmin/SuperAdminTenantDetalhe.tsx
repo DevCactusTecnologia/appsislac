@@ -303,13 +303,18 @@ export default function SuperAdminTenantDetalhe() {
   const handleImpersonate = async () => {
     if (!tenant) return;
     setActionBusy(true);
+    const tname = encodeURIComponent(tenant.nome);
+    const redirectTo = `${window.location.origin}/atendimentos?impersonated=1&tname=${tname}`;
     const { data, error } = await supabase.functions.invoke("super-admin-impersonate-tenant", {
-      body: { tenantId: tenant.id, redirectTo: `${window.location.origin}/atendimentos` },
+      body: { tenantId: tenant.id, redirectTo },
     });
     setActionBusy(false);
+    setImpersonateOpen(false);
     if (error || !data?.ok) { toast.error(error?.message ?? "Erro ao gerar link"); return; }
-    window.open(data.actionLink, "_blank");
-    toast.success("Link de acesso aberto em nova aba");
+    window.open(data.actionLink, "_blank", "noopener,noreferrer");
+    toast.success("Acesso aberto em nova aba", {
+      description: "A nova aba exibirá um banner indicando o modo impersonação.",
+    });
   };
 
   const handleDelete = async () => {
