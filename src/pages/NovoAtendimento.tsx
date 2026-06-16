@@ -1616,11 +1616,12 @@ const NovoAtendimento = () => {
                   />
                   {exameDropdownOpen && (exameQuery.trim() || exameLoading || exameError) && (() => {
                     const q = searchNormalize(exameQuery);
+                    const catalogo = getExamesCatalogo();
+                    const catByNorm = new Map<string, typeof catalogo[number]>();
+                    catalogo.forEach(c => { catByNorm.set(searchNormalize(c.nome), c); });
                     const filtered = availableExames.filter(e => {
                       const matchesName = !q || searchNormalize(e.nome).includes(q);
-                      const cat = getExamesCatalogo().find(
-                        (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
-                      );
+                      const cat = catByNorm.get(searchNormalize(e.nome));
                       const matchesMnemonico = !q || (cat?.mnemonico ? searchNormalize(cat.mnemonico).includes(q) : false);
                       const matches = matchesName || matchesMnemonico;
                       const convenioTabelas = convenios.map(c => getTabelaByConvenioNome(c));
@@ -1679,13 +1680,12 @@ const NovoAtendimento = () => {
                         {linhas.map(({ exame: e, convenioNome }) => {
                           const key = `${e.id}-${convenioNome}`;
                           const isLastSelected = lastSelectedExameKey === key;
-                          const cat = getExamesCatalogo().find(
-                            (c) => c.nome.toLowerCase() === e.nome.toLowerCase()
-                          );
+                          const cat = catByNorm.get(searchNormalize(e.nome));
                           const labApoioNome =
                             cat?.labApoioId
                               ? getLabsApoio().find((l) => l.id === cat.labApoioId)?.nome ?? undefined
                               : undefined;
+                          const mnem = cat?.mnemonico?.trim() || "";
                           return (
                           <li key={`${e.id}-${convenioNome}`}>
                             <button
@@ -1703,6 +1703,9 @@ const NovoAtendimento = () => {
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-foreground truncate">
                                   {highlightMatch(e.nome, exameQuery)}
+                                  {mnem && (
+                                    <span className="text-muted-foreground font-normal"> — {highlightMatch(mnem, exameQuery)}</span>
+                                  )}
                                 </p>
                                 <div className="flex items-center gap-2 shrink-0 ml-3">
                                   {isLastSelected && (
@@ -1775,6 +1778,13 @@ const NovoAtendimento = () => {
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-sm font-semibold text-foreground truncate">
                                     {highlightMatch(exame.nome, exameQuery)}
+                                    {(() => {
+                                      const cat = getExamesCatalogo().find(c => searchNormalize(c.nome) === searchNormalize(exame.nome));
+                                      const mnem = cat?.mnemonico?.trim();
+                                      return mnem ? (
+                                        <span className="text-muted-foreground font-normal"> — {highlightMatch(mnem, exameQuery)}</span>
+                                      ) : null;
+                                    })()}
                                   </p>
                                   <span
                                     title={`Convênio: ${exame.convenio}`}
