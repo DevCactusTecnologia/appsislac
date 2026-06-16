@@ -228,7 +228,14 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
                   setFlyoutPos(null);
                 } else {
                   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setFlyoutPos({ top: rect.top, left: rect.right + 8 });
+                  const itemCount = item.children?.length ?? 0;
+                  const estimatedFlyoutHeight = 30 + itemCount * 34;
+                  const viewportHeight = window.innerHeight;
+                  let top = rect.top;
+                  if (top + estimatedFlyoutHeight > viewportHeight - 16) {
+                    top = Math.max(16, viewportHeight - estimatedFlyoutHeight - 16);
+                  }
+                  setFlyoutPos({ top, left: rect.right + 8 });
                   setCollapsedFlyout(item.label);
                 }
               } else {
@@ -266,8 +273,8 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
               className="fixed z-[70]"
               style={{ top: flyoutPos.top, left: flyoutPos.left }}
             >
-              <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 min-w-[200px] animate-in fade-in-0 zoom-in-95 duration-100">
-                <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.1em]">{item.label}</p>
+              <div className="bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 min-w-[200px] max-h-[calc(100vh-80px)] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-100">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-[0.1em] sticky top-0 bg-popover z-10">{item.label}</p>
                 {item.children.map(child => (
                   <button
                     key={child.path}
