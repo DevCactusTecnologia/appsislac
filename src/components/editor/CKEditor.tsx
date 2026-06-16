@@ -3,7 +3,7 @@
 // Recursos: fontes, cor de texto, cor de fundo, realce, e barra flutuante
 // de formatação que aparece com clique direito (e na seleção de texto).
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useMemo } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import {
@@ -72,6 +72,8 @@ export interface CKEditorProps {
   orientation?: "portrait" | "landscape";
   toolbarRight?: ReactNode;
   onEditorReady?: (api: CKEditorApi) => void;
+  /** Margens internas da "folha" (em mm). Default 10mm em todos os lados. */
+  marginsMm?: { top: number; right: number; bottom: number; left: number };
 }
 
 const FONT_FAMILIES = [
@@ -97,7 +99,7 @@ const FONT_FAMILIES = [
 const FONT_SIZES = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
 
 const CKEditorComponent = ({
-  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight, onEditorReady,
+  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight, onEditorReady, marginsMm,
 }: CKEditorProps) => {
   const config = useMemo<EditorConfig>(
     () => ({
@@ -200,8 +202,17 @@ const CKEditorComponent = ({
     [placeholder],
   );
 
+  const sheetStyle = marginsMm
+    ? ({
+        "--sislac-pad-top": `${marginsMm.top}mm`,
+        "--sislac-pad-right": `${marginsMm.right}mm`,
+        "--sislac-pad-bottom": `${marginsMm.bottom}mm`,
+        "--sislac-pad-left": `${marginsMm.left}mm`,
+      } as CSSProperties)
+    : undefined;
+
   return (
-    <div className="sislac-ckeditor" data-orientation={orientation}>
+    <div className="sislac-ckeditor" data-orientation={orientation} style={sheetStyle}>
       {toolbarRight && (
         <div className="sislac-ckeditor__toolbar-right">
           {toolbarRight}

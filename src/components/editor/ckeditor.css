@@ -139,7 +139,7 @@
 .sislac-ckeditor .ck.ck-editor__main > .ck-editor__editable {
   width: var(--sislac-a4-width);
   min-height: var(--sislac-a4-height);
-  padding: 10mm;
+  padding: var(--sislac-pad-top, 10mm) var(--sislac-pad-right, 10mm) var(--sislac-pad-bottom, 10mm) var(--sislac-pad-left, 10mm);
   margin: 0 auto;
   background: #ffffff;
   color: #111;
