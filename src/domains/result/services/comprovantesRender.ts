@@ -3,6 +3,7 @@
 // Comportamento preservado literalmente; comprovantes.ts re-exporta o
 // contrato público para retro-compat de imports antigos.
 import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplatesStore";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 /** Margens default (mm) — usadas quando o template não define margens próprias. */
 const DEFAULT_MARGINS_MM: [number, number, number, number] = [18, 18, 22, 18];
@@ -51,7 +52,7 @@ export async function renderToBlob(html: string, tipo?: DocumentoTipo): Promise<
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = sanitizeHtml(html);
   document.body.appendChild(wrapper);
   try {
     const html2pdf = await loadHtml2Pdf();
@@ -192,7 +193,7 @@ export async function renderToBlobAdvanced(
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = sanitizeHtml(html);
   document.body.appendChild(wrapper);
 
   try {
@@ -250,7 +251,7 @@ export async function renderAndSave(
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = sanitizeHtml(html);
   document.body.appendChild(wrapper);
   try {
     const html2pdf = await loadHtml2Pdf();
