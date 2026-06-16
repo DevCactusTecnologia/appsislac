@@ -69,6 +69,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 
       <main className="flex-1 overflow-auto">
+        <ImpersonationBanner />
         {!isCompact && !showSidebar && <AppTopbar onLogout={handleLogout} />}
         {isCompact && (
           <div className="sticky top-0 z-30 h-14 flex items-center justify-between px-4 bg-card/95 backdrop-blur-md border-b border-border/60">
