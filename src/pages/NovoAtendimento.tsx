@@ -1778,6 +1778,13 @@ const NovoAtendimento = () => {
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-sm font-semibold text-foreground truncate">
                                     {highlightMatch(exame.nome, exameQuery)}
+                                    {(() => {
+                                      const cat = getExamesCatalogo().find(c => searchNormalize(c.nome) === searchNormalize(exame.nome));
+                                      const mnem = cat?.mnemonico?.trim();
+                                      return mnem ? (
+                                        <span className="text-muted-foreground font-normal"> — {highlightMatch(mnem, exameQuery)}</span>
+                                      ) : null;
+                                    })()}
                                   </p>
                                   <span
                                     title={`Convênio: ${exame.convenio}`}
