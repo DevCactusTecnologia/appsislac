@@ -442,27 +442,39 @@ const DocumentoTemplateDialog = ({
           </div>
 
           <div className="border border-border border-t-0 rounded-b-lg overflow-hidden bg-card min-w-0">
-            {tab === "editor" ? (
-              <CKEditor
-                value={removerLinhasHorizontaisDocumento(conteudo)}
-                onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
-                onEditorReady={(api) => { editorApiRef.current = api; }}
-              />
-            ) : (
-              <div className="a4-stage">
-                {conteudo.trim() ? (
-                  <div
-                    className="prose-mapa prose-mapa-document a4-sheet text-[13px] leading-snug"
-                    style={{ fontFamily: "'Inter','Segoe UI',system-ui,sans-serif" }}
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
-                  />
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center py-12">
-                    Nada para pré-visualizar — escreva o conteúdo no editor.
-                  </p>
-                )}
-              </div>
-            )}
+            {(() => {
+              const mm = {
+                top: Number(margins.top) || 0,
+                right: Number(margins.right) || 0,
+                bottom: Number(margins.bottom) || 0,
+                left: Number(margins.left) || 0,
+              };
+              return tab === "editor" ? (
+                <CKEditor
+                  value={removerLinhasHorizontaisDocumento(conteudo)}
+                  onChange={(html) => setConteudo(removerLinhasHorizontaisDocumento(html))}
+                  onEditorReady={(api) => { editorApiRef.current = api; }}
+                  marginsMm={mm}
+                />
+              ) : (
+                <div className="a4-stage">
+                  {conteudo.trim() ? (
+                    <div
+                      className="prose-mapa prose-mapa-document a4-sheet text-[13px] leading-snug"
+                      style={{
+                        fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
+                        padding: `${mm.top}mm ${mm.right}mm ${mm.bottom}mm ${mm.left}mm`,
+                      }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
+                    />
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-12">
+                      Nada para pré-visualizar — escreva o conteúdo no editor.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
