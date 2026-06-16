@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMenuLayout } from "@/contexts/MenuLayoutContext";
 import AppSidebar from "./AppSidebar";
 import AppTopbar, { MenuLayoutToggle } from "./AppTopbar";
+import ImpersonationBanner from "./ImpersonationBanner";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   // Sidebar agora abre no modo tile (estreita) por padrão — combina com o novo dashboard.
