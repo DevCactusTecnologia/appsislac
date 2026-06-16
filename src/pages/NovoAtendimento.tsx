@@ -450,7 +450,6 @@ const NovoAtendimento = () => {
   const [lastEtiquetasTotal, setLastEtiquetasTotal] = useState(0);
   const [lastEtiquetasTerc, setLastEtiquetasTerc] = useState(0);
   const [orcamentoSuccessOpen, setOrcamentoSuccessOpen] = useState(false);
-  const [orcamentoConfirmOpen, setOrcamentoConfirmOpen] = useState(false);
   const [orcamentoPreviewOpen, setOrcamentoPreviewOpen] = useState(false);
   const [orcamentoId, setOrcamentoId] = useState("");
   const [pagamentosRealizados, setPagamentosRealizados] = useState<PagamentoRealizado[]>([]);
