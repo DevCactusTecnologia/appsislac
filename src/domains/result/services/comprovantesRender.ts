@@ -193,7 +193,7 @@ export async function renderToBlobAdvanced(
   wrapper.style.left = "-10000px";
   wrapper.style.top = "0";
   wrapper.style.width = "640px";
-  wrapper.innerHTML = html;
+  wrapper.innerHTML = sanitizeHtml(html);
   document.body.appendChild(wrapper);
 
   try {
