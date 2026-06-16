@@ -1,0 +1,1 @@
+ALTER FUNCTION public._get_protocolo_hmac_key(uuid) VOLATILE;
