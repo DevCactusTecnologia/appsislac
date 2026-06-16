@@ -451,6 +451,7 @@ const NovoAtendimento = () => {
   const [lastEtiquetasTerc, setLastEtiquetasTerc] = useState(0);
   const [orcamentoSuccessOpen, setOrcamentoSuccessOpen] = useState(false);
   const [orcamentoPreviewOpen, setOrcamentoPreviewOpen] = useState(false);
+  const [orcamentoConfirmOpen, setOrcamentoConfirmOpen] = useState(false);
   const [orcamentoId, setOrcamentoId] = useState("");
   const [pagamentosRealizados, setPagamentosRealizados] = useState<PagamentoRealizado[]>([]);
   const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
@@ -2208,7 +2209,7 @@ const NovoAtendimento = () => {
             </button>
             {!isEditing && (
               <button
-                onClick={() => criarOrcamento()}
+                onClick={() => setOrcamentoConfirmOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
               >
                 <Receipt className="h-4 w-4" />
@@ -2533,6 +2534,36 @@ const NovoAtendimento = () => {
           </div>
         }
       />
+
+      {/* Orcamento Confirmation */}
+      <AlertDialog open={orcamentoConfirmOpen} onOpenChange={setOrcamentoConfirmOpen}>
+        <AlertDialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+          <AlertDialogHeader className="px-6 pt-6 pb-4 space-y-2 text-left">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Receipt className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <AlertDialogTitle className="text-base font-semibold leading-tight">
+                  Enviar para orçamento?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-muted-foreground mt-1">
+                  O orçamento será salvo e o PDF será gerado automaticamente em uma nova aba.
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="px-6 py-3 border-t border-border bg-muted/30 sm:justify-end gap-2">
+            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { setOrcamentoConfirmOpen(false); criarOrcamento(); }}
+              className="mt-0"
+            >
+              Confirmar envio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Orcamento Success */}
       <StandardDialog
