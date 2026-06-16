@@ -135,6 +135,7 @@ export default function SuperAdminTenantDetalhe() {
   const [newPassword, setNewPassword] = useState("");
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
+  const [impersonateOpen, setImpersonateOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
   // Plan change
@@ -302,13 +303,18 @@ export default function SuperAdminTenantDetalhe() {
   const handleImpersonate = async () => {
     if (!tenant) return;
     setActionBusy(true);
+    const tname = encodeURIComponent(tenant.nome);
+    const redirectTo = `${window.location.origin}/atendimentos?impersonated=1&tname=${tname}`;
     const { data, error } = await supabase.functions.invoke("super-admin-impersonate-tenant", {
-      body: { tenantId: tenant.id, redirectTo: `${window.location.origin}/atendimentos` },
+      body: { tenantId: tenant.id, redirectTo },
     });
     setActionBusy(false);
+    setImpersonateOpen(false);
     if (error || !data?.ok) { toast.error(error?.message ?? "Erro ao gerar link"); return; }
-    window.open(data.actionLink, "_blank");
-    toast.success("Link de acesso aberto em nova aba");
+    window.open(data.actionLink, "_blank", "noopener,noreferrer");
+    toast.success("Acesso aberto em nova aba", {
+      description: "A nova aba exibirá um banner indicando o modo impersonação.",
+    });
   };
 
   const handleDelete = async () => {
@@ -529,7 +535,7 @@ export default function SuperAdminTenantDetalhe() {
                       <Button variant="outline" size="sm" className="text-xs" onClick={() => setResetOpen(true)}>
                         <KeyRound className="h-3.5 w-3.5 mr-1" /> Redefinir senha
                       </Button>
-                      <Button variant="outline" size="sm" className="text-xs" onClick={handleImpersonate} disabled={actionBusy}>
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setImpersonateOpen(true)} disabled={actionBusy}>
                         <LogIn className="h-3.5 w-3.5 mr-1" /> Acessar como admin
                       </Button>
                     </div>
@@ -1040,6 +1046,39 @@ export default function SuperAdminTenantDetalhe() {
             <Button variant="outline" onClick={() => setSuspendOpen(false)} disabled={actionBusy}>Cancelar</Button>
             <Button variant={isSuspenso ? "default" : "destructive"} onClick={handleToggleStatus} disabled={actionBusy}>
               {actionBusy ? "Processando..." : (isSuspenso ? "Reativar" : "Suspender")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação de impersonação */}
+      <Dialog open={impersonateOpen} onOpenChange={setImpersonateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogIn className="h-4 w-4" /> Acessar como administrador
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Será gerado um link de acesso único para o administrador de
+                  <span className="font-semibold"> {tenant.nome}</span> e aberto em uma nova aba.
+                </p>
+                <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-100">
+                  <p className="font-semibold mb-1">Atenção</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li>Sua sessão Super Admin <strong>atual neste navegador</strong> será substituída pela sessão do laboratório.</li>
+                    <li>Toda ação executada ficará registrada na auditoria como impersonação.</li>
+                    <li>Para voltar, use o botão <em>“Voltar ao Super Admin”</em> no banner amarelo do topo.</li>
+                  </ul>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImpersonateOpen(false)} disabled={actionBusy}>Cancelar</Button>
+            <Button onClick={handleImpersonate} disabled={actionBusy}>
+              {actionBusy ? "Gerando link..." : "Acessar laboratório"}
             </Button>
           </DialogFooter>
         </DialogContent>

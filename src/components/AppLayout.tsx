@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMenuLayout } from "@/contexts/MenuLayoutContext";
 import AppSidebar from "./AppSidebar";
 import AppTopbar, { MenuLayoutToggle } from "./AppTopbar";
+import ImpersonationBanner from "./ImpersonationBanner";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   // Sidebar agora abre no modo tile (estreita) por padrão — combina com o novo dashboard.
@@ -68,6 +69,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 
       <main className="flex-1 overflow-auto">
+        <ImpersonationBanner />
         {!isCompact && !showSidebar && <AppTopbar onLogout={handleLogout} />}
         {isCompact && (
           <div className="sticky top-0 z-30 h-14 flex items-center justify-between px-4 bg-card/95 backdrop-blur-md border-b border-border/60">
