@@ -535,7 +535,7 @@ export default function SuperAdminTenantDetalhe() {
                       <Button variant="outline" size="sm" className="text-xs" onClick={() => setResetOpen(true)}>
                         <KeyRound className="h-3.5 w-3.5 mr-1" /> Redefinir senha
                       </Button>
-                      <Button variant="outline" size="sm" className="text-xs" onClick={handleImpersonate} disabled={actionBusy}>
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setImpersonateOpen(true)} disabled={actionBusy}>
                         <LogIn className="h-3.5 w-3.5 mr-1" /> Acessar como admin
                       </Button>
                     </div>
