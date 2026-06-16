@@ -228,7 +228,14 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
                   setFlyoutPos(null);
                 } else {
                   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setFlyoutPos({ top: rect.top, left: rect.right + 8 });
+                  const itemCount = item.children?.length ?? 0;
+                  const estimatedFlyoutHeight = 30 + itemCount * 34;
+                  const viewportHeight = window.innerHeight;
+                  let top = rect.top;
+                  if (top + estimatedFlyoutHeight > viewportHeight - 16) {
+                    top = Math.max(16, viewportHeight - estimatedFlyoutHeight - 16);
+                  }
+                  setFlyoutPos({ top, left: rect.right + 8 });
                   setCollapsedFlyout(item.label);
                 }
               } else {
