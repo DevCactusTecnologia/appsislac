@@ -3,7 +3,7 @@
 // Recursos: fontes, cor de texto, cor de fundo, realce, e barra flutuante
 // de formatação que aparece com clique direito (e na seleção de texto).
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useMemo } from "react";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import {
