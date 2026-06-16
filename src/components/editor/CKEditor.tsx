@@ -99,7 +99,7 @@ const FONT_FAMILIES = [
 const FONT_SIZES = [9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72];
 
 const CKEditorComponent = ({
-  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight, onEditorReady,
+  value, onChange, disabled, placeholder, orientation = "portrait", toolbarRight, onEditorReady, marginsMm,
 }: CKEditorProps) => {
   const config = useMemo<EditorConfig>(
     () => ({
