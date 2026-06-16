@@ -24,6 +24,7 @@ import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { isValidCPF, looksLikeCPF, sanitizeCPF } from "@/lib/cpf";
 import { gerarOrcamentoPDF, enviarOrcamentoPorWhatsapp, buildOrcamentoHtmlPublic, buildComprovanteHtml } from "@/lib/comprovantes";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import PacienteTelefoneInline from "@/components/PacienteTelefoneInline";
 import { isEdicaoClinicaBloqueada, mensagemBloqueioClinico } from "@/lib/atendimentoPolicy";
 import {
