@@ -3,6 +3,7 @@
 // Comportamento preservado literalmente; comprovantes.ts re-exporta o
 // contrato público para retro-compat de imports antigos.
 import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplatesStore";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 /** Margens default (mm) — usadas quando o template não define margens próprias. */
 const DEFAULT_MARGINS_MM: [number, number, number, number] = [18, 18, 22, 18];
