@@ -514,7 +514,7 @@ const CKEditorComponent = ({
             }
 
             // Fora de tabela: menu com espaçamento + barra flutuante.
-            buildMenu([lineHeightSubmenu], ev.clientX, ev.clientY);
+            buildMenu([lineHeightSubmenu, paragraphSpacingSubmenu], ev.clientX, ev.clientY);
             try {
               const balloon = editor.plugins.get("BalloonToolbar") as
                 | { show: (showForCollapsedSelection?: boolean) => void }
