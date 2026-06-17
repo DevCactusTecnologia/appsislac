@@ -279,7 +279,8 @@
 }
 .a4-sheet table td,
 .a4-sheet table th {
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
 }
 
