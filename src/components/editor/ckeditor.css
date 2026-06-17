@@ -198,21 +198,55 @@
 }
 
 /* ===========================================================================
-   Tabelas — respeitar bordas definidas pelo usuário
+   Tabelas — CSS defensivo que respeita 100% o que o usuário define
    ---------------------------------------------------------------------------
-   O CKEditor aplica uma borda padrão (1px double cinza) no <table> e
-   1px solid nas células como "guia de edição". Isso sobrescreve visualmente
-   a escolha do usuário quando ele define "Sem borda" em Propriedades da
-   tabela/célula. As regras abaixo garantem que estilos inline (style="…")
-   ganhem sempre, e quando o usuário escolhe border:none / border-style:none
-   nada é desenhado nem no editor nem na pré-visualização.
+   O CKEditor 5 injeta bordas de "edição" (1px double no <table> e 1px solid
+   nas células) como guias visuais. Essas regras sobrescrevem o padrão do
+   editor e garantem que:
+   1. width/height definidos em "Propriedades da célula" são respeitados.
+   2. Quando o usuário escolhe "Sem borda", NENHUMA linha aparece.
+   3. Quando o usuário define borda personalizada, ela é aplicada.
    =========================================================================== */
+
+/* 1. Remove as bordas-padrão do CKEditor no <table> e células.
+      O !important é necessário porque o CSS do CKEditor carrega depois. */
+.sislac-ckeditor .ck-content .table > table,
+.sislac-ckeditor .ck-content .table > table td,
+.sislac-ckeditor .ck-content .table > table th {
+  border: 0 !important;
+}
+
+/* 2. Respeita width/height inline nas células (Propriedades da célula). */
+.sislac-ckeditor .ck-content .table > table td[style*="width"],
+.sislac-ckeditor .ck-content .table > table th[style*="width"] {
+  width: attr(style width) !important;
+}
+.sislac-ckeditor .ck-content .table > table td[style*="height"],
+.sislac-ckeditor .ck-content .table > table th[style*="height"] {
+  height: attr(style height) !important;
+}
+
+/* 3. Quando o usuário EXPLICITAMENTE define borda via inline style,
+      respeita o valor dele. Todos os padrões do CKEditor já foram
+      zerados acima, então só o inline style "sobra". */
+.sislac-ckeditor .ck-content .table > table[style*="border"] {
+  border: inherit !important;
+}
+.sislac-ckeditor .ck-content .table > table td[style*="border"],
+.sislac-ckeditor .ck-content .table > table th[style*="border"] {
+  border: inherit !important;
+}
+
+/* 4. Casos específicos de "sem borda" — força zero mesmo que o CKEditor
+      tente reaplicar algo via JS. */
 .sislac-ckeditor .ck-content .table > table[style*="border-style:none"],
 .sislac-ckeditor .ck-content .table > table[style*="border-style: none"],
 .sislac-ckeditor .ck-content .table > table[style*="border:none"],
 .sislac-ckeditor .ck-content .table > table[style*="border: none"],
 .sislac-ckeditor .ck-content .table > table[style*="border:0"],
-.sislac-ckeditor .ck-content .table > table[style*="border: 0"] {
+.sislac-ckeditor .ck-content .table > table[style*="border: 0"],
+.sislac-ckeditor .ck-content .table > table[style*="border-width:0"],
+.sislac-ckeditor .ck-content .table > table[style*="border-width: 0"] {
   border: 0 !important;
 }
 .sislac-ckeditor .ck-content .table > table td[style*="border-style:none"],
@@ -221,29 +255,61 @@
 .sislac-ckeditor .ck-content .table > table td[style*="border: none"],
 .sislac-ckeditor .ck-content .table > table td[style*="border:0"],
 .sislac-ckeditor .ck-content .table > table td[style*="border: 0"],
+.sislac-ckeditor .ck-content .table > table td[style*="border-width:0"],
+.sislac-ckeditor .ck-content .table > table td[style*="border-width: 0"],
 .sislac-ckeditor .ck-content .table > table th[style*="border-style:none"],
 .sislac-ckeditor .ck-content .table > table th[style*="border-style: none"],
 .sislac-ckeditor .ck-content .table > table th[style*="border:none"],
 .sislac-ckeditor .ck-content .table > table th[style*="border: none"],
 .sislac-ckeditor .ck-content .table > table th[style*="border:0"],
-.sislac-ckeditor .ck-content .table > table th[style*="border: 0"] {
+.sislac-ckeditor .ck-content .table > table th[style*="border: 0"],
+.sislac-ckeditor .ck-content .table > table th[style*="border-width:0"],
+.sislac-ckeditor .ck-content .table > table th[style*="border-width: 0"] {
   border: 0 !important;
 }
 
-/* Aplica o mesmo respeito também no preview/laudo (fora do editor). */
+/* 5. Mesmas regras no preview/laudo (fora do editor, classe .prose-mapa). */
+.prose-mapa .table > table,
+.prose-mapa .table > table td,
+.prose-mapa .table > table th,
+.prose-mapa table,
+.prose-mapa table td,
+.prose-mapa table th {
+  border: 0 !important;
+}
+.prose-mapa .table > table[style*="border"],
+.prose-mapa table[style*="border"] {
+  border: inherit !important;
+}
+.prose-mapa .table > table td[style*="border"],
+.prose-mapa .table > table th[style*="border"],
+.prose-mapa table td[style*="border"],
+.prose-mapa table th[style*="border"] {
+  border: inherit !important;
+}
 .prose-mapa .table > table[style*="border-style:none"],
 .prose-mapa .table > table[style*="border-style: none"],
 .prose-mapa .table > table[style*="border:none"],
 .prose-mapa .table > table[style*="border: none"],
+.prose-mapa .table > table[style*="border:0"],
+.prose-mapa .table > table[style*="border: 0"],
 .prose-mapa table[style*="border-style:none"],
 .prose-mapa table[style*="border-style: none"],
 .prose-mapa table[style*="border:none"],
-.prose-mapa table[style*="border: none"] { border: 0 !important; }
+.prose-mapa table[style*="border: none"] {
+  border: 0 !important;
+}
 .prose-mapa td[style*="border-style:none"],
 .prose-mapa td[style*="border-style: none"],
 .prose-mapa td[style*="border:none"],
 .prose-mapa td[style*="border: none"],
+.prose-mapa td[style*="border:0"],
+.prose-mapa td[style*="border: 0"],
 .prose-mapa th[style*="border-style:none"],
 .prose-mapa th[style*="border-style: none"],
 .prose-mapa th[style*="border:none"],
-.prose-mapa th[style*="border: none"] { border: 0 !important; }
+.prose-mapa th[style*="border: none"],
+.prose-mapa th[style*="border:0"],
+.prose-mapa th[style*="border: 0"] {
+  border: 0 !important;
+}
