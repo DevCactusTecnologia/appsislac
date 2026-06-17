@@ -312,7 +312,8 @@ const CKEditorComponent = ({
 
           type Item =
             | { sep: true }
-            | { label: string; cmd: string; value?: unknown; danger?: boolean };
+            | { label: string; cmd: string; value?: unknown; danger?: boolean }
+            | { label: string; submenu: { label: string; onClick: () => void }[] };
 
           const buildMenu = (items: Item[], x: number, y: number) => {
             closeMenu();
@@ -324,6 +325,33 @@ const CKEditorComponent = ({
                 const s = document.createElement("div");
                 s.className = "sislac-ck-ctx-sep";
                 menu.appendChild(s);
+                return;
+              }
+              if ("submenu" in it) {
+                const wrap = document.createElement("div");
+                wrap.className = "sislac-ck-ctx-sub";
+                wrap.tabIndex = 0;
+                const trigger = document.createElement("button");
+                trigger.type = "button";
+                trigger.textContent = it.label;
+                trigger.className = "sislac-ck-ctx-item";
+                wrap.appendChild(trigger);
+                const panel = document.createElement("div");
+                panel.className = "sislac-ck-ctx-sub-panel";
+                it.submenu.forEach((sub) => {
+                  const b = document.createElement("button");
+                  b.type = "button";
+                  b.textContent = sub.label;
+                  b.className = "sislac-ck-ctx-item";
+                  b.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    sub.onClick();
+                    closeMenu();
+                  });
+                  panel.appendChild(b);
+                });
+                wrap.appendChild(panel);
+                menu.appendChild(wrap);
                 return;
               }
               const btn = document.createElement("button");
