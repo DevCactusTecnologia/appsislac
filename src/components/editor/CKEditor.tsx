@@ -461,6 +461,31 @@ const CKEditorComponent = ({
               ],
             };
 
+            const spacingPresets: { label: string; value: string | null }[] = [
+              { label: "Remover (0)", value: "0" },
+              { label: "Padrão (auto)", value: null },
+              { label: "Pequeno (4px)", value: "4px" },
+              { label: "Médio (8px)", value: "8px" },
+              { label: "Grande (16px)", value: "16px" },
+              { label: "Extra (24px)", value: "24px" },
+            ];
+
+            const paragraphSpacingSubmenu = {
+              label: "Espaçamento do parágrafo",
+              submenu: [
+                ...spacingPresets.map((p) => ({
+                  label: `Antes — ${p.label}`,
+                  onClick: () => applyParagraphSpacing("top", p.value),
+                })),
+                ...spacingPresets.map((p) => ({
+                  label: `Depois — ${p.label}`,
+                  onClick: () => applyParagraphSpacing("bottom", p.value),
+                })),
+                { label: "Remover antes e depois", onClick: () => applyParagraphSpacing("both", "0") },
+                { label: "Padrão antes e depois", onClick: () => applyParagraphSpacing("both", null) },
+              ],
+            };
+
             if (inTable) {
               const tableItems: Item[] = [
                 { label: "Inserir linha acima", cmd: "insertTableRowAbove" },
