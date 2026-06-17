@@ -243,6 +243,57 @@ const CKEditorComponent = ({
           });
 
 
+          // ============================================================
+          // Post-fixer: garante unidade 'px' em altura/largura de células
+          // e linhas. CKEditor às vezes salva apenas o número, o que faz
+          // o navegador ignorar o estilo. Roda em toda mudança de modelo.
+          // ============================================================
+          editor.model.document.registerPostFixer((writer) => {
+            let changed = false;
+            const NUMERIC = /^\d+(\.\d+)?$/;
+            const attrs = ["tableCellHeight", "tableCellWidth", "tableRowHeight"] as const;
+            const root = editor.model.document.getRoot();
+            if (!root) return false;
+            const range = writer.createRangeIn(root);
+            for (const { item } of range) {
+              for (const attr of attrs) {
+                const v = item.getAttribute(attr);
+                if (typeof v === "string" && NUMERIC.test(v.trim())) {
+                  writer.setAttribute(attr, `${v.trim()}px`, item);
+                  changed = true;
+                }
+              }
+            }
+            return changed;
+          });
+
+          // ============================================================
+          // Aplica "line-height" nos blocos selecionados via GHS.
+          // ============================================================
+          const applyLineHeight = (value: string | null) => {
+            editor.model.change((writer) => {
+              const sel = editor.model.document.selection;
+              const blocks = Array.from(sel.getSelectedBlocks());
+              for (const block of blocks) {
+                const tagMap: Record<string, string> = {
+                  paragraph: "htmlPAttributes",
+                  heading1: "htmlH1Attributes",
+                  heading2: "htmlH2Attributes",
+                  heading3: "htmlH3Attributes",
+                  heading4: "htmlH4Attributes",
+                  listItem: "htmlLiAttributes",
+                };
+                const attrName = tagMap[block.name] || "htmlPAttributes";
+                const existing = (block.getAttribute(attrName) as { styles?: Record<string, string> } | undefined) || {};
+                const styles = { ...(existing.styles || {}) };
+                if (value === null) delete styles["line-height"];
+                else styles["line-height"] = value;
+                writer.setAttribute(attrName, { ...existing, styles }, block);
+              }
+            });
+            editor.editing.view.focus();
+          };
+
           const closeMenu = () => {
             document
               .querySelectorAll(".sislac-ck-ctx-menu")
@@ -261,7 +312,8 @@ const CKEditorComponent = ({
 
           type Item =
             | { sep: true }
-            | { label: string; cmd: string; value?: unknown; danger?: boolean };
+            | { label: string; cmd: string; value?: unknown; danger?: boolean }
+            | { label: string; submenu: { label: string; onClick: () => void }[] };
 
           const buildMenu = (items: Item[], x: number, y: number) => {
             closeMenu();
@@ -273,6 +325,33 @@ const CKEditorComponent = ({
                 const s = document.createElement("div");
                 s.className = "sislac-ck-ctx-sep";
                 menu.appendChild(s);
+                return;
+              }
+              if ("submenu" in it) {
+                const wrap = document.createElement("div");
+                wrap.className = "sislac-ck-ctx-sub";
+                wrap.tabIndex = 0;
+                const trigger = document.createElement("button");
+                trigger.type = "button";
+                trigger.textContent = it.label;
+                trigger.className = "sislac-ck-ctx-item";
+                wrap.appendChild(trigger);
+                const panel = document.createElement("div");
+                panel.className = "sislac-ck-ctx-sub-panel";
+                it.submenu.forEach((sub) => {
+                  const b = document.createElement("button");
+                  b.type = "button";
+                  b.textContent = sub.label;
+                  b.className = "sislac-ck-ctx-item";
+                  b.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    sub.onClick();
+                    closeMenu();
+                  });
+                  panel.appendChild(b);
+                });
+                wrap.appendChild(panel);
+                menu.appendChild(wrap);
                 return;
               }
               const btn = document.createElement("button");
@@ -336,8 +415,20 @@ const CKEditorComponent = ({
             const inTable = !!target?.closest("table");
             ev.preventDefault();
 
+            const lineHeightSubmenu = {
+              label: "Espaçamento entre linhas",
+              submenu: [
+                { label: "Simples (1.0)", onClick: () => applyLineHeight("1") },
+                { label: "1.15", onClick: () => applyLineHeight("1.15") },
+                { label: "1.5", onClick: () => applyLineHeight("1.5") },
+                { label: "Duplo (2.0)", onClick: () => applyLineHeight("2") },
+                { label: "2.5", onClick: () => applyLineHeight("2.5") },
+                { label: "3.0", onClick: () => applyLineHeight("3") },
+                { label: "Padrão (remover)", onClick: () => applyLineHeight(null) },
+              ],
+            };
+
             if (inTable) {
-              // Garante seleção dentro da célula clicada antes de mostrar.
               const tableItems: Item[] = [
                 { label: "Inserir linha acima", cmd: "insertTableRowAbove" },
                 { label: "Inserir linha abaixo", cmd: "insertTableRowBelow" },
@@ -353,6 +444,7 @@ const CKEditorComponent = ({
                 { sep: true },
                 { label: "Propriedades da célula", cmd: "tableCellProperties" },
                 { label: "Propriedades da tabela", cmd: "tableProperties" },
+                lineHeightSubmenu,
                 { sep: true },
                 { label: "Excluir linha", cmd: "removeTableRow", danger: true },
                 { label: "Excluir coluna", cmd: "removeTableColumn", danger: true },
@@ -362,7 +454,8 @@ const CKEditorComponent = ({
               return;
             }
 
-            // Fora de tabela: barra de formatação flutuante.
+            // Fora de tabela: menu com espaçamento + barra flutuante.
+            buildMenu([lineHeightSubmenu], ev.clientX, ev.clientY);
             try {
               const balloon = editor.plugins.get("BalloonToolbar") as
                 | { show: (showForCollapsedSelection?: boolean) => void }

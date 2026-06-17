@@ -196,3 +196,46 @@
   background: hsl(var(--border));
   margin: 4px 2px;
 }
+
+/* Submenu (espaçamento entre linhas) */
+.sislac-ck-ctx-sub {
+  position: relative;
+}
+.sislac-ck-ctx-sub > .sislac-ck-ctx-item::after {
+  content: "›";
+  float: right;
+  opacity: 0.6;
+  margin-left: 8px;
+}
+.sislac-ck-ctx-sub-panel {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  min-width: 140px;
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12);
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+}
+.sislac-ck-ctx-sub:hover > .sislac-ck-ctx-sub-panel,
+.sislac-ck-ctx-sub:focus-within > .sislac-ck-ctx-sub-panel {
+  display: flex;
+}
+
+/* Garante que altura definida em <td>/<tr> seja respeitada no editor.
+   CKEditor por vezes salva valores sem unidade — o post-fixer no JS
+   adiciona 'px'. Aqui forçamos o td a usar height como mínima e
+   evitamos que outras regras anulem a altura. */
+.sislac-ckeditor .ck-content table td,
+.sislac-ckeditor .ck-content table th {
+  height: auto;
+}
+.sislac-ckeditor .ck-content table td[style*="height"],
+.sislac-ckeditor .ck-content table th[style*="height"] {
+  height: revert;
+}
