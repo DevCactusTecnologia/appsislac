@@ -243,6 +243,57 @@ const CKEditorComponent = ({
           });
 
 
+          // ============================================================
+          // Post-fixer: garante unidade 'px' em altura/largura de células
+          // e linhas. CKEditor às vezes salva apenas o número, o que faz
+          // o navegador ignorar o estilo. Roda em toda mudança de modelo.
+          // ============================================================
+          editor.model.document.registerPostFixer((writer) => {
+            let changed = false;
+            const NUMERIC = /^\d+(\.\d+)?$/;
+            const attrs = ["tableCellHeight", "tableCellWidth", "tableRowHeight"] as const;
+            const root = editor.model.document.getRoot();
+            if (!root) return false;
+            const range = writer.createRangeIn(root);
+            for (const { item } of range) {
+              for (const attr of attrs) {
+                const v = item.getAttribute(attr);
+                if (typeof v === "string" && NUMERIC.test(v.trim())) {
+                  writer.setAttribute(attr, `${v.trim()}px`, item);
+                  changed = true;
+                }
+              }
+            }
+            return changed;
+          });
+
+          // ============================================================
+          // Aplica "line-height" nos blocos selecionados via GHS.
+          // ============================================================
+          const applyLineHeight = (value: string | null) => {
+            editor.model.change((writer) => {
+              const sel = editor.model.document.selection;
+              const blocks = Array.from(sel.getSelectedBlocks());
+              for (const block of blocks) {
+                const tagMap: Record<string, string> = {
+                  paragraph: "htmlPAttributes",
+                  heading1: "htmlH1Attributes",
+                  heading2: "htmlH2Attributes",
+                  heading3: "htmlH3Attributes",
+                  heading4: "htmlH4Attributes",
+                  listItem: "htmlLiAttributes",
+                };
+                const attrName = tagMap[block.name] || "htmlPAttributes";
+                const existing = (block.getAttribute(attrName) as { styles?: Record<string, string> } | undefined) || {};
+                const styles = { ...(existing.styles || {}) };
+                if (value === null) delete styles["line-height"];
+                else styles["line-height"] = value;
+                writer.setAttribute(attrName, { ...existing, styles }, block);
+              }
+            });
+            editor.editing.view.focus();
+          };
+
           const closeMenu = () => {
             document
               .querySelectorAll(".sislac-ck-ctx-menu")
