@@ -81,11 +81,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setPadrao(!!editData.padrao);
       setEditorContent(editData.conteudo || "<p></p>");
       const m = (editData.config?.margins ?? {}) as Partial<{ top: number; right: number; bottom: number; left: number }>;
+      // Padrão institucional: Direita e Esquerda sempre 5mm em TODOS os layouts científicos
+      // (existentes e novos). Superior/Inferior preservam o que estiver salvo.
       setMargins({
         top: String(m.top ?? 5),
-        right: String(m.right ?? 5),
+        right: "5",
         bottom: String(m.bottom ?? 5),
-        left: String(m.left ?? 5),
+        left: "5",
       });
     } else {
       setNomeLayout("");
