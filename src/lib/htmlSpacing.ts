@@ -63,7 +63,15 @@ function normalizeVisibleSpaces(text: string, preservePureSpacing: boolean): str
   const normalizedEntities = text.replace(HTML_SPACE_ENTITY_RE, "\u00a0");
   if (preservePureSpacing) return normalizedEntities.replace(/ /g, "\u00a0");
 
-  return normalizedEntities
+  const textWithBreakableWordSpaces = normalizedEntities.replace(/\u00a0/g, (match, offset, fullText) => {
+    const prev = fullText[offset - 1] ?? "";
+    const next = fullText[offset + match.length] ?? "";
+    const singleNbsp = prev !== "\u00a0" && next !== "\u00a0";
+    const betweenText = /\S/.test(prev) && /\S/.test(next);
+    return singleNbsp && betweenText ? " " : match;
+  });
+
+  return textWithBreakableWordSpaces
     .replace(/ {2,}/g, (spaces) => "\u00a0".repeat(spaces.length))
     .replace(/ +(?=\u00a0)/g, (spaces) => "\u00a0".repeat(spaces.length))
     .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length))
