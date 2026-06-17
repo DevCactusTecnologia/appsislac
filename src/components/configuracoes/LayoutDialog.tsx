@@ -312,9 +312,8 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
               de espaços que mudem o conteúdo digitado.
             */}
             <div
-              className="ck-content prose-mapa a4-sheet text-[13px] leading-snug"
+              className="ck-content prose-mapa sislac-layout-preview a4-sheet"
               style={{
-                fontFamily: '"Courier New", Courier, monospace',
                 padding: `${Number(margins.top) || 0}mm ${Number(margins.right) || 0}mm ${Number(margins.bottom) || 0}mm ${Number(margins.left) || 0}mm`,
               }}
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) || "<p style='color:#94a3b8;'>Nada para pré-visualizar — escreva algo no editor.</p>" }}
