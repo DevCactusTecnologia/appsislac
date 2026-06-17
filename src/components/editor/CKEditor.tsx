@@ -118,7 +118,7 @@ const CKEditorComponent = ({
         List, Indent, Alignment,
         Link, AutoLink,
         Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, ImageUpload, Base64UploadAdapter,
-        Table, TableToolbar, TableProperties, TableCellProperties, TableColumnResize, TableCaption,
+        Table, TableToolbar, TableProperties, TableCellProperties, TableCaption,
         PasteFromOffice, GeneralHtmlSupport, SourceEditing,
         BalloonToolbar,
       ],
