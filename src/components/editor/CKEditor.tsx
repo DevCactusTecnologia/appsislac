@@ -47,10 +47,7 @@ import {
   Table,
   TableCaption,
   TableCellProperties,
-  // TableColumnResize removido: ele força largura por coluna no nível da
-  // tabela (attr columnWidths) e sobrescreve a largura definida por célula
-  // em "Propriedades da célula". Sem ele, valores em px/% definidos pelo
-  // usuário são respeitados literalmente.
+  TableColumnResize,
   TableProperties,
   TableToolbar,
   Underline,
@@ -118,7 +115,7 @@ const CKEditorComponent = ({
         List, Indent, Alignment,
         Link, AutoLink,
         Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, ImageUpload, Base64UploadAdapter,
-        Table, TableToolbar, TableProperties, TableCellProperties, TableCaption,
+        Table, TableToolbar, TableProperties, TableCellProperties, TableColumnResize, TableCaption,
         PasteFromOffice, GeneralHtmlSupport, SourceEditing,
         BalloonToolbar,
       ],
@@ -181,19 +178,17 @@ const CKEditorComponent = ({
           "tableProperties", "tableCellProperties",
           "toggleTableCaption",
         ],
-        // Desabilita o redimensionamento automático de colunas pelo CKEditor.
-        // Sem isso o plugin TableColumnResize (não importado) forçaria larguras
-        // de coluna no nível da tabela e ignoraria width/height definidos
-        // célula-a-célula em "Propriedades da célula".
-        tableWidgetToolbar: false,
       },
       htmlSupport: {
-        // Permitir tudo que o usuário pode criar via Table / TableCellProperties,
-        // inclusive width, height, border, cellpadding, cellspacing, etc.
+        // Allowlist restrita: blocos de formatação/estrutura usados em laudos,
+        // mapas e documentos. NÃO inclui <script>, <iframe>, <object>,
+        // <embed>, <form> ou atributos de evento (on*). Para evitar XSS
+        // armazenado, qualquer conteúdo gerado aqui também passa por
+        // sanitizeHtml() antes de ser renderizado.
         allow: [
           {
             name: /^(p|div|span|section|article|header|footer|main|aside|h[1-6]|blockquote|hr|br|pre|code|em|strong|b|i|u|s|sub|sup|small|mark|ul|ol|li|dl|dt|dd|figure|figcaption|img|a|table|thead|tbody|tfoot|tr|th|td|caption|colgroup|col)$/i,
-            attributes: /^(class|style|colspan|rowspan|align|valign|width|height|border|cellpadding|cellspacing|src|alt|title|href|target|rel|data-[\w-]+|id|lang|dir)$/i,
+            attributes: /^(class|style|colspan|rowspan|align|valign|width|height|src|alt|title|href|target|rel|data-[\w-]+|id|lang|dir)$/i,
             classes: true,
             styles: true,
           },

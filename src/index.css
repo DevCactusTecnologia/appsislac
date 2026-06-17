@@ -202,6 +202,8 @@
 .prose-mapa h3 { font-size: 1.1em;  font-weight: 600; margin: 0.4em 0 0.2em; line-height: 1.3; }
 .prose-mapa table {
   border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
   margin: 0.6em 0;
 }
 .prose-mapa table td,
@@ -272,11 +274,12 @@
   max-width: 100%;
 }
 .a4-sheet table {
-  table-layout: auto;
+  width: 100% !important;
+  table-layout: fixed !important;
 }
 .a4-sheet table td,
 .a4-sheet table th {
-  overflow-wrap: normal;
-  word-break: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
