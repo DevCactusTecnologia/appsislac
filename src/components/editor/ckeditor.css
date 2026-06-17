@@ -209,20 +209,37 @@
    =========================================================================== */
 
 /* 1. NO EDITOR: guias tracejadas de edição, sem alterar a borda real salva.
-      A guia é outline/box-shadow, então "sem borda" continua visível ao editar
-      e some na pré-visualização/impressão. */
-.sislac-ckeditor .ck-editor__editable.ck-content table.table:not(.layout-table),
-.sislac-ckeditor .ck-editor__editable.ck-content figure.table:not(.layout-table) > table {
-  outline: 1px dashed hsl(var(--border)) !important;
+      São desenhadas por overlay, não por border; por isso aparecem mesmo em
+      tabela "sem borda" e não vazam para preview/impressão. */
+.sislac-ckeditor .ck-editor__editable.ck-content .table > table,
+.sislac-ckeditor .ck-editor__editable.ck-content table {
+  outline: 1px dashed hsl(var(--muted-foreground) / 0.55) !important;
   outline-offset: -1px;
 }
-.sislac-ckeditor .ck-editor__editable.ck-content table.table:not(.layout-table) td,
-.sislac-ckeditor .ck-editor__editable.ck-content table.table:not(.layout-table) th,
-.sislac-ckeditor .ck-editor__editable.ck-content figure.table:not(.layout-table) > table td,
-.sislac-ckeditor .ck-editor__editable.ck-content figure.table:not(.layout-table) > table th {
-  outline: 1px dashed hsl(var(--border)) !important;
-  outline-offset: -1px;
-  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.35) !important;
+.sislac-ckeditor .ck-editor__editable.ck-content .table > table td,
+.sislac-ckeditor .ck-editor__editable.ck-content .table > table th,
+.sislac-ckeditor .ck-editor__editable.ck-content table td,
+.sislac-ckeditor .ck-editor__editable.ck-content table th {
+  position: relative;
+}
+.sislac-ckeditor .ck-editor__editable.ck-content .table > table td::after,
+.sislac-ckeditor .ck-editor__editable.ck-content .table > table th::after,
+.sislac-ckeditor .ck-editor__editable.ck-content table td::after,
+.sislac-ckeditor .ck-editor__editable.ck-content table th::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px dashed hsl(var(--muted-foreground) / 0.55);
+}
+
+/* 1.1. PREVIEW DO LAYOUT CIENTÍFICO: mesma tipografia/ritmo do editor. */
+.sislac-layout-preview {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0 !important;
 }
 
 /* 2. PREVIEW/LAUDO: remove só as guias/bordas padrão do CKEditor quando o
