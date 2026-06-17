@@ -294,6 +294,39 @@ const CKEditorComponent = ({
             editor.editing.view.focus();
           };
 
+          // ============================================================
+          // Aplica espaçamento antes/depois do parágrafo (margin-top /
+          // margin-bottom) nos blocos selecionados via GHS.
+          // side: "top" | "bottom" | "both"; value em px ou null p/ remover.
+          // ============================================================
+          const applyParagraphSpacing = (side: "top" | "bottom" | "both", value: string | null) => {
+            editor.model.change((writer) => {
+              const sel = editor.model.document.selection;
+              const blocks = Array.from(sel.getSelectedBlocks());
+              for (const block of blocks) {
+                const tagMap: Record<string, string> = {
+                  paragraph: "htmlPAttributes",
+                  heading1: "htmlH1Attributes",
+                  heading2: "htmlH2Attributes",
+                  heading3: "htmlH3Attributes",
+                  heading4: "htmlH4Attributes",
+                  listItem: "htmlLiAttributes",
+                };
+                const attrName = tagMap[block.name] || "htmlPAttributes";
+                const existing = (block.getAttribute(attrName) as { styles?: Record<string, string> } | undefined) || {};
+                const styles = { ...(existing.styles || {}) };
+                const setOne = (key: "margin-top" | "margin-bottom") => {
+                  if (value === null) delete styles[key];
+                  else styles[key] = value;
+                };
+                if (side === "top" || side === "both") setOne("margin-top");
+                if (side === "bottom" || side === "both") setOne("margin-bottom");
+                writer.setAttribute(attrName, { ...existing, styles }, block);
+              }
+            });
+            editor.editing.view.focus();
+          };
+
           const closeMenu = () => {
             document
               .querySelectorAll(".sislac-ck-ctx-menu")
