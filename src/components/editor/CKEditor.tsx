@@ -503,6 +503,7 @@ const CKEditorComponent = ({
                 { label: "Propriedades da célula", cmd: "tableCellProperties" },
                 { label: "Propriedades da tabela", cmd: "tableProperties" },
                 lineHeightSubmenu,
+                paragraphSpacingSubmenu,
                 { sep: true },
                 { label: "Excluir linha", cmd: "removeTableRow", danger: true },
                 { label: "Excluir coluna", cmd: "removeTableColumn", danger: true },
