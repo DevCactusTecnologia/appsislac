@@ -81,20 +81,20 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setPadrao(!!editData.padrao);
       setEditorContent(editData.conteudo || "<p></p>");
       const m = (editData.config?.margins ?? {}) as Partial<{ top: number; right: number; bottom: number; left: number }>;
-      // Padrão institucional: Direita e Esquerda sempre 5mm em TODOS os layouts científicos
+      // Padrão institucional: Direita e Esquerda sempre 10mm em TODOS os layouts científicos
       // (existentes e novos). Superior/Inferior preservam o que estiver salvo.
       setMargins({
         top: String(m.top ?? 5),
-        right: "5",
+        right: "10",
         bottom: String(m.bottom ?? 5),
-        left: "5",
+        left: "10",
       });
     } else {
       setNomeLayout("");
       const existentes = exame?.id ? getLayouts(exame.id) : [];
       setPadrao(existentes.length === 0);
       setEditorContent("<p></p>");
-      setMargins({ top: "5", right: "5", bottom: "5", left: "5" });
+      setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
     }
 
     setTab("editor");
