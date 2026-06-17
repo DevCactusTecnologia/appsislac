@@ -43,8 +43,8 @@ function isBlockToBlockBoundary(prev: TagInfo | null, next: TagInfo | null): boo
 
 function shouldPreservePureSpacing(text: string, prevTag: string, nextTag: string): boolean {
   if (!text || /[\r\n]/.test(text)) return false;
-  if (/&nbsp;|&#160;|&#x0*a0;|\u00a0/i.test(text)) return true;
-  if (!/^ +$/.test(text)) return false;
+  const normalized = text.replace(HTML_SPACE_ENTITY_RE, "\u00a0");
+  if (!/^[\s\u00a0]+$/.test(normalized)) return false;
 
   const prev = getTagInfo(prevTag);
   const next = getTagInfo(nextTag);
