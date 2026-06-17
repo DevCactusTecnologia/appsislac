@@ -196,3 +196,54 @@
   background: hsl(var(--border));
   margin: 4px 2px;
 }
+
+/* ===========================================================================
+   Tabelas — respeitar bordas definidas pelo usuário
+   ---------------------------------------------------------------------------
+   O CKEditor aplica uma borda padrão (1px double cinza) no <table> e
+   1px solid nas células como "guia de edição". Isso sobrescreve visualmente
+   a escolha do usuário quando ele define "Sem borda" em Propriedades da
+   tabela/célula. As regras abaixo garantem que estilos inline (style="…")
+   ganhem sempre, e quando o usuário escolhe border:none / border-style:none
+   nada é desenhado nem no editor nem na pré-visualização.
+   =========================================================================== */
+.sislac-ckeditor .ck-content .table > table[style*="border-style:none"],
+.sislac-ckeditor .ck-content .table > table[style*="border-style: none"],
+.sislac-ckeditor .ck-content .table > table[style*="border:none"],
+.sislac-ckeditor .ck-content .table > table[style*="border: none"],
+.sislac-ckeditor .ck-content .table > table[style*="border:0"],
+.sislac-ckeditor .ck-content .table > table[style*="border: 0"] {
+  border: 0 !important;
+}
+.sislac-ckeditor .ck-content .table > table td[style*="border-style:none"],
+.sislac-ckeditor .ck-content .table > table td[style*="border-style: none"],
+.sislac-ckeditor .ck-content .table > table td[style*="border:none"],
+.sislac-ckeditor .ck-content .table > table td[style*="border: none"],
+.sislac-ckeditor .ck-content .table > table td[style*="border:0"],
+.sislac-ckeditor .ck-content .table > table td[style*="border: 0"],
+.sislac-ckeditor .ck-content .table > table th[style*="border-style:none"],
+.sislac-ckeditor .ck-content .table > table th[style*="border-style: none"],
+.sislac-ckeditor .ck-content .table > table th[style*="border:none"],
+.sislac-ckeditor .ck-content .table > table th[style*="border: none"],
+.sislac-ckeditor .ck-content .table > table th[style*="border:0"],
+.sislac-ckeditor .ck-content .table > table th[style*="border: 0"] {
+  border: 0 !important;
+}
+
+/* Aplica o mesmo respeito também no preview/laudo (fora do editor). */
+.prose-mapa .table > table[style*="border-style:none"],
+.prose-mapa .table > table[style*="border-style: none"],
+.prose-mapa .table > table[style*="border:none"],
+.prose-mapa .table > table[style*="border: none"],
+.prose-mapa table[style*="border-style:none"],
+.prose-mapa table[style*="border-style: none"],
+.prose-mapa table[style*="border:none"],
+.prose-mapa table[style*="border: none"] { border: 0 !important; }
+.prose-mapa td[style*="border-style:none"],
+.prose-mapa td[style*="border-style: none"],
+.prose-mapa td[style*="border:none"],
+.prose-mapa td[style*="border: none"],
+.prose-mapa th[style*="border-style:none"],
+.prose-mapa th[style*="border-style: none"],
+.prose-mapa th[style*="border:none"],
+.prose-mapa th[style*="border: none"] { border: 0 !important; }
