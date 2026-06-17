@@ -47,7 +47,10 @@ import {
   Table,
   TableCaption,
   TableCellProperties,
-  TableColumnResize,
+  // TableColumnResize removido: ele força largura por coluna no nível da
+  // tabela (attr columnWidths) e sobrescreve a largura definida por célula
+  // em "Propriedades da célula". Sem ele, valores em px/% definidos pelo
+  // usuário são respeitados literalmente.
   TableProperties,
   TableToolbar,
   Underline,
@@ -115,7 +118,7 @@ const CKEditorComponent = ({
         List, Indent, Alignment,
         Link, AutoLink,
         Image, ImageToolbar, ImageCaption, ImageStyle, ImageResize, ImageInsert, ImageUpload, Base64UploadAdapter,
-        Table, TableToolbar, TableProperties, TableCellProperties, TableColumnResize, TableCaption,
+        Table, TableToolbar, TableProperties, TableCellProperties, TableCaption,
         PasteFromOffice, GeneralHtmlSupport, SourceEditing,
         BalloonToolbar,
       ],
