@@ -184,8 +184,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content .exame-bloco-custom > * {
           max-width: 100% !important;
           box-sizing: border-box !important;
-          overflow-wrap: break-word !important;
-          word-break: break-word !important;
+          overflow-wrap: normal !important;
+          word-break: normal !important;
+          word-wrap: normal !important;
+          hyphens: none !important;
         }
         #laudo-content table {
           width: 100% !important;
