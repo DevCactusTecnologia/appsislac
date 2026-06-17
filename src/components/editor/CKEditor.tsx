@@ -415,8 +415,20 @@ const CKEditorComponent = ({
             const inTable = !!target?.closest("table");
             ev.preventDefault();
 
+            const lineHeightSubmenu = {
+              label: "Espaçamento entre linhas",
+              submenu: [
+                { label: "Simples (1.0)", onClick: () => applyLineHeight("1") },
+                { label: "1.15", onClick: () => applyLineHeight("1.15") },
+                { label: "1.5", onClick: () => applyLineHeight("1.5") },
+                { label: "Duplo (2.0)", onClick: () => applyLineHeight("2") },
+                { label: "2.5", onClick: () => applyLineHeight("2.5") },
+                { label: "3.0", onClick: () => applyLineHeight("3") },
+                { label: "Padrão (remover)", onClick: () => applyLineHeight(null) },
+              ],
+            };
+
             if (inTable) {
-              // Garante seleção dentro da célula clicada antes de mostrar.
               const tableItems: Item[] = [
                 { label: "Inserir linha acima", cmd: "insertTableRowAbove" },
                 { label: "Inserir linha abaixo", cmd: "insertTableRowBelow" },
@@ -432,6 +444,7 @@ const CKEditorComponent = ({
                 { sep: true },
                 { label: "Propriedades da célula", cmd: "tableCellProperties" },
                 { label: "Propriedades da tabela", cmd: "tableProperties" },
+                lineHeightSubmenu,
                 { sep: true },
                 { label: "Excluir linha", cmd: "removeTableRow", danger: true },
                 { label: "Excluir coluna", cmd: "removeTableColumn", danger: true },
@@ -441,7 +454,8 @@ const CKEditorComponent = ({
               return;
             }
 
-            // Fora de tabela: barra de formatação flutuante.
+            // Fora de tabela: menu com espaçamento + barra flutuante.
+            buildMenu([lineHeightSubmenu], ev.clientX, ev.clientY);
             try {
               const balloon = editor.plugins.get("BalloonToolbar") as
                 | { show: (showForCollapsedSelection?: boolean) => void }
