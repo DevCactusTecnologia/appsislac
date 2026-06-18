@@ -3,6 +3,7 @@
 
 import { Building2, FlaskConical } from "lucide-react";
 import { resolveDestino, type TipoProcesso } from "@/lib/labApoio";
+import { getLabsApoio } from "@/data/labApoioStore";
 import {
   Tooltip,
   TooltipContent,
@@ -14,6 +15,8 @@ interface Props {
   tipoProcesso?: TipoProcesso | string | null;
   labApoioId?: string | null;
   labApoioNome?: string | null;
+  /** Sigla cadastrada no lab (fallback: derivada do nome). */
+  labApoioSigla?: string | null;
   /** Nome do laboratório próprio (tenant) — exibido em INTERNO. */
   laboratorioPropriaNome?: string | null;
   /** Mostra apenas a sigla (compacto). */
@@ -27,17 +30,25 @@ const LabBadge = ({
   tipoProcesso,
   labApoioId,
   labApoioNome,
+  labApoioSigla,
   laboratorioPropriaNome,
   compact = false,
   hideSigla = false,
   className = "",
 }: Props) => {
+  // Fallback: lookup sigla cadastrada via store quando não passada explicitamente.
+  const siglaResolved =
+    labApoioSigla ??
+    (labApoioId ? getLabsApoio().find((l) => l.id === labApoioId)?.sigla ?? null : null);
+
   const dest = resolveDestino({
     tipoProcesso: tipoProcesso ?? "INTERNO",
     labApoioId,
     labApoioNome,
+    labApoioSigla: siglaResolved,
     laboratorioPropriaNome,
   });
+
 
   const Icon = dest.tipo === "INTERNO" ? FlaskConical : Building2;
   // Visual consistente: sempre sigla + opcional nome.
