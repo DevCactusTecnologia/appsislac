@@ -385,7 +385,7 @@ const PagamentoDialog = ({
                     <span className="text-[12px] font-semibold text-foreground w-16 shrink-0 truncate">{selectedMethod}</span>
 
                     <div className="flex items-center flex-1 min-w-0 h-9 rounded-xl border border-border bg-card overflow-hidden focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
-                      <span className="px-3 text-[11px] font-medium text-muted-foreground">
+                      <span className="px-3 text-[11px] font-semibold text-foreground select-none">
                         {adj && stagingUnidade === "PCT" ? "%" : "R$"}
                       </span>
                       <input
