@@ -95,13 +95,30 @@ const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Prop
     [filtros, selecionado],
   );
 
-  // VRs do filtro selecionado.
+  // Índice por nome (case-insensitive) para ordenar conforme o Layout Científico.
+  // `parametros` já chega na ordem do layout/catálogo; usamos isso como referência.
+  const ordemPorNome = useMemo(() => {
+    const m = new Map<string, number>();
+    parametros.forEach((p, i) => m.set(p.trim().toLowerCase(), i));
+    return m;
+  }, [parametros]);
+
+  // VRs do filtro selecionado, ordenados conforme o Layout Científico.
   const vrsDoFiltro = useMemo(() => {
     if (!filtroAtivo) return [] as ValorReferencia[];
+    const idx = (nome: string) => {
+      const i = ordemPorNome.get(nome.trim().toLowerCase());
+      return i === undefined ? Number.MAX_SAFE_INTEGER : i;
+    };
     return referencias
       .filter((r) => keyOf(r) === filtroAtivo.id)
-      .sort((a, b) => a.parametroNome.localeCompare(b.parametroNome, "pt-BR"));
-  }, [referencias, filtroAtivo]);
+      .sort((a, b) => {
+        const ia = idx(a.parametroNome);
+        const ib = idx(b.parametroNome);
+        if (ia !== ib) return ia - ib;
+        return a.parametroNome.localeCompare(b.parametroNome, "pt-BR");
+      });
+  }, [referencias, filtroAtivo, ordemPorNome]);
 
   // Quantos parâmetros cada filtro tem (para exibir badge).
   const countByFiltro = useMemo(() => {
