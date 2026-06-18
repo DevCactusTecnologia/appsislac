@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler } from "lucide-react";
+import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler, Users } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { loadParametros, getParametros, ExameParametro } from "@/data/exameParam
 import { parseValorReferencia, type FaixaCandidato } from "@/lib/parseValorReferencia";
 import { formatFaixaIdade } from "@/lib/idadeFormat";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
+import FiltrosPorPerfil from "./FiltrosPorPerfil";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
 interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; }
@@ -58,7 +59,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
   const [showImportar, setShowImportar] = useState(false);
   const [importarParametro, setImportarParametro] = useState("");
   const [candidatos, setCandidatos] = useState<(FaixaCandidato & { selecionado: boolean })[]>([]);
-  const [aba, setAba] = useState<"matriz" | "lista">("matriz");
+  const [aba, setAba] = useState<"perfil" | "matriz" | "lista">("perfil");
   const [reguasOpen, setReguasOpen] = useState(false);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       setEditando(null); setForm(emptyForm(exameNome));
       setShowCopiar(false); setCopiarOrigem("");
       setShowImportar(false); setImportarParametro(""); setCandidatos([]);
-      setAba("matriz");
+      setAba("perfil");
       if (exameId) loadParametros(exameId).then(() => setParametros(getParametros(exameId)));
     }
   }, [open, exameNome, exameId]);
@@ -255,6 +256,12 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       <div className="px-6 pt-4">
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
           <button
+            onClick={() => setAba("perfil")}
+            className={`h-8 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all ${aba === "perfil" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Users className="h-3.5 w-3.5" /> Por filtro
+          </button>
+          <button
             onClick={() => setAba("matriz")}
             className={`h-8 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all ${aba === "matriz" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
@@ -269,6 +276,17 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
         </div>
       </div>
 
+      {aba === "perfil" && (
+        <div className="px-6 py-5">
+          <FiltrosPorPerfil
+            exameNome={exameNome}
+            parametros={parametros.map((p) => p.rotulo)}
+            referencias={referencias}
+            onMutate={refreshReferencias}
+          />
+        </div>
+      )}
+
       {aba === "matriz" && (
         <div className="px-6 py-5">
           <MatrizValoresReferencia
@@ -280,6 +298,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
           />
         </div>
       )}
+
 
       {aba === "lista" && <>
       {showCopiar && (
