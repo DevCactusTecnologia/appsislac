@@ -32,6 +32,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type ResolvedTenant = {
   id: string;
@@ -74,6 +75,7 @@ export default function LoginV2() {
   const [senha, setSenha] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const isMobile = useIsMobile();
 
 
 
@@ -291,13 +293,32 @@ export default function LoginV2() {
               <motion.div
                 initial={false}
                 className="grid"
+                style={
+                  isMobile
+                    ? undefined
+                    : { perspective: "1600px" }
+                }
               >
-                {step === 1 && (
+                {/* Inner flip container — só ativa em tablet/desktop */}
+                <div
+                  className="col-start-1 row-start-1 grid"
+                  style={
+                    isMobile
+                      ? undefined
+                      : {
+                          transformStyle: "preserve-3d",
+                          transition: "transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)",
+                          transform: step === 2 ? "rotateY(180deg)" : "rotateY(0deg)",
+                        }
+                  }
+                >
+                {(isMobile ? step === 1 : true) && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={isMobile ? { opacity: 0 } : false}
+                  animate={isMobile ? { opacity: 1 } : undefined}
                   transition={{ duration: 0.25 }}
                   className="col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9"
+                  style={isMobile ? undefined : { backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
                 >
                   <div>
                     <div className="mb-7 space-y-1.5">
@@ -389,12 +410,21 @@ export default function LoginV2() {
                 </motion.div>
                 )}
 
-                {step === 2 && (
+                {(isMobile ? step === 2 : true) && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={isMobile ? { opacity: 0 } : false}
+                  animate={isMobile ? { opacity: 1 } : undefined}
                   transition={{ duration: 0.25 }}
                   className="col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9"
+                  style={
+                    isMobile
+                      ? undefined
+                      : {
+                          backfaceVisibility: "hidden",
+                          WebkitBackfaceVisibility: "hidden",
+                          transform: "rotateY(180deg)",
+                        }
+                  }
                 >
                   {tenant?.logo_url && (
                     <div className="mb-6 flex items-center justify-center">
@@ -513,6 +543,7 @@ export default function LoginV2() {
                   {renderCardFooter()}
                 </motion.div>
                 )}
+                </div>
               </motion.div>
             </div>
           </div>
