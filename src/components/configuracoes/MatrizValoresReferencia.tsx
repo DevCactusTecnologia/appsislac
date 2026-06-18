@@ -11,6 +11,7 @@ import {
   loadReguas, getReguas, subscribeReguas, type ReguaEtaria,
 } from "@/data/reguasEtariasStore";
 import { fromDias, labelFaixa, toDias, vrCabeNaFaixa, type FaixaEtaria } from "@/lib/idadeFaixas";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 import CoberturaEtariaBar from "./CoberturaEtariaBar";
 
 /** Pré-visualização da string que será impressa no laudo para uma célula. */
