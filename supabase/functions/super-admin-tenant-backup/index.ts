@@ -77,11 +77,19 @@ function buildXlsx(meta: Record<string, unknown>, tables: Record<string, Array<R
   const wb = XLSX.utils.book_new();
   const metaRows = Object.entries(meta).map(([k, v]) => ({ campo: k, valor: typeof v === "object" ? JSON.stringify(v) : String(v ?? "") }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metaRows), "_meta");
+  // Excel limita células de texto a 32.767 caracteres. Truncamos com sufixo
+  // explícito para não estourar a serialização do XLSX.
+  const EXCEL_CELL_MAX = 32767;
+  const truncate = (s: string) =>
+    s.length > EXCEL_CELL_MAX ? s.slice(0, EXCEL_CELL_MAX - 32) + "…[TRUNCADO PARA EXCEL]" : s;
   for (const [table, rows] of Object.entries(tables)) {
     const flat = rows.map((r) => {
       const o: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(r)) {
-        o[k] = v === null || v === undefined ? "" : (typeof v === "object" ? JSON.stringify(v) : v);
+        if (v === null || v === undefined) { o[k] = ""; continue; }
+        if (typeof v === "object") { o[k] = truncate(JSON.stringify(v)); continue; }
+        if (typeof v === "string") { o[k] = truncate(v); continue; }
+        o[k] = v;
       }
       return o;
     });
