@@ -12,6 +12,7 @@ import {
 } from "@/data/valoresReferenciaStore";
 import { loadParametros, getParametros, ExameParametro } from "@/data/exameParametrosStore";
 import { parseValorReferencia, type FaixaCandidato } from "@/lib/parseValorReferencia";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
