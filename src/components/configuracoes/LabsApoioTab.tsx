@@ -98,7 +98,7 @@ const LabsApoioTab = () => {
     const q = normalize(search);
     if (!q) return labs;
     return labs.filter(
-      (l) => normalize(l.nome).includes(q) || l.cnpj.includes(search)
+      (l) => normalize(l.nome).includes(q) || normalize(l.sigla ?? "").includes(q) || l.cnpj.includes(search)
     );
   }, [labs, search]);
 
