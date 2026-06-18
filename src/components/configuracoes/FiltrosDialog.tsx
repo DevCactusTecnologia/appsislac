@@ -59,7 +59,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
   const [showImportar, setShowImportar] = useState(false);
   const [importarParametro, setImportarParametro] = useState("");
   const [candidatos, setCandidatos] = useState<(FaixaCandidato & { selecionado: boolean })[]>([]);
-  const [aba, setAba] = useState<"matriz" | "lista">("matriz");
+  const [aba, setAba] = useState<"perfil" | "matriz" | "lista">("perfil");
   const [reguasOpen, setReguasOpen] = useState(false);
 
   useEffect(() => {
