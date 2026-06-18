@@ -542,7 +542,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 )}
 
                 {(tipoSelecionado === "Número" || tipoSelecionado === "Formula") && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/[0.03] p-3.5">
+                  <div className="rounded-2xl border border-destructive/30 bg-destructive/[0.03] p-3.5">
                     <div className="flex items-center gap-2 mb-2.5">
                       <AlertOctagon className="h-3.5 w-3.5 text-destructive" />
                       <span className="text-[11px] font-semibold text-destructive uppercase tracking-wider">
