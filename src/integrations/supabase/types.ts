@@ -3189,6 +3189,7 @@ export type Database = {
           id: string
           integration_id: string | null
           nome: string
+          sigla: string
           telefone: string
           tenant_id: string
           updated_at: string
@@ -3202,6 +3203,7 @@ export type Database = {
           id?: string
           integration_id?: string | null
           nome: string
+          sigla?: string
           telefone?: string
           tenant_id: string
           updated_at?: string
@@ -3215,6 +3217,7 @@ export type Database = {
           id?: string
           integration_id?: string | null
           nome?: string
+          sigla?: string
           telefone?: string
           tenant_id?: string
           updated_at?: string
