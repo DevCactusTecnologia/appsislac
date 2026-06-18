@@ -293,8 +293,26 @@ export default function LoginV2() {
               <motion.div
                 initial={false}
                 className="grid"
+                style={
+                  isMobile
+                    ? undefined
+                    : { perspective: "1600px" }
+                }
               >
-                {step === 1 && (
+                {/* Inner flip container — só ativa em tablet/desktop */}
+                <div
+                  className="col-start-1 row-start-1 grid"
+                  style={
+                    isMobile
+                      ? undefined
+                      : {
+                          transformStyle: "preserve-3d",
+                          transition: "transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)",
+                          transform: step === 2 ? "rotateY(180deg)" : "rotateY(0deg)",
+                        }
+                  }
+                >
+                {(isMobile ? step === 1 : true) && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
