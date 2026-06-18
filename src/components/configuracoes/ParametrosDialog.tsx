@@ -637,7 +637,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               title="Comportamento"
               desc="Como este parâmetro se comporta no atendimento e na bancada."
             >
-              <div className="rounded-lg border border-border bg-background divide-y divide-border/60 overflow-hidden">
+              <div className="rounded-2xl border border-border/60 bg-background divide-y divide-border/60 overflow-hidden">
                 {[
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
                   { label: "Exibir resultado anterior", desc: "Mostra o último valor registrado deste paciente", value: exibirAnterior, set: setExibirAnterior },
