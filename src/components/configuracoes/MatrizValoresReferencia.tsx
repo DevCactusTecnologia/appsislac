@@ -41,7 +41,11 @@ const MatrizValoresReferencia = ({
   const [reguaId, setReguaId] = useState<string>("sys:pediatrica-sysmex");
   const [parametro, setParametro] = useState<string>(parametros[0] ?? "");
   const [unidade, setUnidade] = useState<string>("");
-  const [draft, setDraft] = useState<Record<string, { min: string; max: string }>>({});
+  const [draft, setDraft] = useState<Record<string, { min: string; max: string; descricao?: string }>>({});
+  // Marca o "descricao" auto-gerado (ex.: "Masculino • 12a+") como vazio para o usuário,
+  // evitando que ele apareça como texto livre quando ainda não foi customizado.
+  const isAutoDescricao = (d?: string) =>
+    !d ? true : /^(Masculino|Feminino|Ambos)\s*•/i.test(d.trim());
 
   useEffect(() => {
     loadReguas().then(setReguas);
