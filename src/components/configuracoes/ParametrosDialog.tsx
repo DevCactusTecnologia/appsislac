@@ -594,7 +594,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                           key={c}
                           type="button"
                           onClick={() => setValorReferencia((v) => `${v}##${c}##`)}
-                          className="text-[10.5px] font-mono px-2 py-1 rounded-md bg-background border border-border text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all"
+                          className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
                         >
                           ##{c}##
                         </button>
