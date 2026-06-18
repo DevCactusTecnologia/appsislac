@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import {
   X, Trash2, Banknote, CreditCard, QrCode, CalendarIcon,
-  TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Receipt, DollarSign,
-  Gift, Percent,
+  TrendingUp, CheckCircle2, AlertTriangle, Receipt, DollarSign,
+  Gift, Percent, Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
