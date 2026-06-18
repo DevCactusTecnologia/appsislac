@@ -655,7 +655,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             </FormSection>
 
             {/* Advanced */}
-            <details className="group rounded-lg border border-border bg-background overflow-hidden">
+            <details className="group rounded-2xl border border-border/60 bg-background overflow-hidden">
               <summary className="px-3.5 py-2.5 text-[12px] font-semibold text-foreground/80 cursor-pointer select-none hover:bg-muted/30 transition-colors flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
