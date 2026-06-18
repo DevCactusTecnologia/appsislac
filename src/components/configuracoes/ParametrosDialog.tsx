@@ -696,7 +696,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 /* ---------- subcomponents ---------- */
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-lg bg-background border border-border/60 px-2 py-1.5 text-center">
+  <div className="rounded-xl bg-background border border-border/60 px-2 py-1.5 text-center">
     <p className="text-[15px] font-semibold text-foreground leading-none">{value}</p>
     <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{label}</p>
   </div>
