@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Settings2, Info } from "lucide-react";
+import { ArrowRightLeft, Settings2, Info, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,33 @@ import {
 } from "@/data/reguasEtariasStore";
 import { fromDias, labelFaixa, toDias, vrCabeNaFaixa, type FaixaEtaria } from "@/lib/idadeFaixas";
 import CoberturaEtariaBar from "./CoberturaEtariaBar";
+
+/** Pré-visualização da string que será impressa no laudo para uma célula. */
+const previewLaudo = (min: string, max: string, descricao: string, unidade: string): string => {
+  const d = (descricao || "").trim();
+  if (d) return d;
+  const mn = (min || "").trim();
+  const mx = (max || "").trim();
+  if (mn && mx) return `${mn} - ${mx}${unidade ? ` ${unidade}` : ""}`;
+  if (mn || mx) return `${mn || mx}${unidade ? ` ${unidade}` : ""}`;
+  return "";
+};
+
+/** Validação de uma célula. Retorna null se OK, ou mensagem se inválida. */
+const validarCelula = (min: string, max: string, descricao: string): string | null => {
+  const mn = (min || "").trim();
+  const mx = (max || "").trim();
+  const d = (descricao || "").trim();
+  if (!mn && !mx && !d) return null;
+  if (d) return null;
+  if (!mn || !mx) return "Informe min e max (ou um Texto p/ laudo)";
+  const nmin = parseFloat(mn.replace(",", "."));
+  const nmax = parseFloat(mx.replace(",", "."));
+  if (Number.isFinite(nmin) && Number.isFinite(nmax) && nmin > nmax) {
+    return "Mínimo maior que máximo";
+  }
+  return null;
+};
 
 interface Props {
   exameNome: string;
