@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { updateValorReferencia, type ValorReferencia } from "@/data/valoresReferenciaStore";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 
 interface VRRow {
   id: number;
