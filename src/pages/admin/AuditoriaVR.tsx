@@ -210,7 +210,7 @@ const AuditoriaVR = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PageHeader
         title="Auditoria de Valores de Referência"
-        subtitle="Detecta VRs cujo nome de parâmetro não casa com chave/rótulo/abreviação dos parâmetros do exame — esses VRs não resolvem ##REF_X##/##UNID_X##/##FLAG_X## no laudo."
+        description="Detecta VRs cujo nome de parâmetro não casa com chave/rótulo/abreviação dos parâmetros do exame — esses VRs não resolvem ##REF_X##/##UNID_X##/##FLAG_X## no laudo."
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
