@@ -256,6 +256,12 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       <div className="px-6 pt-4">
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
           <button
+            onClick={() => setAba("perfil")}
+            className={`h-8 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all ${aba === "perfil" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Users className="h-3.5 w-3.5" /> Por filtro
+          </button>
+          <button
             onClick={() => setAba("matriz")}
             className={`h-8 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all ${aba === "matriz" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           >
@@ -270,6 +276,17 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
         </div>
       </div>
 
+      {aba === "perfil" && (
+        <div className="px-6 py-5">
+          <FiltrosPorPerfil
+            exameNome={exameNome}
+            parametros={parametros.map((p) => p.rotulo)}
+            referencias={referencias}
+            onMutate={refreshReferencias}
+          />
+        </div>
+      )}
+
       {aba === "matriz" && (
         <div className="px-6 py-5">
           <MatrizValoresReferencia
@@ -281,6 +298,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
           />
         </div>
       )}
+
 
       {aba === "lista" && <>
       {showCopiar && (
