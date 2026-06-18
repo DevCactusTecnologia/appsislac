@@ -305,14 +305,14 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       onDragOver={handleDragOver}
                       onDrop={() => handleDrop(p.id)}
                       onClick={() => selectParametro(p)}
-                      className={`group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer border transition-all duration-150 ${
+                      className={`group relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer border transition-all duration-200 ${
                         isSel
                           ? "border-primary/40 bg-primary/5"
                           : "border-transparent hover:bg-background hover:border-border/60"
                       } ${dragId === p.id ? "opacity-40" : ""}`}
                     >
                       <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 cursor-grab active:cursor-grabbing shrink-0" />
-                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isSel ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground"}`}>
+                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isSel ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground"}`}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -330,7 +330,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleVisivel(p); }}
-                        className={`p-1.5 rounded-md transition-colors shrink-0 ${p.visivel ? "text-foreground/60 hover:bg-muted" : "text-muted-foreground/40 hover:bg-muted"}`}
+                        className={`p-1.5 rounded-lg transition-all duration-200 shrink-0 ${p.visivel ? "text-foreground/60 hover:bg-muted" : "text-muted-foreground/40 hover:bg-muted"}`}
                         title={p.visivel ? "Visível" : "Oculto"}
                       >
                         {p.visivel ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
