@@ -322,21 +322,31 @@ const MatrizValoresReferencia = ({
                       const v = getDraft(sexo, f);
                       const has = !!cellMap[cellKey(sexo, f.id)];
                       return (
-                        <td key={f.id} className={`py-1.5 px-1.5 ${has ? "bg-primary/[0.03]" : ""}`}>
-                          <div className="flex items-center gap-1 justify-center">
+                        <td key={f.id} className={`py-1.5 px-1.5 align-top ${has ? "bg-primary/[0.03]" : ""}`}>
+                          <div className="flex flex-col gap-1 items-center">
+                            <div className="flex items-center gap-1 justify-center">
+                              <Input
+                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                value={v.min}
+                                placeholder="—"
+                                onChange={(e) => setCellDraft(sexo, f, { min: e.target.value })}
+                                onBlur={() => persistCell(sexo, f)}
+                              />
+                              <span className="text-muted-foreground text-[10px]">–</span>
+                              <Input
+                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                value={v.max}
+                                placeholder="—"
+                                onChange={(e) => setCellDraft(sexo, f, { max: e.target.value })}
+                                onBlur={() => persistCell(sexo, f)}
+                              />
+                            </div>
                             <Input
-                              className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
-                              value={v.min}
-                              placeholder="—"
-                              onChange={(e) => setCellDraft(sexo, f, { min: e.target.value })}
-                              onBlur={() => persistCell(sexo, f)}
-                            />
-                            <span className="text-muted-foreground text-[10px]">–</span>
-                            <Input
-                              className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
-                              value={v.max}
-                              placeholder="—"
-                              onChange={(e) => setCellDraft(sexo, f, { max: e.target.value })}
+                              className="rounded-md h-6 text-[10px] bg-muted/20 border-border/40 w-[140px] px-1.5 text-center placeholder:text-muted-foreground/60"
+                              value={v.descricao}
+                              placeholder="Texto p/ laudo (opcional)"
+                              title="Quando preenchido, substitui 'min – max' no laudo (ex.: 'Normal: Inferior a 5.7%')"
+                              onChange={(e) => setCellDraft(sexo, f, { descricao: e.target.value })}
                               onBlur={() => persistCell(sexo, f)}
                             />
                           </div>
