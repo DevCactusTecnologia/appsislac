@@ -287,19 +287,17 @@ export default function LoginV2() {
               </div>
             </Link>
 
-            <div style={{ perspective: "1600px" }}>
+            <div>
               <motion.div
                 initial={false}
-                animate={{ rotateY: cardRotation }}
-                transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-                style={{ transformStyle: "preserve-3d" }}
                 className="grid"
               >
-                <div
-                  style={{ backfaceVisibility: "hidden" }}
-                  className={`col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9 ${
-                    step === 1 ? "pointer-events-auto" : "pointer-events-none"
-                  }`}
+                {step === 1 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                  className="col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9"
                 >
                   <div>
                     <div className="mb-7 space-y-1.5">
