@@ -105,20 +105,40 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
 
   const previewHtml = useMemo(() => {
     let html = editorContent;
+    const paramByKey = new Map(parametros.map((p) => [p.chave, p]));
+    const demoItalic = (v: string) =>
+      `<span style="color:#94a3b8;font-style:italic;">${v}</span>`;
+
     html = html.replace(/##([^#]*?)##/g, (match, raw) => {
       const { leading, key, trailing } = splitPlaceholderSpacing(raw);
-      const valor = PREVIEW_DEMO[key];
-      return valor !== undefined ? `${leading}${valor}${trailing}` : match;
+
+      // 1) Placeholders fixos do laudo (PACIENTE_NOME, DATA_COLETA, etc.)
+      const fixo = PREVIEW_DEMO[key];
+      if (fixo !== undefined) return `${leading}${fixo}${trailing}`;
+
+      // 2) Tokens derivados: REF_X, UNID_X, FLAG_X
+      const refMatch = key.match(/^(REF|UNID|FLAG)_(.+)$/);
+      if (refMatch) {
+        const [, prefixo, chave] = refMatch;
+        if (paramByKey.has(chave)) {
+          const demo =
+            prefixo === "REF" ? "0,00 - 0,00"
+            : prefixo === "UNID" ? "—"
+            : ""; // FLAG vazia em condição normal
+          return `${leading}${demoItalic(demo)}${trailing}`;
+        }
+        return match;
+      }
+
+      // 3) Resultado do parâmetro (##CHAVE##)
+      const p = paramByKey.get(key);
+      if (p) {
+        const valor = p.tipo === "Número" ? "0,00" : p.opcoesSelect?.[0] ?? "—";
+        return `${leading}${demoItalic(valor)}${trailing}`;
+      }
+      return match;
     });
-    parametros.forEach((p) => {
-      const valor = p.tipo === "Número" ? "0,00" : p.opcoesSelect?.[0] ?? "—";
-      html = html.replace(/##([^#]*?)##/g, (match, raw) => {
-        const { leading, key, trailing } = splitPlaceholderSpacing(raw);
-        return key === p.chave
-          ? `${leading}<span style="color:#94a3b8;font-style:italic;">${valor}</span>${trailing}`
-          : match;
-      });
-    });
+
     return preserveVisibleTextSpacing(html);
   }, [editorContent, parametros]);
 
