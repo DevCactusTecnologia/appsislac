@@ -350,7 +350,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
         </aside>
 
         {/* RIGHT: Form */}
-        <section className="flex flex-col overflow-y-auto">
+        <section className="flex flex-col overflow-hidden">
           {/* Sticky header */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between">
             <div>
