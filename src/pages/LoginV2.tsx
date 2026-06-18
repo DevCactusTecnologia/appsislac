@@ -160,7 +160,7 @@ export default function LoginV2() {
     setSenha("");
   }
 
-  const cardRotation = step === 2 ? 180 : 0;
+  
 
   const renderCardFooter = () => (
     <>
