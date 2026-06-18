@@ -14,6 +14,7 @@ import { loadParametros, getParametros, ExameParametro } from "@/data/exameParam
 import { parseValorReferencia, type FaixaCandidato } from "@/lib/parseValorReferencia";
 import { formatFaixaIdade } from "@/lib/idadeFormat";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
+import FiltrosPorPerfil from "./FiltrosPorPerfil";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
 interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; }
