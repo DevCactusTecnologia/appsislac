@@ -213,6 +213,11 @@ const LabsApoioTab = () => {
                       <h3 className="font-semibold text-foreground truncate">
                         {lab.nome}
                       </h3>
+                      {lab.sigla && (
+                        <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tracking-wider">
+                          {lab.sigla}
+                        </span>
+                      )}
                       <span
                         className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                           lab.ativo
