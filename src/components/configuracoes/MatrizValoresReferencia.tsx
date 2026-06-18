@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightLeft, Settings2, Info } from "lucide-react";
+import { ArrowRightLeft, Settings2, Info, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,33 @@ import {
 } from "@/data/reguasEtariasStore";
 import { fromDias, labelFaixa, toDias, vrCabeNaFaixa, type FaixaEtaria } from "@/lib/idadeFaixas";
 import CoberturaEtariaBar from "./CoberturaEtariaBar";
+
+/** Pré-visualização da string que será impressa no laudo para uma célula. */
+const previewLaudo = (min: string, max: string, descricao: string, unidade: string): string => {
+  const d = (descricao || "").trim();
+  if (d) return d;
+  const mn = (min || "").trim();
+  const mx = (max || "").trim();
+  if (mn && mx) return `${mn} - ${mx}${unidade ? ` ${unidade}` : ""}`;
+  if (mn || mx) return `${mn || mx}${unidade ? ` ${unidade}` : ""}`;
+  return "";
+};
+
+/** Validação de uma célula. Retorna null se OK, ou mensagem se inválida. */
+const validarCelula = (min: string, max: string, descricao: string): string | null => {
+  const mn = (min || "").trim();
+  const mx = (max || "").trim();
+  const d = (descricao || "").trim();
+  if (!mn && !mx && !d) return null;
+  if (d) return null;
+  if (!mn || !mx) return "Informe min e max (ou um Texto p/ laudo)";
+  const nmin = parseFloat(mn.replace(",", "."));
+  const nmax = parseFloat(mx.replace(",", "."));
+  if (Number.isFinite(nmin) && Number.isFinite(nmax) && nmin > nmax) {
+    return "Mínimo maior que máximo";
+  }
+  return null;
+};
 
 interface Props {
   exameNome: string;
@@ -154,8 +181,14 @@ const MatrizValoresReferencia = ({
     }
     if (ambosVazios) { setDraft((d) => { const c = { ...d }; delete c[k]; return c; }); return; }
 
+    // Validação — bloqueia gravação se inválido (mantém draft para o usuário corrigir).
+    const erro = validarCelula(valores.min, valores.max, valores.descricao ?? "");
+    if (erro) {
+      toast({ title: erro, variant: "destructive" });
+      return;
+    }
+
     if (vr) {
-      // Preserva descricao auto-gerada se o usuário não digitou texto custom
       const novaDescricao = descricaoCustom || (isAutoDescricao(vr.descricao) ? vr.descricao : vr.descricao);
       const ok = await updateValorReferencia(vr.id, {
         ...vr,
@@ -321,12 +354,15 @@ const MatrizValoresReferencia = ({
                     {regua.faixas.map((f) => {
                       const v = getDraft(sexo, f);
                       const has = !!cellMap[cellKey(sexo, f.id)];
+                      const erro = validarCelula(v.min, v.max, v.descricao);
+                      const preview = previewLaudo(v.min, v.max, v.descricao, unidade);
+                      const inputErrCls = erro ? "border-destructive/70 focus-visible:ring-destructive/40" : "border-border/60";
                       return (
-                        <td key={f.id} className={`py-1.5 px-1.5 align-top ${has ? "bg-primary/[0.03]" : ""}`}>
+                        <td key={f.id} className={`py-1.5 px-1.5 align-top ${has ? "bg-primary/[0.03]" : ""} ${erro ? "bg-destructive/[0.04]" : ""}`}>
                           <div className="flex flex-col gap-1 items-center">
                             <div className="flex items-center gap-1 justify-center">
                               <Input
-                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                className={`rounded-lg h-8 text-[12px] bg-muted/30 w-16 px-1.5 text-center ${inputErrCls}`}
                                 value={v.min}
                                 placeholder="—"
                                 onChange={(e) => setCellDraft(sexo, f, { min: e.target.value })}
@@ -334,7 +370,7 @@ const MatrizValoresReferencia = ({
                               />
                               <span className="text-muted-foreground text-[10px]">–</span>
                               <Input
-                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                className={`rounded-lg h-8 text-[12px] bg-muted/30 w-16 px-1.5 text-center ${inputErrCls}`}
                                 value={v.max}
                                 placeholder="—"
                                 onChange={(e) => setCellDraft(sexo, f, { max: e.target.value })}
@@ -342,13 +378,26 @@ const MatrizValoresReferencia = ({
                               />
                             </div>
                             <Input
-                              className="rounded-md h-6 text-[10px] bg-muted/20 border-border/40 w-[140px] px-1.5 text-center placeholder:text-muted-foreground/60"
+                              className={`rounded-md h-6 text-[10px] bg-muted/20 w-[140px] px-1.5 text-center placeholder:text-muted-foreground/60 ${erro ? "border-destructive/70" : "border-border/40"}`}
                               value={v.descricao}
                               placeholder="Texto p/ laudo (opcional)"
                               title="Quando preenchido, substitui 'min – max' no laudo (ex.: 'Normal: Inferior a 5.7%')"
                               onChange={(e) => setCellDraft(sexo, f, { descricao: e.target.value })}
                               onBlur={() => persistCell(sexo, f)}
                             />
+                            {erro ? (
+                              <div className="flex items-center gap-1 text-[10px] text-destructive max-w-[160px] text-center leading-tight">
+                                <AlertCircle className="h-3 w-3 shrink-0" />
+                                <span>{erro}</span>
+                              </div>
+                            ) : preview ? (
+                              <div
+                                className="text-[10px] text-muted-foreground italic max-w-[160px] text-center leading-tight truncate"
+                                title={`No laudo: ${preview}`}
+                              >
+                                {preview}
+                              </div>
+                            ) : null}
                           </div>
                         </td>
                       );

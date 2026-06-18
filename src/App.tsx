@@ -46,6 +46,7 @@ const SolicitacoesSite = lazy(() => import("./pages/SolicitacoesSite"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Perfil = lazy(() => import("./pages/Perfil"));
 const CKEditorTest = lazy(() => import("./pages/admin/CKEditorTest"));
+const AuditoriaVR = lazy(() => import("./pages/admin/AuditoriaVR"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
@@ -403,6 +404,7 @@ function AppRoutes() {
             <Route path="/usuarios" element={<Navigate to="/equipe" replace />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/admin/ckeditor-test" element={<ProtectedRoute><CKEditorTest /></ProtectedRoute>} />
+            <Route path="/admin/auditoria-vr" element={<ProtectedRoute><AuditoriaVR /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
