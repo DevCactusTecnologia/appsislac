@@ -700,7 +700,7 @@ const NovoAtendimento = () => {
     inserirExameComoAmostra(template, true);
   };
 
-  const removeExame = (id: number) => setExames(exames.filter(e => e.id !== id));
+  const removeExame = (id: number) => setExames(prev => prev.filter(e => e.id !== id));
 
   /**
    * Insere o exame no estado. Se já existir um exame com o mesmo nome, calcula
