@@ -646,7 +646,7 @@ const Index = () => {
   };
 
   const pagamentoData = useMemo(() => {
-    if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"] };
+    if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"], exames: [] as { nome: string; valor: number }[] };
     // Apenas exames cobrados do PACIENTE entram no cálculo do modal de pagamento.
     const examesPaciente = (selectedAtendimento.examesCobranca ?? selectedAtendimento.exames.map(nome => ({ nome, cobrancaDestino: "paciente" as const, valor: 0 })))
       .filter(c => c.cobrancaDestino !== "convenio");
@@ -660,6 +660,7 @@ const Index = () => {
       valorPago: totalPago,
       saldoDevedor: Math.max(0, subtotal - totalPago),
       pagamentosRealizados: localPagamentos ?? [],
+      exames: examesPaciente.map(e => ({ nome: e.nome, valor: Number(e.valor) || 0 })),
     };
   }, [selectedAtendimento, localPagamentos]);
 
@@ -1113,6 +1114,7 @@ const Index = () => {
         total={pagamentoData.total}
         valorPago={pagamentoData.valorPago}
         saldoDevedor={pagamentoData.saldoDevedor}
+        exames={pagamentoData.exames}
         pagamentosRealizados={pagamentoData.pagamentosRealizados}
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}

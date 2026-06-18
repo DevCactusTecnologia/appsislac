@@ -2234,6 +2234,7 @@ const NovoAtendimento = () => {
         onClose={() => setPagamentoOpen(false)}
         itens={exames.length} subtotal={subtotal} desconto={desconto} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
+        exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valor }))}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => { setValorPago(res.valorPago); setDesconto(res.desconto); }}
         onRemovePagamentoRealizado={index => {
