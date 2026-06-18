@@ -80,11 +80,24 @@ const PagamentoDialog = ({
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [stagingValor, setStagingValor] = useState("");
+  const [stagingData, setStagingData] = useState<Date>(new Date());
+  const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
+  const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   useBodyScrollLock(open);
 
-  const add = (tipo: string) => {
+  const resetStaging = () => {
+    setStagingValor("");
+    setStagingData(new Date());
+    setStagingUnidade("BRL");
+    setStagingExameIdx(null);
+    setSelectedMethod(null);
+  };
+
+  const handleSelectMethod = (tipo: string) => {
     if (tipo === "Cortesia") {
-      // calculado no fechamento — gera entrada de Desconto fixa cobrindo o saldo atual
+      // Cortesia auto-aplica saldo restante
       const subtotalLocal = subtotal;
       const descAtual = pagamentos
         .filter(p => p.tipo === "Desconto" || p.tipo === "Cortesia")
@@ -106,18 +119,29 @@ const PagamentoDialog = ({
       }]);
       return;
     }
-    setPagamentos(p => [...p, {
-      tipo,
-      valor: "",
-      data: new Date(),
-      ...(isAdjustment(tipo) ? { unidade: "BRL" as Unidade, exameIdx: null } : {}),
-    }]);
+    setSelectedMethod(prev => (prev === tipo ? null : tipo));
+    setStagingValor("");
+    setStagingData(new Date());
+    setStagingUnidade("BRL");
+    setStagingExameIdx(null);
   };
+
+  const handleAddStaging = () => {
+    if (!selectedMethod) return;
+    const num = parse(stagingValor);
+    if (num <= 0) return;
+    const adj = isAdjustment(selectedMethod);
+    setPagamentos(p => [...p, {
+      tipo: selectedMethod,
+      valor: stagingValor,
+      data: stagingData,
+      ...(adj ? { unidade: stagingUnidade, exameIdx: stagingExameIdx } : {}),
+    }]);
+    resetStaging();
+  };
+
   const remove = (i: number) => setPagamentos(p => p.filter((_, idx) => idx !== i));
-  const setVal = (i: number, v: string) => setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, valor: v.replace(/[^0-9,.]/g, "") } : x));
-  const setDate = (i: number, d: Date | undefined) => { if (d) setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, data: d } : x)); };
-  const setUnidade = (i: number, u: Unidade) => setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, unidade: u } : x));
-  const setExameIdx = (i: number, idx: number | null) => setPagamentos(p => p.map((x, k) => k === i ? { ...x, exameIdx: idx } : x));
+
 
   const { totalPag, totalDesc, totalAcre } = useMemo(() => {
     let pag = 0, desc = 0, acre = 0;
