@@ -39,6 +39,41 @@ interface FiltroKey {
 const keyOf = (r: { sexo: string; idadeMin: string; idadeMax: string; unidadeIdade: string }) =>
   `${r.sexo}|${r.idadeMin}|${r.idadeMax}|${r.unidadeIdade}`;
 
+// Ordem fixa solicitada para Hemograma na aba "Por filtro".
+const ORDEM_HEMOGRAMA = [
+  "Hemácias",
+  "Hemoglobina",
+  "Hematócrito",
+  "V.C.M",
+  "H.C.M",
+  "C.H.C.M",
+  "R.D.W",
+  "Leucócitos",
+  "Prómielócitos",
+  "Mielócitos",
+  "Metamielócitos",
+  "Bastonetes",
+  "Segmentados",
+  "Eosinófilos",
+  "Basófilos",
+  "Linfócitos",
+  "Linf. Reativos",
+  "Monócitos",
+  "Plaquetas",
+  "VPM",
+];
+
+// Normaliza nomes para casar variações de pontuação/acento
+// (ex.: "V.C.M" ↔ "VCM", "Linf. Reativos" ↔ "linf reativos").
+const norm = (s: string) =>
+  (s ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+
+const ordemHemogramaPorNome = new Map(ORDEM_HEMOGRAMA.map((nome, index) => [norm(nome), index]));
+
 const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Props) => {
   const { toast } = useToast();
   const [busca, setBusca] = useState("");
@@ -95,22 +130,15 @@ const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Prop
     [filtros, selecionado],
   );
 
-  // Normaliza nomes para casar variações de pontuação/acento
-  // (ex.: "V.C.M" ↔ "VCM", "Linf. Reativos" ↔ "linf reativos").
-  const norm = (s: string) =>
-    (s ?? "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
-
-  // Índice por nome normalizado para ordenar conforme o Layout Científico.
-  // `parametros` já chega na ordem do layout/catálogo.
+  // Índice por nome normalizado para ordenar conforme a sequência científica fixa.
+  // Fallback: mantém a ordem recebida do catálogo para parâmetros fora dessa lista.
   const ordemPorNome = useMemo(() => {
     const m = new Map<string, number>();
+    ordemHemogramaPorNome.forEach((index, nome) => m.set(nome, index));
+    const base = ORDEM_HEMOGRAMA.length;
     parametros.forEach((p, i) => {
       const k = norm(p);
-      if (k && !m.has(k)) m.set(k, i);
+      if (k && !m.has(k)) m.set(k, base + i);
     });
     return m;
   }, [parametros]);
