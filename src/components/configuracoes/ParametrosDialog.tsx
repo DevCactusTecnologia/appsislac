@@ -513,10 +513,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                             key={n}
                             type="button"
                             onClick={() => setCasasDecimais(n)}
-                            className={`h-9 w-10 rounded-lg border text-[13px] font-semibold transition-all duration-150 ${
+                            className={`h-9 w-10 rounded-xl border text-[13px] font-semibold transition-all duration-200 ${
                               casasDecimais === n
                                 ? "border-primary bg-primary/10 text-primary"
-                                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                                : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                             }`}
                           >
                             {n}
