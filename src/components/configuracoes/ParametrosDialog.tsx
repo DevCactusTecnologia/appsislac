@@ -262,9 +262,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       allowMaximize={true}
       defaultMaximized={defaultMaximized}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] h-full min-h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] grid-rows-1 h-full min-h-[600px] overflow-hidden">
         {/* LEFT: List panel */}
-        <aside className="border-r border-border/60 bg-muted/20 flex flex-col">
+        <aside className="border-r border-border/60 bg-muted/20 flex flex-col overflow-hidden">
           {/* Search + stats */}
           <div className="p-4 border-b border-border/60 space-y-3">
             <div className="relative">
