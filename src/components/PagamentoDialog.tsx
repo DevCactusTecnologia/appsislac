@@ -490,10 +490,9 @@ const PagamentoDialog = ({
                 })}
               </div>
             </section>
-
-            </section>
           </div>
         </div>
+
 
         <div className="h-px bg-border/50" />
 
