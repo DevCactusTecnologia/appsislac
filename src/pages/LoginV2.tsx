@@ -386,13 +386,15 @@ export default function LoginV2() {
                   </div>
 
                   {renderCardFooter()}
-                </div>
+                </motion.div>
+                )}
 
-                <div
-                  style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-                  className={`col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9 ${
-                    step === 2 ? "pointer-events-auto" : "pointer-events-none"
-                  }`}
+                {step === 2 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                  className="col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9"
                 >
                   {tenant?.logo_url && (
                     <div className="mb-6 flex items-center justify-center">
