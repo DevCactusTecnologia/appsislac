@@ -704,7 +704,7 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 
 const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
   <div className="py-10 px-4 text-center">
-    <div className="h-12 w-12 rounded-xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
+    <div className="h-12 w-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
       <Sparkles className="h-5 w-5 text-primary" />
     </div>
     <p className="text-[13px] font-medium text-foreground mb-1">Nenhum parâmetro</p>
@@ -713,7 +713,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
     </p>
     <button
       onClick={onCreate}
-      className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity inline-flex items-center gap-1.5"
+      className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-all duration-200 inline-flex items-center gap-1.5"
     >
       <Plus className="h-3.5 w-3.5" /> Criar primeiro
     </button>
