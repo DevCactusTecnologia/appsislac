@@ -1114,6 +1114,7 @@ const Index = () => {
         total={pagamentoData.total}
         valorPago={pagamentoData.valorPago}
         saldoDevedor={pagamentoData.saldoDevedor}
+        exames={pagamentoData.exames}
         pagamentosRealizados={pagamentoData.pagamentosRealizados}
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}
