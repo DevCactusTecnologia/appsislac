@@ -383,10 +383,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       key={t.value}
                       type="button"
                       onClick={() => setTipoSelecionado(t.value)}
-                      className={`p-3 rounded-lg border text-left transition-all duration-150 ${
+                      className={`p-3 rounded-xl border text-left transition-all duration-200 ${
                         active
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border hover:border-foreground/30 hover:bg-muted/40"
+                          : "border-border/60 hover:border-foreground/30 hover:bg-muted/40"
                       }`}
                     >
                       <Icon className={`h-4 w-4 mb-2 ${active ? "text-primary" : "text-muted-foreground"}`} />
