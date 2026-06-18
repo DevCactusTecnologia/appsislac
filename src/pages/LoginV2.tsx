@@ -511,7 +511,8 @@ export default function LoginV2() {
                   )}
 
                   {renderCardFooter()}
-                </div>
+                </motion.div>
+                )}
               </motion.div>
             </div>
           </div>
