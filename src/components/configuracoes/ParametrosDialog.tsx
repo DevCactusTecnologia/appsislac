@@ -487,7 +487,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                         {opcoesSelect.map((o) => (
                           <span
                             key={o}
-                            className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-md bg-muted border border-border text-[11px] font-medium text-foreground/80"
+                            className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-lg bg-muted border border-border/60 text-[11px] font-medium text-foreground/80"
                           >
                             {o.toUpperCase()}
                             <button
