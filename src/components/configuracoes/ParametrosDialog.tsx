@@ -725,7 +725,7 @@ const FormSection = ({
 }: { step: number; title: string; desc: string; children: React.ReactNode }) => (
   <section className="space-y-3">
     <header className="flex items-start gap-3">
-      <div className="h-6 w-6 rounded-md bg-muted border border-border flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
+      <div className="h-6 w-6 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
         {step}
       </div>
       <div className="min-w-0 -mt-0.5">
