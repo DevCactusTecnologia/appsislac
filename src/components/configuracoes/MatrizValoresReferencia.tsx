@@ -120,14 +120,18 @@ const MatrizValoresReferencia = ({
     return <div className="p-6 text-center text-sm text-muted-foreground">Carregando réguas…</div>;
   }
 
-  const getDraft = (sexo: Sexo, f: FaixaEtaria): { min: string; max: string } => {
+  const getDraft = (sexo: Sexo, f: FaixaEtaria): { min: string; max: string; descricao: string } => {
     const k = cellKey(sexo, f.id);
-    if (draft[k]) return draft[k];
+    const d = draft[k];
     const vr = cellMap[k];
-    return { min: vr?.valorMin ?? "", max: vr?.valorMax ?? "" };
+    return {
+      min: d?.min ?? vr?.valorMin ?? "",
+      max: d?.max ?? vr?.valorMax ?? "",
+      descricao: d?.descricao ?? (isAutoDescricao(vr?.descricao) ? "" : (vr?.descricao ?? "")),
+    };
   };
 
-  const setCellDraft = (sexo: Sexo, f: FaixaEtaria, patch: Partial<{ min: string; max: string }>) => {
+  const setCellDraft = (sexo: Sexo, f: FaixaEtaria, patch: Partial<{ min: string; max: string; descricao: string }>) => {
     const k = cellKey(sexo, f.id);
     const atual = getDraft(sexo, f);
     setDraft((d) => ({ ...d, [k]: { ...atual, ...patch } }));
@@ -138,7 +142,8 @@ const MatrizValoresReferencia = ({
     const valores = draft[k];
     if (!valores) return;
     const vr = cellMap[k];
-    const ambosVazios = !valores.min.trim() && !valores.max.trim();
+    const descricaoCustom = (valores.descricao ?? "").trim();
+    const ambosVazios = !valores.min.trim() && !valores.max.trim() && !descricaoCustom;
 
     if (vr && ambosVazios) {
       const ok = await removeValorReferencia(vr.id);
@@ -150,18 +155,19 @@ const MatrizValoresReferencia = ({
     if (ambosVazios) { setDraft((d) => { const c = { ...d }; delete c[k]; return c; }); return; }
 
     if (vr) {
-      // mantém a unidadeIdade original do registro
+      // Preserva descricao auto-gerada se o usuário não digitou texto custom
+      const novaDescricao = descricaoCustom || (isAutoDescricao(vr.descricao) ? vr.descricao : vr.descricao);
       const ok = await updateValorReferencia(vr.id, {
         ...vr,
         valorMin: valores.min.trim(),
         valorMax: valores.max.trim(),
         unidade: unidade.trim() || vr.unidade,
+        descricao: novaDescricao,
       });
       if (!ok) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     } else {
       const idadeMinFmt = fromDias(f.deDias);
       const idadeMaxFmt = fromDias(f.ateDias);
-      // grava na mesma unidade do mín, convertendo o máx
       const unidadeIdade = idadeMinFmt.unidade;
       const idadeMaxStr = unidadeIdade === idadeMaxFmt.unidade
         ? idadeMaxFmt.valor
@@ -177,7 +183,7 @@ const MatrizValoresReferencia = ({
         valorMin: valores.min.trim(),
         valorMax: valores.max.trim(),
         unidade: unidade.trim(),
-        descricao: `${sexo} • ${f.label}`,
+        descricao: descricaoCustom || `${sexo} • ${f.label}`,
       });
       if (!novo) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     }
