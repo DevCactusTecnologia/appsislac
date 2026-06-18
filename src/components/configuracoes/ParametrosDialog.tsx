@@ -191,11 +191,11 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setOpcoesSelect(unicas);
   };
 
-  // Design system tokens
-  const inputBase = "w-full h-10 px-3 bg-background border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-150";
-  const inputClass = `${inputBase} border-border focus:border-primary/50`;
+  // Design system tokens — alinhados ao FiltrosDialog (Valores de referência)
+  const inputBase = "w-full h-10 px-3 bg-background border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200";
+  const inputClass = `${inputBase} border-border/60 focus:border-primary/50`;
   const inputErrClass = `${inputBase} border-destructive/60 bg-destructive/5 focus:border-destructive focus:ring-destructive/20`;
-  const textareaClass = "w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-150 resize-none";
+  const textareaClass = "w-full px-3 py-2.5 bg-background border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 resize-none";
   const labelClass = "text-[12px] font-medium text-foreground/80 mb-1.5 flex items-center gap-1";
   const sectionTitle = "text-[11px] font-semibold text-muted-foreground uppercase tracking-wider";
 
@@ -214,7 +214,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const headerActions = (
     <button
       onClick={resetForm}
-      className="h-9 px-3.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+      className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
     >
       <Plus className="h-3.5 w-3.5" /> Novo parâmetro
     </button>
@@ -225,18 +225,21 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       {selectedId && (
         <button
           onClick={handleRemover}
-          className="h-10 px-4 rounded-lg border border-destructive/40 text-destructive text-[13px] font-medium flex items-center gap-2 hover:bg-destructive/10 transition-colors mr-auto"
+          className="h-10 px-4 rounded-xl border border-destructive/30 text-destructive text-[13px] font-medium flex items-center gap-2 hover:bg-destructive/10 transition-all duration-200 mr-auto"
         >
           <Trash2 className="h-3.5 w-3.5" /> Remover
         </button>
       )}
-      <button onClick={onClose} className="h-10 px-4 rounded-lg border border-border text-[13px] font-medium text-foreground/80 hover:bg-muted/50 transition-colors">
+      <button
+        onClick={onClose}
+        className="h-10 px-4 rounded-xl border border-border/60 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200"
+      >
         Fechar
       </button>
       <button
         onClick={handleSave}
         disabled={saving || !exameId || !!chaveJaUsada}
-        className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+        className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
       >
         <Save className="h-4 w-4" /> {saving ? "Salvando..." : selectedId ? "Atualizar" : "Adicionar"}
       </button>
@@ -250,7 +253,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     <StandardDialog
       open={open}
       onClose={onClose}
-      icon={<Settings2 className="h-5 w-5 text-primary" />}
+      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
       title="Parâmetros do exame"
       subtitle={exameNome || "Defina os campos de resultado"}
       headerActions={headerActions}
@@ -302,14 +305,14 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       onDragOver={handleDragOver}
                       onDrop={() => handleDrop(p.id)}
                       onClick={() => selectParametro(p)}
-                      className={`group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer border transition-all duration-150 ${
+                      className={`group relative flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer border transition-all duration-200 ${
                         isSel
                           ? "border-primary/40 bg-primary/5"
                           : "border-transparent hover:bg-background hover:border-border/60"
                       } ${dragId === p.id ? "opacity-40" : ""}`}
                     >
                       <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 cursor-grab active:cursor-grabbing shrink-0" />
-                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isSel ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground"}`}>
+                      <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${isSel ? "bg-primary/10 text-primary" : "bg-muted/60 text-muted-foreground"}`}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -327,7 +330,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleVisivel(p); }}
-                        className={`p-1.5 rounded-md transition-colors shrink-0 ${p.visivel ? "text-foreground/60 hover:bg-muted" : "text-muted-foreground/40 hover:bg-muted"}`}
+                        className={`p-1.5 rounded-lg transition-all duration-200 shrink-0 ${p.visivel ? "text-foreground/60 hover:bg-muted" : "text-muted-foreground/40 hover:bg-muted"}`}
                         title={p.visivel ? "Visível" : "Oculto"}
                       >
                         {p.visivel ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
@@ -380,10 +383,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       key={t.value}
                       type="button"
                       onClick={() => setTipoSelecionado(t.value)}
-                      className={`p-3 rounded-lg border text-left transition-all duration-150 ${
+                      className={`p-3 rounded-xl border text-left transition-all duration-200 ${
                         active
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border hover:border-foreground/30 hover:bg-muted/40"
+                          : "border-border/60 hover:border-foreground/30 hover:bg-muted/40"
                       }`}
                     >
                       <Icon className={`h-4 w-4 mb-2 ${active ? "text-primary" : "text-muted-foreground"}`} />
@@ -484,7 +487,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                         {opcoesSelect.map((o) => (
                           <span
                             key={o}
-                            className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-md bg-muted border border-border text-[11px] font-medium text-foreground/80"
+                            className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-lg bg-muted border border-border/60 text-[11px] font-medium text-foreground/80"
                           >
                             {o.toUpperCase()}
                             <button
@@ -510,10 +513,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                             key={n}
                             type="button"
                             onClick={() => setCasasDecimais(n)}
-                            className={`h-9 w-10 rounded-lg border text-[13px] font-semibold transition-all duration-150 ${
+                            className={`h-9 w-10 rounded-xl border text-[13px] font-semibold transition-all duration-200 ${
                               casasDecimais === n
                                 ? "border-primary bg-primary/10 text-primary"
-                                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                                : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                             }`}
                           >
                             {n}
@@ -539,7 +542,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 )}
 
                 {(tipoSelecionado === "Número" || tipoSelecionado === "Formula") && (
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/[0.03] p-3.5">
+                  <div className="rounded-2xl border border-destructive/30 bg-destructive/[0.03] p-3.5">
                     <div className="flex items-center gap-2 mb-2.5">
                       <AlertOctagon className="h-3.5 w-3.5 text-destructive" />
                       <span className="text-[11px] font-semibold text-destructive uppercase tracking-wider">
@@ -581,7 +584,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 )}
 
                 {tipoSelecionado === "Formula" && chavesDisponiveis.length > 0 && (
-                  <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3.5">
+                  <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
                     <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                       <Wand2 className="h-3 w-3" /> Inserir chaves
                     </p>
@@ -591,7 +594,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                           key={c}
                           type="button"
                           onClick={() => setValorReferencia((v) => `${v}##${c}##`)}
-                          className="text-[10.5px] font-mono px-2 py-1 rounded-md bg-background border border-border text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all"
+                          className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
                         >
                           ##{c}##
                         </button>
@@ -634,7 +637,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               title="Comportamento"
               desc="Como este parâmetro se comporta no atendimento e na bancada."
             >
-              <div className="rounded-lg border border-border bg-background divide-y divide-border/60 overflow-hidden">
+              <div className="rounded-2xl border border-border/60 bg-background divide-y divide-border/60 overflow-hidden">
                 {[
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
                   { label: "Exibir resultado anterior", desc: "Mostra o último valor registrado deste paciente", value: exibirAnterior, set: setExibirAnterior },
@@ -652,7 +655,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             </FormSection>
 
             {/* Advanced */}
-            <details className="group rounded-lg border border-border bg-background overflow-hidden">
+            <details className="group rounded-2xl border border-border/60 bg-background overflow-hidden">
               <summary className="px-3.5 py-2.5 text-[12px] font-semibold text-foreground/80 cursor-pointer select-none hover:bg-muted/30 transition-colors flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
@@ -693,7 +696,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 /* ---------- subcomponents ---------- */
 
 const Stat = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-lg bg-background border border-border/60 px-2 py-1.5 text-center">
+  <div className="rounded-xl bg-background border border-border/60 px-2 py-1.5 text-center">
     <p className="text-[15px] font-semibold text-foreground leading-none">{value}</p>
     <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">{label}</p>
   </div>
@@ -701,7 +704,7 @@ const Stat = ({ label, value }: { label: string; value: number }) => (
 
 const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
   <div className="py-10 px-4 text-center">
-    <div className="h-12 w-12 rounded-xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
+    <div className="h-12 w-12 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-3">
       <Sparkles className="h-5 w-5 text-primary" />
     </div>
     <p className="text-[13px] font-medium text-foreground mb-1">Nenhum parâmetro</p>
@@ -710,7 +713,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
     </p>
     <button
       onClick={onCreate}
-      className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity inline-flex items-center gap-1.5"
+      className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-all duration-200 inline-flex items-center gap-1.5"
     >
       <Plus className="h-3.5 w-3.5" /> Criar primeiro
     </button>
@@ -722,7 +725,7 @@ const FormSection = ({
 }: { step: number; title: string; desc: string; children: React.ReactNode }) => (
   <section className="space-y-3">
     <header className="flex items-start gap-3">
-      <div className="h-6 w-6 rounded-md bg-muted border border-border flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
+      <div className="h-6 w-6 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
         {step}
       </div>
       <div className="min-w-0 -mt-0.5">
