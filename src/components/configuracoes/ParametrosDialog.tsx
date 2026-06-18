@@ -253,7 +253,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     <StandardDialog
       open={open}
       onClose={onClose}
-      icon={<Settings2 className="h-5 w-5 text-primary" />}
+      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
       title="Parâmetros do exame"
       subtitle={exameNome || "Defina os campos de resultado"}
       headerActions={headerActions}
