@@ -181,8 +181,14 @@ const MatrizValoresReferencia = ({
     }
     if (ambosVazios) { setDraft((d) => { const c = { ...d }; delete c[k]; return c; }); return; }
 
+    // Validação — bloqueia gravação se inválido (mantém draft para o usuário corrigir).
+    const erro = validarCelula(valores.min, valores.max, valores.descricao ?? "");
+    if (erro) {
+      toast({ title: erro, variant: "destructive" });
+      return;
+    }
+
     if (vr) {
-      // Preserva descricao auto-gerada se o usuário não digitou texto custom
       const novaDescricao = descricaoCustom || (isAutoDescricao(vr.descricao) ? vr.descricao : vr.descricao);
       const ok = await updateValorReferencia(vr.id, {
         ...vr,
