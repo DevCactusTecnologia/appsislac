@@ -410,12 +410,21 @@ export default function LoginV2() {
                 </motion.div>
                 )}
 
-                {step === 2 && (
+                {(isMobile ? step === 2 : true) && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={isMobile ? { opacity: 0 } : false}
+                  animate={isMobile ? { opacity: 1 } : undefined}
                   transition={{ duration: 0.25 }}
                   className="col-start-1 row-start-1 rounded-3xl border border-border/60 bg-card/80 p-7 shadow-2xl shadow-foreground/5 backdrop-blur-xl sm:p-9"
+                  style={
+                    isMobile
+                      ? undefined
+                      : {
+                          backfaceVisibility: "hidden",
+                          WebkitBackfaceVisibility: "hidden",
+                          transform: "rotateY(180deg)",
+                        }
+                  }
                 >
                   {tenant?.logo_url && (
                     <div className="mb-6 flex items-center justify-center">
