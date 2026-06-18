@@ -119,27 +119,53 @@ function buildValueMap(
     if (p.rotulo) setBoth(p.rotulo, valor);
 
     // Resolve referência clínica (sexo/idade do paciente, com fallback para Ambos).
-    const ref = pacienteSexo || pacienteIdade
-      ? resolverReferencia(exameNome, p.rotulo, pacienteSexo ?? "", pacienteIdade ?? "")
-      : null;
+    // Tenta casar parametro_nome por rótulo → chave → abreviação (case-insensitive),
+    // garantindo compatibilidade tanto com VRs cadastradas pelo nome do parâmetro
+    // quanto pela chave técnica do layout.
+    let ref: ReturnType<typeof resolverReferencia> = null;
+    if (pacienteSexo || pacienteIdade) {
+      const candidatos = [p.rotulo, p.chave, p.abreviacao].filter(Boolean) as string[];
+      for (const nome of candidatos) {
+        ref = resolverReferencia(exameNome, nome, pacienteSexo ?? "", pacienteIdade ?? "");
+        if (ref) break;
+      }
+    }
 
+    // Prioriza `descricao` quando preenchida (permite texto livre por faixa,
+    // ex.: "Normal: Inferior a 5.7%"). Caso contrário monta "min - max".
+    // Quando não há VR estruturada, cai para o fallback global do parâmetro.
+    const isDescricaoUtil = (d?: string) => {
+      if (!d) return false;
+      const trimmed = d.trim();
+      if (!trimmed) return false;
+      // descricao auto-gerada pela matriz ("Masculino • 12a+") não deve poluir o laudo
+      return !/^(Masculino|Feminino|Ambos)\s*•/i.test(trimmed);
+    };
     const refTexto = ref
-      ? (ref.refMin && ref.refMax ? `${ref.refMin} - ${ref.refMax}` : ref.refMin || ref.refMax || "")
+      ? (isDescricaoUtil(ref.descricao)
+          ? ref.descricao.trim()
+          : (ref.refMin && ref.refMax
+              ? `${ref.refMin} - ${ref.refMax}`
+              : ref.refMin || ref.refMax || ""))
       : (p.valorReferencia || "");
 
     const refMin = ref?.refMin ?? "";
     const refMax = ref?.refMax ?? "";
     const flag = flagFor(valor, refMin, refMax);
 
-    // Placeholders auxiliares por chave do parâmetro:
-    //   ##REF_<chave>##   → faixa de referência formatada
-    //   ##FLAG_<chave>##  → ↑ / ↓ / vazio
-    //   ##UNID_<chave>##  → unidade da referência
-    if (p.chave) {
-      setBoth(`REF_${p.chave}`, refTexto);
-      setBoth(`FLAG_${p.chave}`, flag);
-      setBoth(`UNID_${p.chave}`, ref?.refUnidade ?? "");
-    }
+    // Placeholders auxiliares — emitidos por chave, rótulo e abreviação
+    // para que ##REF_HEMOGLOBINA## funcione mesmo quando o layout usa o
+    // nome do parâmetro em vez da chave técnica.
+    const refUnidade = ref?.refUnidade ?? "";
+    const emitRef = (k?: string) => {
+      if (!k) return;
+      setBoth(`REF_${k}`, refTexto);
+      setBoth(`FLAG_${k}`, flag);
+      setBoth(`UNID_${k}`, refUnidade);
+    };
+    emitRef(p.chave);
+    emitRef(p.rotulo);
+    emitRef(p.abreviacao);
   }
 
   return map;
