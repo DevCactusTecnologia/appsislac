@@ -56,6 +56,7 @@ const formatPhone = (value: string) => {
 type FormData = Omit<LabApoio, "id">;
 const emptyForm: FormData = {
   nome: "",
+  sigla: "",
   cnpj: "",
   telefone: "",
   email: "",
