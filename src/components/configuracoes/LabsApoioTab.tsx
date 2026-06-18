@@ -357,14 +357,26 @@ const LabsApoioTab = () => {
         }
       >
         <div className="px-6 py-5 space-y-4">
-          <div className="space-y-1.5">
-            <label className={labelClass}>Nome *</label>
-            <Input
-              className={inputClass}
-              value={form.nome}
-              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-              placeholder="Ex: LabExpert Diagnósticos"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
+            <div className="space-y-1.5">
+              <label className={labelClass}>Nome *</label>
+              <Input
+                className={inputClass}
+                value={form.nome}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                placeholder="Ex: LabExpert Diagnósticos"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className={labelClass}>Sigla</label>
+              <Input
+                className={`${inputClass} uppercase`}
+                value={form.sigla}
+                maxLength={12}
+                onChange={(e) => setForm((f) => ({ ...f, sigla: e.target.value.toUpperCase().slice(0, 12) }))}
+                placeholder="Ex: LE"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
