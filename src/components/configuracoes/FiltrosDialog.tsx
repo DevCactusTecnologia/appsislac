@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler } from "lucide-react";
+import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler, Users } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
