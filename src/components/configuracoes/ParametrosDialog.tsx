@@ -262,9 +262,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       allowMaximize={true}
       defaultMaximized={defaultMaximized}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] h-full min-h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] grid-rows-1 h-full min-h-[600px] overflow-hidden">
         {/* LEFT: List panel */}
-        <aside className="border-r border-border/60 bg-muted/20 flex flex-col">
+        <aside className="border-r border-border/60 bg-muted/20 flex flex-col overflow-hidden">
           {/* Search + stats */}
           <div className="p-4 border-b border-border/60 space-y-3">
             <div className="relative">
@@ -350,7 +350,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
         </aside>
 
         {/* RIGHT: Form */}
-        <section className="flex flex-col overflow-y-auto">
+        <section className="flex flex-col overflow-hidden">
           {/* Sticky header */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between">
             <div>
