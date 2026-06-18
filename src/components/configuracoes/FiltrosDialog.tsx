@@ -69,7 +69,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       setEditando(null); setForm(emptyForm(exameNome));
       setShowCopiar(false); setCopiarOrigem("");
       setShowImportar(false); setImportarParametro(""); setCandidatos([]);
-      setAba("matriz");
+      setAba("perfil");
       if (exameId) loadParametros(exameId).then(() => setParametros(getParametros(exameId)));
     }
   }, [open, exameNome, exameId]);
