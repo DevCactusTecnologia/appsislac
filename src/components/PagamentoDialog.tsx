@@ -301,7 +301,7 @@ const PagamentoDialog = ({
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
                           {onRemovePagamentoRealizado && (
-                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all duration-200">
+                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-all duration-200">
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </button>
                           )}
