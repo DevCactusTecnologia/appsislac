@@ -8,6 +8,7 @@ import { showError } from "@/lib/showError";
 export interface LabApoio {
   id: string;
   nome: string;
+  sigla: string;
   cnpj: string;
   telefone: string;
   email: string;
@@ -26,6 +27,7 @@ function fromRow(r: any): LabApoio {
   return {
     id: r.id,
     nome: r.nome,
+    sigla: r.sigla ?? "",
     cnpj: r.cnpj ?? "",
     telefone: r.telefone ?? "",
     email: r.email ?? "",
@@ -39,6 +41,7 @@ function fromRow(r: any): LabApoio {
 function toRow(l: Partial<LabApoio>): any {
   const row: Record<string, unknown> = {};
   if (l.nome !== undefined) row.nome = l.nome;
+  if (l.sigla !== undefined) row.sigla = l.sigla;
   if (l.cnpj !== undefined) row.cnpj = l.cnpj;
   if (l.telefone !== undefined) row.telefone = l.telefone;
   if (l.email !== undefined) row.email = l.email;
@@ -47,6 +50,7 @@ function toRow(l: Partial<LabApoio>): any {
   if (l.integrationId !== undefined) row.integration_id = l.integrationId;
   return row;
 }
+
 
 export async function _initLabsApoioStore(): Promise<void> {
   const { data, error } = await supabase.from("labs_apoio").select("*").order("nome");
