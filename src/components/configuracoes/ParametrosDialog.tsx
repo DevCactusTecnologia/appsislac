@@ -191,11 +191,11 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setOpcoesSelect(unicas);
   };
 
-  // Design system tokens
-  const inputBase = "w-full h-10 px-3 bg-background border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-150";
-  const inputClass = `${inputBase} border-border focus:border-primary/50`;
+  // Design system tokens — alinhados ao FiltrosDialog (Valores de referência)
+  const inputBase = "w-full h-10 px-3 bg-background border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200";
+  const inputClass = `${inputBase} border-border/60 focus:border-primary/50`;
   const inputErrClass = `${inputBase} border-destructive/60 bg-destructive/5 focus:border-destructive focus:ring-destructive/20`;
-  const textareaClass = "w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-150 resize-none";
+  const textareaClass = "w-full px-3 py-2.5 bg-background border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 resize-none";
   const labelClass = "text-[12px] font-medium text-foreground/80 mb-1.5 flex items-center gap-1";
   const sectionTitle = "text-[11px] font-semibold text-muted-foreground uppercase tracking-wider";
 
@@ -214,7 +214,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const headerActions = (
     <button
       onClick={resetForm}
-      className="h-9 px-3.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+      className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
     >
       <Plus className="h-3.5 w-3.5" /> Novo parâmetro
     </button>
@@ -225,18 +225,21 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       {selectedId && (
         <button
           onClick={handleRemover}
-          className="h-10 px-4 rounded-lg border border-destructive/40 text-destructive text-[13px] font-medium flex items-center gap-2 hover:bg-destructive/10 transition-colors mr-auto"
+          className="h-10 px-4 rounded-xl border border-destructive/30 text-destructive text-[13px] font-medium flex items-center gap-2 hover:bg-destructive/10 transition-all duration-200 mr-auto"
         >
           <Trash2 className="h-3.5 w-3.5" /> Remover
         </button>
       )}
-      <button onClick={onClose} className="h-10 px-4 rounded-lg border border-border text-[13px] font-medium text-foreground/80 hover:bg-muted/50 transition-colors">
+      <button
+        onClick={onClose}
+        className="h-10 px-4 rounded-xl border border-border/60 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200"
+      >
         Fechar
       </button>
       <button
         onClick={handleSave}
         disabled={saving || !exameId || !!chaveJaUsada}
-        className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+        className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
       >
         <Save className="h-4 w-4" /> {saving ? "Salvando..." : selectedId ? "Atualizar" : "Adicionar"}
       </button>
