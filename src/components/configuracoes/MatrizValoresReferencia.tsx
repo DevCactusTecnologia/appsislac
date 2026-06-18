@@ -41,7 +41,11 @@ const MatrizValoresReferencia = ({
   const [reguaId, setReguaId] = useState<string>("sys:pediatrica-sysmex");
   const [parametro, setParametro] = useState<string>(parametros[0] ?? "");
   const [unidade, setUnidade] = useState<string>("");
-  const [draft, setDraft] = useState<Record<string, { min: string; max: string }>>({});
+  const [draft, setDraft] = useState<Record<string, { min: string; max: string; descricao?: string }>>({});
+  // Marca o "descricao" auto-gerado (ex.: "Masculino • 12a+") como vazio para o usuário,
+  // evitando que ele apareça como texto livre quando ainda não foi customizado.
+  const isAutoDescricao = (d?: string) =>
+    !d ? true : /^(Masculino|Feminino|Ambos)\s*•/i.test(d.trim());
 
   useEffect(() => {
     loadReguas().then(setReguas);
@@ -116,14 +120,18 @@ const MatrizValoresReferencia = ({
     return <div className="p-6 text-center text-sm text-muted-foreground">Carregando réguas…</div>;
   }
 
-  const getDraft = (sexo: Sexo, f: FaixaEtaria): { min: string; max: string } => {
+  const getDraft = (sexo: Sexo, f: FaixaEtaria): { min: string; max: string; descricao: string } => {
     const k = cellKey(sexo, f.id);
-    if (draft[k]) return draft[k];
+    const d = draft[k];
     const vr = cellMap[k];
-    return { min: vr?.valorMin ?? "", max: vr?.valorMax ?? "" };
+    return {
+      min: d?.min ?? vr?.valorMin ?? "",
+      max: d?.max ?? vr?.valorMax ?? "",
+      descricao: d?.descricao ?? (isAutoDescricao(vr?.descricao) ? "" : (vr?.descricao ?? "")),
+    };
   };
 
-  const setCellDraft = (sexo: Sexo, f: FaixaEtaria, patch: Partial<{ min: string; max: string }>) => {
+  const setCellDraft = (sexo: Sexo, f: FaixaEtaria, patch: Partial<{ min: string; max: string; descricao: string }>) => {
     const k = cellKey(sexo, f.id);
     const atual = getDraft(sexo, f);
     setDraft((d) => ({ ...d, [k]: { ...atual, ...patch } }));
@@ -134,7 +142,8 @@ const MatrizValoresReferencia = ({
     const valores = draft[k];
     if (!valores) return;
     const vr = cellMap[k];
-    const ambosVazios = !valores.min.trim() && !valores.max.trim();
+    const descricaoCustom = (valores.descricao ?? "").trim();
+    const ambosVazios = !valores.min.trim() && !valores.max.trim() && !descricaoCustom;
 
     if (vr && ambosVazios) {
       const ok = await removeValorReferencia(vr.id);
@@ -146,18 +155,19 @@ const MatrizValoresReferencia = ({
     if (ambosVazios) { setDraft((d) => { const c = { ...d }; delete c[k]; return c; }); return; }
 
     if (vr) {
-      // mantém a unidadeIdade original do registro
+      // Preserva descricao auto-gerada se o usuário não digitou texto custom
+      const novaDescricao = descricaoCustom || (isAutoDescricao(vr.descricao) ? vr.descricao : vr.descricao);
       const ok = await updateValorReferencia(vr.id, {
         ...vr,
         valorMin: valores.min.trim(),
         valorMax: valores.max.trim(),
         unidade: unidade.trim() || vr.unidade,
+        descricao: novaDescricao,
       });
       if (!ok) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     } else {
       const idadeMinFmt = fromDias(f.deDias);
       const idadeMaxFmt = fromDias(f.ateDias);
-      // grava na mesma unidade do mín, convertendo o máx
       const unidadeIdade = idadeMinFmt.unidade;
       const idadeMaxStr = unidadeIdade === idadeMaxFmt.unidade
         ? idadeMaxFmt.valor
@@ -173,7 +183,7 @@ const MatrizValoresReferencia = ({
         valorMin: valores.min.trim(),
         valorMax: valores.max.trim(),
         unidade: unidade.trim(),
-        descricao: `${sexo} • ${f.label}`,
+        descricao: descricaoCustom || `${sexo} • ${f.label}`,
       });
       if (!novo) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     }
@@ -312,21 +322,31 @@ const MatrizValoresReferencia = ({
                       const v = getDraft(sexo, f);
                       const has = !!cellMap[cellKey(sexo, f.id)];
                       return (
-                        <td key={f.id} className={`py-1.5 px-1.5 ${has ? "bg-primary/[0.03]" : ""}`}>
-                          <div className="flex items-center gap-1 justify-center">
+                        <td key={f.id} className={`py-1.5 px-1.5 align-top ${has ? "bg-primary/[0.03]" : ""}`}>
+                          <div className="flex flex-col gap-1 items-center">
+                            <div className="flex items-center gap-1 justify-center">
+                              <Input
+                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                value={v.min}
+                                placeholder="—"
+                                onChange={(e) => setCellDraft(sexo, f, { min: e.target.value })}
+                                onBlur={() => persistCell(sexo, f)}
+                              />
+                              <span className="text-muted-foreground text-[10px]">–</span>
+                              <Input
+                                className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
+                                value={v.max}
+                                placeholder="—"
+                                onChange={(e) => setCellDraft(sexo, f, { max: e.target.value })}
+                                onBlur={() => persistCell(sexo, f)}
+                              />
+                            </div>
                             <Input
-                              className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
-                              value={v.min}
-                              placeholder="—"
-                              onChange={(e) => setCellDraft(sexo, f, { min: e.target.value })}
-                              onBlur={() => persistCell(sexo, f)}
-                            />
-                            <span className="text-muted-foreground text-[10px]">–</span>
-                            <Input
-                              className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-16 px-1.5 text-center"
-                              value={v.max}
-                              placeholder="—"
-                              onChange={(e) => setCellDraft(sexo, f, { max: e.target.value })}
+                              className="rounded-md h-6 text-[10px] bg-muted/20 border-border/40 w-[140px] px-1.5 text-center placeholder:text-muted-foreground/60"
+                              value={v.descricao}
+                              placeholder="Texto p/ laudo (opcional)"
+                              title="Quando preenchido, substitui 'min – max' no laudo (ex.: 'Normal: Inferior a 5.7%')"
+                              onChange={(e) => setCellDraft(sexo, f, { descricao: e.target.value })}
                               onBlur={() => persistCell(sexo, f)}
                             />
                           </div>
