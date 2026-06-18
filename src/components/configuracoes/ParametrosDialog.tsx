@@ -584,7 +584,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 )}
 
                 {tipoSelecionado === "Formula" && chavesDisponiveis.length > 0 && (
-                  <div className="rounded-lg border border-primary/30 bg-primary/[0.04] p-3.5">
+                  <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
                     <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
                       <Wand2 className="h-3 w-3" /> Inserir chaves
                     </p>
