@@ -1,0 +1,1 @@
+ALTER TABLE public.labs_apoio ADD COLUMN IF NOT EXISTS sigla text NOT NULL DEFAULT '';

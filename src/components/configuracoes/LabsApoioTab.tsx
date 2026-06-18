@@ -56,6 +56,7 @@ const formatPhone = (value: string) => {
 type FormData = Omit<LabApoio, "id">;
 const emptyForm: FormData = {
   nome: "",
+  sigla: "",
   cnpj: "",
   telefone: "",
   email: "",
@@ -97,7 +98,7 @@ const LabsApoioTab = () => {
     const q = normalize(search);
     if (!q) return labs;
     return labs.filter(
-      (l) => normalize(l.nome).includes(q) || l.cnpj.includes(search)
+      (l) => normalize(l.nome).includes(q) || normalize(l.sigla ?? "").includes(q) || l.cnpj.includes(search)
     );
   }, [labs, search]);
 
@@ -212,6 +213,11 @@ const LabsApoioTab = () => {
                       <h3 className="font-semibold text-foreground truncate">
                         {lab.nome}
                       </h3>
+                      {lab.sigla && (
+                        <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold tracking-wider">
+                          {lab.sigla}
+                        </span>
+                      )}
                       <span
                         className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                           lab.ativo
@@ -356,14 +362,26 @@ const LabsApoioTab = () => {
         }
       >
         <div className="px-6 py-5 space-y-4">
-          <div className="space-y-1.5">
-            <label className={labelClass}>Nome *</label>
-            <Input
-              className={inputClass}
-              value={form.nome}
-              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-              placeholder="Ex: LabExpert Diagnósticos"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
+            <div className="space-y-1.5">
+              <label className={labelClass}>Nome *</label>
+              <Input
+                className={inputClass}
+                value={form.nome}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                placeholder="Ex: LabExpert Diagnósticos"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className={labelClass}>Sigla</label>
+              <Input
+                className={`${inputClass} uppercase`}
+                value={form.sigla}
+                maxLength={12}
+                onChange={(e) => setForm((f) => ({ ...f, sigla: e.target.value.toUpperCase().slice(0, 12) }))}
+                placeholder="Ex: LE"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
