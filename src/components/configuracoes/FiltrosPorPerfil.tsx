@@ -95,11 +95,23 @@ const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Prop
     [filtros, selecionado],
   );
 
-  // Índice por nome (case-insensitive) para ordenar conforme o Layout Científico.
-  // `parametros` já chega na ordem do layout/catálogo; usamos isso como referência.
+  // Normaliza nomes para casar variações de pontuação/acento
+  // (ex.: "V.C.M" ↔ "VCM", "Linf. Reativos" ↔ "linf reativos").
+  const norm = (s: string) =>
+    (s ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+
+  // Índice por nome normalizado para ordenar conforme o Layout Científico.
+  // `parametros` já chega na ordem do layout/catálogo.
   const ordemPorNome = useMemo(() => {
     const m = new Map<string, number>();
-    parametros.forEach((p, i) => m.set(p.trim().toLowerCase(), i));
+    parametros.forEach((p, i) => {
+      const k = norm(p);
+      if (k && !m.has(k)) m.set(k, i);
+    });
     return m;
   }, [parametros]);
 
@@ -107,7 +119,7 @@ const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Prop
   const vrsDoFiltro = useMemo(() => {
     if (!filtroAtivo) return [] as ValorReferencia[];
     const idx = (nome: string) => {
-      const i = ordemPorNome.get(nome.trim().toLowerCase());
+      const i = ordemPorNome.get(norm(nome));
       return i === undefined ? Number.MAX_SAFE_INTEGER : i;
     };
     return referencias
