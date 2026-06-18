@@ -55,15 +55,17 @@ export function resolveDestino(opts: {
   tipoProcesso: TipoProcesso | string | null | undefined;
   labApoioId?: string | null;
   labApoioNome?: string | null;
+  labApoioSigla?: string | null;
   laboratorioPropriaNome?: string | null;
 }): { label: string; sigla: string; cor: ReturnType<typeof corLab>; tipo: TipoProcesso } {
   const isExterno = (opts.tipoProcesso ?? "INTERNO") === "TERCEIRIZADO";
   if (isExterno) {
     const nome = opts.labApoioNome ?? "Lab apoio";
     const id = opts.labApoioId ?? nome;
+    const siglaCadastrada = (opts.labApoioSigla ?? "").trim();
     return {
       label: nome,
-      sigla: siglaLab(nome),
+      sigla: siglaCadastrada || siglaLab(nome),
       cor: corLab(id),
       tipo: "TERCEIRIZADO",
     };
