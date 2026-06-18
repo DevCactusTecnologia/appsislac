@@ -12,6 +12,7 @@ import {
 } from "@/data/valoresReferenciaStore";
 import { loadParametros, getParametros, ExameParametro } from "@/data/exameParametrosStore";
 import { parseValorReferencia, type FaixaCandidato } from "@/lib/parseValorReferencia";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
@@ -419,7 +420,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
                     <tr key={ref.id} className={`border-b border-border/20 hover:bg-muted/20 transition-all duration-200 cursor-pointer ${editando?.id === ref.id ? "bg-primary/5" : ""}`} onClick={() => handleEditar(ref)}>
                       <td className="py-2.5 px-3 text-[13px] font-medium text-foreground">{ref.parametroNome}</td>
                       <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{ref.sexo}</td>
-                      <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{ref.idadeMin}–{ref.idadeMax} {ref.unidadeIdade}</td>
+                      <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{formatFaixaIdade(ref.idadeMin, ref.idadeMax, ref.unidadeIdade)}</td>
                       <td className="py-2.5 px-3 text-[13px] text-foreground">{ref.valorMin || "—"}</td>
                       <td className="py-2.5 px-3 text-[13px] text-foreground">{ref.valorMax || "—"}</td>
                       <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{ref.unidade}</td>

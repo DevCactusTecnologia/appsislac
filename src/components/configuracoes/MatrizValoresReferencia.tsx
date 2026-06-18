@@ -11,6 +11,7 @@ import {
   loadReguas, getReguas, subscribeReguas, type ReguaEtaria,
 } from "@/data/reguasEtariasStore";
 import { fromDias, labelFaixa, toDias, vrCabeNaFaixa, type FaixaEtaria } from "@/lib/idadeFaixas";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 import CoberturaEtariaBar from "./CoberturaEtariaBar";
 
 /** Pré-visualização da string que será impressa no laudo para uma célula. */
@@ -441,7 +442,7 @@ const MatrizValoresReferencia = ({
             {foraDaRegua.map((r) => (
               <li key={r.id} className="text-[12px] text-foreground flex items-center gap-2">
                 <span className="px-1.5 py-0.5 rounded bg-muted text-[10px]">{r.sexo}</span>
-                <span className="text-muted-foreground">{r.idadeMin}–{r.idadeMax} {r.unidadeIdade}</span>
+                <span className="text-muted-foreground">{formatFaixaIdade(r.idadeMin, r.idadeMax, r.unidadeIdade)}</span>
                 <span className="font-medium">{r.valorMin || "—"} a {r.valorMax || "—"} {r.unidade}</span>
               </li>
             ))}

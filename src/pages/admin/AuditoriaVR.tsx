@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { updateValorReferencia, type ValorReferencia } from "@/data/valoresReferenciaStore";
+import { formatFaixaIdade } from "@/lib/idadeFormat";
 
 interface VRRow {
   id: number;
@@ -278,7 +279,7 @@ const AuditoriaVR = () => {
                   <td className="py-2.5 px-3 align-top">
                     <div className="font-medium text-foreground">{o.vr.exame_nome}</div>
                     <div className="text-[10px] text-muted-foreground">
-                      {o.vr.sexo} • {o.vr.idade_min}–{o.vr.idade_max} {o.vr.unidade_idade}
+                      {o.vr.sexo} • {formatFaixaIdade(o.vr.idade_min, o.vr.idade_max, o.vr.unidade_idade)}
                     </div>
                   </td>
                   <td className="py-2.5 px-3 align-top">
