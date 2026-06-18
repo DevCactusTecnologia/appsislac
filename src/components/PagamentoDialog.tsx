@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import {
   X, Trash2, Banknote, CreditCard, QrCode, CalendarIcon,
-  TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, Receipt, DollarSign,
-  Gift, Percent,
+  TrendingUp, CheckCircle2, AlertTriangle, Receipt, DollarSign,
+  Gift, Percent, Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -80,11 +80,24 @@ const PagamentoDialog = ({
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [stagingValor, setStagingValor] = useState("");
+  const [stagingData, setStagingData] = useState<Date>(new Date());
+  const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
+  const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   useBodyScrollLock(open);
 
-  const add = (tipo: string) => {
+  const resetStaging = () => {
+    setStagingValor("");
+    setStagingData(new Date());
+    setStagingUnidade("BRL");
+    setStagingExameIdx(null);
+    setSelectedMethod(null);
+  };
+
+  const handleSelectMethod = (tipo: string) => {
     if (tipo === "Cortesia") {
-      // calculado no fechamento — gera entrada de Desconto fixa cobrindo o saldo atual
+      // Cortesia auto-aplica saldo restante
       const subtotalLocal = subtotal;
       const descAtual = pagamentos
         .filter(p => p.tipo === "Desconto" || p.tipo === "Cortesia")
@@ -106,18 +119,29 @@ const PagamentoDialog = ({
       }]);
       return;
     }
-    setPagamentos(p => [...p, {
-      tipo,
-      valor: "",
-      data: new Date(),
-      ...(isAdjustment(tipo) ? { unidade: "BRL" as Unidade, exameIdx: null } : {}),
-    }]);
+    setSelectedMethod(prev => (prev === tipo ? null : tipo));
+    setStagingValor("");
+    setStagingData(new Date());
+    setStagingUnidade("BRL");
+    setStagingExameIdx(null);
   };
+
+  const handleAddStaging = () => {
+    if (!selectedMethod) return;
+    const num = parse(stagingValor);
+    if (num <= 0) return;
+    const adj = isAdjustment(selectedMethod);
+    setPagamentos(p => [...p, {
+      tipo: selectedMethod,
+      valor: stagingValor,
+      data: stagingData,
+      ...(adj ? { unidade: stagingUnidade, exameIdx: stagingExameIdx } : {}),
+    }]);
+    resetStaging();
+  };
+
   const remove = (i: number) => setPagamentos(p => p.filter((_, idx) => idx !== i));
-  const setVal = (i: number, v: string) => setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, valor: v.replace(/[^0-9,.]/g, "") } : x));
-  const setDate = (i: number, d: Date | undefined) => { if (d) setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, data: d } : x)); };
-  const setUnidade = (i: number, u: Unidade) => setPagamentos(p => p.map((x, idx) => idx === i ? { ...x, unidade: u } : x));
-  const setExameIdx = (i: number, idx: number | null) => setPagamentos(p => p.map((x, k) => k === i ? { ...x, exameIdx: idx } : x));
+
 
   const { totalPag, totalDesc, totalAcre } = useMemo(() => {
     let pag = 0, desc = 0, acre = 0;
@@ -277,7 +301,7 @@ const PagamentoDialog = ({
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
                           {onRemovePagamentoRealizado && (
-                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all duration-200">
+                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-all duration-200">
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </button>
                           )}
@@ -289,104 +313,48 @@ const PagamentoDialog = ({
               </section>
             )}
 
-            {/* New entries */}
+            {/* Confirmed entries */}
             {pagamentos.length > 0 && (
               <section>
-                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Novos lançamentos</h3>
+                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pagamentos</h3>
                 <div className="space-y-2">
                   {pagamentos.map((p, i) => {
                     const isDesc = p.tipo === "Desconto";
                     const isAcre = p.tipo === "Acréscimo";
                     const isCort = p.tipo === "Cortesia";
-                    const adj = isDesc || isAcre;
                     const color = isDesc || isCort ? hsl("var(--status-success)")
                       : isAcre ? hsl("var(--status-danger)")
                       : methodColor(p.tipo);
                     const meta = METHODS.find(m => m.label === p.tipo);
-                    const Icon = isCort ? Gift : isDesc ? TrendingDown : isAcre ? TrendingUp : meta?.icon ?? Banknote;
+                    const Icon = isCort ? Gift : isDesc ? Percent : isAcre ? TrendingUp : meta?.icon ?? Banknote;
                     const eff = effectiveValor(p, subtotal, exames);
+                    const sign = isDesc || isCort ? "−" : isAcre ? "+" : "";
+                    const exameAlvo = (isDesc && p.exameIdx != null) ? exames[p.exameIdx]?.nome : null;
+                    const detalheUnidade = (isDesc || isAcre) && p.unidade === "PCT" ? `${parse(p.valor)}%` : null;
 
                     return (
-                      <div key={i} className="rounded-2xl bg-card border border-border hover:border-primary/40 transition-all duration-200">
-                        <div className="flex items-center gap-3 px-4 py-3">
+                      <div key={i} className="group flex items-center justify-between px-4 py-3 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-sm transition-all duration-200">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}10` }}>
                             <Icon className="h-4 w-4" style={{ color }} />
                           </div>
-                          <span className="text-[12px] font-semibold text-foreground w-16 shrink-0 truncate">{p.tipo}</span>
-
-                          {isCort ? (
-                            <span className="flex-1 text-sm font-semibold tabular-nums" style={{ color }}>−{fmtBRL(eff)}</span>
-                          ) : (
-                            <div className="flex items-center flex-1 min-w-0 h-9 rounded-xl border border-border bg-card overflow-hidden focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
-                              <span className="px-3 text-[11px] font-medium text-muted-foreground">
-                                {adj && p.unidade === "PCT" ? "%" : "R$"}
-                              </span>
-                              <input
-                                type="text"
-                                value={p.valor}
-                                onChange={e => setVal(i, e.target.value)}
-                                placeholder={adj && p.unidade === "PCT" ? "0" : "0,00"}
-                                className="flex-1 h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
-                              />
-                              {adj && p.unidade === "PCT" && eff > 0 && (
-                                <span className="px-2 text-[10px] tabular-nums text-muted-foreground">≈ {fmtBRL(eff)}</span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Date */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="h-9 px-3 rounded-xl border border-border bg-card flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all duration-200 shrink-0">
-                                <CalendarIcon className="h-3.5 w-3.5" />
-                                <span className="hidden sm:inline">{format(p.data, "dd/MM/yy")}</span>
-                                <span className="sm:hidden">{format(p.data, "dd/MM")}</span>
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={p.data} onSelect={d => setDate(i, d)} initialFocus className="p-3 pointer-events-auto" />
-                            </PopoverContent>
-                          </Popover>
-
-                          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 shrink-0">
+                          <div className="min-w-0">
+                            <span className="text-[13px] font-medium text-foreground truncate block">
+                              {p.tipo}
+                              {detalheUnidade && <span className="text-[11px] text-muted-foreground ml-1">({detalheUnidade})</span>}
+                            </span>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {format(p.data, "dd/MM/yy")}
+                              {exameAlvo && ` · ${exameAlvo}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-sm font-semibold tabular-nums" style={{ color }}>{sign}{fmtBRL(eff)}</span>
+                          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-
-                        {/* Adjustment options: %/R$ + alvo (Total/Exame X) */}
-                        {adj && (
-                          <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-2">
-                            <div className="inline-flex h-7 rounded-lg border border-border overflow-hidden">
-                              <button
-                                onClick={() => setUnidade(i, "BRL")}
-                                className={`px-2.5 text-[11px] font-semibold transition-colors ${p.unidade === "BRL" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
-                              >R$</button>
-                              <button
-                                onClick={() => setUnidade(i, "PCT")}
-                                className={`px-2.5 text-[11px] font-semibold transition-colors border-l border-border ${p.unidade === "PCT" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
-                              >%</button>
-                            </div>
-
-                            {hasExames && p.unidade === "PCT" && isDesc && (
-                              <Select
-                                value={p.exameIdx == null ? "__total__" : String(p.exameIdx)}
-                                onValueChange={(v) => setExameIdx(i, v === "__total__" ? null : Number(v))}
-                              >
-                                <SelectTrigger className="h-7 text-[11px] rounded-lg border-border w-[200px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__total__">Aplicar no Total</SelectItem>
-                                  {exames.map((e, idx) => (
-                                    <SelectItem key={idx} value={String(idx)}>
-                                      {e.nome} ({fmtBRL(e.valor)})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -394,50 +362,137 @@ const PagamentoDialog = ({
               </section>
             )}
 
-            {/* Add Section */}
+            {/* Staging row — visible when a method is selected */}
+            {selectedMethod && selectedMethod !== "Cortesia" && (() => {
+              const adj = isAdjustment(selectedMethod);
+              const meta = METHODS.find(m => m.label === selectedMethod);
+              const Icon = selectedMethod === "Desconto" ? Percent
+                : selectedMethod === "Acréscimo" ? TrendingUp
+                : meta?.icon ?? Banknote;
+              const color = selectedMethod === "Desconto" ? hsl("var(--status-success)")
+                : selectedMethod === "Acréscimo" ? hsl("var(--status-danger)")
+                : methodColor(selectedMethod);
+              const stagingNum = parse(stagingValor);
+              const stagingEff = adj && stagingUnidade === "PCT"
+                ? Math.round(((stagingExameIdx != null ? exames[stagingExameIdx]?.valor ?? 0 : subtotal) * stagingNum)) / 100
+                : stagingNum;
+              return (
+                <div className="rounded-2xl bg-muted/20 border border-border/60 p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}10` }}>
+                      <Icon className="h-4 w-4" style={{ color }} />
+                    </div>
+                    <span className="text-[12px] font-semibold text-foreground w-16 shrink-0 truncate">{selectedMethod}</span>
+
+                    <div className="flex items-center flex-1 min-w-0 h-9 rounded-xl border border-border bg-card overflow-hidden focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
+                      <span className="px-3 text-[11px] font-medium text-muted-foreground">
+                        {adj && stagingUnidade === "PCT" ? "%" : "R$"}
+                      </span>
+                      <input
+                        type="text"
+                        value={stagingValor}
+                        onChange={e => setStagingValor(e.target.value.replace(/[^0-9,.]/g, ""))}
+                        onKeyDown={e => { if (e.key === "Enter") handleAddStaging(); }}
+                        placeholder={adj && stagingUnidade === "PCT" ? "0" : "0,00"}
+                        autoFocus
+                        className="flex-1 h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
+                      />
+                      {adj && stagingUnidade === "PCT" && stagingEff > 0 && (
+                        <span className="px-2 text-[10px] tabular-nums text-muted-foreground">≈ {fmtBRL(stagingEff)}</span>
+                      )}
+                    </div>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="h-9 px-3 rounded-xl border border-border bg-card flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all duration-200 shrink-0">
+                          <CalendarIcon className="h-3.5 w-3.5" />
+                          <span>{format(stagingData, "dd/MM/yy")}</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={stagingData} onSelect={d => d && setStagingData(d)} initialFocus className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+
+                    <button
+                      onClick={handleAddStaging}
+                      disabled={stagingNum <= 0}
+                      className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
+                      aria-label="Adicionar pagamento"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Adjustment options */}
+                  {adj && (
+                    <div className="flex flex-wrap items-center gap-2 pl-11">
+                      <div className="inline-flex h-7 rounded-lg border border-border overflow-hidden">
+                        <button
+                          onClick={() => setStagingUnidade("BRL")}
+                          className={`px-2.5 text-[11px] font-semibold transition-colors ${stagingUnidade === "BRL" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                        >R$</button>
+                        <button
+                          onClick={() => setStagingUnidade("PCT")}
+                          className={`px-2.5 text-[11px] font-semibold transition-colors border-l border-border ${stagingUnidade === "PCT" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"}`}
+                        >%</button>
+                      </div>
+
+                      {hasExames && stagingUnidade === "PCT" && selectedMethod === "Desconto" && (
+                        <Select
+                          value={stagingExameIdx == null ? "__total__" : String(stagingExameIdx)}
+                          onValueChange={(v) => setStagingExameIdx(v === "__total__" ? null : Number(v))}
+                        >
+                          <SelectTrigger className="h-7 text-[11px] rounded-lg border-border w-[220px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__total__">Aplicar no Total</SelectItem>
+                            {exames.map((e, idx) => (
+                              <SelectItem key={idx} value={String(idx)}>
+                                {e.nome} ({fmtBRL(e.valor)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Method selector */}
             <section>
-              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Adicionar</h3>
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Forma de pagamento</h3>
               <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
-                <button
-                  onClick={() => add("Desconto")}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200"
-                >
-                  <Percent className="h-4 w-4" style={{ color: hsl("var(--status-success)") }} />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Desconto</span>
-                </button>
-                <button
-                  onClick={() => add("Acréscimo")}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200"
-                >
-                  <TrendingUp className="h-4 w-4" style={{ color: hsl("var(--status-danger)") }} />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Acréscimo</span>
-                </button>
-                <button
-                  onClick={() => add("Cortesia")}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200"
-                >
-                  <Gift className="h-4 w-4" style={{ color: hsl("var(--status-success)") }} />
-                  <span className="text-[10px] font-semibold text-muted-foreground">Cortesia</span>
-                </button>
-                {METHODS.map(m => (
-                  <button
-                    key={m.label}
-                    onClick={() => add(m.label)}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-200"
-                  >
-                    <m.icon className="h-4 w-4" style={{ color: hsl(m.hue) }} />
-                    <span className="text-[10px] font-semibold text-muted-foreground">{m.label}</span>
-                  </button>
-                ))}
+                {[
+                  { label: "Desconto", icon: Percent, hue: "var(--status-success)" },
+                  { label: "Acréscimo", icon: TrendingUp, hue: "var(--status-danger)" },
+                  { label: "Cortesia", icon: Gift, hue: "var(--status-success)" },
+                  ...METHODS,
+                ].map(m => {
+                  const isSelected = selectedMethod === m.label;
+                  return (
+                    <button
+                      key={m.label}
+                      onClick={() => handleSelectMethod(m.label)}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all duration-200 ${
+                        isSelected
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border bg-card hover:border-primary/40 hover:shadow-sm"
+                      }`}
+                    >
+                      <m.icon className="h-4 w-4" style={{ color: hsl(m.hue) }} />
+                      <span className={`text-[10px] font-semibold ${isSelected ? "text-primary" : "text-muted-foreground"}`}>{m.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              {hasExames && (
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Para desconto por exame, adicione "Desconto", escolha "%" e selecione o exame alvo.
-                </p>
-              )}
             </section>
           </div>
         </div>
+
 
         <div className="h-px bg-border/50" />
 
