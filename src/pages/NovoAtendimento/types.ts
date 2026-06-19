@@ -8,6 +8,9 @@ export interface Exame {
   convenio: string;
   material: string;
   valor: number;
+  /** Preço cheio antes do desconto distribuído (origem: examesCobranca.valorOriginal).
+   *  Quando ausente ou igual a `valor`, não houve desconto histórico no exame. */
+  valorOriginal?: number;
   addedByIA?: boolean;
   /** Justificativa clínica retornada pela IA (apenas estado local). */
   justificativaIA?: string;
