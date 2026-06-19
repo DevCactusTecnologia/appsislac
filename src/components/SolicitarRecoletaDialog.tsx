@@ -45,8 +45,13 @@ export default function SolicitarRecoletaDialog({
   const [motivoId, setMotivoId] = useState<string>("");
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [motivoOpen, setMotivoOpen] = useState(false);
 
   const { data: motivos = [] } = useDicionario("recoleta_motivo", { ativosOnly: true });
+  const motivoSelecionado = useMemo(
+    () => motivos.find((m) => m.id === motivoId) ?? null,
+    [motivos, motivoId],
+  );
 
   useEffect(() => {
     if (open) { setMotivoId(""); setObservacao(""); }
