@@ -10,9 +10,11 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn, fmtBRL, searchNormalize } from "@/lib/utils";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
-import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
+import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
+import PagamentoDialog from "@/components/PagamentoDialog";
 
-import type { MockAtendimento } from "@/data/types";
+import type { MockAtendimento, PagamentoRealizado } from "@/data/types";
 // getConvenios removido — A Receber/Convênios agora vem da RPC v2 (Fase 1).
 import {
   getSaidas, subscribeFinanceiro, updateSaida,
