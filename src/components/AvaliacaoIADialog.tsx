@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Sparkles, Loader2, Plus, Check, X, AlertCircle, EyeOff, ShieldCheck, FileText } from "lucide-react";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { supabase } from "@/integrations/supabase/client";
@@ -198,7 +199,7 @@ const AvaliacaoIADialog = ({
 
   if (!open) return null;
 
-  return (
+  return createPortal((
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={handleClose} />
       <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden">
@@ -378,7 +379,7 @@ const AvaliacaoIADialog = ({
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 };
 
 export default AvaliacaoIADialog;
