@@ -1986,11 +1986,6 @@ const NovoAtendimento = () => {
                       <span className="font-bold text-foreground">{filteredExames.length}</span> exame{filteredExames.length !== 1 ? "s" : ""}
                     </span>
                     <div className="flex items-baseline gap-2 tabular-nums whitespace-nowrap">
-                      {descontoHistorico > 0 && (
-                        <span className="text-[11px] text-muted-foreground line-through">
-                          {fmtBRL(subtotalOriginal)}
-                        </span>
-                      )}
                       <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
                     </div>
                   </div>
