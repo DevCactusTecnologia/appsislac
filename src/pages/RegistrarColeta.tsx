@@ -83,6 +83,13 @@ const isoToBR = (iso: string): string => {
 };
 const calcIdadeAnosMeses = (nascimento: string): string => formatIdadeDetalhada(isoToBR(nascimento));
 
+const formatSexo = (s: string | null | undefined): string => {
+  const v = (s ?? "").trim().toUpperCase();
+  if (v === "M" || v.startsWith("MASC")) return "Masculino";
+  if (v === "F" || v.startsWith("FEM")) return "Feminino";
+  return s ?? "";
+};
+
 const dbToUi = (s: ExameOperacionalRow["exames"][0]["status"]): ExameStatus | null => {
   if (s === "pendente") return "pendente";
   if (s === "coletado") return "coletado";
