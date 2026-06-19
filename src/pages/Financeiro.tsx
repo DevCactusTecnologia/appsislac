@@ -663,6 +663,7 @@ const Financeiro = () => {
     aReceberTotalPages,
     setFecharFaturaAlvo, setFecharFaturaOpen,
     dateFrom,
+    periodoRapido, aplicarPeriodoRapido,
     caixaTotais, caixaSaldoInicial, caixaPaginated, caixaLinhasComSaldo, caixaTotalPages,
     imprimirLivroCaixa,
   };

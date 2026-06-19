@@ -81,6 +81,10 @@ export interface FinanceiroContextValue {
   setFecharFaturaAlvo: (v: { convenioId: number; convenioNome: string } | null) => void;
   setFecharFaturaOpen: (open: boolean) => void;
 
+  // Período rápido (compartilhado pelas abas — Fase 4 V2)
+  periodoRapido: string;
+  aplicarPeriodoRapido: (p: any) => void;
+
   // Caixa (Fase 4 — Passo 5)
   dateFrom: Date | undefined;
   caixaTotais: { totalEntradas: number; totalSaidas: number; saldoFinal: number };

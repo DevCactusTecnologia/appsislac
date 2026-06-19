@@ -1,131 +1,194 @@
-// EntradasTab — cards de resumo (regime de caixa) + filtros + tabela compartilhada.
-// Fase 4 — Passo 3. JSX extraído de Financeiro.tsx (linhas 759-831 + 875-941 slice "entrada").
-// Consome estado/handlers via FinanceiroContext.
-import {
-  Search, Plus, CheckCircle2, Clock, Wallet, QrCode, Banknote, CreditCard,
-  Building2, CircleDollarSign,
-} from "lucide-react";
-import { fmtBRL } from "@/lib/utils";
+// EntradasTab — Fase 4 V2 (Recebimentos enxutos).
+//
+// Filosofia: olhou, entendeu, usou.
+//   • 4 chips de período: Hoje, Semana, Mês, Período (custom).
+//   • Tabela enxuta: Data · Paciente · Protocolo · Forma · Valor · Status.
+//   • Sem cards de resumo (Painel cobre isso), sem busca, sem filtros extras,
+//     sem botão "Nova entrada" (recebimentos são lançados via Atendimento).
+//
+// Read-only: a aba Entradas reflete `financeiro_entradas` (view derivada de
+// `atendimento_pagamentos`). Edição acontece sempre no Atendimento.
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import SearchableSelect from "@/components/financeiro/SearchableSelect";
 import { useFinanceiroContext } from "../FinanceiroContext";
-import EntradasSaidasTable from "./EntradasSaidasTable";
+
+const PERIODOS: Array<{ key: string; label: string }> = [
+  { key: "hoje",   label: "Hoje" },
+  { key: "7d",     label: "Semana" },
+  { key: "mes",    label: "Mês" },
+  { key: "custom", label: "Período" },
+];
+
+function statusTone(status: string): { label: string; cls: string } {
+  const s = (status || "").toLowerCase();
+  if (s.includes("parcial")) {
+    return { label: "Parcial", cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900" };
+  }
+  if (s.includes("pago") || s.includes("efetuado") || s === "") {
+    return { label: "Pago", cls: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900" };
+  }
+  return { label: status, cls: "bg-muted text-foreground border-border" };
+}
 
 export default function EntradasTab() {
   const {
-    entradaCounts, aReceberCounts,
-    setActiveTab, setCurrentPage,
-    searchQuery, setSearchQuery,
-    convenioFilter, setConvenioFilter,
-    conveniosDisponiveis,
-    setDialogTipo, setDialogOpen,
+    paginatedData, filteredLength, totalPages, currentPage, setCurrentPage, itemsPerPage,
+    handleDetailClick,
+    periodoRapido, aplicarPeriodoRapido,
   } = useFinanceiroContext();
 
-  return (
-    <>
-      {/* ─── Card de resumo (Entradas — regime de caixa) ─── */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="relative rounded-lg border border-border/60 bg-card px-3 py-2.5 overflow-hidden">
-            <div className="flex items-center gap-2 mb-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-status-success" />
-              <span className="text-[11px] font-medium text-muted-foreground truncate">Total recebido (pagamentos efetivados)</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-              <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{entradaCounts.todas}</p>
-              <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(entradaCounts.totalRecebido)}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => { setActiveTab("a_receber"); setCurrentPage(1); }}
-            className="relative rounded-lg border border-border/60 bg-card px-3 py-2.5 text-left transition-colors overflow-hidden hover:bg-muted/20"
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-status-warning" />
-              <span className="text-[11px] font-medium text-muted-foreground truncate">A receber (parcial + pendente)</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-              <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{aReceberCounts.todas}</p>
-              <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(aReceberCounts.totalGeral)}</p>
-            </div>
-          </button>
-        </div>
+  const start = (currentPage - 1) * itemsPerPage;
+  const end = start + paginatedData.length;
 
-        {/* ─── Breakdown por forma de pagamento (período/convênio filtrado) ─── */}
-        {entradaCounts.byPagamento.length > 0 && (
-          <div className="rounded-lg border border-border/60 bg-card px-3 py-2.5">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <span className="text-[11px] font-medium text-muted-foreground truncate">
-                Recebido por forma de pagamento
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {entradaCounts.byPagamento.map((fp: { nome: string; total: number; count: number }) => {
-                const pct = entradaCounts.totalRecebido > 0
-                  ? (fp.total / entradaCounts.totalRecebido) * 100
-                  : 0;
-                const Icon = (() => {
-                  const n = fp.nome.toLowerCase();
-                  if (n.includes("pix")) return QrCode;
-                  if (n.includes("dinheiro")) return Banknote;
-                  if (n.includes("crédito") || n.includes("credito") || n.includes("débito") || n.includes("debito") || n.includes("cartão") || n.includes("cartao")) return CreditCard;
-                  if (n.includes("boleto") || n.includes("transfer")) return Building2;
-                  return CircleDollarSign;
-                })();
+  return (
+    <div className="space-y-4">
+      {/* ─── Filtros (apenas período) ─── */}
+      <div className="flex flex-wrap items-center gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30 w-fit">
+        {PERIODOS.map(p => {
+          const active = periodoRapido === p.key;
+          return (
+            <button
+              key={p.key}
+              onClick={() => aplicarPeriodoRapido(p.key)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap",
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/60",
+              )}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─── Tabela enxuta ─── */}
+      <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
+        {/* Desktop */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border/40 bg-muted/20">
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paciente</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Protocolo</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Forma</th>
+                <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor</th>
+                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[60px]"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-16 text-sm text-muted-foreground">
+                    Nenhum recebimento no período
+                  </td>
+                </tr>
+              ) : paginatedData.map((entry) => {
+                const tone = statusTone(entry.statusPagamento || "Pago");
                 return (
-                  <div
-                    key={fp.nome}
-                    className="relative flex-1 min-w-[140px] rounded-lg border border-border/60 bg-background px-2.5 py-2 overflow-hidden"
+                  <tr
+                    key={entry.protocolo + entry.data}
+                    className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors group cursor-pointer"
+                    onClick={() => handleDetailClick(entry)}
                   >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span className="text-[10px] font-medium text-muted-foreground truncate">{fp.nome}</span>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground tabular-nums leading-tight">
-                      {fmtBRL(fp.total)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {fp.count} {fp.count === 1 ? "pagamento" : "pagamentos"} · {pct.toFixed(1)}%
-                    </p>
-                  </div>
+                    <td className="px-5 py-4 text-sm text-foreground tabular-nums">{entry.data}</td>
+                    <td className="px-5 py-4 text-sm text-foreground max-w-[280px] truncate">{entry.cliente || "—"}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-foreground tabular-nums">{entry.protocolo}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{entry.pagamento || "—"}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-foreground tabular-nums text-right">
+                      {fmtBRL(entry.valorTotal)}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className={cn("inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium", tone.cls)}>
+                        {tone.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); handleDetailClick(entry); }}
+                        title="Ver detalhes"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile */}
+        <div className="md:hidden divide-y divide-border/30">
+          {paginatedData.length === 0 ? (
+            <div className="text-center py-16 text-sm text-muted-foreground">
+              Nenhum recebimento no período
+            </div>
+          ) : paginatedData.map((entry) => {
+            const tone = statusTone(entry.statusPagamento || "Pago");
+            return (
+              <button
+                key={entry.protocolo + entry.data}
+                onClick={() => handleDetailClick(entry)}
+                className="w-full text-left px-4 py-3 hover:bg-muted/15 transition-colors"
+              >
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <span className="text-sm font-semibold text-foreground tabular-nums">{entry.protocolo}</span>
+                  <span className={cn("inline-flex items-center px-2 h-6 rounded-full border text-[10px] font-medium", tone.cls)}>
+                    {tone.label}
+                  </span>
+                </div>
+                <div className="text-sm text-foreground truncate">{entry.cliente || "—"}</div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {entry.data} · {entry.pagamento || "—"}
+                  </span>
+                  <span className="text-sm font-semibold text-foreground tabular-nums">
+                    {fmtBRL(entry.valorTotal)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Paginação */}
+        {filteredLength > itemsPerPage && (
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-border/40 bg-muted/10">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {start + 1}–{end} de {filteredLength}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm" variant="outline"
+                className="h-8 w-8 p-0 rounded-lg"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground px-2 tabular-nums">
+                {currentPage} / {totalPages}
+              </span>
+              <Button
+                size="sm" variant="outline"
+                className="h-8 w-8 p-0 rounded-lg"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
       </div>
-
-      {/* ─── Filtros ─── */}
-      <div className="rounded-3xl border border-border/60 bg-card p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input type="text" placeholder="Pesquisar por nome, protocolo..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all" />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <SearchableSelect
-              value={convenioFilter === "all" ? "Todos convênios" : convenioFilter}
-              onChange={v => {
-                const val = !v || v === "Todos convênios" ? "all" : v;
-                setConvenioFilter(val);
-                setCurrentPage(1);
-              }}
-              options={["Todos convênios", ...conveniosDisponiveis]}
-              placeholder="Convênio"
-              size="sm"
-              className="w-48"
-            />
-            <Button onClick={() => { setDialogTipo("entrada"); setDialogOpen(true); }} className="rounded-2xl h-10 gap-2 text-xs font-semibold px-5">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nova entrada</span>
-              <span className="sm:hidden">Adicionar</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <EntradasSaidasTable />
-    </>
+    </div>
   );
 }
