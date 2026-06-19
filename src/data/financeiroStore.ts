@@ -197,7 +197,9 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
 
   try {
     const tenantId = await getCurrentTenantId();
-    const descricaoComPgto = encodePagamento(saida.descricao, saida.cliente, saida.pagamento);
+    const descricaoLimpa = (saida.descricao || saida.cliente || "")
+      .replace(/\s*\[pgto:[^\]]+\]\s*$/i, "")
+      .trim();
     const dataVencISO = ddmmyyyyToISO(saida.dataVencimento);
     const dataPgtoISO = ddmmyyyyToISO(saida.dataPagamento);
     const dataISO = ddmmyyyyToISODateTime(saida.foiPago === "Sim" ? saida.dataPagamento : saida.dataVencimento);
@@ -206,7 +208,8 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
       tenant_id: tenantId,
       protocolo: protocoloProvisorio,
       data: dataISO,
-      descricao: descricaoComPgto,
+      descricao: descricaoLimpa,
+      forma_pagamento: saida.pagamento || null,
       valor: saida.valorTotal,
       tipo_despesa: saida.tipoDespesa,
       destino_pagamento: saida.destinoPagamento,
