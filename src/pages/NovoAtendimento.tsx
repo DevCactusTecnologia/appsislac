@@ -1931,12 +1931,7 @@ const NovoAtendimento = () => {
                                 </select>
                               )}
 
-                              <div className="h-9 inline-flex flex-col items-end justify-center whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0 leading-tight">
-                                {exame.valorOriginal != null && exame.valorOriginal > exame.valor && (
-                                  <span className="text-[10px] text-muted-foreground line-through">
-                                    {fmtBRL(exame.valorOriginal)}
-                                  </span>
-                                )}
+                              <div className="h-9 inline-flex items-center justify-end whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0">
                                 <span className="text-sm font-bold text-foreground">
                                   {fmtBRL(exame.valor)}
                                 </span>
@@ -1991,11 +1986,6 @@ const NovoAtendimento = () => {
                       <span className="font-bold text-foreground">{filteredExames.length}</span> exame{filteredExames.length !== 1 ? "s" : ""}
                     </span>
                     <div className="flex items-baseline gap-2 tabular-nums whitespace-nowrap">
-                      {descontoHistorico > 0 && (
-                        <span className="text-[11px] text-muted-foreground line-through">
-                          {fmtBRL(subtotalOriginal)}
-                        </span>
-                      )}
                       <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
                     </div>
                   </div>
@@ -2264,9 +2254,10 @@ const NovoAtendimento = () => {
       <PagamentoDialog
         open={pagamentoOpen}
         onClose={() => setPagamentoOpen(false)}
-        itens={exames.length} subtotal={subtotal} desconto={desconto} total={total}
+        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
-        exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valor }))}
+        exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
+        descontoData={(() => { const d = (dataAtendimento || "").split("T")[0]; if (!d) return undefined; const [y, m, dd] = d.split("-"); return y && m && dd ? `${dd}/${m}/${y}` : undefined; })()}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
