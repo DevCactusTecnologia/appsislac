@@ -87,27 +87,7 @@ function ddmmyyyyToISODateTime(s: string): string {
   return new Date().toISOString();
 }
 
-/**
- * @deprecated Mantido apenas para retrocompat de tipo; a hidratação ativa
- * usa `buildSaidaFromRowDecoded`. Não chamar diretamente.
- */
-function buildSaidaFromRow(row: SaidaRow & { _forma_pgto?: string }): FinanceiroSaida {
-  return {
-    protocolo: row.protocolo,
-    data: formatDateBR(row.data),
-    cliente: row.descricao?.split(" — ")[0] || row.descricao || "",
-    valorTotal: Number(row.valor) || 0,
-    pagamento: row.destino_pagamento && /PIX|Dinheiro|Crédito|Débito/i.test(row.destino_pagamento)
-      ? row.destino_pagamento
-      : row._forma_pgto || "—",
-    tipoDespesa: row.tipo_despesa || "",
-    destinoPagamento: row.destino_pagamento || "",
-    descricao: row.descricao || "",
-    dataVencimento: formatDateOnlyBR(row.data_vencimento),
-    foiPago: row.foi_pago ? "Sim" : "Não",
-    dataPagamento: formatDateOnlyBR(row.data_pagamento),
-  };
-}
+// (Função legada `buildSaidaFromRow` removida — Fase 2 Financeiro V2.)
 
 // Fase 2 — Financeiro V2: a forma de pagamento agora vive em coluna própria
 // `financeiro_saidas.forma_pagamento`. O antigo sufixo `[pgto:X]` em descricao
