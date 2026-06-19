@@ -339,6 +339,12 @@ const ResultadoDetalhe = () => {
 
   // Resolve reference values from the shared store based on patient sex/age
   const getResolvedRef = (exameNome: string, param: Parametro) => {
+    // Parâmetros do tipo Formula gravam a expressão em valor_referencia
+    // (ex.: "(##HEMOG##/##HEMACI##)*10"). Isso NÃO é uma faixa de referência
+    // clínica e não deve ser exibido na coluna "Valor de referência".
+    if (param.tipo === "Formula") {
+      return { refMin: "", refMax: "", refUnidade: "", descricao: "" };
+    }
     const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade);
     if (resolved) return resolved;
     return {
@@ -348,6 +354,7 @@ const ResultadoDetalhe = () => {
       descricao: param.valorReferencia ?? "",
     };
   };
+
 
   const matchesStatusFilter = (e: Exame): boolean => {
     if (statusFilter === "todos") return true;
