@@ -1529,11 +1529,17 @@ const ResultadoDetalhe = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedExame.parametros.map((param, idx) => {
+                        {(() => {
+                          const valuesByChave = buildValuesByChave(selectedExame.parametros);
+                          return selectedExame.parametros.map((param, idx) => {
                           const ref = getResolvedRef(selectedExame.nome, param);
-                          const inRange = isBlocked && param.valor ? isValueInRange(param.valor, ref.refMin, ref.refMax) : null;
+                          const computedFormula = param.tipo === "Formula"
+                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                            : "";
+                          const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
+                          const inRange = isBlocked && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                           const isOutOfRange = inRange === false;
-                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, param.valor);
+                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
                           const isCriticoParam = nivelCritico !== "normal";
                           const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
                           return (
@@ -1569,10 +1575,10 @@ const ResultadoDetalhe = () => {
                                           <AlertCircle className="h-5 w-5 text-status-danger shrink-0" />
                                         )
                                       )}
-                                      {param.valor ? (
+                                      {displayValor ? (
                                         <>
                                           <span className={`text-sm font-bold ${(isOutOfRange || isCriticoParam) ? "text-status-danger" : "text-foreground"}`}>
-                                            {param.tipo === "Select" ? param.valor.toUpperCase() : param.valor}
+                                            {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
                                           </span>
                                           <span className="text-sm text-muted-foreground">{param.unidade}</span>
                                         </>
@@ -1586,6 +1592,7 @@ const ResultadoDetalhe = () => {
                                     <ParamTypedInput
                                       param={param}
                                       isCritico={isCriticoParam}
+                                      computedValue={computedFormula}
                                       onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                       disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
                                       className="w-28 sm:w-36"
@@ -1595,7 +1602,7 @@ const ResultadoDetalhe = () => {
                                 )}
                               </td>
                               <td className="py-1.5 px-1">
-                                {isBlocked && param.valor && inRange !== null && (
+                                {isBlocked && displayValor && inRange !== null && (
                                   <div className={`w-1.5 h-8 rounded-full ${isOutOfRange ? "bg-status-danger" : "bg-status-success"}`} />
                                 )}
                               </td>
