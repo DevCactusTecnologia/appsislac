@@ -2236,7 +2236,13 @@ const NovoAtendimento = () => {
         valorPago={valorPago} saldoDevedor={saldoDevedor}
         exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valor }))}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
-        onConfirm={res => { setValorPago(res.valorPago); setDesconto(res.desconto); }}
+        onConfirm={res => {
+          setValorPago(res.valorPago);
+          setDesconto(res.desconto);
+          if (res.novosPagamentos && res.novosPagamentos.length > 0) {
+            setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
+          }
+        }}
         onRemovePagamentoRealizado={index => {
           const removed = pagamentosRealizados[index];
           if (!removed) return;
