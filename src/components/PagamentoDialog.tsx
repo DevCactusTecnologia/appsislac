@@ -49,6 +49,9 @@ interface PagamentoDialogProps {
   pagamentosRealizados?: PagamentoRealizado[];
   onRemovePagamentoRealizado?: (index: number) => void;
   isEditing?: boolean;
+  /** Data em que o desconto foi aplicado (formato BR dd/MM/yyyy ...). Usado para exibir
+   *  uma linha do desconto histórico na seção "Pagamentos realizados". */
+  descontoData?: string;
 }
 
 /* ── Constants ── */
