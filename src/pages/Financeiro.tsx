@@ -85,6 +85,7 @@ import { validateSaidaEdit } from "./Financeiro/services/validateSaidaEdit";
 import { computeDetailExames } from "./Financeiro/services/computeDetailExames";
 import { filterEntradasPagas } from "./Financeiro/services/filterEntradasPagas";
 import { computeFinanceiroSummary } from "./Financeiro/services/computeFinanceiroSummary";
+import { computePainelKpis } from "./Financeiro/services/computePainelKpis";
 import { validatePayment } from "./Financeiro/services/validatePayment";
 import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
 import { todayBR } from "./Financeiro/services/todayBR";
@@ -92,6 +93,7 @@ import CaixaTab from "./Financeiro/components/CaixaTab";
 import EntradasTab from "./Financeiro/components/EntradasTab";
 import SaidasTab from "./Financeiro/components/SaidasTab";
 import AReceberTab from "./Financeiro/components/AReceberTab";
+import PainelTab from "./Financeiro/components/PainelTab";
 import { FinanceiroProvider, type FinanceiroContextValue } from "./Financeiro/FinanceiroContext";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 import EditEntryDialog from "./Financeiro/components/dialogs/EditEntryDialog";
@@ -413,6 +415,12 @@ const Financeiro = () => {
     [filtered, entradas, activeTab],
   );
 
+  // Painel (Fase 3 V2) — 6 KPIs derivados de entradas/saídas/A Receber.
+  const painelKpis = useMemo(
+    () => computePainelKpis(entradas, saidas, aReceberSource, aReceberConvenioRows),
+    [entradas, saidas, aReceberSource, aReceberConvenioRows],
+  );
+
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───
   // Apenas movimentos efetivamente realizados entram no caixa.
   // Saídas pendentes NÃO entram (não houve débito de caixa ainda).
@@ -625,6 +633,7 @@ const Financeiro = () => {
 
   // ─── Valor único do contexto consumido pelos Tabs (Fase 4 — Passo 3). ───
   const ctxValue: FinanceiroContextValue = {
+    painelKpis,
     activeTab, setActiveTab,
     currentPage, setCurrentPage, itemsPerPage,
     searchQuery, setSearchQuery,
@@ -747,6 +756,9 @@ const Financeiro = () => {
           {/* ─── Tabs Entradas e Saídas (Fase 4 — Passo 3): consomem FinanceiroContext ─── */}
           {activeTab === "saida" && <SaidasTab />}
           {activeTab === "entrada" && <EntradasTab />}
+
+          {/* ─── Tab Painel (Fase 3 V2) ─── */}
+          {activeTab === "painel" && <PainelTab />}
 
           {/* ─── Tab A Receber (Fase 4 — Passo 4): consome FinanceiroContext ─── */}
           {activeTab === "a_receber" && <AReceberTab />}

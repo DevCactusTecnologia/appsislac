@@ -9,7 +9,7 @@ export type AReceberStatusFilter = "todas" | "parciais" | "pendentes";
 export type AReceberSubTab = "pacientes" | "convenios";
 
 export function useFinanceiroFilters() {
-  const [activeTab, setActiveTab] = useState<TabType>("entrada");
+  const [activeTab, setActiveTab] = useState<TabType>("painel");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
