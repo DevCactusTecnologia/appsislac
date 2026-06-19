@@ -373,10 +373,16 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 <StatusBadge label={atendimento.statusPagamento.label} type={atendimento.statusPagamento.type} />
               </div>
 
-              {atendimento.pagamentosRealizados && atendimento.pagamentosRealizados.length > 0 && (
+              {((atendimento.pagamentosRealizados && atendimento.pagamentosRealizados.length > 0) || descontoPaciente > 0) && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-medium text-muted-foreground">Pagamentos realizados</span>
-                  {atendimento.pagamentosRealizados.map((p, i) => (
+                  {descontoPaciente > 0 && (
+                    <div className="flex items-center justify-between text-[13px]">
+                      <span style={{ color: "hsl(var(--status-success))" }}>Desconto — {atendimento.data}</span>
+                      <span className="font-medium" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
+                    </div>
+                  )}
+                  {atendimento.pagamentosRealizados?.map((p, i) => (
                     <div key={i} className="flex items-center justify-between text-[13px]">
                       <span className="text-muted-foreground">{p.tipo} — {p.data}</span>
                       <span className="font-medium text-foreground">R$ {fmtBRLNumber(p.valor)}</span>
