@@ -3658,7 +3658,7 @@ export type Database = {
           complemento: string
           consentimento_em: string | null
           consentimento_lgpd: boolean
-          cpf: string
+          cpf: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -3669,6 +3669,7 @@ export type Database = {
           guardian_name: string | null
           id: number
           nome: string
+          nome_social: string | null
           numero: string
           sexo: string
           status: string
@@ -3684,7 +3685,7 @@ export type Database = {
           complemento?: string
           consentimento_em?: string | null
           consentimento_lgpd?: boolean
-          cpf: string
+          cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string
@@ -3695,6 +3696,7 @@ export type Database = {
           guardian_name?: string | null
           id?: number
           nome: string
+          nome_social?: string | null
           numero?: string
           sexo?: string
           status?: string
@@ -3710,7 +3712,7 @@ export type Database = {
           complemento?: string
           consentimento_em?: string | null
           consentimento_lgpd?: boolean
-          cpf?: string
+          cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string
@@ -3721,6 +3723,7 @@ export type Database = {
           guardian_name?: string | null
           id?: number
           nome?: string
+          nome_social?: string | null
           numero?: string
           sexo?: string
           status?: string
