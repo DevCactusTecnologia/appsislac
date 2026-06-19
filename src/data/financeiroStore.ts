@@ -15,6 +15,7 @@ type EntradaViewRow = Tables<"financeiro_entradas">;
 export type SaidaStatus = "aberta" | "paga" | "cancelada";
 
 export interface FinanceiroSaida {
+  id?: number;             // id real em financeiro_saidas (resolvido server-side)
   protocolo: string;
   data: string;            // dd/mm/yyyy
   cliente: string;
@@ -126,6 +127,7 @@ function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
       ? (rawStatus as SaidaStatus)
       : (row.foi_pago ? "paga" : "aberta");
   return {
+    id: row.id,
     protocolo: row.protocolo,
     data: formatDateBR(row.data),
     cliente,
