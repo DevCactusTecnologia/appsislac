@@ -183,6 +183,7 @@ const PagamentoDialog = ({
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);
+    setConfirmingRemove(null);
     onClose();
   };
 
