@@ -86,6 +86,9 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
         material: cat?.material ?? "",
         status: "pendente",
         valor: Number(meta?.valor) || 0,
+        // Preço cheio (antes do desconto distribuído) — fallback = valor.
+        // Trigger DB garante valor_original >= valor.
+        valor_original: Number(meta?.valorOriginal ?? meta?.valor) || 0,
         ordem: idx + 1,
         cobranca_destino: meta?.cobrancaDestino ?? "paciente",
         convenio_cobranca_id: meta?.convenioCobrancaId ?? null,
@@ -282,6 +285,8 @@ async function persistUpdateAtendimentoTx(
           material: cat?.material ?? "",
           status: cancelarTudoFlag ? "cancelado" : "pendente",
           valor: Number(meta?.valor) || 0,
+          // Preço cheio antes do desconto distribuído.
+          valor_original: Number(meta?.valorOriginal ?? meta?.valor) || 0,
           ordem: idx + 1,
           motivo_cancelamento: updates.motivoCancelamento ?? null,
           cobranca_destino: meta?.cobrancaDestino ?? "paciente",

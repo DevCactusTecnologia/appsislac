@@ -101,7 +101,7 @@ export const ATENDIMENTO_COLS =
   "solicitante,convenio_nome,unidade_id,status_atendimento,status_pagamento," +
   "motivo_cancelamento,updated_at,origem_atendimento";
 export const EXAME_COLS =
-  "id,atendimento_id,nome_exame,exame_id,ordem,valor,analista,status," +
+  "id,atendimento_id,nome_exame,exame_id,ordem,valor,valor_original,analista,status," +
   "cobranca_destino,convenio_cobranca_id,amostra_seq,grupo_exame_id," +
   "is_reutilizacao,material,amostra_id,tipo_processo,lab_apoio_id,solicitante,data_liberacao";
 export const PAGAMENTO_COLS = "id,atendimento_id,tipo,valor,data";
@@ -140,6 +140,13 @@ export function buildAtendimento(
       cobrancaDestino: (e.cobranca_destino === "convenio" ? "convenio" : "paciente") as "paciente" | "convenio",
       convenioCobrancaId: e.convenio_cobranca_id ?? null,
       valor: Number(e.valor) || 0,
+      valorOriginal: (() => {
+        const vo = (e as { valor_original?: number | string | null }).valor_original;
+        const n = Number(vo);
+        const valorEf = Number(e.valor) || 0;
+        // Fallback: sem valor_original → assume "sem desconto" (= valor efetivo).
+        return Number.isFinite(n) && n > 0 ? n : valorEf;
+      })(),
       analista: e.analista || "",
       exameId: e.exame_id ?? null,
       status: e.status ?? "pendente",

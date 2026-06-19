@@ -341,6 +341,7 @@ export type Database = {
           unidade_snapshot: string | null
           updated_at: string
           valor: number
+          valor_original: number | null
         }
         Insert: {
           amostra_id?: string | null
@@ -388,6 +389,7 @@ export type Database = {
           unidade_snapshot?: string | null
           updated_at?: string
           valor?: number
+          valor_original?: number | null
         }
         Update: {
           amostra_id?: string | null
@@ -435,6 +437,7 @@ export type Database = {
           unidade_snapshot?: string | null
           updated_at?: string
           valor?: number
+          valor_original?: number | null
         }
         Relationships: [
           {
@@ -6838,6 +6841,7 @@ export type Database = {
           unidade_snapshot: string | null
           updated_at: string
           valor: number
+          valor_original: number | null
         }
         SetofOptions: {
           from: "*"

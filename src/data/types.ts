@@ -31,6 +31,12 @@ export interface ExameCobrancaInfo {
   convenioCobrancaId?: number | null;
   /** Valor unitário do exame para persistência. Quando ausente, assume 0. */
   valor?: number;
+  /**
+   * Preço "cheio" no momento da finalização (antes do desconto distribuído).
+   * Quando ausente ou igual a `valor`, assume "sem desconto". A diferença
+   * `valorOriginal - valor` é o desconto aplicado a este exame.
+   */
+  valorOriginal?: number;
   /** Analista responsável pelo exame. */
   analista?: string;
   /** ID do exame no catálogo. */
