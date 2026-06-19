@@ -140,6 +140,13 @@ export function buildAtendimento(
       cobrancaDestino: (e.cobranca_destino === "convenio" ? "convenio" : "paciente") as "paciente" | "convenio",
       convenioCobrancaId: e.convenio_cobranca_id ?? null,
       valor: Number(e.valor) || 0,
+      valorOriginal: (() => {
+        const vo = (e as { valor_original?: number | string | null }).valor_original;
+        const n = Number(vo);
+        const valorEf = Number(e.valor) || 0;
+        // Fallback: sem valor_original → assume "sem desconto" (= valor efetivo).
+        return Number.isFinite(n) && n > 0 ? n : valorEf;
+      })(),
       analista: e.analista || "",
       exameId: e.exame_id ?? null,
       status: e.status ?? "pendente",
