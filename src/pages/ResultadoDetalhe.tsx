@@ -1635,7 +1635,8 @@ const ResultadoDetalhe = () => {
                             </tr>
                             </Fragment>
                           );
-                        })}
+                        });
+                        })()}
                       </tbody>
                     </table>
                   </div>
