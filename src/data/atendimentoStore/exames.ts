@@ -125,30 +125,56 @@ export async function getExamesOperacionaisByStatus(
     return [];
   }
 
-  // Buscar sexo dos pacientes (evita hardcode "M")
+  // Buscar sexo dos pacientes (evita hardcode "M").
+  // Resolve por paciente_id e — quando ausente — por CPF (atendimentos legados
+  // podem não ter `paciente_id` preenchido, mas o CPF é único na tabela).
   const pacIds = Array.from(
     new Set((atRows ?? []).map((a) => a.paciente_id).filter((v): v is number => v != null))
   );
+  const cpfsSemId = Array.from(
+    new Set(
+      (atRows ?? [])
+        .filter((a) => a.paciente_id == null)
+        .map((a) => (a.paciente_cpf ?? "").replace(/\D/g, ""))
+        .filter((c) => c.length > 0),
+    ),
+  );
   const sexoByPacId = new Map<number, string>();
+  const sexoByCpf = new Map<string, string>();
   if (pacIds.length > 0) {
     const { data: pacRows } = await supabase
       .from("pacientes")
       .select("id, sexo")
       .in("id", pacIds);
-    (pacRows ?? []).forEach((p) => sexoByPacId.set(Number(p.id), (p.sexo as string) || "M"));
+    (pacRows ?? []).forEach((p) => sexoByPacId.set(Number(p.id), (p.sexo as string) || ""));
+  }
+  if (cpfsSemId.length > 0) {
+    const { data: pacRows } = await supabase
+      .from("pacientes")
+      .select("cpf, sexo")
+      .in("cpf", cpfsSemId);
+    (pacRows ?? []).forEach((p) => {
+      const cpf = String(p.cpf ?? "").replace(/\D/g, "");
+      if (cpf) sexoByCpf.set(cpf, (p.sexo as string) || "");
+    });
   }
 
   return (atRows ?? []).map((at) => {
     const exs = examesByAt.get(at.id) ?? [];
     const responsavel = exs.find((e) => e.analista)?.analista ?? "";
+    const cpfDigits = (at.paciente_cpf ?? "").replace(/\D/g, "");
+    const sexoResolvido =
+      (at.paciente_id != null ? sexoByPacId.get(at.paciente_id) : undefined) ||
+      (cpfDigits ? sexoByCpf.get(cpfDigits) : undefined) ||
+      "";
     return {
       id: at.id,
       atendimento_id: at.id,
       protocolo: at.protocolo,
       paciente_id: at.paciente_id ?? null,
       paciente_nome: at.paciente_nome,
-      paciente_cpf: (at.paciente_cpf ?? "").replace(/\D/g, ""),
-      paciente_sexo: (at.paciente_id != null ? sexoByPacId.get(at.paciente_id) : undefined) || "M",
+      paciente_cpf: cpfDigits,
+      paciente_sexo: sexoResolvido,
       paciente_nascimento: at.paciente_nascimento ?? "",
       unidade_id: at.unidade_id,
       responsavel,
