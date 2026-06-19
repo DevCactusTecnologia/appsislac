@@ -12,6 +12,8 @@ type SaidaRow = Tables<"financeiro_saidas">;
 type SaidaInsert = TablesInsert<"financeiro_saidas">;
 type EntradaViewRow = Tables<"financeiro_entradas">;
 
+export type SaidaStatus = "aberta" | "paga" | "cancelada";
+
 export interface FinanceiroSaida {
   protocolo: string;
   data: string;            // dd/mm/yyyy
@@ -22,8 +24,10 @@ export interface FinanceiroSaida {
   destinoPagamento: string;
   descricao: string;
   dataVencimento: string;  // dd/mm/yyyy
-  foiPago: string;         // "Sim" | "Não"
+  foiPago: string;         // "Sim" | "Não" — derivado de status (legado)
   dataPagamento: string;   // dd/mm/yyyy
+  /** Fase 6 V2 — fonte oficial do estado da despesa. */
+  status: SaidaStatus;
 }
 
 export interface FinanceiroEntradaView {
@@ -115,6 +119,12 @@ function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
   const descricaoLimpa = formaCol ? (row.descricao || "") : legacy.descricao;
   const parts = descricaoLimpa.split(" — ");
   const cliente = parts[0] || descricaoLimpa;
+  // Fase 6 V2 — `status` é a fonte oficial; fallback para foi_pago em registros legados.
+  const rawStatus = ((row as SaidaRow & { status?: string | null }).status || "").toLowerCase();
+  const status: SaidaStatus =
+    rawStatus === "paga" || rawStatus === "cancelada" || rawStatus === "aberta"
+      ? (rawStatus as SaidaStatus)
+      : (row.foi_pago ? "paga" : "aberta");
   return {
     protocolo: row.protocolo,
     data: formatDateBR(row.data),
@@ -125,8 +135,9 @@ function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
     destinoPagamento: row.destino_pagamento || "",
     descricao: descricaoLimpa,
     dataVencimento: formatDateOnlyBR(row.data_vencimento),
-    foiPago: row.foi_pago ? "Sim" : "Não",
+    foiPago: status === "paga" ? "Sim" : "Não",
     dataPagamento: formatDateOnlyBR(row.data_pagamento),
+    status,
   };
 }
 
@@ -184,6 +195,8 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
     const dataPgtoISO = ddmmyyyyToISO(saida.dataPagamento);
     const dataISO = ddmmyyyyToISODateTime(saida.foiPago === "Sim" ? saida.dataPagamento : saida.dataVencimento);
 
+    const statusFinal: SaidaStatus = saida.status
+      ?? (saida.foiPago === "Sim" ? "paga" : "aberta");
     const insertPayload: SaidaInsert = {
       tenant_id: tenantId,
       protocolo: protocoloProvisorio,
@@ -194,8 +207,9 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
       tipo_despesa: saida.tipoDespesa,
       destino_pagamento: saida.destinoPagamento,
       data_vencimento: dataVencISO,
-      foi_pago: saida.foiPago === "Sim",
+      foi_pago: statusFinal === "paga",
       data_pagamento: dataPgtoISO,
+      status: statusFinal,
     };
     const data = await persistOneOrThrow<Pick<SaidaRow, "id" | "protocolo">>(
       supabase.from("financeiro_saidas").insert(insertPayload),
@@ -239,6 +253,8 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
   const dataPgtoISO = ddmmyyyyToISO(merged.dataPagamento);
   const dataISO = ddmmyyyyToISODateTime(merged.foiPago === "Sim" ? merged.dataPagamento : merged.dataVencimento);
 
+  const mergedStatus: SaidaStatus = merged.status
+    ?? (merged.foiPago === "Sim" ? "paga" : "aberta");
   try {
     await persistOneOrThrow<SaidaRow>(
       supabase.from("financeiro_saidas").update({
@@ -249,8 +265,9 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
         tipo_despesa: merged.tipoDespesa,
         destino_pagamento: merged.destinoPagamento,
         data_vencimento: dataVencISO,
-        foi_pago: merged.foiPago === "Sim",
+        foi_pago: mergedStatus === "paga",
         data_pagamento: dataPgtoISO,
+        status: mergedStatus,
       }).eq("id", dbId),
       "financeiro.atualizarSaida",
     );
