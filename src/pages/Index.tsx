@@ -648,19 +648,30 @@ const Index = () => {
   const pagamentoData = useMemo(() => {
     if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"], exames: [] as { nome: string; valor: number }[] };
     // Apenas exames cobrados do PACIENTE entram no cálculo do modal de pagamento.
-    const examesPaciente = (selectedAtendimento.examesCobranca ?? selectedAtendimento.exames.map(nome => ({ nome, cobrancaDestino: "paciente" as const, valor: 0 })))
+    const examesPaciente = (selectedAtendimento.examesCobranca ?? selectedAtendimento.exames.map(nome => ({ nome, cobrancaDestino: "paciente" as const, valor: 0, valorOriginal: 0 })))
       .filter(c => c.cobrancaDestino !== "convenio");
-    const subtotal = examesPaciente.reduce((sum, e) => sum + (Number(e.valor) || 0), 0);
+    // Subtotal = soma dos valores ORIGINAIS (preço cheio antes do desconto).
+    // O desconto histórico aparece destacado como linha separada.
+    const subtotal = examesPaciente.reduce((sum, e) => {
+      const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : Number(e.valor) || 0;
+      return sum + orig;
+    }, 0);
+    const totalEfetivo = examesPaciente.reduce((sum, e) => sum + (Number(e.valor) || 0), 0);
+    const descontoHistorico = Math.max(0, Math.round((subtotal - totalEfetivo) * 100) / 100);
     const totalPago = (localPagamentos ?? []).reduce((sum, p) => sum + p.valor, 0);
     return {
       itens: examesPaciente.length,
       subtotal,
-      desconto: 0,
-      total: subtotal,
+      desconto: descontoHistorico,
+      total: totalEfetivo,
       valorPago: totalPago,
-      saldoDevedor: Math.max(0, subtotal - totalPago),
+      saldoDevedor: Math.max(0, totalEfetivo - totalPago),
       pagamentosRealizados: localPagamentos ?? [],
-      exames: examesPaciente.map(e => ({ nome: e.nome, valor: Number(e.valor) || 0 })),
+      // Exames com valor ORIGINAL (descontos novos no dialog se aplicam sobre o cheio).
+      exames: examesPaciente.map(e => ({
+        nome: e.nome,
+        valor: Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0),
+      })),
     };
   }, [selectedAtendimento, localPagamentos]);
 
@@ -675,36 +686,49 @@ const Index = () => {
         ? { label: "Pagamento parcial", type: "info" as const }
         : { label: "Pagamento pendente", type: "warning" as const };
 
-    // Redistribui desconto proporcionalmente entre exames cobrados do paciente,
-    // abatendo o valor de cada exame para que o desconto seja persistido.
+    // Redistribui o desconto TOTAL (histórico + novo) proporcionalmente
+    // sobre o `valorOriginal` (preço cheio) de cada exame cobrado do
+    // paciente. `valorOriginal` é preservado como SSOT do preço cheio;
+    // `valor` passa a ser o efetivo após desconto.
     const updates: Partial<MockAtendimento> = {
       pagamentosRealizados: pagamentosFinais,
       statusPagamento: statusPag,
     };
     const desc = Math.max(0, Math.round((resultado.desconto || 0) * 100) / 100);
     const examesCobrancaAtuais = selectedAtendimento.examesCobranca;
-    if (desc > 0 && examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+    if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
       const pacienteIdxs = examesCobrancaAtuais
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.cobrancaDestino !== "convenio");
-      const subtotalPaciente = pacienteIdxs.reduce((s, { e }) => s + (Number(e.valor) || 0), 0);
-      if (subtotalPaciente > 0) {
-        const totalDesc = Math.min(desc, subtotalPaciente);
+      const baseOriginalPorIdx = new Map<number, number>();
+      pacienteIdxs.forEach(({ e, i }) => {
+        const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0);
+        baseOriginalPorIdx.set(i, orig);
+      });
+      const subtotalOriginal = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + v, 0);
+      if (subtotalOriginal > 0) {
+        const totalDesc = Math.min(desc, subtotalOriginal);
         let restante = Math.round(totalDesc * 100);
         const novosValores = new Map<number, number>();
-        pacienteIdxs.forEach(({ e, i }, idx) => {
-          const valor = Number(e.valor) || 0;
+        pacienteIdxs.forEach(({ i }, idx) => {
+          const orig = baseOriginalPorIdx.get(i) ?? 0;
           const isLast = idx === pacienteIdxs.length - 1;
           const share = isLast
             ? restante
-            : Math.round((valor / subtotalPaciente) * totalDesc * 100);
-          const safeShare = Math.max(0, Math.min(share, Math.round(valor * 100)));
+            : Math.round((orig / subtotalOriginal) * totalDesc * 100);
+          const safeShare = Math.max(0, Math.min(share, Math.round(orig * 100)));
           restante -= safeShare;
-          novosValores.set(i, Math.max(0, Math.round(valor * 100) - safeShare) / 100);
+          novosValores.set(i, Math.max(0, Math.round(orig * 100) - safeShare) / 100);
         });
-        const novaCobranca = examesCobrancaAtuais.map((e, i) =>
-          novosValores.has(i) ? { ...e, valor: novosValores.get(i)! } : e,
-        );
+        const novaCobranca = examesCobrancaAtuais.map((e, i) => {
+          const orig = baseOriginalPorIdx.get(i);
+          if (orig == null) return e;
+          return {
+            ...e,
+            valorOriginal: orig,
+            valor: novosValores.has(i) ? novosValores.get(i)! : orig,
+          };
+        });
         updates.examesCobranca = novaCobranca;
         updates.exames = novaCobranca.map((e) => e.nome);
       }

@@ -92,23 +92,30 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   // Fallback (atendimentos legados sem metadados): R$ 0 e cobrança "paciente".
   const examesComValor = (atendimento?.exames ?? []).map((nomeExame) => {
     const meta = atendimento?.examesCobranca?.find(c => c.nome === nomeExame);
+    const valor = Number(meta?.valor) || 0;
+    const valorOriginal = Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valor;
     return {
       nome: nomeExame,
       material: meta?.material ?? "Sangue",
-      valor: Number(meta?.valor) || 0,
+      valor,
+      valorOriginal,
       cobrancaDestino: meta?.cobrancaDestino ?? "paciente",
     };
   });
 
-  // Soma considerando APENAS exames cobrados do paciente (modal espelha esse cálculo).
-  const totalPaciente = examesComValor
+  // Totais — calculados sobre valor ORIGINAL (preço cheio); desconto = diferença.
+  const subtotalPaciente = examesComValor
+    .filter(e => e.cobrancaDestino === "paciente")
+    .reduce((sum, e) => sum + e.valorOriginal, 0);
+  const totalPacienteEfetivo = examesComValor
     .filter(e => e.cobrancaDestino === "paciente")
     .reduce((sum, e) => sum + e.valor, 0);
+  const descontoPaciente = Math.max(0, Math.round((subtotalPaciente - totalPacienteEfetivo) * 100) / 100);
   const totalConvenio = examesComValor
     .filter(e => e.cobrancaDestino === "convenio")
     .reduce((sum, e) => sum + e.valor, 0);
   const totalPago = (atendimento?.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
-  const saldoDevedor = Math.max(0, totalPaciente - totalPago);
+  const saldoDevedor = Math.max(0, totalPacienteEfetivo - totalPago);
 
   const baseComprovante = atendimento ? {
     protocolo: atendimento.protocolo,
@@ -127,7 +134,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     ...baseComprovante,
     tipo,
     pagamentos: atendimento?.pagamentosRealizados ?? [],
-    totais: { subtotal: totalPaciente, desconto: 0, pago: totalPago, total: totalPaciente, saldo: saldoDevedor },
+    totais: { subtotal: subtotalPaciente, desconto: descontoPaciente, pago: totalPago, total: totalPacienteEfetivo, saldo: saldoDevedor },
   }) : null;
 
   const tipoLabels: Record<"pagamento" | "atendimento" | "comparecimento", string> = {
@@ -142,7 +149,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   const previewData = useMemo(
     () => (previewTipo ? buildComprovanteData(previewTipo) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [previewTipo, atendimento?.protocolo, totalPaciente, totalPago, saldoDevedor],
+    [previewTipo, atendimento?.protocolo, subtotalPaciente, totalPacienteEfetivo, descontoPaciente, totalPago, saldoDevedor],
   );
   const previewHtml = useMemo(
     () => (previewData ? buildComprovanteHtml(previewData) : ""),
@@ -341,7 +348,12 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                         </div>
                       )}
                     </div>
-                    <span className="text-[13px] font-semibold text-foreground shrink-0">R$ {fmtBRLNumber(exame.valor)}</span>
+                    <div className="text-right shrink-0">
+                      {exame.valorOriginal > exame.valor + 0.005 && (
+                        <span className="block text-[10px] text-muted-foreground line-through">R$ {fmtBRLNumber(exame.valorOriginal)}</span>
+                      )}
+                      <span className="text-[13px] font-semibold text-foreground">R$ {fmtBRLNumber(exame.valor)}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -375,8 +387,14 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               <div className="border-t border-border pt-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">Subtotal (paciente)</span>
-                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPaciente)}</span>
+                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(subtotalPaciente)}</span>
                 </div>
+                {descontoPaciente > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]" style={{ color: "hsl(var(--status-success))" }}>Desconto aplicado</span>
+                    <span className="text-[13px] font-medium" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
+                  </div>
+                )}
                 {totalConvenio > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-status-info">Cobrado do convênio</span>
@@ -395,7 +413,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 )}
                 <div className="flex items-center justify-between font-bold">
                   <span className="text-[13px] text-foreground">Total devido pelo paciente</span>
-                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPaciente)}</span>
+                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPacienteEfetivo)}</span>
                 </div>
               </div>
             </div>
