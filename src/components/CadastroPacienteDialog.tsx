@@ -336,8 +336,7 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                 <div className="min-w-0">
                   <h3 className="text-[13px] font-semibold text-foreground tracking-tight leading-tight">
                     Responsável legal
-                    {isNewborn && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· obrigatório</span>}
-                    {!isNewborn && isMinor && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· recomendado</span>}
+                    {isMinor && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· recomendado</span>}
                   </h3>
                   <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                     {isNewborn
@@ -373,14 +372,29 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                 </div>
                 <div>
                   <label className={labelClass}>{isNewborn ? "CPF da mãe / responsável" : "CPF do responsável"}</label>
-                  <input
-                    className={inputClass}
-                    disabled={loading}
-                    value={formData.guardianCpf}
-                    onChange={e => setFormData({ ...formData, guardianCpf: maskCPF(e.target.value) })}
-                    placeholder="000.000.000-00"
-                    inputMode="numeric"
-                  />
+                  {(() => {
+                    const gDigits = sanitizeCPF(formData.guardianCpf || "");
+                    const gValid = gDigits.length === 11 && isValidCPF(gDigits);
+                    const gInvalid = gDigits.length === 11 && !gValid;
+                    return (
+                      <>
+                        <div className="relative">
+                          <input
+                            className={inputClass + (gInvalid ? " border-destructive focus:border-destructive pr-9" : gValid ? " pr-9" : "")}
+                            disabled={loading}
+                            value={formData.guardianCpf}
+                            onChange={e => setFormData({ ...formData, guardianCpf: maskCPF(e.target.value) })}
+                            placeholder="000.000.000-00"
+                            inputMode="numeric"
+                            aria-invalid={gInvalid}
+                          />
+                          {gValid && <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600" />}
+                          {gInvalid && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
+                        </div>
+                        {gInvalid && <p className="text-[11px] text-destructive mt-1">CPF inválido. Corrija ou deixe em branco.</p>}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
