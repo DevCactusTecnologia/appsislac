@@ -373,8 +373,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               </div>
 
               {((atendimento.pagamentosRealizados && atendimento.pagamentosRealizados.length > 0) || descontoPaciente > 0) && (
-                <div className="space-y-1">
-                  <span className="text-[10px] font-medium text-muted-foreground">Pagamentos realizados</span>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pagamentos realizados</span>
                   {descontoPaciente > 0 && (
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -389,12 +389,23 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                       <span className="text-[13px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
                     </div>
                   )}
-                  {atendimento.pagamentosRealizados?.map((p, i) => (
-                    <div key={i} className="flex items-center justify-between text-[13px]">
-                      <span className="text-muted-foreground">{p.tipo} — {p.data}</span>
-                      <span className="font-medium text-foreground">R$ {fmtBRLNumber(p.valor)}</span>
-                    </div>
-                  ))}
+                  {atendimento.pagamentosRealizados?.map((p, i) => {
+                    const Icon = p.tipo === "Dinheiro" ? Banknote : p.tipo === "PIX" ? QrCode : CreditCard;
+                    return (
+                      <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(var(--status-success) / 0.10)" }}>
+                            <Icon className="h-3.5 w-3.5" style={{ color: "hsl(var(--status-success))" }} />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[12px] font-medium text-foreground block leading-tight">{p.tipo}</span>
+                            <p className="text-[10px] text-muted-foreground leading-tight truncate">{p.data}</p>
+                          </div>
+                        </div>
+                        <span className="text-[13px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>R$ {fmtBRLNumber(p.valor)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
