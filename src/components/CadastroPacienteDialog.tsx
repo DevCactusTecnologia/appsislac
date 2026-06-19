@@ -1,17 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { User, MapPin, Shield, Save, Loader2, Check, AlertCircle, AlertTriangle, IdCard, Phone, Home, Sparkles, ChevronRight } from "lucide-react";
+import {
+  X, User, MapPin, Shield, Save, Loader2, Check, AlertCircle,
+  AlertTriangle, IdCard, Phone, Home, UserCircle2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { addPaciente, updatePaciente } from "@/data/pacienteStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationSelector } from "@/components/inscricao/LocationSelector";
 import { isValidCPF, sanitizeCPF } from "@/lib/cpf";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 
 interface Props {
   open: boolean;
@@ -36,9 +32,6 @@ const maskPhone = (value: string) => {
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
-
-const maskCEP = (value: string) =>
-  value.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
 
 const maskDateBR = (value: string) => {
   const d = (value || "").replace(/\D/g, "").slice(0, 8);
@@ -86,23 +79,11 @@ const emptyForm = {
   consentimentoLgpd: true,
 };
 
-function SectionHeader({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle?: string }) {
-  return (
-    <div className="flex items-center gap-2.5 mb-3 pb-2 border-b border-border/40">
-      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Icon className="h-3.5 w-3.5 text-primary" />
-      </div>
-      <div className="flex-1">
-        <h3 className="text-[13px] font-semibold text-foreground tracking-tight leading-tight">{title}</h3>
-        {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
+type TabKey = "pessoais" | "contato";
 
 export default function CadastroPacienteDialog({ open, onClose, editMode, initialData, initialName, onSave }: Props) {
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("pessoais");
+  const [activeTab, setActiveTab] = useState<TabKey>("pessoais");
   const [useNomeSocial, setUseNomeSocial] = useState(false);
   const [showResponsavel, setShowResponsavel] = useState(false);
   const [formData, setFormData] = useState<any>(emptyForm);
@@ -140,26 +121,7 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
     if (isMinor) setShowResponsavel(true);
   }, [isMinor]);
 
-  const handleCEPBlur = async () => {
-    const cep = formData.cep.replace(/\D/g, "");
-    if (cep.length === 8) {
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const data = await response.json();
-        if (!data.erro) {
-          setFormData((prev: any) => ({
-            ...prev,
-            endereco: data.logradouro,
-            bairro: data.bairro,
-            cidade: data.localidade,
-            estado: data.uf,
-          }));
-        }
-      } catch (error) {
-        console.error("Erro ao buscar CEP:", error);
-      }
-    }
-  };
+  useBodyScrollLock(open);
 
   const handleSave = async () => {
     if (!formData.nome || formData.nome.trim().length < 3) {
@@ -207,8 +169,10 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
     }
   };
 
+  if (!open) return null;
+
   const inputClass =
-    "w-full h-10 px-3 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all disabled:opacity-60";
+    "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200 disabled:opacity-60";
   const labelClass = "text-[11px] font-medium text-muted-foreground mb-1.5 block";
 
   // Initials para o avatar header
@@ -219,172 +183,203 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
     .map((p: string) => p[0]?.toUpperCase() || "")
     .join("") || "?";
 
+  const tabs: { key: TabKey; label: string; icon: any }[] = [
+    { key: "pessoais", label: "Identificação", icon: IdCard },
+    { key: "contato", label: "Contato e endereço", icon: MapPin },
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={(val) => !loading && !val && onClose()}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-card rounded-2xl border-border shadow-xl gap-0">
-        {/* Header compacto e moderno */}
-        <DialogHeader className="px-6 py-4 border-b border-border/60 bg-muted/20">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold tracking-wide shadow-sm">
-              {initials}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={() => !loading && onClose()} />
+      <div className="relative w-full max-w-2xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-2xl bg-primary/8 flex items-center justify-center text-[13px] font-semibold text-primary tracking-wide">
+              {initials !== "?" ? initials : <UserCircle2 className="h-5 w-5 text-primary" />}
             </div>
-            <div className="text-left flex-1 min-w-0">
-              <DialogTitle className="text-[15px] font-semibold text-foreground tracking-tight truncate">
+            <div className="min-w-0">
+              <h2 className="text-[15px] font-semibold text-foreground tracking-tight truncate">
                 {editMode ? "Editar paciente" : "Novo paciente"}
-              </DialogTitle>
-              <DialogDescription className="text-[12px] text-muted-foreground mt-0.5">
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 {age !== null
-                  ? `${age} ${age === 1 ? "ano" : "anos"}${isMinor ? " · menor de idade" : ""}`
+                  ? `${age} ${age === 1 ? "ano" : "anos"}${isNewborn ? " · recém-nascido" : isMinor ? " · menor de idade" : ""}`
                   : editMode ? "Atualize os dados cadastrais" : "Preencha os dados do paciente"}
-              </DialogDescription>
+              </p>
             </div>
-            {age !== null && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 h-7 rounded-lg bg-background border border-border/60 text-[11px] font-medium text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-primary" />
-                Auto-detectado
-              </div>
-            )}
           </div>
-        </DialogHeader>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200 disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-          <div className="px-6 border-b border-border/60 bg-card">
-            <TabsList className="w-full justify-start h-11 bg-transparent gap-6 p-0">
-              <TabsTrigger
-                value="pessoais"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground rounded-none h-11 px-0 gap-2 text-[13px] font-medium text-muted-foreground transition-all"
+        <div className="h-px bg-border/50" />
+
+        {/* Tabs */}
+        <div className="px-6 pt-3 flex items-center gap-1">
+          {tabs.map(t => {
+            const Icon = t.icon;
+            const active = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setActiveTab(t.key)}
+                className={`h-9 px-3 rounded-xl text-[12.5px] font-medium inline-flex items-center gap-1.5 transition-all ${
+                  active
+                    ? "bg-primary/8 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
               >
-                <IdCard className="h-3.5 w-3.5" />
-                Identificação
-              </TabsTrigger>
-              <TabsTrigger
-                value="contato"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground rounded-none h-11 px-0 gap-2 text-[13px] font-medium text-muted-foreground transition-all"
-              >
-                <MapPin className="h-3.5 w-3.5" />
-                Contato e endereço
-              </TabsTrigger>
-            </TabsList>
-          </div>
+                <Icon className="h-3.5 w-3.5" />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="max-h-[62vh] overflow-y-auto px-6 py-5 bg-card">
-            <TabsContent value="pessoais" className="mt-0 space-y-6 animate-in fade-in duration-200 outline-none">
-              {/* Bloco: Dados pessoais */}
-              <section>
-                <SectionHeader icon={User} title="Dados pessoais" subtitle="Campos obrigatórios marcados com *" />
+        {/* Content */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto">
+          {activeTab === "pessoais" && (
+            <>
+              {/* Dados pessoais */}
+              <section className="space-y-4">
+                <div>
+                  <label className={labelClass}>Nome completo *</label>
+                  <input
+                    className={inputClass}
+                    disabled={loading}
+                    value={formData.nome}
+                    onChange={e => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder="Ex: João da Silva Santos"
+                    autoFocus
+                  />
 
-                <div className="space-y-4">
+                  {/* Toggle nome social estilo CactusClinic */}
+                  <label className="mt-2.5 inline-flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={useNomeSocial}
+                      onChange={(e) => setUseNomeSocial(e.target.checked)}
+                      className="sr-only"
+                      disabled={loading}
+                    />
+                    <span className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${useNomeSocial ? "bg-primary" : "bg-muted-foreground/25"}`}>
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${useNomeSocial ? "translate-x-4" : "translate-x-0.5"}`} />
+                    </span>
+                    <span className="text-[11.5px] text-muted-foreground font-medium">Deseja usar nome social?</span>
+                  </label>
+
+                  {useNomeSocial && (
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={loading}
+                      value={formData.nomeSocial}
+                      onChange={e => setFormData({ ...formData, nomeSocial: e.target.value })}
+                      placeholder="Nome social (como o paciente prefere ser chamado)"
+                    />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className={labelClass}>Nome completo *</label>
+                    <label className={labelClass}>Data de nascimento *</label>
                     <input
                       className={inputClass}
                       disabled={loading}
-                      value={formData.nome}
-                      onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                      placeholder="Ex: João da Silva Santos"
+                      value={formData.dataNascimento}
+                      onChange={e => setFormData({ ...formData, dataNascimento: maskDateBR(e.target.value) })}
+                      placeholder="DD/MM/AAAA"
+                      inputMode="numeric"
+                      maxLength={10}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setUseNomeSocial(v => !v)}
-                      className="mt-1.5 text-[11px] font-medium text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      <ChevronRight className={`h-3 w-3 transition-transform ${useNomeSocial ? "rotate-90" : ""}`} />
-                      {useNomeSocial ? "Remover nome social" : "Deseja usar nome social?"}
-                    </button>
-                    {useNomeSocial && (
-                      <input
-                        className={`${inputClass} mt-2`}
-                        disabled={loading}
-                        value={formData.nomeSocial}
-                        onChange={e => setFormData({ ...formData, nomeSocial: e.target.value })}
-                        placeholder="Nome social (como o paciente prefere ser chamado)"
-                      />
-                    )}
                   </div>
+                  <div>
+                    <label className={labelClass}>Sexo biológico *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["Masculino", "Feminino"] as const).map(opt => {
+                        const active = formData.sexo === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setFormData({ ...formData, sexo: opt })}
+                            className={`h-[42px] rounded-xl text-[13px] font-medium border transition-all ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/30 text-foreground border-border/60 hover:border-primary/40"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>Data de nascimento *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>CPF</label>
+                    <div className="relative">
                       <input
-                        className={inputClass}
+                        className={inputClass + (cpfInvalid ? " border-destructive focus:border-destructive pr-9" : cpfValid ? " pr-9" : "")}
                         disabled={loading}
-                        value={formData.dataNascimento}
-                        onChange={e => setFormData({ ...formData, dataNascimento: maskDateBR(e.target.value) })}
-                        placeholder="DD/MM/AAAA"
+                        value={formData.cpf}
+                        onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })}
+                        placeholder="000.000.000-00 (opcional)"
                         inputMode="numeric"
-                        maxLength={10}
+                        aria-invalid={cpfInvalid}
                       />
+                      {cpfValid && <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600" />}
+                      {cpfInvalid && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
                     </div>
-                    <div>
-                      <label className={labelClass}>Sexo biológico *</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["Masculino", "Feminino"] as const).map(opt => {
-                          const active = formData.sexo === opt;
-                          return (
-                            <button
-                              key={opt}
-                              type="button"
-                              disabled={loading}
-                              onClick={() => setFormData({ ...formData, sexo: opt })}
-                              className={`h-10 rounded-lg text-sm font-medium border transition-all ${
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                  : "bg-background text-foreground border-border hover:border-primary/40 hover:bg-muted/40"
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    {cpfInvalid && <p className="text-[11px] text-destructive mt-1">CPF inválido. Corrija ou deixe em branco.</p>}
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>CPF</label>
-                      <div className="relative">
-                        <input
-                          className={inputClass + (cpfInvalid ? " border-destructive focus:border-destructive pr-9" : cpfValid ? " pr-9" : "")}
-                          disabled={loading}
-                          value={formData.cpf}
-                          onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })}
-                          placeholder="000.000.000-00 (opcional)"
-                          inputMode="numeric"
-                          aria-invalid={cpfInvalid}
-                        />
-                        {cpfValid && <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600" />}
-                        {cpfInvalid && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
-                      </div>
-                      {cpfInvalid && <p className="text-[11px] text-destructive mt-1">CPF inválido. Corrija ou deixe em branco.</p>}
-                    </div>
-                    <div>
-                      <label className={labelClass}>E-mail</label>
-                      <input
-                        className={inputClass}
-                        disabled={loading}
-                        value={formData.email}
-                        onChange={e => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="paciente@exemplo.com"
-                        type="email"
-                      />
-                    </div>
+                  <div>
+                    <label className={labelClass}>E-mail</label>
+                    <input
+                      className={inputClass}
+                      disabled={loading}
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="paciente@exemplo.com"
+                      type="email"
+                    />
                   </div>
                 </div>
               </section>
 
-              {/* Bloco: Responsável legal incorporado */}
-              <section>
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/40">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${isMinor ? "bg-amber-500/15" : "bg-primary/10"}`}>
-                      <Shield className={`h-3.5 w-3.5 ${isMinor ? "text-amber-600 dark:text-amber-400" : "text-primary"}`} />
+              {/* Responsável legal */}
+              <section
+                className={`rounded-2xl border p-4 transition-colors ${
+                  isNewborn
+                    ? "border-amber-500/40 bg-amber-500/5"
+                    : isMinor
+                    ? "border-amber-500/30 bg-amber-500/5"
+                    : "border-border/60 bg-muted/20"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      isMinor ? "bg-amber-500/15" : "bg-primary/10"
+                    }`}>
+                      <Shield className={`h-4 w-4 ${isMinor ? "text-amber-600 dark:text-amber-400" : "text-primary"}`} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h3 className="text-[13px] font-semibold text-foreground tracking-tight leading-tight">
-                        Responsável legal {isMinor && <span className="text-amber-600 dark:text-amber-400">· recomendado</span>}
+                        Responsável legal
+                        {isNewborn && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· obrigatório</span>}
+                        {!isNewborn && isMinor && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· recomendado</span>}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                         {isNewborn
                           ? "Recém-nascido (até 1 ano): preferencialmente informe os dados da mãe ou responsável legal direto."
                           : isMinor
@@ -405,7 +400,7 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                 </div>
 
                 {(showResponsavel || isMinor) && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className={labelClass}>{isNewborn ? "Nome da mãe / responsável" : "Nome do responsável"}</label>
                       <input
@@ -429,100 +424,99 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                     </div>
                   </div>
                 )}
+
                 {isMinor && (
-                  <div className="mt-3 flex gap-2 items-start p-3 rounded-lg bg-amber-500/5 border border-amber-500/30">
+                  <div className="mt-3 flex gap-2 items-start">
                     <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-[11px] leading-relaxed text-foreground">
+                    <p className="text-[11px] leading-relaxed text-foreground/80">
                       Os dados do responsável legal podem ser exigidos para validação clínica e emissão de laudos.
                     </p>
                   </div>
                 )}
               </section>
-            </TabsContent>
+            </>
+          )}
 
-            <TabsContent value="contato" className="mt-0 space-y-6 animate-in fade-in duration-200 outline-none">
-              <section>
-                <SectionHeader icon={Phone} title="Contato" subtitle="Telefones e e-mail para comunicação" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>Celular</label>
-                    <input className={inputClass} disabled={loading} value={formData.celular} onChange={e => setFormData({ ...formData, celular: maskPhone(e.target.value) })} placeholder="(00) 00000-0000" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Telefone fixo</label>
-                    <input className={inputClass} disabled={loading} value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: maskPhone(e.target.value) })} placeholder="(00) 0000-0000" />
-                  </div>
+          {activeTab === "contato" && (
+            <>
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-[12.5px] font-semibold text-foreground tracking-tight">Contato</h3>
+                </div>
+                <div>
+                  <label className={labelClass}>Celular</label>
+                  <input
+                    className={inputClass}
+                    disabled={loading}
+                    value={formData.celular}
+                    onChange={e => setFormData({ ...formData, celular: maskPhone(e.target.value) })}
+                    placeholder="(00) 00000-0000"
+                  />
                 </div>
               </section>
 
-              <section>
-                <SectionHeader icon={Home} title="Endereço" subtitle="Preencha o CEP para preenchimento automático" />
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4">
-                    <div>
-                      <label className={labelClass}>CEP</label>
-                      <input className={inputClass} disabled={loading} value={formData.cep} onChange={e => setFormData({ ...formData, cep: maskCEP(e.target.value) })} onBlur={handleCEPBlur} placeholder="00000-000" />
-                    </div>
-                    <div className="flex flex-col justify-end">
-                      <LocationSelector
-                        selectedState={formData.estado}
-                        selectedCity={formData.cidade}
-                        onStateChange={uf => setFormData((prev: any) => ({ ...prev, estado: uf }))}
-                        onCityChange={city => setFormData((prev: any) => ({ ...prev, cidade: city }))}
-                      />
-                    </div>
-                  </div>
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Home className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-[12.5px] font-semibold text-foreground tracking-tight">Endereço</h3>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>Bairro</label>
-                      <input className={inputClass} disabled={loading} value={formData.bairro} onChange={e => setFormData({ ...formData, bairro: e.target.value })} placeholder="Ex: Centro" />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Logradouro</label>
-                      <input className={inputClass} disabled={loading} value={formData.endereco} onChange={e => setFormData({ ...formData, endereco: e.target.value })} placeholder="Ex: Rua das Flores" />
-                    </div>
-                  </div>
+                <LocationSelector
+                  selectedState={formData.estado}
+                  selectedCity={formData.cidade}
+                  onStateChange={uf => setFormData((prev: any) => ({ ...prev, estado: uf }))}
+                  onCityChange={city => setFormData((prev: any) => ({ ...prev, cidade: city }))}
+                />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-4">
-                    <div>
-                      <label className={labelClass}>Número</label>
-                      <input className={inputClass} disabled={loading} value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} placeholder="123" />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Complemento</label>
-                      <input className={inputClass} disabled={loading} value={formData.complemento} onChange={e => setFormData({ ...formData, complemento: e.target.value })} placeholder="Apto 101, Bloco B..." />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Bairro</label>
+                    <input className={inputClass} disabled={loading} value={formData.bairro} onChange={e => setFormData({ ...formData, bairro: e.target.value })} placeholder="Ex: Centro" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Logradouro</label>
+                    <input className={inputClass} disabled={loading} value={formData.endereco} onChange={e => setFormData({ ...formData, endereco: e.target.value })} placeholder="Ex: Rua das Flores" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[140px_1fr] gap-3">
+                  <div>
+                    <label className={labelClass}>Número</label>
+                    <input className={inputClass} disabled={loading} value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} placeholder="123" />
                   </div>
                 </div>
               </section>
-            </TabsContent>
-          </div>
-        </Tabs>
+            </>
+          )}
+        </div>
 
-        <div className="px-6 py-4 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+        <div className="h-px bg-border/50" />
+
+        {/* Footer */}
+        <div className="px-6 py-4 flex items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground hidden sm:block">
             <span className="text-destructive">*</span> Campos obrigatórios
           </p>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
             <button
               onClick={onClose}
               disabled={loading}
-              className="h-10 px-4 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+              className="h-11 px-6 rounded-2xl border border-border/60 bg-background text-[13px] font-medium text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30 transition-all duration-200 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={loading}
-              className="h-10 px-5 rounded-lg text-[13px] font-semibold text-primary-foreground bg-primary hover:opacity-90 disabled:opacity-60 flex items-center gap-2 transition-all"
+              className="h-11 px-6 rounded-2xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all duration-200 shadow-sm disabled:opacity-70"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {editMode ? "Salvar alterações" : "Cadastrar paciente"}
+              {loading ? "Salvando..." : editMode ? "Salvar alterações" : "Cadastrar paciente"}
             </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
