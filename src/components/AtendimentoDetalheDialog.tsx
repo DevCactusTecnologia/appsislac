@@ -23,6 +23,7 @@ import type { MockAtendimento } from "@/data/types";
 import { getUnidadeById } from "@/data/unidadeStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { getAtendimentoExamesDB, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
 import {
   ensureDocumentoTemplatesLoaded,
   subscribeDocumentoTemplates,
@@ -94,7 +95,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   const examesComValor = (atendimento?.exames ?? []).map((nomeExame) => {
     const meta = atendimento?.examesCobranca?.find(c => c.nome === nomeExame);
     const valor = Number(meta?.valor) || 0;
-    const valorOriginal = Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valor;
+    const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento?.convenio ?? "Particular" });
+    const valorOriginal = Math.max(Number(meta?.valorOriginal) || 0, valor, valorTabela);
     return {
       nome: nomeExame,
       material: meta?.material ?? "Sangue",
