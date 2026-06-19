@@ -54,6 +54,7 @@ import { useDicionario } from "@/hooks/useDicionario";
 import type { ExameStatus, Parametro, Exame, Paciente, DbIdMap } from "./ResultadoDetalhe/types";
 import { statusExameMap } from "./ResultadoDetalhe/types";
 import { ParamTypedInput } from "./ResultadoDetalhe/ParamTypedInput";
+import { buildValuesByChave, evaluateFormula } from "./ResultadoDetalhe/formula";
 import {
   templatesParametrosLegado,
   isoToBR,
@@ -339,6 +340,12 @@ const ResultadoDetalhe = () => {
 
   // Resolve reference values from the shared store based on patient sex/age
   const getResolvedRef = (exameNome: string, param: Parametro) => {
+    // Parâmetros do tipo Formula gravam a expressão em valor_referencia
+    // (ex.: "(##HEMOG##/##HEMACI##)*10"). Isso NÃO é uma faixa de referência
+    // clínica e não deve ser exibido na coluna "Valor de referência".
+    if (param.tipo === "Formula") {
+      return { refMin: "", refMax: "", refUnidade: "", descricao: "" };
+    }
     const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade);
     if (resolved) return resolved;
     return {
@@ -348,6 +355,7 @@ const ResultadoDetalhe = () => {
       descricao: param.valorReferencia ?? "",
     };
   };
+
 
   const matchesStatusFilter = (e: Exame): boolean => {
     if (statusFilter === "todos") return true;
@@ -1025,12 +1033,19 @@ const ResultadoDetalhe = () => {
                     )}
 
                     {/* Parameters */}
+                    
                     {exame.parametros.map((param, idx) => {
                       const isBlockedExame = isExameBloqueado(exame.status);
                       const isEditableParam = !isBlockedExame || exame.status === "Em retificação";
                       const ref = getResolvedRef(exame.nome, param);
-                      const inRange = isBlockedExame && param.valor ? isValueInRange(param.valor, ref.refMin, ref.refMax) : null;
+                      const valuesByChave = buildValuesByChave(exame.parametros);
+                      const computedFormula = param.tipo === "Formula"
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        : "";
+                      const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
+                      const inRange = isBlockedExame && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                       const isOutOfRange = inRange === false;
+
 
                       return (
                         <Fragment key={idx}>
@@ -1056,9 +1071,9 @@ const ResultadoDetalhe = () => {
                                       <AlertCircle className="h-4 w-4 text-status-danger" />
                                     )
                                   )}
-                                   {param.valor ? (
+                                   {displayValor ? (
                                     <span className={`text-sm font-bold ${isOutOfRange ? "text-status-danger" : "text-foreground"}`}>
-                                      {param.tipo === "Select" ? param.valor.toUpperCase() : param.valor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
+                                      {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
                                     </span>
                                   ) : (
                                     <span className="text-sm text-muted-foreground italic">—</span>
@@ -1068,6 +1083,7 @@ const ResultadoDetalhe = () => {
                                 <div className="flex items-center gap-1.5">
                                   <ParamTypedInput
                                     param={param}
+                                    computedValue={computedFormula}
                                     onChange={(v) => updateParametro(exame.id, idx, v)}
                                     disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
                                     className="w-24 text-right"
@@ -1513,11 +1529,17 @@ const ResultadoDetalhe = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedExame.parametros.map((param, idx) => {
+                        {(() => {
+                          const valuesByChave = buildValuesByChave(selectedExame.parametros);
+                          return selectedExame.parametros.map((param, idx) => {
                           const ref = getResolvedRef(selectedExame.nome, param);
-                          const inRange = isBlocked && param.valor ? isValueInRange(param.valor, ref.refMin, ref.refMax) : null;
+                          const computedFormula = param.tipo === "Formula"
+                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                            : "";
+                          const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
+                          const inRange = isBlocked && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                           const isOutOfRange = inRange === false;
-                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, param.valor);
+                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
                           const isCriticoParam = nivelCritico !== "normal";
                           const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
                           return (
@@ -1553,10 +1575,10 @@ const ResultadoDetalhe = () => {
                                           <AlertCircle className="h-5 w-5 text-status-danger shrink-0" />
                                         )
                                       )}
-                                      {param.valor ? (
+                                      {displayValor ? (
                                         <>
                                           <span className={`text-sm font-bold ${(isOutOfRange || isCriticoParam) ? "text-status-danger" : "text-foreground"}`}>
-                                            {param.tipo === "Select" ? param.valor.toUpperCase() : param.valor}
+                                            {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
                                           </span>
                                           <span className="text-sm text-muted-foreground">{param.unidade}</span>
                                         </>
@@ -1570,6 +1592,7 @@ const ResultadoDetalhe = () => {
                                     <ParamTypedInput
                                       param={param}
                                       isCritico={isCriticoParam}
+                                      computedValue={computedFormula}
                                       onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                       disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
                                       className="w-28 sm:w-36"
@@ -1579,7 +1602,7 @@ const ResultadoDetalhe = () => {
                                 )}
                               </td>
                               <td className="py-1.5 px-1">
-                                {isBlocked && param.valor && inRange !== null && (
+                                {isBlocked && displayValor && inRange !== null && (
                                   <div className={`w-1.5 h-8 rounded-full ${isOutOfRange ? "bg-status-danger" : "bg-status-success"}`} />
                                 )}
                               </td>
@@ -1612,7 +1635,8 @@ const ResultadoDetalhe = () => {
                             </tr>
                             </Fragment>
                           );
-                        })}
+                        });
+                        })()}
                       </tbody>
                     </table>
                   </div>
