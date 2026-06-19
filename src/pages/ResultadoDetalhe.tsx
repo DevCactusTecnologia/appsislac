@@ -1531,7 +1531,35 @@ const ResultadoDetalhe = () => {
                     );
                   })()}
 
-                  {/* Parameters table */}
+                  {/* Parameters: layout científico (HTML) em edição/retificação,
+                      tabela padrão em consulta/read-only ou quando não houver layout. */}
+                  {(() => {
+                    const editing = !isBlocked || retificando;
+                    const dbRowSel = dbRows.find((r) => r.id === dbIdMap[selectedExame.id]);
+                    const exameCatId = dbRowSel?.exame_id ?? null;
+                    const layoutHtml = exameCatId ? layoutHtmlByExameId[exameCatId] : "";
+                    const useScientific = editing && !modoConsulta && !!layoutHtml;
+                    if (useScientific) {
+                      const valuesByChave = buildValuesByChave(selectedExame.parametros);
+                      return (
+                        <div className="overflow-x-auto">
+                          <LayoutScientificFormRenderer
+                            layoutHtml={layoutHtml}
+                            parametros={selectedExame.parametros}
+                            onChangeParam={(idx, v) => updateParametro(selectedExame.id, idx, v)}
+                            getResolvedRef={(p) => getResolvedRef(selectedExame.nome, p)}
+                            evaluateFormulaFor={(p) =>
+                              evaluateFormula(p.valorReferencia, valuesByChave, p.casasDecimais ?? 2)
+                            }
+                            avaliarNivelCritico={(nome, valor) =>
+                              avaliarNivelCritico(selectedExame.nome, nome, valor)
+                            }
+                            disabled={selectedExame.status === "Cancelado" || !isEditable}
+                          />
+                        </div>
+                      );
+                    }
+                    return (
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed">
                       <thead>
@@ -1654,6 +1682,8 @@ const ResultadoDetalhe = () => {
                       </tbody>
                     </table>
                   </div>
+                    );
+                  })()}
 
                   {/* Observação */}
                   <div className="mt-4">
