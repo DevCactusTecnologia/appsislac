@@ -32,7 +32,9 @@ export function distribuirDescontoEntreExames(
     restante -= safeShare;
     novosValores.set(i, Math.max(0, Math.round(e.valor * 100) - safeShare) / 100);
   });
-  return exames.map((e, i) =>
-    novosValores.has(i) ? { ...e, valor: novosValores.get(i)! } : e,
-  );
+  return exames.map((e, i) => {
+    if (!novosValores.has(i)) return e;
+    const valorOriginal = e.valorOriginal ?? e.valor;
+    return { ...e, valorOriginal, valor: novosValores.get(i)! };
+  });
 }
