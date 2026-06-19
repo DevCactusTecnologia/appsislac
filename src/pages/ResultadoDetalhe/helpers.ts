@@ -80,14 +80,25 @@ export function buildExamesFromDB(
     if (segs && segs.length > 0) {
       parametros = [];
       let pendingHeader: string | undefined;
+      const norm = (s?: string) => (s ?? "").trim().toUpperCase().replace(/\s+/g, " ");
       for (const seg of segs) {
         if (seg.kind === "header") {
           pendingHeader = seg.text;
           continue;
         }
         const { parametro, valor } = seg;
+        const nome = parametro.rotulo || parametro.chave || row.nome_exame;
+        // Suprime header redundante: layouts geralmente colocam um <strong>VCM</strong>
+        // imediatamente antes do placeholder ##VCM##. Como o próprio rótulo do
+        // parâmetro já é exibido na linha, descartamos o header duplicado.
+        const headerAntes =
+          pendingHeader && norm(pendingHeader) !== norm(nome) &&
+          norm(pendingHeader) !== norm(parametro.chave) &&
+          norm(pendingHeader) !== norm(parametro.abreviacao)
+            ? pendingHeader
+            : undefined;
         parametros.push({
-          nome: parametro.rotulo || parametro.chave || row.nome_exame,
+          nome,
           obrigatorio: !!parametro.obrigatorio,
           unidade: "",
           refMin: "",
@@ -103,7 +114,7 @@ export function buildExamesFromDB(
           criticoMax: parametro.criticoMax,
           parametroId: parametro.id,
           valorReferencia: parametro.valorReferencia,
-          headerAntes: pendingHeader,
+          headerAntes,
         });
         pendingHeader = undefined;
       }
