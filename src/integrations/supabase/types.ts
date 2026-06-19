@@ -6374,6 +6374,7 @@ export type Database = {
         Returns: {
           convenio_nome: string
           data: string
+          desde: string
           protocolo: string
           qtd_exames: number
           qtd_pacientes: number
