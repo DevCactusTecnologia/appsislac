@@ -1024,34 +1024,24 @@ const Financeiro = () => {
       />
 
 
-      {/* Receber pagamento (A Receber) — usa o mesmo modal "Entrada de pagamento" */}
-      <Suspense fallback={null}>
-      {receberDialogOpen && (
-      <NovaEntradaSaidaDialog
-        open={receberDialogOpen}
-        onClose={() => { setReceberDialogOpen(false); setReceberInitial(null); }}
-        tipo="entrada"
-        onConfirm={(entry) => {
-          handleNovaEntrada(entry);
-          setReceberDialogOpen(false);
-          setReceberInitial(null);
-        }}
-        tiposDespesa={tiposDespesa}
-        destinosPagamento={destinosPagamento}
-        formasPagamento={formasPagamento}
-        deletableTipos={deletableTipos}
-        deletableDestinos={deletableDestinos}
-        deletableFormas={deletableFormas}
-        onDeleteTipo={(v: any) => void handleDeleteItem("tipo_despesa", v)}
-        onDeleteDestino={(v: any) => void handleDeleteItem("destino_pagamento", v)}
-        onDeleteForma={(v: any) => void handleDeleteItem("forma_pagamento", v)}
-        onCreateTipoRequest={(typed: any, cb: any) => openCriar("tipo_despesa", typed, cb)}
-        onCreateDestinoRequest={(typed: any, cb: any) => openCriar("destino_pagamento", typed, cb)}
-        onCreateFormaRequest={(typed: any, cb: any) => openCriar("forma_pagamento", typed, cb)}
-        initialEntrada={receberInitial}
+      {/* Receber pagamento (A Receber) — usa o modal "Pagamento" padrão (mesmo de /atendimento) */}
+      <PagamentoDialog
+        open={pagModalOpen}
+        onClose={() => { setPagModalOpen(false); setPagAtendimento(null); }}
+        itens={pagamentoData.itens}
+        subtotal={pagamentoData.subtotal}
+        desconto={pagamentoData.desconto}
+        total={pagamentoData.total}
+        valorPago={pagamentoData.valorPago}
+        saldoDevedor={pagamentoData.saldoDevedor}
+        exames={pagamentoData.exames}
+        pagamentosRealizados={pagamentoData.pagamentosRealizados}
+        onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
+        onConfirm={handlePagamentoConfirm}
+        descontoData={pagAtendimento?.data}
+        isEditing={true}
       />
-      )}
-      </Suspense>
+
 
       {/* Mini modal: criar Tipo de despesa / Destino / Forma de pagamento */}
       <Suspense fallback={null}>
