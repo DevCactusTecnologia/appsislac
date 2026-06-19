@@ -524,7 +524,8 @@ const NovoAtendimento = () => {
       const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
       if (meta?.cobrancaDestino === "convenio") return sum;
       const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
-      return sum + (Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valorAtual);
+      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
+      return sum + Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela);
     }, 0);
     const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
     const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
@@ -545,6 +546,12 @@ const NovoAtendimento = () => {
         ? { cobrancaDestino: meta.cobrancaDestino, convenioCobrancaId: meta.convenioCobrancaId ?? null }
         : resolveCobrancaDefault(atendimento.convenio ? [atendimento.convenio] : []);
       const cat = getExamesCatalogo().find(c => c.nome.toLowerCase() === nomeExame.toLowerCase());
+      const valorAtual = calculateExamPrice({
+        nomeExame,
+        convenioNome: atendimento.convenio,
+        metaValor: meta?.valor,
+      });
+      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
       const tipoProcesso = ((meta?.tipoProcesso as string) || cat?.tipoProcesso || "INTERNO") as "INTERNO" | "TERCEIRIZADO";
       const labApoioIdPadrao = cat?.labApoioId ?? null;
       // Se o meta gravado difere do padrão do catálogo, é um override.
@@ -558,14 +565,11 @@ const NovoAtendimento = () => {
         convenio: atendimento.convenio,
         material: meta?.material ?? cat?.material ?? "Sangue",
         // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
-        valor: calculateExamPrice({
-          nomeExame,
-          convenioNome: atendimento.convenio,
-          metaValor: meta?.valor,
-        }),
+        valor: valorAtual,
         // valorOriginal = preço cheio antes do desconto distribuído.
-        // Fallback explícito para meta.valor (sem desconto histórico).
-        valorOriginal: meta?.valorOriginal ?? meta?.valor,
+        // Fallback defensivo: se o valor_original foi sobrescrito por edição anterior,
+        // recupera o preço cheio pela tabela quando ele for maior que o valor cobrado.
+        valorOriginal: Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela),
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
