@@ -105,12 +105,7 @@ export default function DetailEntryDialog({
                 {detailExames.map((e, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{e.nome}</span>
-                    <div className="text-right">
-                      {e.valorOriginal > e.valor + 0.005 && (
-                        <span className="block text-[10px] text-muted-foreground line-through">{fmtBRL(e.valorOriginal)}</span>
-                      )}
-                      <span className="font-medium text-foreground">{fmtBRL(e.valor)}</span>
-                    </div>
+                    <span className="font-medium text-foreground">{fmtBRL(e.valorOriginal)}</span>
                   </div>
                 ))}
                 <div className="h-px bg-border/40" />
