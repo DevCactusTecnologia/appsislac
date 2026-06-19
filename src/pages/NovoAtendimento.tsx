@@ -454,6 +454,10 @@ const NovoAtendimento = () => {
   const [orcamentoConfirmOpen, setOrcamentoConfirmOpen] = useState(false);
   const [orcamentoId, setOrcamentoId] = useState("");
   const [pagamentosRealizados, setPagamentosRealizados] = useState<PagamentoRealizado[]>([]);
+  // Marca se o usuário tocou nos pagamentos durante esta edição. Quando false,
+  // o update NÃO envia `pagamentosRealizados`, evitando que a RPC tente DELETE
+  // em registros pós-deploy (bloqueado por trigger — exige fluxo de estorno).
+  const pagamentosTouchedRef = useRef(false);
   const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
 
   // Edit mode
@@ -605,7 +609,9 @@ const NovoAtendimento = () => {
         exames: examesParaSalvar.map(e => e.nome),
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
-        pagamentosRealizados,
+        // Só envia pagamentos quando o usuário modificou — evita DELETE bloqueado
+        // por trigger em atendimento_pagamentos (registros pós-deploy exigem estorno).
+        ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
       });
       } else {
@@ -2266,12 +2272,14 @@ const NovoAtendimento = () => {
           setValorPago(res.valorPago);
           setDesconto(res.desconto);
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
+            pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
           }
         }}
         onRemovePagamentoRealizado={index => {
           const removed = pagamentosRealizados[index];
           if (!removed) return;
+          pagamentosTouchedRef.current = true;
           setPagamentosRealizados(prev => prev.filter((_, i) => i !== index));
           setValorPago(prev => Math.max(0, prev - removed.valor));
         }}
