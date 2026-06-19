@@ -163,7 +163,7 @@ const PagamentoDialog = ({
     return { totalPag: pag, totalDesc: desc, totalAcre: acre };
   }, [pagamentos, subtotal, exames]);
 
-  const descontoTotal = descontoProp + totalDesc;
+  const descontoTotal = descontoHistorico + totalDesc;
   const totalAjustado = subtotal - descontoTotal + totalAcre;
   const valorPagoTotal = valorPagoProp + totalPag;
   const saldo = totalAjustado - valorPagoTotal;
