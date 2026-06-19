@@ -31,6 +31,8 @@ import {
   buildResultadosByChave,
   type DigitacaoSegmento,
 } from "@/lib/layoutScientificRuntime";
+import { getLayouts } from "@/data/exameLayoutsStore";
+import LayoutScientificFormRenderer from "./ResultadoDetalhe/LayoutScientificFormRenderer";
 import ExamesTerceirizadosPanel from "@/components/ExamesTerceirizadosPanel";
 import LabBadge from "@/components/LabBadge";
 import IntegrationStatusBadge from "@/components/IntegrationStatusBadge";
