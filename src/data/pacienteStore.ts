@@ -15,7 +15,8 @@ export interface Paciente {
   id: number;
   friendlyId?: string;
   nome: string;
-  cpf: string;            // formato com máscara: "000.000.000-00"
+  nomeSocial?: string;
+  cpf: string;            // formato com máscara: "000.000.000-00" (opcional)
   dataNascimento: string; // formato dd/MM/yyyy
   sexo: string;           // "Masculino" | "Feminino" (compat) — DB armazena "M" | "F"
   telefone: string;
