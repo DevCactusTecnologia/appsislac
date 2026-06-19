@@ -27,6 +27,8 @@ export interface FinanceiroEntry {
   /** "pagamento" (avulso) | "fatura_convenio" (entrada agregada de fatura). */
   origem?: "pagamento" | "fatura_convenio";
   faturaId?: number | null;
+  /** Fase 6 V2 — status oficial da saída ("aberta" | "paga" | "cancelada"). */
+  statusSaida?: "aberta" | "paga" | "cancelada";
 }
 
 // ── Tipos do dataflow "A Receber" e "Caixa" (Fase 3 — Architectural Split) ──
