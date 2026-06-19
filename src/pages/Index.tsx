@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import OrigemBadge from "@/components/OrigemBadge";
 import PagamentoDialog from "@/components/PagamentoDialog";
 import AtendimentoDetalheDialog from "@/components/AtendimentoDetalheDialog";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { requerConfirmacaoEdicao, mensagemAlertaEdicao, setAuditJustificativa } from "@/lib/atendimentoPolicy";
 import { useDicionario } from "@/hooks/useDicionario";
