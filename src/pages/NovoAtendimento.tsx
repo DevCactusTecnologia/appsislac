@@ -506,6 +506,9 @@ const NovoAtendimento = () => {
     setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
     setShowPacienteSearch(false);
     setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
+    const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
+    const [dd, mm, yyyy] = dataBR.split("/");
+    if (dd && mm && yyyy) setDataAtendimento(`${yyyy}-${mm}-${dd}T${horaBR.slice(0, 5)}`);
     // Considera apenas exames cobrados do paciente (Fase 2: faturamento híbrido).
     const totalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
       const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
@@ -672,6 +675,42 @@ const NovoAtendimento = () => {
   const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
   const saldoDevedor = Math.max(0, total - valorPago);
+  const descontoDataExibicao = (() => {
+    const d = (dataAtendimento || "").split("T")[0];
+    if (!d) return undefined;
+    const [yyyy, mm, dd] = d.split("-");
+    return yyyy && mm && dd ? `${dd}/${mm}/${yyyy}` : undefined;
+  })();
+
+  const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
+    const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
+    setExames(prev => {
+      const pacienteIdxs = prev
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => e.cobrancaDestino !== "convenio");
+      const bases = new Map<number, number>();
+      pacienteIdxs.forEach(({ e, i }) => bases.set(i, e.valorOriginal ?? e.valor));
+      const baseTotal = Array.from(bases.values()).reduce((sum, v) => sum + v, 0);
+      if (baseTotal <= 0) return prev;
+      const totalDesc = Math.min(desc, baseTotal);
+      let restante = Math.round(totalDesc * 100);
+      const novosValores = new Map<number, number>();
+      pacienteIdxs.forEach(({ i }, idx) => {
+        const base = bases.get(i) ?? 0;
+        const share = idx === pacienteIdxs.length - 1
+          ? restante
+          : Math.round((base / baseTotal) * totalDesc * 100);
+        const safeShare = Math.max(0, Math.min(share, Math.round(base * 100)));
+        restante -= safeShare;
+        novosValores.set(i, Math.max(0, Math.round(base * 100) - safeShare) / 100);
+      });
+      return prev.map((e, i) => {
+        const base = bases.get(i);
+        if (base == null) return e;
+        return { ...e, valorOriginal: base, valor: novosValores.get(i) ?? base };
+      });
+    });
+  };
 
   // Fase 2 — re-sincroniza cobrança ao mudar a lista de convênios.
   // Se um exame estava cobrado de um convênio que foi removido, volta para Paciente.
