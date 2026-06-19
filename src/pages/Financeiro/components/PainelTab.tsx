@@ -1,15 +1,13 @@
-// PainelTab — Fase 3 do Financeiro V2 (Laboratorial Simples e Profissional).
+// PainelTab — V3 (cards uniformes refinados, compactos).
 //
-// Painel financeiro com 6 cards apenas:
-//   1. Receita Hoje       2. Receita Mês        3. A Receber
-//   4. Despesas Mês       5. Saldo Atual        6. Convênios Pendentes
-//
-// Filosofia: olhou, entendeu, usou. Nenhum gráfico, nenhum indicador técnico.
+// 6 KPIs em grid uniforme. Densidade compacta. Identidade flat + indigo.
+//   • Acento de tom no canto (dot) em vez de cor no valor — mais sóbrio.
+//   • Hierarquia: label · valor grande · hint.
 import { motion } from "framer-motion";
 import {
   Wallet, TrendingUp, Clock, ArrowUpCircle, CircleDollarSign, Building2,
 } from "lucide-react";
-import { fmtBRL } from "@/lib/utils";
+import { fmtBRL, cn } from "@/lib/utils";
 import { useFinanceiroContext } from "../FinanceiroContext";
 
 interface CardDef {
@@ -18,9 +16,22 @@ interface CardDef {
   value: string;
   hint?: string;
   Icon: typeof Wallet;
-  /** Tom semântico do valor: positivo, neutro, alerta. */
   tone: "positive" | "neutral" | "warning" | "negative";
 }
+
+const TONE_DOT: Record<CardDef["tone"], string> = {
+  positive: "bg-emerald-500",
+  warning:  "bg-amber-500",
+  negative: "bg-rose-500",
+  neutral:  "bg-muted-foreground/40",
+};
+
+const TONE_VALUE: Record<CardDef["tone"], string> = {
+  positive: "text-foreground",
+  warning:  "text-foreground",
+  negative: "text-rose-600 dark:text-rose-400",
+  neutral:  "text-foreground",
+};
 
 export default function PainelTab() {
   const { painelKpis } = useFinanceiroContext();
@@ -87,14 +98,9 @@ export default function PainelTab() {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {cards.map((c, i) => {
         const Icon = c.Icon;
-        const valueClass =
-          c.tone === "positive" ? "text-emerald-600 dark:text-emerald-400"
-          : c.tone === "warning"  ? "text-amber-600 dark:text-amber-400"
-          : c.tone === "negative" ? "text-rose-600 dark:text-rose-400"
-          : "text-foreground";
         return (
           <motion.div
             key={c.key}
@@ -102,19 +108,22 @@ export default function PainelTab() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, delay: i * 0.02 }}
-            className="rounded-2xl border border-border/40 bg-card p-5 flex flex-col gap-3"
+            className="group relative rounded-xl border border-border/50 bg-card p-4 flex flex-col gap-2 hover:border-border transition-colors"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {c.label}
-              </span>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2">
+                <span className={cn("h-1.5 w-1.5 rounded-full", TONE_DOT[c.tone])} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {c.label}
+                </span>
+              </div>
+              <Icon className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.75} />
             </div>
-            <div className={`text-2xl font-semibold tabular-nums ${valueClass}`}>
+            <div className={cn("text-[22px] font-semibold tabular-nums leading-tight", TONE_VALUE[c.tone])}>
               {c.value}
             </div>
             {c.hint && (
-              <div className="text-xs text-muted-foreground">{c.hint}</div>
+              <div className="text-[11px] text-muted-foreground">{c.hint}</div>
             )}
           </motion.div>
         );
