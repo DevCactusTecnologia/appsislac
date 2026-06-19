@@ -520,7 +520,21 @@ const NovoAtendimento = () => {
         metaValor: meta?.valor,
       });
     }, 0);
+    const totalOriginalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
+      const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
+      if (meta?.cobrancaDestino === "convenio") return sum;
+      const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
+      return sum + (Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valorAtual);
+    }, 0);
     const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
+    const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
+    const descontoInferido = descontoPersistido <= 0
+      && atendimento.statusPagamento.label === "Pagamento efetuado"
+      && totalPagamentosRealizados > 0
+      && totalPagamentosRealizados < totalOriginalFromExames
+        ? Math.round((totalOriginalFromExames - totalPagamentosRealizados) * 100) / 100
+        : 0;
+    setDesconto(descontoInferido);
     if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
     else if (atendimento.statusPagamento.label === "Pagamento efetuado") setValorPago(totalFromExames);
     else if (atendimento.statusPagamento.label === "Pagamento parcial") setValorPago(Math.round(totalFromExames * 0.5 * 100) / 100);
