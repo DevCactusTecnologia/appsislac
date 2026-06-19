@@ -633,6 +633,7 @@ const Financeiro = () => {
 
   // ─── Valor único do contexto consumido pelos Tabs (Fase 4 — Passo 3). ───
   const ctxValue: FinanceiroContextValue = {
+    painelKpis,
     activeTab, setActiveTab,
     currentPage, setCurrentPage, itemsPerPage,
     searchQuery, setSearchQuery,
