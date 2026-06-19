@@ -2254,9 +2254,10 @@ const NovoAtendimento = () => {
       <PagamentoDialog
         open={pagamentoOpen}
         onClose={() => setPagamentoOpen(false)}
-        itens={exames.length} subtotal={subtotal} desconto={desconto} total={total}
+        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
-        exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valor }))}
+        exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
+        descontoData={(() => { const d = (dataAtendimento || "").split("T")[0]; if (!d) return undefined; const [y, m, dd] = d.split("-"); return y && m && dd ? `${dd}/${m}/${y}` : undefined; })()}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
