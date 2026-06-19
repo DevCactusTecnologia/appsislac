@@ -2122,6 +2122,60 @@ export type Database = {
           },
         ]
       }
+      financeiro_estornos: {
+        Row: {
+          created_at: string
+          criado_em: string
+          criado_por: string | null
+          id: number
+          motivo: string
+          origem_id: number
+          origem_tipo: string
+          tenant_id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: number
+          motivo: string
+          origem_id: number
+          origem_tipo: string
+          tenant_id: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          criado_em?: string
+          criado_por?: string | null
+          id?: number
+          motivo?: string
+          origem_id?: number
+          origem_tipo?: string
+          tenant_id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financeiro_estornos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financeiro_estornos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financeiro_formas_pagamento: {
         Row: {
           ativo: boolean
@@ -6449,6 +6503,10 @@ export type Database = {
           valor_pago: number
           valor_total: number
         }[]
+      }
+      financeiro_estornar: {
+        Args: { p_id: number; p_motivo: string; p_tipo: string }
+        Returns: number
       }
       financeiro_resumo: {
         Args: { p_convenio?: string; p_date_from?: string; p_date_to?: string }
