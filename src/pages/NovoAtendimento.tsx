@@ -2135,14 +2135,14 @@ const NovoAtendimento = () => {
                           <span className="text-muted-foreground">Itens</span>
                           <span className="font-semibold text-foreground">{exames.length}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="font-semibold text-foreground">{fmtBRL(subtotal)}</span>
+                        <div className="flex justify-between text-sm gap-2">
+                          <span className="text-muted-foreground shrink-0">Subtotal</span>
+                          <span className="font-semibold text-foreground tabular-nums whitespace-nowrap">{fmtBRL(subtotalOriginal)}</span>
                         </div>
-                        {desconto > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Desconto</span>
-                            <span className="font-semibold text-[hsl(var(--status-success))]">- {fmtBRL(desconto)}</span>
+                        {descontoExibido > 0 && (
+                          <div className="flex justify-between text-sm gap-2">
+                            <span className="text-muted-foreground shrink-0">Desconto</span>
+                            <span className="font-semibold text-[hsl(var(--status-success))] tabular-nums whitespace-nowrap">− {fmtBRL(descontoExibido)}</span>
                           </div>
                         )}
                       </div>
