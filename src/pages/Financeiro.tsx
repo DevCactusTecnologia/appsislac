@@ -98,7 +98,8 @@ import PainelTab from "./Financeiro/components/PainelTab";
 import { FinanceiroProvider, type FinanceiroContextValue } from "./Financeiro/FinanceiroContext";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
 import EditEntryDialog from "./Financeiro/components/dialogs/EditEntryDialog";
-import DeleteEntryDialog from "./Financeiro/components/dialogs/DeleteEntryDialog";
+import EstornarDialog from "./Financeiro/components/dialogs/EstornarDialog";
+import { estornarFinanceiro } from "./Financeiro/services/estornarFinanceiro";
 import DetailEntryDialog from "./Financeiro/components/dialogs/DetailEntryDialog";
 import PagarDespesaDialog from "./Financeiro/components/dialogs/PagarDespesaDialog";
 import type { DictionaryHandlers } from "./Financeiro/components/dialogs/types";
@@ -503,12 +504,48 @@ const Financeiro = () => {
     setEditDialogOpen(false); setEditingEntry(null);
     toast({ title: "Saída atualizada", description: `Registro ${editingEntry.protocolo} foi atualizado com sucesso.` });
   };
-  const handleDeleteClick = (protocolo: string) => { setDeletingProtocolo(protocolo); setDeleteDialogOpen(true); };
-  const handleDeleteConfirm = () => {
-    removeSaida(deletingProtocolo);
-    setDeleteDialogOpen(false);
-    toast({ title: "Saída excluída", description: `Registro ${deletingProtocolo} foi removido.` });
-    setDeletingProtocolo("");
+  // Fase 9 — Excluir foi substituído por Estornar formal.
+  // O alvo do estorno guarda o entry inteiro para resolvermos (tipo, id) na confirmação.
+  const [estornoTarget, setEstornoTarget] = useState<FinanceiroEntry | null>(null);
+  const handleDeleteClick = (entry: FinanceiroEntry) => {
+    setEstornoTarget(entry);
+    setDeletingProtocolo(entry.protocolo);
+    setDeleteDialogOpen(true);
+  };
+  const handleEstornarConfirm = async (motivo: string) => {
+    if (!estornoTarget) return;
+    try {
+      let tipo: "pagamento" | "fatura" | "saida";
+      let id: number | null = null;
+      if (estornoTarget.tipo === "saida") {
+        tipo = "saida";
+        id = estornoTarget.saidaId ?? null;
+      } else if (estornoTarget.origem === "fatura_convenio") {
+        tipo = "fatura";
+        id = estornoTarget.faturaId ?? null;
+      } else {
+        tipo = "pagamento";
+        id = estornoTarget.pagamentoId ?? null;
+      }
+      if (!id) {
+        toast({ title: "Não foi possível identificar o registro para estorno", variant: "destructive" });
+        return;
+      }
+      await estornarFinanceiro(tipo, id, motivo);
+      toast({ title: "Estorno registrado", description: `Protocolo ${estornoTarget.protocolo} estornado.` });
+      setDeleteDialogOpen(false);
+      setEstornoTarget(null);
+      setDeletingProtocolo("");
+      // Refresca dados afetados.
+      if (tipo === "saida") {
+        // financeiroStore reflete via subscribe ao próximo poll/realtime; força reload simples.
+        await import("@/data/financeiroStore").then(m => m._initFinanceiroStore());
+      } else {
+        await refreshEntradas();
+      }
+    } catch {
+      // showError já notificou via service.
+    }
   };
   const handleDetailClick = (entry: FinanceiroEntry) => { setDetailEntry(entry); setDetailDialogOpen(true); };
 
@@ -809,11 +846,18 @@ const Financeiro = () => {
         dict={dictHandlers}
       />
 
-      <DeleteEntryDialog
+      <EstornarDialog
         open={deleteDialogOpen}
         protocolo={deletingProtocolo}
-        onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={handleDeleteConfirm}
+        tipoLabel={
+          estornoTarget?.tipo === "saida"
+            ? "Despesa"
+            : estornoTarget?.origem === "fatura_convenio"
+              ? "Fatura"
+              : "Recebimento"
+        }
+        onClose={() => { setDeleteDialogOpen(false); setEstornoTarget(null); }}
+        onConfirm={handleEstornarConfirm}
       />
 
       <DetailEntryDialog
