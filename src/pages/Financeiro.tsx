@@ -93,6 +93,7 @@ import CaixaTab from "./Financeiro/components/CaixaTab";
 import EntradasTab from "./Financeiro/components/EntradasTab";
 import SaidasTab from "./Financeiro/components/SaidasTab";
 import AReceberTab from "./Financeiro/components/AReceberTab";
+import ConveniosTab from "./Financeiro/components/ConveniosTab";
 import PainelTab from "./Financeiro/components/PainelTab";
 import { FinanceiroProvider, type FinanceiroContextValue } from "./Financeiro/FinanceiroContext";
 import { computePeriodoRange } from "./Financeiro/services/periodoRapido";
@@ -764,6 +765,9 @@ const Financeiro = () => {
 
           {/* ─── Tab A Receber (Fase 4 — Passo 4): consome FinanceiroContext ─── */}
           {activeTab === "a_receber" && <AReceberTab />}
+
+          {/* ─── Tab Convênios (Fase 7): área dedicada (em aberto + faturas) ─── */}
+          {activeTab === "convenios" && <ConveniosTab />}
 
 
 

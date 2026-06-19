@@ -1,11 +1,11 @@
 // Tipos extraídos de Financeiro.tsx (Sprint 1 — slicing estrutural).
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard,
+  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard, Building2,
 } from "lucide-react";
 import type { MockAtendimento } from "@/data/types";
 
-export type TabType = "painel" | "entrada" | "a_receber" | "saida" | "caixa" | "integracoes";
+export type TabType = "painel" | "entrada" | "a_receber" | "convenios" | "saida" | "caixa" | "integracoes";
 
 export type SaidaStatusFilter = "todas" | "vencidas" | "vencendo7" | "pagas";
 
@@ -75,6 +75,7 @@ export const baseTabs: { key: TabType; label: string; icon: LucideIcon }[] = [
   { key: "painel", label: "Painel", icon: LayoutDashboard },
   { key: "entrada", label: "Recebimentos", icon: ArrowDownCircle },
   { key: "a_receber", label: "A Receber", icon: Clock },
+  { key: "convenios", label: "Convênios", icon: Building2 },
   { key: "saida", label: "Saídas", icon: ArrowUpCircle },
   { key: "caixa", label: "Caixa", icon: BookOpen },
 ];
