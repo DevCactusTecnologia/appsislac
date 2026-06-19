@@ -195,6 +195,8 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
     const dataPgtoISO = ddmmyyyyToISO(saida.dataPagamento);
     const dataISO = ddmmyyyyToISODateTime(saida.foiPago === "Sim" ? saida.dataPagamento : saida.dataVencimento);
 
+    const statusFinal: SaidaStatus = saida.status
+      ?? (saida.foiPago === "Sim" ? "paga" : "aberta");
     const insertPayload: SaidaInsert = {
       tenant_id: tenantId,
       protocolo: protocoloProvisorio,
@@ -205,8 +207,9 @@ export async function addSaida(saida: FinanceiroSaida): Promise<void> {
       tipo_despesa: saida.tipoDespesa,
       destino_pagamento: saida.destinoPagamento,
       data_vencimento: dataVencISO,
-      foi_pago: saida.foiPago === "Sim",
+      foi_pago: statusFinal === "paga",
       data_pagamento: dataPgtoISO,
+      status: statusFinal,
     };
     const data = await persistOneOrThrow<Pick<SaidaRow, "id" | "protocolo">>(
       supabase.from("financeiro_saidas").insert(insertPayload),
