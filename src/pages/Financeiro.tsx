@@ -627,8 +627,13 @@ const Financeiro = () => {
     [detailAtendimento],
   );
 
-  const { totalExames: detailTotalExames, totalPago: detailTotalPago, saldo: detailSaldo } =
-    computeDetailTotals(detailExames, detailAtendimento);
+  const {
+    totalExames: detailTotalExames,
+    subtotalExames: detailSubtotalExames,
+    descontoExames: detailDescontoExames,
+    totalPago: detailTotalPago,
+    saldo: detailSaldo,
+  } = computeDetailTotals(detailExames, detailAtendimento);
 
   /* ─── Render helpers ─── */
 
