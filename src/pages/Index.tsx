@@ -310,7 +310,7 @@ function CancelDialog({ open, onClose, onConfirm, pacienteNome }: {
   const motivoFinal = selectedMotivo === "Outro" ? motivoCustom.trim() : selectedMotivo;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={onClose} />
       <div className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-lg border border-border shadow-md overflow-hidden">
         {/* Header */}

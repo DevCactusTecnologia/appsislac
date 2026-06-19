@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Stethoscope, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
@@ -143,8 +144,8 @@ const CadastroEspecialistaDialog = ({ open, onClose, especialista }: CadastroEsp
 
   const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200 disabled:opacity-60";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+  return createPortal((
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={() => !saving && onClose()} />
       <div className="relative w-full max-w-xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden">
         {/* Header */}
@@ -264,7 +265,7 @@ const CadastroEspecialistaDialog = ({ open, onClose, especialista }: CadastroEsp
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 };
 
 export default CadastroEspecialistaDialog;

@@ -512,7 +512,7 @@ const Auditoria = () => {
 
       {/* Detail dialog */}
       {detailLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={() => setDetailLog(null)} />
           <div className="relative bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] w-full max-w-lg max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-y-auto p-8 animate-fade-in-up">
             <div className="flex items-center gap-3 mb-6">

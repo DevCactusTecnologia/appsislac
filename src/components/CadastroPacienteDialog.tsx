@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   X, Shield, Save, Loader2, Check, AlertCircle,
   AlertTriangle, UserCircle2,
@@ -174,8 +175,8 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
     .map((p: string) => p[0]?.toUpperCase() || "")
     .join("") || "?";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+  return createPortal((
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={() => !loading && onClose()} />
       <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] sm:max-h-[92vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden">
         {/* Header */}
@@ -479,5 +480,5 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

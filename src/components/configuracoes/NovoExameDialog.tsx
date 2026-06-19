@@ -18,6 +18,7 @@
 // permanecem no `form` state (inicializados a partir de editData) e são
 // salvos normalmente — apenas não aparecem mais na UI principal.
 import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   X, FlaskConical, Save, AlertCircle, Zap, Building2, FileText,
   Beaker, ClipboardCheck, Info, ChevronDown, Snowflake, History,
@@ -286,9 +287,9 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
 
   const showHistoricoBanner = !!editData?.id && (usageCount ?? 0) > 0;
 
-  return (
+  return createPortal((
     <TooltipProvider delayDuration={150}>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={onClose} />
       <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden">
 
@@ -652,7 +653,7 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
       </div>
     </div>
     </TooltipProvider>
-  );
+  ), document.body);
 };
 
 export default NovoExameDialog;

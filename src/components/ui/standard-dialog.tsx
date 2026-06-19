@@ -1,4 +1,5 @@
 import { Maximize2, Minimize2, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { ReactNode, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
@@ -66,10 +67,10 @@ const StandardDialog = ({
     ? "relative w-full h-full max-w-none max-h-none flex flex-col bg-card rounded-none border-0 shadow-none overflow-hidden"
     : `relative w-full ${widthMap[maxWidth]} max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden`;
 
-  return (
+  return createPortal((
     <AnimatePresence>
       {open && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding}`}>
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center ${containerPadding}`}>
           <motion.div
             className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]"
             onClick={onClose}
@@ -135,7 +136,7 @@ const StandardDialog = ({
         </div>
       )}
     </AnimatePresence>
-  );
+  ), document.body);
 };
 
 export default StandardDialog;
