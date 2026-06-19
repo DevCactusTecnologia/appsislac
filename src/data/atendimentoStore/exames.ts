@@ -126,8 +126,11 @@ export async function getExamesOperacionaisByStatus(
   }
 
   // Buscar sexo dos pacientes (evita hardcode "M").
-  // Resolve por paciente_id e — quando ausente — por CPF (atendimentos legados
-  // podem não ter `paciente_id` preenchido, mas o CPF é único na tabela).
+  // Resolve em cascata: por `paciente_id` → por CPF → por nome+nascimento.
+  // Atendimentos legados podem não ter `paciente_id` preenchido e o CPF
+  // pode estar vazio/placeholder ("00000000000"); o casamento por
+  // nome+nascimento cobre esses casos sem chutar sexo.
+  const isCpfValido = (c: string) => c.length === 11 && !/^(\d)\1{10}$/.test(c);
   const pacIds = Array.from(
     new Set((atRows ?? []).map((a) => a.paciente_id).filter((v): v is number => v != null))
   );
@@ -136,11 +139,22 @@ export async function getExamesOperacionaisByStatus(
       (atRows ?? [])
         .filter((a) => a.paciente_id == null)
         .map((a) => (a.paciente_cpf ?? "").replace(/\D/g, ""))
-        .filter((c) => c.length > 0),
+        .filter(isCpfValido),
+    ),
+  );
+  const nomesSemId = Array.from(
+    new Set(
+      (atRows ?? [])
+        .filter((a) => a.paciente_id == null)
+        .map((a) => (a.paciente_nome ?? "").trim())
+        .filter((n) => n.length > 0),
     ),
   );
   const sexoByPacId = new Map<number, string>();
   const sexoByCpf = new Map<string, string>();
+  const sexoByNomeNasc = new Map<string, string>();
+  const keyNomeNasc = (nome: string, nasc: string | null | undefined) =>
+    `${nome.trim().toUpperCase()}|${(nasc ?? "").slice(0, 10)}`;
   if (pacIds.length > 0) {
     const { data: pacRows } = await supabase
       .from("pacientes")
@@ -158,6 +172,16 @@ export async function getExamesOperacionaisByStatus(
       if (cpf) sexoByCpf.set(cpf, (p.sexo as string) || "");
     });
   }
+  if (nomesSemId.length > 0) {
+    const { data: pacRows } = await supabase
+      .from("pacientes")
+      .select("nome, data_nascimento, sexo")
+      .in("nome", nomesSemId);
+    (pacRows ?? []).forEach((p) => {
+      const k = keyNomeNasc(String(p.nome ?? ""), p.data_nascimento as string | null);
+      if (!sexoByNomeNasc.has(k)) sexoByNomeNasc.set(k, (p.sexo as string) || "");
+    });
+  }
 
   return (atRows ?? []).map((at) => {
     const exs = examesByAt.get(at.id) ?? [];
@@ -165,7 +189,8 @@ export async function getExamesOperacionaisByStatus(
     const cpfDigits = (at.paciente_cpf ?? "").replace(/\D/g, "");
     const sexoResolvido =
       (at.paciente_id != null ? sexoByPacId.get(at.paciente_id) : undefined) ||
-      (cpfDigits ? sexoByCpf.get(cpfDigits) : undefined) ||
+      (isCpfValido(cpfDigits) ? sexoByCpf.get(cpfDigits) : undefined) ||
+      sexoByNomeNasc.get(keyNomeNasc(at.paciente_nome ?? "", at.paciente_nascimento)) ||
       "";
     return {
       id: at.id,
