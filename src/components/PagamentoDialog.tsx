@@ -180,6 +180,7 @@ const PagamentoDialog = ({
     onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
+    setDescontoHistRemovido(false);
     onClose();
   };
 
