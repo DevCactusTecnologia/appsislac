@@ -430,9 +430,26 @@ const PagamentoDialog = ({
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-sm font-semibold tabular-nums" style={{ color }}>{sign}{fmtBRL(eff)}</span>
-                          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {confirmingRemove === `staging-${i}` ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => { remove(i); setConfirmingRemove(null); }}
+                                className="px-2 h-6 rounded-md text-[10px] font-semibold bg-destructive text-destructive-foreground hover:opacity-90 transition"
+                              >
+                                Remover
+                              </button>
+                              <button
+                                onClick={() => setConfirmingRemove(null)}
+                                className="px-2 h-6 rounded-md text-[10px] font-semibold border border-border text-muted-foreground hover:text-foreground transition"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmingRemove(`staging-${i}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200" aria-label="Remover pagamento">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
