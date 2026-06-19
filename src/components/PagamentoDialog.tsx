@@ -363,7 +363,7 @@ const PagamentoDialog = ({
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
                           {onRemovePagamentoRealizado && (
-                            confirmingRemove === i ? (
+                            confirmingRemove === `real-${i}` ? (
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => { onRemovePagamentoRealizado(i); setConfirmingRemove(null); }}
@@ -379,7 +379,7 @@ const PagamentoDialog = ({
                                 </button>
                               </div>
                             ) : (
-                              <button onClick={() => setConfirmingRemove(i)} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label="Remover pagamento">
+                              <button onClick={() => setConfirmingRemove(`real-${i}`)} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label="Remover pagamento">
                                 <Trash2 className="h-3 w-3 text-destructive" />
                               </button>
                             )
