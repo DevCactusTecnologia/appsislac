@@ -205,6 +205,7 @@ const ResultadoDetalhe = () => {
     // tenha um layout. Terceirizados não passam por essa pipeline (são
     // renderizados pelo painel de apoio).
     const segmentosPorRowId: Record<number, DigitacaoSegmento[]> = {};
+    const layoutHtmlMap: Record<string, string> = {};
     await Promise.all(
       rows.map(async (row) => {
         if (row.tipo_processo === "TERCEIRIZADO") return;
@@ -219,12 +220,20 @@ const ResultadoDetalhe = () => {
             (row.resultados as Record<string, unknown> | null) ?? null,
           );
           segmentosPorRowId[row.id] = segs;
+          // Captura o HTML do layout padrão (já garantido pelo auto-seed
+          // dentro de `hidratarSegmentosParaDigitacao`).
+          const layouts = getLayouts(row.exame_id);
+          const padrao = layouts.find((l) => l.padrao) ?? layouts[0];
+          if (padrao?.conteudo) {
+            layoutHtmlMap[row.exame_id] = padrao.conteudo;
+          }
         } catch (err) {
           // Silencioso: cai no fallback degenerado de buildExamesFromDB.
           if (import.meta.env.DEV) console.warn("[ResultadoDetalhe] hidratacao falhou", err);
         }
       }),
     );
+    setLayoutHtmlByExameId(layoutHtmlMap);
     const { exames, idMap } = buildExamesFromDB(rows, segmentosPorRowId);
     const pac = buildPacienteFromAtendimento(id, exames, atFromDb);
     pac.idade = calcIdadeAnosMeses(pac.nascimento);
