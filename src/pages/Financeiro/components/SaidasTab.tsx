@@ -1,120 +1,269 @@
-// SaidasTab — cards de status + filtros + tabela compartilhada.
-// Fase 4 — Passo 3. JSX extraído de Financeiro.tsx (linhas 718-756 + 875-941 slice "saida").
-// Consome estado/handlers via FinanceiroContext.
-import {
-  Search, Plus, AlertOctagon, Clock, CheckCircle2, CircleDollarSign,
-} from "lucide-react";
+// SaidasTab — Fase 6 V2 (Despesas enxutas).
+//
+// Filosofia: olhou, entendeu, usou.
+//   • Filtro por status: Todas · Aberta · Paga · Cancelada (chips).
+//   • Tabela enxuta: Descrição · Categoria · Forma · Vencimento · Valor · Status (+ ações).
+//   • Sem cards de resumo (Painel cobre o macro), sem busca textual extra,
+//     sem filtros adicionais.
+//   • Status oficial: aberta | paga | cancelada (vindo de financeiro_saidas.status).
+import { useMemo, useState } from "react";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import SearchableSelect from "@/components/financeiro/SearchableSelect";
 import { useFinanceiroContext } from "../FinanceiroContext";
-import EntradasSaidasTable from "./EntradasSaidasTable";
+import { getSaidas, updateSaida } from "@/data/financeiroStore";
+import type { FinanceiroEntry } from "../types";
+import { saidaToEntry, parseDate } from "../helpers";
+import NovaDespesaDialog from "./dialogs/NovaDespesaDialog";
+import { toast } from "@/hooks/use-toast";
+
+type StatusFilter = "todas" | "aberta" | "paga" | "cancelada";
+
+const FILTROS: Array<{ key: StatusFilter; label: string }> = [
+  { key: "todas",     label: "Todas" },
+  { key: "aberta",    label: "Aberta" },
+  { key: "paga",      label: "Paga" },
+  { key: "cancelada", label: "Cancelada" },
+];
+
+function StatusPill({ status, vencida }: { status: "aberta" | "paga" | "cancelada"; vencida: boolean }) {
+  if (status === "paga") {
+    return <span className="inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900">Paga</span>;
+  }
+  if (status === "cancelada") {
+    return <span className="inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium bg-muted text-muted-foreground border-border">Cancelada</span>;
+  }
+  // aberta
+  if (vencida) {
+    return <span className="inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900">Vencida</span>;
+  }
+  return <span className="inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900">Aberta</span>;
+}
 
 export default function SaidasTab() {
   const {
-    saidaCounts,
-    saidaStatusFilter, setSaidaStatusFilter,
-    setCurrentPage, setSaidasSelecionadas,
-    searchQuery, setSearchQuery,
-    tipoDespesaFilter, setTipoDespesaFilter,
-    destinoPagamentoFilter, setDestinoPagamentoFilter,
-    tiposDespesa, destinosPagamento,
-    deletableTipos, deletableDestinos,
-    openCriar, handleDeleteItem,
-    setDialogTipo, setDialogOpen,
+    handleEditClick, handleDeleteClick,
+    tiposDespesa, formasPagamento, destinosPagamento,
+    currentPage, setCurrentPage, itemsPerPage,
   } = useFinanceiroContext();
 
+  const [filter, setFilter] = useState<StatusFilter>("todas");
+  const [novaOpen, setNovaOpen] = useState(false);
+
+  const todas = useMemo(() => getSaidas().map(saidaToEntry), []);
+  // O store atualiza por subscribe; mas para simplicidade usamos um tick local
+  // disparado por re-mount do dialog. (Os outros tabs também leem do store.)
+
+  const filtered = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return todas.filter(e => {
+      const status = (e.statusSaida ?? (e.foiPago === "Sim" ? "paga" : "aberta")) as "aberta" | "paga" | "cancelada";
+      if (filter !== "todas" && status !== filter) return false;
+      return true;
+    });
+  }, [todas, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const start = (currentPage - 1) * itemsPerPage;
+  const end = start + paginated.length;
+
+  const marcarPaga = async (entry: FinanceiroEntry) => {
+    try {
+      const hojeBR = new Date().toLocaleDateString("pt-BR");
+      await updateSaida(entry.protocolo, {
+        status: "paga",
+        foiPago: "Sim",
+        dataPagamento: hojeBR,
+      });
+      toast({ title: "Despesa marcada como paga" });
+    } catch (e) {
+      toast({ title: "Falha ao atualizar", description: (e as Error)?.message, variant: "destructive" });
+    }
+  };
+
+  const cancelar = async (entry: FinanceiroEntry) => {
+    try {
+      await updateSaida(entry.protocolo, { status: "cancelada", foiPago: "Não" });
+      toast({ title: "Despesa cancelada" });
+    } catch (e) {
+      toast({ title: "Falha ao cancelar", description: (e as Error)?.message, variant: "destructive" });
+    }
+  };
+
   return (
-    <>
-      {/* ─── Cards de status (Saídas) ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        {([
-          { key: "todas", label: "Total", count: saidaCounts.todas, value: saidaCounts.totalPendentes + saidaCounts.totalPagas, icon: CircleDollarSign, tone: "neutral" },
-          { key: "vencidas", label: "Vencidas", count: saidaCounts.vencidas, value: saidaCounts.totalVencidas, icon: AlertOctagon, tone: "bad" },
-          { key: "vencendo7", label: "Vencem em 7 dias", count: saidaCounts.vencendo7, value: saidaCounts.totalVencendo7, icon: Clock, tone: "warn" },
-          { key: "pagas", label: "Pagas", count: saidaCounts.pagas, value: saidaCounts.totalPagas, icon: CheckCircle2, tone: "good" },
-        ] as const).map(card => {
-          const Icon = card.icon;
-          const active = saidaStatusFilter === card.key;
-          const toneStyles = {
-            neutral: { icon: "text-muted-foreground", accent: "bg-foreground" },
-            bad: { icon: "text-destructive", accent: "bg-destructive" },
-            warn: { icon: "text-status-warning", accent: "bg-status-warning" },
-            good: { icon: "text-status-success", accent: "bg-status-success" },
-          }[card.tone];
-          return (
-            <button
-              key={card.key}
-              onClick={() => { setSaidaStatusFilter(card.key); setCurrentPage(1); setSaidasSelecionadas(new Set()); }}
-              className={cn(
-                "relative rounded-lg border bg-card px-3 py-2.5 text-left transition-colors overflow-hidden",
-                active ? "border-primary/40 bg-muted/30" : "border-border/60 hover:bg-muted/20",
-              )}
-            >
-              {active && (<span className={cn("absolute left-0 top-0 bottom-0 w-0.5", toneStyles.accent)} />)}
-              <div className="flex items-center gap-2 mb-1.5">
-                <Icon className={cn("h-3.5 w-3.5 shrink-0", toneStyles.icon)} />
-                <span className="text-[11px] font-medium text-muted-foreground truncate">{card.label}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
-                <p className="text-lg sm:text-base font-semibold text-foreground tabular-nums leading-none">{card.count}</p>
-                <p className="text-[11px] text-muted-foreground tabular-nums truncate">{fmtBRL(card.value)}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ─── Filtros ─── */}
-      <div className="rounded-3xl border border-border/60 bg-card p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input type="text" placeholder="Pesquisar por nome, protocolo..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-border/60 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all" />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <SearchableSelect
-              value={tipoDespesaFilter === "all" ? "Todos" : tipoDespesaFilter}
-              onChange={v => {
-                const val = !v || v === "Todos" ? "all" : v;
-                setTipoDespesaFilter(val);
-                setCurrentPage(1);
-              }}
-              onCreateRequest={(typed) => openCriar("tipo_despesa", typed, (nome) => { setTipoDespesaFilter(nome); setCurrentPage(1); })}
-              options={["Todos", ...tiposDespesa]}
-              placeholder="Tipo despesa"
-              allowCreate
-              size="sm"
-              className="w-44"
-              deletableOptions={deletableTipos}
-              onDelete={(v) => void handleDeleteItem("tipo_despesa", v)}
-            />
-            <SearchableSelect
-              value={destinoPagamentoFilter === "all" ? "Todos" : destinoPagamentoFilter}
-              onChange={v => {
-                const val = !v || v === "Todos" ? "all" : v;
-                setDestinoPagamentoFilter(val);
-                setCurrentPage(1);
-              }}
-              onCreateRequest={(typed) => openCriar("destino_pagamento", typed, (nome) => { setDestinoPagamentoFilter(nome); setCurrentPage(1); })}
-              options={["Todos", ...destinosPagamento]}
-              placeholder="Destino"
-              allowCreate
-              size="sm"
-              className="w-44"
-              deletableOptions={deletableDestinos}
-              onDelete={(v) => void handleDeleteItem("destino_pagamento", v)}
-            />
-            <Button onClick={() => { setDialogTipo("saida"); setDialogOpen(true); }} className="rounded-2xl h-10 gap-2 text-xs font-semibold px-5">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nova saída</span>
-              <span className="sm:hidden">Adicionar</span>
-            </Button>
-          </div>
+    <div className="space-y-4">
+      {/* ─── Header: chips + nova despesa ─── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30 w-fit">
+          {FILTROS.map(f => {
+            const active = filter === f.key;
+            return (
+              <button
+                key={f.key}
+                onClick={() => { setFilter(f.key); setCurrentPage(1); }}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-card/60",
+                )}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
+        <Button onClick={() => setNovaOpen(true)} className="rounded-2xl h-10 gap-2 text-xs font-semibold px-5">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Nova despesa</span>
+          <span className="sm:hidden">Adicionar</span>
+        </Button>
       </div>
 
-      <EntradasSaidasTable />
-    </>
+      {/* ─── Tabela ─── */}
+      <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border/40 bg-muted/20">
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Forma</th>
+                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</th>
+                <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor</th>
+                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[140px]"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.length === 0 ? (
+                <tr><td colSpan={7} className="text-center py-16 text-sm text-muted-foreground">Nenhuma despesa encontrada</td></tr>
+              ) : paginated.map(entry => {
+                const status = (entry.statusSaida ?? (entry.foiPago === "Sim" ? "paga" : "aberta")) as "aberta" | "paga" | "cancelada";
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const venc = entry.dataVencimento ? parseDate(entry.dataVencimento) : null;
+                const vencida = status === "aberta" && venc !== null && venc < today;
+                return (
+                  <tr key={entry.protocolo} className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors group">
+                    <td className="px-5 py-4 max-w-[280px]">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-foreground truncate">{entry.descricao || entry.cliente || "—"}</span>
+                        <span className="text-[11px] text-muted-foreground tabular-nums">{entry.protocolo}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{entry.tipoDespesa || "—"}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{entry.pagamento || "—"}</td>
+                    <td className="px-5 py-4 text-sm text-foreground tabular-nums">{entry.dataVencimento || "—"}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-foreground tabular-nums text-right">
+                      {fmtBRL(entry.valorTotal)}
+                    </td>
+                    <td className="px-5 py-4 text-center"><StatusPill status={status} vencida={vencida} /></td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {status === "aberta" && (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Marcar como paga"
+                            onClick={() => marcarPaga(entry)}>
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          </Button>
+                        )}
+                        {status === "aberta" && (
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Cancelar despesa"
+                            onClick={() => cancelar(entry)}>
+                            <XCircle className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Editar"
+                          onClick={() => handleEditClick(entry)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Excluir"
+                          onClick={() => handleDeleteClick(entry.protocolo)}>
+                          <Trash2 className="h-4 w-4 text-rose-600" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile */}
+        <div className="md:hidden divide-y divide-border/30">
+          {paginated.length === 0 ? (
+            <div className="p-16 text-center text-sm text-muted-foreground">Nenhuma despesa encontrada</div>
+          ) : paginated.map(entry => {
+            const status = (entry.statusSaida ?? (entry.foiPago === "Sim" ? "paga" : "aberta")) as "aberta" | "paga" | "cancelada";
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const venc = entry.dataVencimento ? parseDate(entry.dataVencimento) : null;
+            const vencida = status === "aberta" && venc !== null && venc < today;
+            return (
+              <div key={entry.protocolo} className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">{entry.descricao || entry.cliente || "—"}</p>
+                    <p className="text-[11px] text-muted-foreground tabular-nums">
+                      {entry.tipoDespesa || "—"} · venc {entry.dataVencimento || "—"}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground shrink-0 tabular-nums">{fmtBRL(entry.valorTotal)}</p>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <StatusPill status={status} vencida={vencida} />
+                  <div className="flex items-center gap-1">
+                    {status === "aberta" && (
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => marcarPaga(entry)}>
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      </Button>
+                    )}
+                    {status === "aberta" && (
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => cancelar(entry)}>
+                        <XCircle className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleEditClick(entry)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Paginação */}
+        {filtered.length > itemsPerPage && (
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-border/40 bg-muted/10">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {start + 1}–{end} de {filtered.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground px-2 tabular-nums">{currentPage} / {totalPages}</span>
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage >= totalPages}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Nova despesa */}
+      {novaOpen && (
+        <NovaDespesaDialog
+          open={novaOpen}
+          onClose={() => setNovaOpen(false)}
+          tiposDespesa={tiposDespesa}
+          formasPagamento={formasPagamento}
+          destinosPagamento={destinosPagamento}
+        />
+      )}
+    </div>
   );
 }
