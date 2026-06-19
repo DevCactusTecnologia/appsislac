@@ -59,16 +59,18 @@ function notify() {
 
 function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return "";
+  // Conceitualmente é uma data de calendário (data do pagamento/lançamento).
+  // NUNCA converter para timezone local — isso desloca o dia ±1 e faz com que
+  // pagamentos de hoje (UTC 00:00) apareçam como "ontem 17:00:00" para o usuário,
+  // quebrando os cards "Receita Hoje" do Painel e a coluna Data da aba Recebido.
+  // Extrai diretamente os componentes YYYY-MM-DD do prefixo ISO.
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  // Fallback (formato inesperado): usa parse padrão sem hora.
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  const dd = pad(d.getDate());
-  const mm = pad(d.getMonth() + 1);
-  const yyyy = d.getFullYear();
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  const ss = pad(d.getSeconds());
-  return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 function formatDateOnlyBR(s: string | null | undefined): string {
