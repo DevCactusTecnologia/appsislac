@@ -313,13 +313,16 @@ const Financeiro = () => {
     aReceberStatusFilter === "parciais" ? "parcial"
     : aReceberStatusFilter === "pendentes" ? "pendente"
     : null;
+  // Painel também precisa dos dados de A Receber para o card "A Receber" e
+  // para o card "Convênios Pendentes" — não basta carregar só na aba dedicada.
+  const aReceberEnabled = activeTab === "a_receber" || activeTab === "painel";
   const {
     rows:    rpcRows,
     loading: rpcLoading,
     hasMore: rpcHasMore,
     loadMore: rpcLoadMore,
     refresh: rpcRefresh,
-  } = useAReceberPacientes(activeTab === "a_receber", {
+  } = useAReceberPacientes(aReceberEnabled, {
     search: searchQuery || undefined,
     dateFrom,
     dateTo,
@@ -334,9 +337,9 @@ const Financeiro = () => {
   });
 
   const aReceberSource: AReceberRow[] = useMemo(() => {
-    if (activeTab !== "a_receber") return [];
+    if (!aReceberEnabled) return [];
     return buildAReceberRowsFromRpc(rpcRows);
-  }, [activeTab, rpcRows]);
+  }, [aReceberEnabled, rpcRows]);
 
   // Após mutações no atendimentoStore, refresca o RPC (não confiar em cache local).
   useEffect(() => {
@@ -348,7 +351,7 @@ const Financeiro = () => {
   const {
     rows: aReceberConvenioRowsV2,
     refresh: refreshConvenios,
-  } = useAReceberConvenios(activeTab === "a_receber");
+  } = useAReceberConvenios(aReceberEnabled);
   const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(
     () => aReceberConvenioRowsV2.map((r) => ({
       convenioId:    r.convenioId,
