@@ -542,6 +542,9 @@ const NovoAtendimento = () => {
           convenioNome: atendimento.convenio,
           metaValor: meta?.valor,
         }),
+        // valorOriginal = preço cheio antes do desconto distribuído.
+        // Fallback explícito para meta.valor (sem desconto histórico).
+        valorOriginal: meta?.valorOriginal ?? meta?.valor,
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
@@ -652,6 +655,15 @@ const NovoAtendimento = () => {
   // do convênio (módulo Financeiro › A Receber › Convênios), portanto NÃO entram no que o paciente paga.
   const subtotal = exames.reduce((sum, e) => e.cobrancaDestino === "convenio" ? sum : sum + e.valor, 0);
   const subtotalConvenio = exames.reduce((sum, e) => e.cobrancaDestino === "convenio" ? sum + e.valor : sum, 0);
+  // Subtotal calculado pelo valor cheio (valorOriginal) — usado apenas para exibição.
+  const subtotalOriginal = exames.reduce((sum, e) => {
+    if (e.cobrancaDestino === "convenio") return sum;
+    return sum + (e.valorOriginal ?? e.valor);
+  }, 0);
+  // Desconto embutido nos exames (distribuído ao salvar). Não altera lógica de save.
+  const descontoHistorico = Math.max(0, Math.round((subtotalOriginal - subtotal) * 100) / 100);
+  // Desconto exibido no resumo = histórico (já embutido no valor) + manual (state).
+  const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
   const saldoDevedor = Math.max(0, total - valorPago);
 
@@ -1913,9 +1925,16 @@ const NovoAtendimento = () => {
                                 </select>
                               )}
 
-                              <span className="h-9 inline-flex items-center text-sm font-bold text-foreground whitespace-nowrap min-w-[72px] md:min-w-[80px] justify-end tabular-nums shrink-0">
-                                {fmtBRL(exame.valor)}
-                              </span>
+                              <div className="h-9 inline-flex flex-col items-end justify-center whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0 leading-tight">
+                                {exame.valorOriginal != null && exame.valorOriginal > exame.valor && (
+                                  <span className="text-[10px] text-muted-foreground line-through">
+                                    {fmtBRL(exame.valorOriginal)}
+                                  </span>
+                                )}
+                                <span className="text-sm font-bold text-foreground">
+                                  {fmtBRL(exame.valor)}
+                                </span>
+                              </div>
 
                               <button
                                 type="button"
@@ -1961,11 +1980,18 @@ const NovoAtendimento = () => {
 
                 {/* Summary bar */}
                 {exames.length > 0 && (
-                  <div className="flex items-center justify-between px-5 py-3 bg-primary/5 border border-primary/15 rounded-2xl">
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3 px-5 py-3 bg-primary/5 border border-primary/15 rounded-2xl flex-wrap">
+                    <span className="text-sm text-muted-foreground shrink-0">
                       <span className="font-bold text-foreground">{filteredExames.length}</span> exame{filteredExames.length !== 1 ? "s" : ""}
                     </span>
-                    <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
+                    <div className="flex items-baseline gap-2 tabular-nums whitespace-nowrap">
+                      {descontoHistorico > 0 && (
+                        <span className="text-[11px] text-muted-foreground line-through">
+                          {fmtBRL(subtotalOriginal)}
+                        </span>
+                      )}
+                      <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
+                    </div>
                   </div>
                 )}
 
@@ -2109,14 +2135,14 @@ const NovoAtendimento = () => {
                           <span className="text-muted-foreground">Itens</span>
                           <span className="font-semibold text-foreground">{exames.length}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="font-semibold text-foreground">{fmtBRL(subtotal)}</span>
+                        <div className="flex justify-between text-sm gap-2">
+                          <span className="text-muted-foreground shrink-0">Subtotal</span>
+                          <span className="font-semibold text-foreground tabular-nums whitespace-nowrap">{fmtBRL(subtotalOriginal)}</span>
                         </div>
-                        {desconto > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Desconto</span>
-                            <span className="font-semibold text-[hsl(var(--status-success))]">- {fmtBRL(desconto)}</span>
+                        {descontoExibido > 0 && (
+                          <div className="flex justify-between text-sm gap-2">
+                            <span className="text-muted-foreground shrink-0">Desconto</span>
+                            <span className="font-semibold text-[hsl(var(--status-success))] tabular-nums whitespace-nowrap">− {fmtBRL(descontoExibido)}</span>
                           </div>
                         )}
                       </div>
