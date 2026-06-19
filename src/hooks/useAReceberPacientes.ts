@@ -201,6 +201,8 @@ export interface AReceberConvenioDTO {
   saldo: number;
   qtdExames: number;
   qtdPacientes: number;
+  /** Atendimento mais antigo com exame em aberto (Fase 5 V2). */
+  desde: string | null;
 }
 
 export function useAReceberConvenios(
@@ -225,12 +227,14 @@ export function useAReceberConvenios(
       const list: AReceberConvenioDTO[] = (data ?? []).map((r: {
         ref_id: number; quem: string; saldo: number | string;
         qtd_exames: number | null; qtd_pacientes: number | null;
+        desde: string | null;
       }) => ({
         convenioId:    Number(r.ref_id),
         convenioNome:  r.quem,
         saldo:         Number(r.saldo) || 0,
         qtdExames:     Number(r.qtd_exames) || 0,
         qtdPacientes:  Number(r.qtd_pacientes) || 0,
+        desde:         r.desde ?? null,
       }));
       setRows(list);
     } catch (e: unknown) {

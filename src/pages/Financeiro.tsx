@@ -354,6 +354,7 @@ const Financeiro = () => {
       saldo:         Math.round(r.saldo * 100) / 100,
       qtdExames:     r.qtdExames,
       qtdPacientes:  r.qtdPacientes,
+      desde:         r.desde,
     })),
     [aReceberConvenioRowsV2],
   );
