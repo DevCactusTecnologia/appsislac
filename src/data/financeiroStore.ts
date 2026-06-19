@@ -12,6 +12,8 @@ type SaidaRow = Tables<"financeiro_saidas">;
 type SaidaInsert = TablesInsert<"financeiro_saidas">;
 type EntradaViewRow = Tables<"financeiro_entradas">;
 
+export type SaidaStatus = "aberta" | "paga" | "cancelada";
+
 export interface FinanceiroSaida {
   protocolo: string;
   data: string;            // dd/mm/yyyy
@@ -22,8 +24,10 @@ export interface FinanceiroSaida {
   destinoPagamento: string;
   descricao: string;
   dataVencimento: string;  // dd/mm/yyyy
-  foiPago: string;         // "Sim" | "Não"
+  foiPago: string;         // "Sim" | "Não" — derivado de status (legado)
   dataPagamento: string;   // dd/mm/yyyy
+  /** Fase 6 V2 — fonte oficial do estado da despesa. */
+  status: SaidaStatus;
 }
 
 export interface FinanceiroEntradaView {
