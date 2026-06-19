@@ -415,6 +415,12 @@ const Financeiro = () => {
     [filtered, entradas, activeTab],
   );
 
+  // Painel (Fase 3 V2) — 6 KPIs derivados de entradas/saídas/A Receber.
+  const painelKpis = useMemo(
+    () => computePainelKpis(entradas, saidas, aReceberSource, aReceberConvenioRows),
+    [entradas, saidas, aReceberSource, aReceberConvenioRows],
+  );
+
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───
   // Apenas movimentos efetivamente realizados entram no caixa.
   // Saídas pendentes NÃO entram (não houve débito de caixa ainda).
