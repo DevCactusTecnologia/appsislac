@@ -102,7 +102,7 @@ function fromRow(r: PacienteRow): Paciente {
 function toRow(p: Partial<Paciente>): PacienteUpdate {
   const row: PacienteUpdate = {};
   if (p.nome !== undefined) row.nome = p.nome;
-  if (p.cpf !== undefined) row.cpf = p.cpf.replace(/\D/g, "");
+  if (p.cpf !== undefined) row.cpf = p.cpf ? p.cpf.replace(/\D/g, "") : null;
   if (p.dataNascimento !== undefined) row.data_nascimento = dateBRtoISO(p.dataNascimento);
   if (p.sexo !== undefined) row.sexo = sexoToShort(p.sexo);
   if (p.telefone !== undefined) row.telefone = p.telefone;
