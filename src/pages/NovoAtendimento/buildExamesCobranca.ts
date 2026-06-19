@@ -18,6 +18,7 @@ export interface ExameCobrancaPayload {
   cobrancaDestino: Exame["cobrancaDestino"];
   convenioCobrancaId: number | null;
   valor: number;
+  valorOriginal: number;
   amostraSeq: number;
   grupoExameId: string | null;
   tipoProcesso: "INTERNO" | "TERCEIRIZADO";
@@ -35,6 +36,7 @@ export function buildExamesCobranca(
     cobrancaDestino: e.cobrancaDestino,
     convenioCobrancaId: e.convenioCobrancaId ?? null,
     valor: e.valor,
+    valorOriginal: e.valorOriginal ?? e.valor,
     amostraSeq: e.amostraSeq ?? 1,
     grupoExameId: e.grupoExameId ?? null,
     tipoProcesso: e.tipoProcesso ?? "INTERNO",
