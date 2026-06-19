@@ -186,3 +186,63 @@ export function useFinanceiroResumo(
 
   return { resumo, loading, refresh: () => { void fetchIt(); } };
 }
+
+// ────────────────────────────────────────────────────────────
+// A Receber — Convênios (Financeiro V2 — Fase 1, SSOT)
+// ------------------------------------------------------------
+// Consome a mesma RPC `financeiro_a_receber_v2` com p_tipo='convenio'.
+// Retorna saldo agregado por convênio (exames com cobrança ao convênio
+// que ainda não foram faturados). Substitui `fetchSaldoEmAbertoPorConvenio`.
+// ────────────────────────────────────────────────────────────
+
+export interface AReceberConvenioDTO {
+  convenioId: number;
+  convenioNome: string;
+  saldo: number;
+  qtdExames: number;
+  qtdPacientes: number;
+}
+
+export function useAReceberConvenios(
+  enabled: boolean,
+  filters: { search?: string } = {},
+): { rows: AReceberConvenioDTO[]; loading: boolean; refresh: () => void } {
+  const [rows, setRows] = useState<AReceberConvenioDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const reqIdRef = useRef(0);
+
+  const fetchIt = useCallback(async () => {
+    if (!enabled) { setRows([]); return; }
+    const myReq = ++reqIdRef.current;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("financeiro_a_receber_v2", {
+        p_tipo:   "convenio",
+        p_search: filters.search ?? undefined,
+      });
+      if (myReq !== reqIdRef.current) return;
+      if (error) throw error;
+      const list: AReceberConvenioDTO[] = (data ?? []).map((r: {
+        ref_id: number; quem: string; saldo: number | string;
+        qtd_exames: number | null; qtd_pacientes: number | null;
+      }) => ({
+        convenioId:    Number(r.ref_id),
+        convenioNome:  r.quem,
+        saldo:         Number(r.saldo) || 0,
+        qtdExames:     Number(r.qtd_exames) || 0,
+        qtdPacientes:  Number(r.qtd_pacientes) || 0,
+      }));
+      setRows(list);
+    } catch (e: unknown) {
+      if (myReq !== reqIdRef.current) return;
+      logger.warn("useAReceberConvenios", (e as Error)?.message);
+      setRows([]);
+    } finally {
+      if (myReq === reqIdRef.current) setLoading(false);
+    }
+  }, [enabled, filters.search]);
+
+  useEffect(() => { void fetchIt(); }, [fetchIt]);
+
+  return { rows, loading, refresh: () => { void fetchIt(); } };
+}
