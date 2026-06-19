@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { RotateCcw, AlertTriangle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { RotateCcw, AlertTriangle, Check, ChevronsUpDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useDicionario } from "@/hooks/useDicionario";
 import { criarRecoleta, type RecoletaEtapa } from "@/data/recoletasStore";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface SolicitarRecoletaDialogProps {
   open: boolean;
@@ -42,8 +45,13 @@ export default function SolicitarRecoletaDialog({
   const [motivoId, setMotivoId] = useState<string>("");
   const [observacao, setObservacao] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [motivoOpen, setMotivoOpen] = useState(false);
 
   const { data: motivos = [] } = useDicionario("recoleta_motivo", { ativosOnly: true });
+  const motivoSelecionado = useMemo(
+    () => motivos.find((m) => m.id === motivoId) ?? null,
+    [motivos, motivoId],
+  );
 
   useEffect(() => {
     if (open) { setMotivoId(""); setObservacao(""); }
@@ -122,16 +130,72 @@ export default function SolicitarRecoletaDialog({
                   Nenhum motivo cadastrado. Contate o administrador.
                 </div>
               ) : (
-                <select
-                  value={motivoId}
-                  onChange={(e) => setMotivoId(e.target.value)}
-                  className="h-11 w-full px-3 rounded-2xl border border-border/60 bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="">Selecione...</option>
-                  {motivos.map((m) => (
-                    <option key={m.id} value={m.id}>{m.label}</option>
-                  ))}
-                </select>
+                <Popover open={motivoOpen} onOpenChange={setMotivoOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      role="combobox"
+                      aria-expanded={motivoOpen}
+                      className={cn(
+                        "h-11 w-full px-3 rounded-2xl border border-border/60 bg-background text-sm flex items-center justify-between gap-2 transition-all duration-200",
+                        "hover:border-border hover:bg-muted/20",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/30",
+                        motivoOpen && "ring-2 ring-primary/30 border-primary/40",
+                      )}
+                    >
+                      <span className={cn("truncate", motivoSelecionado ? "text-foreground" : "text-muted-foreground")}>
+                        {motivoSelecionado ? motivoSelecionado.label : "Selecione ou pesquise um motivo..."}
+                      </span>
+                      <ChevronsUpDown className="h-4 w-4 text-muted-foreground/70 shrink-0" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="p-0 rounded-2xl border-border/60 shadow-[0_16px_48px_-12px_rgba(0,0,0,0.18)] w-[var(--radix-popover-trigger-width)]"
+                    align="start"
+                    sideOffset={6}
+                  >
+                    <Command>
+                      <div className="flex items-center gap-2 px-3 border-b border-border/50">
+                        <Search className="h-4 w-4 text-muted-foreground/70 shrink-0" />
+                        <CommandInput
+                          placeholder="Pesquisar motivo..."
+                          className="h-11 border-0 focus:ring-0 text-sm"
+                        />
+                      </div>
+                      <CommandList className="max-h-64">
+                        <CommandEmpty>
+                          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+                            Nenhum motivo encontrado.
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {motivos.map((m) => {
+                            const selected = m.id === motivoId;
+                            return (
+                              <CommandItem
+                                key={m.id}
+                                value={m.label}
+                                onSelect={() => {
+                                  setMotivoId(m.id);
+                                  setMotivoOpen(false);
+                                }}
+                                className="rounded-lg cursor-pointer text-sm"
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4 mr-2 text-primary shrink-0",
+                                    selected ? "opacity-100" : "opacity-0",
+                                  )}
+                                />
+                                <span className="truncate">{m.label}</span>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
 
