@@ -1071,9 +1071,9 @@ const ResultadoDetalhe = () => {
                                       <AlertCircle className="h-4 w-4 text-status-danger" />
                                     )
                                   )}
-                                   {param.valor ? (
+                                   {displayValor ? (
                                     <span className={`text-sm font-bold ${isOutOfRange ? "text-status-danger" : "text-foreground"}`}>
-                                      {param.tipo === "Select" ? param.valor.toUpperCase() : param.valor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
+                                      {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
                                     </span>
                                   ) : (
                                     <span className="text-sm text-muted-foreground italic">—</span>
@@ -1083,6 +1083,7 @@ const ResultadoDetalhe = () => {
                                 <div className="flex items-center gap-1.5">
                                   <ParamTypedInput
                                     param={param}
+                                    computedValue={computedFormula}
                                     onChange={(v) => updateParametro(exame.id, idx, v)}
                                     disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
                                     className="w-24 text-right"
