@@ -542,6 +542,9 @@ const NovoAtendimento = () => {
           convenioNome: atendimento.convenio,
           metaValor: meta?.valor,
         }),
+        // valorOriginal = preço cheio antes do desconto distribuído.
+        // Fallback explícito para meta.valor (sem desconto histórico).
+        valorOriginal: meta?.valorOriginal ?? meta?.valor,
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
