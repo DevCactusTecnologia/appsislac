@@ -2077,6 +2077,42 @@ export type Database = {
           },
         ]
       }
+      financeiro_audit: {
+        Row: {
+          acao: string
+          antes: Json | null
+          ator_id: string | null
+          criado_em: string
+          depois: Json | null
+          entidade: string
+          entidade_id: string
+          id: number
+          tenant_id: string | null
+        }
+        Insert: {
+          acao: string
+          antes?: Json | null
+          ator_id?: string | null
+          criado_em?: string
+          depois?: Json | null
+          entidade: string
+          entidade_id: string
+          id?: number
+          tenant_id?: string | null
+        }
+        Update: {
+          acao?: string
+          antes?: Json | null
+          ator_id?: string | null
+          criado_em?: string
+          depois?: Json | null
+          entidade?: string
+          entidade_id?: string
+          id?: number
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       financeiro_destinos_pagamento: {
         Row: {
           ativo: boolean
