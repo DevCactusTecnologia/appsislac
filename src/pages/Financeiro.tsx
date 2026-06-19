@@ -15,7 +15,7 @@ import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento 
 import type { MockAtendimento } from "@/data/types";
 // getConvenios removido — A Receber/Convênios agora vem da RPC v2 (Fase 1).
 import {
-  getSaidas, subscribeFinanceiro, removeSaida, updateSaida,
+  getSaidas, subscribeFinanceiro, updateSaida,
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
 } from "@/data/financeiroStore";
 import {
