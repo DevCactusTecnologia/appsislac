@@ -1,54 +1,91 @@
-## Contexto
 
-Você quer **1 único Layout Científico por exame** (não 10 como no LARAVEL0), com a coluna "Valores de Referência" trocando automaticamente conforme sexo + idade do paciente.
+# Financeiro V2 — Laboratorial Simples e Profissional
 
-O motor já existe no SISLAC e resolve `##REF_CHAVE##` em runtime via `src/lib/laudoLayout.ts:buildValueMap` (linhas 119‑135), consultando `valores_referencia` por sexo + faixa etária. Falta apenas: (1) o **autor do layout** usar o placeholder em vez de texto fixo, (2) **3 melhorias** no resolver para cobrir casos reais do hemograma, (3) **uma melhora de UX** na tela de matriz VR.
+Execução em sequência única conforme escolha. Toda mudança preserva multi-tenancy, RLS e histórico. Frontend lê; backend calcula.
 
-## O que muda
+## Premissas confirmadas
 
-### 1. Convenção de autoria do Layout Científico (documentação + exemplo)
-- Na célula "Valores de Referência" do layout, em vez de escrever `Normal: Inferior a 5.7%`, o usuário escreve `##REF_HBA1C##` (ou `##REF_HBA1C## ##UNID_HBA1C##`).
-- Atualizar a memória do projeto (`mem://features/resultados/`) com a convenção.
-- No HEMOGRAMA COMPLETO (auto-seed do layout padrão em `layoutScientificRuntime.ts`), trocar VR fixo por placeholders nos parâmetros: Hemácias, Hemoglobina, Hematócrito, VCM, HCM, CHCM, RDW, Leucócitos, Plaquetas, etc.
+- Estratégia: tudo em sequência (11 fases) num único ciclo de implementação.
+- Migrations: aprovadas para produção (cada fase com schema-change envia uma migration que você aprova em modal).
+- DELETE físico: bloqueado **a partir do deploy** em `atendimento_pagamentos`, `convenio_faturas`, `financeiro_saidas`. Histórico anterior intacto. Super_admin segue regra geral (sem exceção).
 
-### 2. Três correções no resolver (`src/lib/laudoLayout.ts` e `src/data/valoresReferenciaStore.ts`)
+## Escopo NÃO incluído (filosofia: laboratório, não ERP)
 
-**2a. Fallback REF_ por rótulo, não só por chave (linha 130)** 
-Hoje: `if (p.chave) setBoth(\`REF_${p.chave}\`, refTexto)`. 
-Adicionar: também emitir `REF_<rotulo_normalizado>` e `REF_<abreviacao>` para layouts antigos que usam o nome do parâmetro como placeholder.
+Plano de contas contábil, centro de custo, conciliação bancária, parcelamento de despesas, sangria/suprimento, múltiplas gavetas, glosa funcional (apenas estrutura), recebimento parcial de convênio funcional (apenas estrutura).
 
-**2b. Suporte ao campo `descricao` da VR como texto livre (linha 122)** 
-Hoje só monta `"min - max"`. Se a linha de `valores_referencia` tiver `descricao` preenchida (ex.: `"Normal: Inferior a 5.7%"`, `"Pré-diabetes: 5.7% a 6.4%"`), usar `descricao` em vez de `min - max`. Permite VR textual por faixa (caso HbA1c, glicemia).
+## Fases
 
-**2c. Match de parametro_nome mais tolerante** 
-Hoje `resolverReferencia` casa por `p.rotulo` exato. Trocar por match case-insensitive contra `chave | abreviacao | rotulo` — alinha com a lógica já usada em `selectParametrosForLayout` (`layoutScientificRuntime.ts:94‑99`).
+### Fase 1 — SSOT do "A Receber"
+- RPC única `financeiro_a_receber_v2(tenant, filtros)` retornando `{tipo: 'paciente'|'convenio', quem, quanto, desde, status}`.
+- Remove caminho duplicado em `FinanceiroService.ts`. Feature flag antiga eliminada.
+- Documento `docs/financeiro/ssot.md`.
 
-### 3. UX da Matriz de Valores de Referência
-- `src/components/configuracoes/MatrizValoresReferencia.tsx`: hoje gera grade sexo × faixa-etária mas não tem o campo `descricao` por célula. Adicionar input opcional "Texto exibido" (descricao) ao lado de `valorMin/valorMax`. Quando preenchido, o laudo imprime esse texto; quando vazio, cai no `min - max` padrão.
-- Botão "Pré-visualizar como aparecerá no laudo" mostrando a string resolvida.
+### Fase 2 — Normalização de despesas
+- Migration: `ALTER TABLE financeiro_saidas ADD COLUMN forma_pagamento text` (enum lógico: PIX, Dinheiro, Débito, Crédito, Transferência, Boleto).
+- Backfill: parser do sufixo `[pgto:X]` na descrição → coluna nova; sufixo removido da descrição em UPDATE auditado.
+- Compatibilidade: leitura via coluna; legados sem match ficam `NULL` (UI mostra "—").
 
-### 4. O que NÃO muda
-- Schema de `valores_referencia` (todos os campos necessários já existem, inclusive `descricao`).
-- Estrutura de `exame_parametros.valor_referencia` (continua como fallback global).
-- Pipeline de impressão `ResultadoDetalhe.tsx` (já passa sexo+idade corretos).
-- Nada no super-admin / RLS / tenant.
+### Fase 3 — Dashboard Financeiro
+- Nova primeira tela `/financeiro`: 6 cards apenas — Receita Hoje, Receita Mês, A Receber, Despesas Mês, Saldo Atual, Convênios Pendentes.
+- Remove gráficos/indicadores técnicos atuais.
 
-## Resultado para o usuário
+### Fase 4 — Recebimentos
+- Aba enxuta: Data, Paciente, Protocolo, Forma, Valor, Status. Filtros: Hoje, Semana, Mês, Período. Sem mais nada.
 
-- Cria **1 layout** do HEMOGRAMA com placeholders `##REF_HEMOGLOBINA##` etc.
-- Cadastra na Matriz VR de cada parâmetro **as 10 linhas** (sexo × faixa-etária) equivalentes aos 10 filtros do LARAVEL0.
-- Na impressão, paciente masculino de 8 anos vê os limites da linha "M / 5‑11a"; feminina de 30 anos vê "F / 12+". Sem duplicar layout.
+### Fase 5 — A Receber (split)
+- Duas sub-abas claramente separadas: **Pacientes** | **Convênios**. Mesma estrutura de coluna (Quem, Quanto, Desde, Status). Sem mistura.
+
+### Fase 6 — Despesas
+- Form simplificado: Descrição, Categoria, Forma de Pagamento (coluna nova), Vencimento, Valor, Status.
+- Status: Aberta, Paga, Cancelada. Migration adiciona `cancelada` ao domínio se ausente.
+
+### Fase 7 — Convênios (área dedicada)
+- Aba própria: Convênio · Faturas · Valor · Status.
+- Migration prepara colunas em `convenio_faturas`: `valor_glosado numeric NULL`, `valor_recebido_parcial numeric NULL`, `motivo_glosa text NULL`. Apenas estrutura — sem UI funcional para glosa/parcial nesta entrega.
+
+### Fase 8 — Caixa Operacional (opcional)
+- `app_settings`: chave `usar_caixa_operacional` (bool, default `false`). Tenants atuais ficam exatamente como hoje.
+- Migration nova tabela `caixa_sessoes` (tenant_id, unidade_id, aberta_em, fechada_em, responsavel_id, valor_abertura, valor_fechamento, observacoes, status). RLS por tenant + permissão `gestao_financeira` para abrir/fechar.
+- Regras: 1 sessão aberta por unidade; recebimentos do dia se vinculam à sessão aberta quando flag ativa; sem sangria/suprimento.
+
+### Fase 9 — Estorno formal
+- Migration nova tabela `financeiro_estornos` (tenant_id, origem_tipo `pagamento|fatura|saida`, origem_id, motivo, valor, criado_por, criado_em).
+- Triggers `BEFORE DELETE` em `atendimento_pagamentos`, `convenio_faturas`, `financeiro_saidas` com `RAISE EXCEPTION 'Use estorno'` — exceto registros criados antes do deploy (compatibilidade controlada por `created_at < deploy_ts` salvo em `app_settings`).
+- UI: botão "Estornar" substitui "Excluir"; modal exige motivo.
+
+### Fase 10 — Auditoria financeira
+- Migration `financeiro_audit` (quem, quando, ação, entidade, antes/depois jsonb). Triggers em pagamentos, saídas, faturas, estornos, sessões de caixa.
+
+### Fase 11 — UX
+- Remoção de modais redundantes na navegação Financeiro.
+- Nomenclatura unificada: "Receber", "Pagar", "Conferir".
+- Texto explicativo zero — telas autoexplicativas.
+
+## Validação ao final
+- Build + TypeScript via harness.
+- Smoke manual: criar atendimento → pagar → ver em Recebimentos → ver Dashboard atualizar; criar despesa com forma de pagamento; tentar DELETE (deve falhar); estornar (deve gerar registro + audit).
+- RLS: querys cross-tenant rejeitadas (já garantido por `current_tenant_id()`; revalidar nas novas tabelas).
+
+## Entregáveis
+
+- Código nas pastas existentes (`src/pages/Financeiro*`, `src/services/financeiro*`, `src/data/financeiroStore.ts`).
+- Migrations sequenciais (uma por fase com schema-change).
+- `docs/financeiro/ssot.md`.
+- `docs/financeiro-v2/financeiro-simples-profissional-report.md` respondendo às 7 perguntas de validação.
+
+## Riscos e mitigação
+
+- **Backfill de `[pgto:X]`**: registros sem padrão ficam NULL e são visíveis para correção manual; descrição original preservada em `financeiro_audit` antes do UPDATE.
+- **Bloqueio de DELETE**: timestamp de corte (`deploy_ts`) em `app_settings` permite que registros antigos ainda possam ser removidos por compatibilidade enquanto novos exigem estorno.
+- **Caixa opcional**: default `false` garante que nenhum tenant atual sofre mudança de fluxo sem opt-in explícito.
+- **Reversão**: cada migration tem DOWN documentada no comentário SQL para rollback emergencial.
 
 ## Detalhes técnicos
 
-- Edições isoladas em 3 arquivos: `src/lib/laudoLayout.ts`, `src/data/valoresReferenciaStore.ts`, `src/components/configuracoes/MatrizValoresReferencia.tsx`.
-- Auto-seed do HEMOGRAMA: ajustar template em `src/lib/laudoTemplate.ts` (ou onde estiver o seed do hemograma) — verificar antes.
-- Sem migração de banco. Sem mexer em rotas/contextos globais/boot. Sem PWA.
-- Testes: rodar `bunx vitest run` após as mudanças no resolver e validar com o exame HEMOGRAMA via browser preview (paciente M jovem vs F adulta).
+- RPCs novas: `financeiro_a_receber_v2`, `financeiro_dashboard_kpis`, `financeiro_estornar(tipo, id, motivo)`.
+- Permissões reaproveitam `visualizar_financeiro` (leitura) e `gestao_financeira` (mutação/estorno/caixa).
+- QueryKeys seguem padrão `["tenant", tenantId, "financeiro", ...]`.
+- Nenhuma alteração em Atendimento, Resultado, Portal, Coleta, Análise.
+- Nenhuma alteração em rotas existentes além de `/financeiro` (dashboard interno reorganizado).
 
-## Fora de escopo (proponho fazer depois, se necessário)
-
-- Blocos condicionais por faixa (`##IF_FAIXA:...##`) — só se você precisar de texto/estrutura variável (não apenas valor numérico).
-- Migração automática dos VRs do LARAVEL0 — depende de você ter o dump.
-
-Confirma que prossigo com **1 + 2 + 3** nesta ordem?
+Aprove para eu iniciar pela Fase 1.
