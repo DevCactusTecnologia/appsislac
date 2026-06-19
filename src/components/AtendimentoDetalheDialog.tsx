@@ -149,7 +149,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   const previewData = useMemo(
     () => (previewTipo ? buildComprovanteData(previewTipo) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [previewTipo, atendimento?.protocolo, totalPaciente, totalPago, saldoDevedor],
+    [previewTipo, atendimento?.protocolo, subtotalPaciente, totalPacienteEfetivo, descontoPaciente, totalPago, saldoDevedor],
   );
   const previewHtml = useMemo(
     () => (previewData ? buildComprovanteHtml(previewData) : ""),
