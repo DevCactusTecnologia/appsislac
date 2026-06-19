@@ -674,11 +674,44 @@ const Index = () => {
       : totalPagoFinal > 0
         ? { label: "Pagamento parcial", type: "info" as const }
         : { label: "Pagamento pendente", type: "warning" as const };
+
+    // Redistribui desconto proporcionalmente entre exames cobrados do paciente,
+    // abatendo o valor de cada exame para que o desconto seja persistido.
+    const updates: Partial<MockAtendimento> = {
+      pagamentosRealizados: pagamentosFinais,
+      statusPagamento: statusPag,
+    };
+    const desc = Math.max(0, Math.round((resultado.desconto || 0) * 100) / 100);
+    const examesCobrancaAtuais = selectedAtendimento.examesCobranca;
+    if (desc > 0 && examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+      const pacienteIdxs = examesCobrancaAtuais
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => e.cobrancaDestino !== "convenio");
+      const subtotalPaciente = pacienteIdxs.reduce((s, { e }) => s + (Number(e.valor) || 0), 0);
+      if (subtotalPaciente > 0) {
+        const totalDesc = Math.min(desc, subtotalPaciente);
+        let restante = Math.round(totalDesc * 100);
+        const novosValores = new Map<number, number>();
+        pacienteIdxs.forEach(({ e, i }, idx) => {
+          const valor = Number(e.valor) || 0;
+          const isLast = idx === pacienteIdxs.length - 1;
+          const share = isLast
+            ? restante
+            : Math.round((valor / subtotalPaciente) * totalDesc * 100);
+          const safeShare = Math.max(0, Math.min(share, Math.round(valor * 100)));
+          restante -= safeShare;
+          novosValores.set(i, Math.max(0, Math.round(valor * 100) - safeShare) / 100);
+        });
+        const novaCobranca = examesCobrancaAtuais.map((e, i) =>
+          novosValores.has(i) ? { ...e, valor: novosValores.get(i)! } : e,
+        );
+        updates.examesCobranca = novaCobranca;
+        updates.exames = novaCobranca.map((e) => e.nome);
+      }
+    }
+
     try {
-      await updateAtendimento(selectedAtendimento.protocolo, {
-        pagamentosRealizados: pagamentosFinais,
-        statusPagamento: statusPag,
-      });
+      await updateAtendimento(selectedAtendimento.protocolo, updates);
       setLocalPagamentos(pagamentosFinais);
       // Fase 2: no modo paginado, NÃO confiamos no cache pós-update.
       // Revalidamos a página atual + KPIs via RPC (fonte da verdade = DB).
@@ -690,6 +723,7 @@ const Index = () => {
       showError(e, { scope: "Index.handlePagamentoConfirm", userMessage: "Não foi possível atualizar o pagamento." });
     }
   };
+
 
   const handleRemovePagamentoRealizado = (index: number) => {
     setLocalPagamentos(prev => (prev ?? []).filter((_, i) => i !== index));
