@@ -53,8 +53,8 @@ export default function SaidasTab() {
   useEffect(() => subscribeFinanceiro(() => setTick(t => t + 1)), []);
 
   const todas = useMemo(() => getSaidas().map(saidaToEntry), [tick]);
-  // O store atualiza por subscribe; mas para simplicidade usamos um tick local
-  // disparado por re-mount do dialog. (Os outros tabs também leem do store.)
+
+
 
   const filtered = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
