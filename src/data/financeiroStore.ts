@@ -252,7 +252,9 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
     throw new Error(`Saída ${protocolo} sem id no cache local`);
   }
 
-  const descricaoComPgto = encodePagamento(merged.descricao, merged.cliente, merged.pagamento);
+  const descricaoLimpa = (merged.descricao || merged.cliente || "")
+    .replace(/\s*\[pgto:[^\]]+\]\s*$/i, "")
+    .trim();
   const dataVencISO = ddmmyyyyToISO(merged.dataVencimento);
   const dataPgtoISO = ddmmyyyyToISO(merged.dataPagamento);
   const dataISO = ddmmyyyyToISODateTime(merged.foiPago === "Sim" ? merged.dataPagamento : merged.dataVencimento);
@@ -261,7 +263,8 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
     await persistOneOrThrow<SaidaRow>(
       supabase.from("financeiro_saidas").update({
         data: dataISO,
-        descricao: descricaoComPgto,
+        descricao: descricaoLimpa,
+        forma_pagamento: merged.pagamento || null,
         valor: merged.valorTotal,
         tipo_despesa: merged.tipoDespesa,
         destino_pagamento: merged.destinoPagamento,
