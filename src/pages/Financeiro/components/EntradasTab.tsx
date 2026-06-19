@@ -8,7 +8,7 @@
 //
 // Read-only: a aba Entradas reflete `financeiro_entradas` (view derivada de
 // `atendimento_pagamentos`). Edição acontece sempre no Atendimento.
-import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Undo2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
@@ -34,7 +34,7 @@ function statusTone(status: string): { label: string; cls: string } {
 export default function EntradasTab() {
   const {
     paginatedData, filteredLength, totalPages, currentPage, setCurrentPage, itemsPerPage,
-    handleDetailClick,
+    handleDetailClick, handleDeleteClick,
     periodoRapido, aplicarPeriodoRapido,
   } = useFinanceiroContext();
 
@@ -77,7 +77,7 @@ export default function EntradasTab() {
                 <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Forma</th>
                 <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor</th>
                 <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[60px]"></th>
+                <th className="text-center px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[110px]"></th>
               </tr>
             </thead>
             <tbody>
@@ -108,15 +108,26 @@ export default function EntradasTab() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => { e.stopPropagation(); handleDetailClick(entry); }}
-                        title="Ver detalhes"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => { e.stopPropagation(); handleDetailClick(entry); }}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(entry); }}
+                          title="Estornar"
+                        >
+                          <Undo2 className="h-4 w-4 text-amber-600" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
