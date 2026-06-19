@@ -92,23 +92,30 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   // Fallback (atendimentos legados sem metadados): R$ 0 e cobrança "paciente".
   const examesComValor = (atendimento?.exames ?? []).map((nomeExame) => {
     const meta = atendimento?.examesCobranca?.find(c => c.nome === nomeExame);
+    const valor = Number(meta?.valor) || 0;
+    const valorOriginal = Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valor;
     return {
       nome: nomeExame,
       material: meta?.material ?? "Sangue",
-      valor: Number(meta?.valor) || 0,
+      valor,
+      valorOriginal,
       cobrancaDestino: meta?.cobrancaDestino ?? "paciente",
     };
   });
 
-  // Soma considerando APENAS exames cobrados do paciente (modal espelha esse cálculo).
-  const totalPaciente = examesComValor
+  // Totais — calculados sobre valor ORIGINAL (preço cheio); desconto = diferença.
+  const subtotalPaciente = examesComValor
+    .filter(e => e.cobrancaDestino === "paciente")
+    .reduce((sum, e) => sum + e.valorOriginal, 0);
+  const totalPacienteEfetivo = examesComValor
     .filter(e => e.cobrancaDestino === "paciente")
     .reduce((sum, e) => sum + e.valor, 0);
+  const descontoPaciente = Math.max(0, Math.round((subtotalPaciente - totalPacienteEfetivo) * 100) / 100);
   const totalConvenio = examesComValor
     .filter(e => e.cobrancaDestino === "convenio")
     .reduce((sum, e) => sum + e.valor, 0);
   const totalPago = (atendimento?.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
-  const saldoDevedor = Math.max(0, totalPaciente - totalPago);
+  const saldoDevedor = Math.max(0, totalPacienteEfetivo - totalPago);
 
   const baseComprovante = atendimento ? {
     protocolo: atendimento.protocolo,
@@ -127,7 +134,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     ...baseComprovante,
     tipo,
     pagamentos: atendimento?.pagamentosRealizados ?? [],
-    totais: { subtotal: totalPaciente, desconto: 0, pago: totalPago, total: totalPaciente, saldo: saldoDevedor },
+    totais: { subtotal: subtotalPaciente, desconto: descontoPaciente, pago: totalPago, total: totalPacienteEfetivo, saldo: saldoDevedor },
   }) : null;
 
   const tipoLabels: Record<"pagamento" | "atendimento" | "comparecimento", string> = {
