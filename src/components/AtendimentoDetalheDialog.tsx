@@ -382,8 +382,14 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               <div className="border-t border-border pt-3 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">Subtotal (paciente)</span>
-                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPaciente)}</span>
+                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(subtotalPaciente)}</span>
                 </div>
+                {descontoPaciente > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px]" style={{ color: "hsl(var(--status-success))" }}>Desconto aplicado</span>
+                    <span className="text-[13px] font-medium" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
+                  </div>
+                )}
                 {totalConvenio > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-status-info">Cobrado do convênio</span>
@@ -402,7 +408,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 )}
                 <div className="flex items-center justify-between font-bold">
                   <span className="text-[13px] text-foreground">Total devido pelo paciente</span>
-                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPaciente)}</span>
+                  <span className="text-[13px] text-foreground">R$ {fmtBRLNumber(totalPacienteEfetivo)}</span>
                 </div>
               </div>
             </div>
