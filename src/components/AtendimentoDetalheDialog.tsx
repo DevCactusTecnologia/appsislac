@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle } from "lucide-react";
+import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent } from "lucide-react";
 // ----------------------------------------------------------------------------
 // SISLAC Document Ownership (IA-first semantics)
 //   Lab Data  = institutional identity         (labConfigStore — SINGLE SOURCE)
@@ -23,6 +23,7 @@ import type { MockAtendimento } from "@/data/types";
 import { getUnidadeById } from "@/data/unidadeStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { getAtendimentoExamesDB, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
 import {
   ensureDocumentoTemplatesLoaded,
   subscribeDocumentoTemplates,
@@ -94,7 +95,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   const examesComValor = (atendimento?.exames ?? []).map((nomeExame) => {
     const meta = atendimento?.examesCobranca?.find(c => c.nome === nomeExame);
     const valor = Number(meta?.valor) || 0;
-    const valorOriginal = Number(meta?.valorOriginal) > 0 ? Number(meta?.valorOriginal) : valor;
+    const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento?.convenio ?? "Particular" });
+    const valorOriginal = Math.max(Number(meta?.valorOriginal) || 0, valor, valorTabela);
     return {
       nome: nomeExame,
       material: meta?.material ?? "Sangue",
@@ -377,9 +379,17 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 <div className="space-y-1">
                   <span className="text-[10px] font-medium text-muted-foreground">Pagamentos realizados</span>
                   {descontoPaciente > 0 && (
-                    <div className="flex items-center justify-between text-[13px]">
-                      <span style={{ color: "hsl(var(--status-success))" }}>Desconto — {atendimento.data}</span>
-                      <span className="font-medium" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(var(--status-success) / 0.10)" }}>
+                          <Percent className="h-3.5 w-3.5" style={{ color: "hsl(var(--status-success))" }} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-[12px] font-medium text-foreground block leading-tight">Desconto</span>
+                          <p className="text-[10px] text-muted-foreground leading-tight truncate">{atendimento.data}</p>
+                        </div>
+                      </div>
+                      <span className="text-[13px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
                     </div>
                   )}
                   {atendimento.pagamentosRealizados?.map((p, i) => (

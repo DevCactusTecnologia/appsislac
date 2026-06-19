@@ -506,6 +506,9 @@ const NovoAtendimento = () => {
     setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
     setShowPacienteSearch(false);
     setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
+    const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
+    const [dd, mm, yyyy] = dataBR.split("/");
+    if (dd && mm && yyyy) setDataAtendimento(`${yyyy}-${mm}-${dd}T${horaBR.slice(0, 5)}`);
     // Considera apenas exames cobrados do paciente (Fase 2: faturamento híbrido).
     const totalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
       const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
@@ -517,7 +520,22 @@ const NovoAtendimento = () => {
         metaValor: meta?.valor,
       });
     }, 0);
+    const totalOriginalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
+      const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
+      if (meta?.cobrancaDestino === "convenio") return sum;
+      const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
+      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
+      return sum + Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela);
+    }, 0);
     const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
+    const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
+    const descontoInferido = descontoPersistido <= 0
+      && atendimento.statusPagamento.label === "Pagamento efetuado"
+      && totalPagamentosRealizados > 0
+      && totalPagamentosRealizados < totalOriginalFromExames
+        ? Math.round((totalOriginalFromExames - totalPagamentosRealizados) * 100) / 100
+        : 0;
+    setDesconto(descontoInferido);
     if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
     else if (atendimento.statusPagamento.label === "Pagamento efetuado") setValorPago(totalFromExames);
     else if (atendimento.statusPagamento.label === "Pagamento parcial") setValorPago(Math.round(totalFromExames * 0.5 * 100) / 100);
@@ -528,6 +546,12 @@ const NovoAtendimento = () => {
         ? { cobrancaDestino: meta.cobrancaDestino, convenioCobrancaId: meta.convenioCobrancaId ?? null }
         : resolveCobrancaDefault(atendimento.convenio ? [atendimento.convenio] : []);
       const cat = getExamesCatalogo().find(c => c.nome.toLowerCase() === nomeExame.toLowerCase());
+      const valorAtual = calculateExamPrice({
+        nomeExame,
+        convenioNome: atendimento.convenio,
+        metaValor: meta?.valor,
+      });
+      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
       const tipoProcesso = ((meta?.tipoProcesso as string) || cat?.tipoProcesso || "INTERNO") as "INTERNO" | "TERCEIRIZADO";
       const labApoioIdPadrao = cat?.labApoioId ?? null;
       // Se o meta gravado difere do padrão do catálogo, é um override.
@@ -541,14 +565,11 @@ const NovoAtendimento = () => {
         convenio: atendimento.convenio,
         material: meta?.material ?? cat?.material ?? "Sangue",
         // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
-        valor: calculateExamPrice({
-          nomeExame,
-          convenioNome: atendimento.convenio,
-          metaValor: meta?.valor,
-        }),
+        valor: valorAtual,
         // valorOriginal = preço cheio antes do desconto distribuído.
-        // Fallback explícito para meta.valor (sem desconto histórico).
-        valorOriginal: meta?.valorOriginal ?? meta?.valor,
+        // Fallback defensivo: se o valor_original foi sobrescrito por edição anterior,
+        // recupera o preço cheio pela tabela quando ele for maior que o valor cobrado.
+        valorOriginal: Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela),
         cobrancaDestino: cobr.cobrancaDestino,
         convenioCobrancaId: cobr.convenioCobrancaId,
         tipoProcesso,
@@ -672,6 +693,42 @@ const NovoAtendimento = () => {
   const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
   const saldoDevedor = Math.max(0, total - valorPago);
+  const descontoDataExibicao = (() => {
+    const d = (dataAtendimento || "").split("T")[0];
+    if (!d) return undefined;
+    const [yyyy, mm, dd] = d.split("-");
+    return yyyy && mm && dd ? `${dd}/${mm}/${yyyy}` : undefined;
+  })();
+
+  const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
+    const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
+    setExames(prev => {
+      const pacienteIdxs = prev
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => e.cobrancaDestino !== "convenio");
+      const bases = new Map<number, number>();
+      pacienteIdxs.forEach(({ e, i }) => bases.set(i, e.valorOriginal ?? e.valor));
+      const baseTotal = Array.from(bases.values()).reduce((sum, v) => sum + v, 0);
+      if (baseTotal <= 0) return prev;
+      const totalDesc = Math.min(desc, baseTotal);
+      let restante = Math.round(totalDesc * 100);
+      const novosValores = new Map<number, number>();
+      pacienteIdxs.forEach(({ i }, idx) => {
+        const base = bases.get(i) ?? 0;
+        const share = idx === pacienteIdxs.length - 1
+          ? restante
+          : Math.round((base / baseTotal) * totalDesc * 100);
+        const safeShare = Math.max(0, Math.min(share, Math.round(base * 100)));
+        restante -= safeShare;
+        novosValores.set(i, Math.max(0, Math.round(base * 100) - safeShare) / 100);
+      });
+      return prev.map((e, i) => {
+        const base = bases.get(i);
+        if (base == null) return e;
+        return { ...e, valorOriginal: base, valor: novosValores.get(i) ?? base };
+      });
+    });
+  };
 
   // Fase 2 — re-sincroniza cobrança ao mudar a lista de convênios.
   // Se um exame estava cobrado de um convênio que foi removido, volta para Paciente.
@@ -2257,11 +2314,16 @@ const NovoAtendimento = () => {
         itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
         exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
-        descontoData={(() => { const d = (dataAtendimento || "").split("T")[0]; if (!d) return undefined; const [y, m, dd] = d.split("-"); return y && m && dd ? `${dd}/${m}/${y}` : undefined; })()}
+        descontoData={descontoDataExibicao}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
-          setDesconto(res.desconto);
+          if (isEditing) {
+            aplicarDescontoTotalNosExames(res.desconto);
+            setDesconto(0);
+          } else {
+            setDesconto(res.desconto);
+          }
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
             pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
