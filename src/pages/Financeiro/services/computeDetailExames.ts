@@ -24,22 +24,29 @@ export function computeDetailExames(
 ): DetailExameValor[] {
   if (!atendimento) return [];
 
+  const tabela = getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo;
+  const resolveTabela = (nome: string): number =>
+    getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
+
   const cobranca = atendimento.examesCobranca;
   if (cobranca && cobranca.length > 0) {
     return cobranca
       .filter((e) => e.cobrancaDestino !== "convenio")
       .map((e) => {
         const valor = Number(e.valor) || 0;
-        const valorOriginal = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : valor;
+        const stored = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : valor;
+        // Reconcilia com a tabela de preço vigente: o "valorOriginal" exibido
+        // é o maior entre o armazenado, o efetivo e o preço de tabela atual,
+        // garantindo que o modal nunca mostre preço inferior à tabela.
+        const tabelaPreco = resolveTabela(e.nome);
+        const valorOriginal = Math.max(stored, valor, tabelaPreco);
         return { nome: e.nome, valor, valorOriginal };
       });
   }
 
   // Fallback (sem examesCobranca hidratado): tabela de preços.
-  const tabela = getTabelaByConvenioNome(atendimento.convenio) as TabelaTipo;
   return atendimento.exames.map((nome) => {
-    const valor =
-      getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
+    const valor = resolveTabela(nome);
     return { nome, valor, valorOriginal: valor };
   });
 }
