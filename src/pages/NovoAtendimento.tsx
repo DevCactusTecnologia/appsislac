@@ -609,7 +609,9 @@ const NovoAtendimento = () => {
         exames: examesParaSalvar.map(e => e.nome),
         examesCobranca: buildExamesCobranca(examesParaSalvar, solicitantes),
         statusPagamento: statusPag,
-        pagamentosRealizados,
+        // Só envia pagamentos quando o usuário modificou — evita DELETE bloqueado
+        // por trigger em atendimento_pagamentos (registros pós-deploy exigem estorno).
+        ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
       });
       } else {
