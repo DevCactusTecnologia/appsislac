@@ -12,8 +12,8 @@ import { cn, fmtBRL, searchNormalize } from "@/lib/utils";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
 
-import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getConvenios } from "@/data/convenioStore";
+import type { MockAtendimento } from "@/data/types";
+// getConvenios removido — A Receber/Convênios agora vem da RPC v2 (Fase 1).
 import {
   getSaidas, subscribeFinanceiro, removeSaida, updateSaida,
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
@@ -29,9 +29,9 @@ const CriarItemDialog = lazy(() => import("@/components/financeiro/CriarItemDial
 const FecharFaturaDialog = lazy(() => import("@/components/financeiro/FecharFaturaDialog"));
 const FaturaDetalheDialog = lazy(() => import("@/components/financeiro/FaturaDetalheDialog"));
 import { useEnsureStore } from "@/hooks/useEnsureStore";
-import { fetchSaldoEmAbertoPorConvenio } from "@/data/convenioFaturasStore";
+// fetchSaldoEmAbertoPorConvenio removido (Fase 1 V2 — substituído por useAReceberConvenios)
 import { useFeatureFlag } from "@/lib/featureFlags";
-import { useAReceberPacientes, useFinanceiroResumo } from "@/hooks/useAReceberPacientes";
+import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios } from "@/hooks/useAReceberPacientes";
 import { toast } from "@/hooks/use-toast";
 import type { NovaEntradaSaidaData } from "@/components/NovaEntradaSaidaDialog";
 const NovaEntradaSaidaDialog = lazy(() => import("@/components/NovaEntradaSaidaDialog"));
@@ -67,9 +67,7 @@ import {
   isValidDateBR,
 } from "./Financeiro/helpers";
 import {
-  buildAReceberRowsFromAtendimentos,
   buildAReceberRowsFromRpc,
-  buildAReceberConvenioRows,
   filterAReceberRows,
   applyFinanceiroFilters,
   computeEntradaCounts,
@@ -170,7 +168,7 @@ const Financeiro = () => {
   // Estados ligados a effects (permanecem no orquestrador).
   const [saidasList, setSaidasList] = useState<FinanceiroEntry[]>(() => getSaidas().map(saidaToEntry));
   const [entradasView, setEntradasView] = useState<FinanceiroEntradaView[]>([]);
-  const [saldoConvenios, setSaldoConvenios] = useState<Map<number, { saldo: number; exames: number; pacientes: Set<string> }>>(new Map());
+  // saldoConvenios removido — agora servido por useAReceberConvenios (Fase 1 V2).
 
   
 
@@ -300,21 +298,13 @@ const Financeiro = () => {
 
   const saidas = useMemo(() => [...saidasList].sort((a, b) => b.data.localeCompare(a.data)), [saidasList]);
 
-  // ─── A Receber (pacientes — fonte legacy via cache de atendimentos) ───
-  const aReceberRows: AReceberRow[] = useMemo(() => {
-    if (activeTab !== "a_receber") return [];
-    return buildAReceberRowsFromAtendimentos(getAtendimentos());
-  }, [activeTab]);
-
-
-  // ─── C-2 Financeiro: branch RPC (paginated_atendimentos ON & USE_LEGACY_STORE OFF) ───
-  // Quando ativo, "A Receber (pacientes)" e o resumo agregado vêm direto do banco,
-  // sem depender de getAtendimentos() (que está limitado a 100 registros no boot otimizado).
-  // IMPORTANTE: chamar ambos os hooks SEM short-circuit para preservar a ordem de hooks
-  // entre renders (regra react-hooks/rules-of-hooks). Combinar somente os resultados.
+  // ─── A Receber — SSOT V2 (Fase 1) ────────────────────────────────────
+  // Pacientes e Convênios consomem a mesma RPC `financeiro_a_receber_v2`.
+  // Caminho legacy (cálculo client-side via getAtendimentos / fetchSaldoEm…)
+  // foi removido para eliminar duplicidade. Ver docs/financeiro/ssot.md.
   const ffPaginated = useFeatureFlag("paginated_atendimentos");
   const ffLegacy = useFeatureFlag("USE_LEGACY_STORE");
-  const useRpc = ffPaginated && !ffLegacy;
+  const useRpc = true; // SSOT V2: sempre RPC para A Receber
   const aReceberStatusRpc: "parcial" | "pendente" | null =
     aReceberStatusFilter === "parciais" ? "parcial"
     : aReceberStatusFilter === "pendentes" ? "pendente"
@@ -325,47 +315,47 @@ const Financeiro = () => {
     hasMore: rpcHasMore,
     loadMore: rpcLoadMore,
     refresh: rpcRefresh,
-  } = useAReceberPacientes(useRpc && activeTab === "a_receber", {
+  } = useAReceberPacientes(activeTab === "a_receber", {
     search: searchQuery || undefined,
     dateFrom,
     dateTo,
     status: aReceberStatusRpc,
     pageSize: 50,
   });
-  const { resumo: financeiroResumoRpc } = useFinanceiroResumo(useRpc, {
+  // Resumo agregado segue dependendo de `paginated_atendimentos` (não escopo da Fase 1).
+  const { resumo: financeiroResumoRpc } = useFinanceiroResumo(ffPaginated && !ffLegacy, {
     dateFrom,
     dateTo,
     convenio: convenioFilter !== "all" ? convenioFilter : null,
   });
 
-  // Adapta AReceberRowDTO → AReceberRow preservando o template existente
-  // (template lê row.atendimento.convenio; criamos um stub leve com os campos lidos).
-  const aReceberRowsRpc: AReceberRow[] = useMemo(() => {
-    if (!useRpc || activeTab !== "a_receber") return [];
+  const aReceberSource: AReceberRow[] = useMemo(() => {
+    if (activeTab !== "a_receber") return [];
     return buildAReceberRowsFromRpc(rpcRows);
-  }, [useRpc, activeTab, rpcRows]);
+  }, [activeTab, rpcRows]);
 
-
-  // Fonte efetiva de A Receber (RPC quando flag ON; legacy caso contrário)
-  const aReceberSource: AReceberRow[] = useRpc ? aReceberRowsRpc : aReceberRows;
-
-  // Após mutações no atendimentoStore, refresca o RPC (não confiar no cache).
+  // Após mutações no atendimentoStore, refresca o RPC (não confiar em cache local).
   useEffect(() => {
-    if (!useRpc) return;
     const unsub = subscribeAtendimentos(() => { rpcRefresh(); });
     return unsub;
-  }, [useRpc, rpcRefresh]);
+  }, [rpcRefresh]);
 
-  // Saldo agregado por convênio (cobrancaDestino=convenio, não-faturados)
-  useEffect(() => {
-    if (activeTab !== "a_receber") return;
-    void fetchSaldoEmAbertoPorConvenio().then(setSaldoConvenios);
-  }, [activeTab]);
-
+  // Convênios — V2 (substitui fetchSaldoEmAbertoPorConvenio)
+  const {
+    rows: aReceberConvenioRowsV2,
+    refresh: refreshConvenios,
+  } = useAReceberConvenios(activeTab === "a_receber");
   const aReceberConvenioRows: AReceberConvenioRow[] = useMemo(
-    () => buildAReceberConvenioRows(saldoConvenios, getConvenios()),
-    [saldoConvenios],
+    () => aReceberConvenioRowsV2.map((r) => ({
+      convenioId:    r.convenioId,
+      convenioNome:  r.convenioNome,
+      saldo:         Math.round(r.saldo * 100) / 100,
+      qtdExames:     r.qtdExames,
+      qtdPacientes:  r.qtdPacientes,
+    })),
+    [aReceberConvenioRowsV2],
   );
+
 
   const allEntries = useMemo(() => {
     if (activeTab === "entrada") return entradas;
@@ -897,7 +887,7 @@ const Financeiro = () => {
           formasPagamento={formasPagamento}
           onCreated={() => {
             void refreshEntradas();
-            void fetchSaldoEmAbertoPorConvenio().then(setSaldoConvenios);
+            refreshConvenios();
           }}
         />
         </Suspense>

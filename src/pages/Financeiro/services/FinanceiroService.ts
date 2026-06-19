@@ -14,54 +14,27 @@ import { fmtBRLNumber, searchNormalize } from "@/lib/utils";
 import type {
   FinanceiroSaida, FinanceiroEntradaView,
 } from "@/data/financeiroStore";
-import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getTabelaByConvenioNome } from "@/data/convenioStore";
-import { getPrecoExame, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import type { MockAtendimento } from "@/data/types";
 import { parseDate } from "../helpers";
 import type {
   FinanceiroEntry, SaidaStatusFilter,
-  AReceberRow, AReceberConvenioRow, CaixaMov, CaixaLinhaComSaldo,
+  AReceberRow, CaixaMov, CaixaLinhaComSaldo,
   TabType,
 } from "../types";
 
 type AReceberStatus = "todas" | "parciais" | "pendentes";
 
 // ── A RECEBER ────────────────────────────────────────────────────────────
+//
+// SSOT V2 (Fase 1 — Financeiro V2):
+// A fonte oficial de "A Receber" passa a ser a RPC `financeiro_a_receber_v2`
+// (consumida via hooks `useAReceberPacientes` / `useAReceberConvenios`).
+// As antigas funções `buildAReceberRowsFromAtendimentos` (cálculo client-side
+// a partir do cache de atendimentos) e `buildAReceberConvenioRows` (composição
+// do Map devolvido por `fetchSaldoEmAbertoPorConvenio`) foram REMOVIDAS para
+// eliminar duplicidade. Ver docs/financeiro/ssot.md.
 
-/** Pacientes com saldo > 0, a partir do cache de atendimentos. */
-export function buildAReceberRowsFromAtendimentos(
-  atendimentos: MockAtendimento[],
-): AReceberRow[] {
-  const rows: AReceberRow[] = [];
-  atendimentos.forEach((at) => {
-    if (at.statusAtendimento.label === "Cancelado") return;
-    const tabela = getTabelaByConvenioNome(at.convenio) as TabelaTipo;
-    // SOMENTE exames cobrados do paciente entram no saldo paciente
-    const valorTotalPaciente = at.exames.reduce((s, nome) => {
-      const meta: ExameCobrancaInfo | undefined = at.examesCobranca?.find((c) => c.nome === nome);
-      if (meta && meta.cobrancaDestino === "convenio") return s; // exclui convênio
-      const v = getPrecoExame(nome, tabela) ?? getPrecoExame(nome, "Própria") ?? 0;
-      return s + v;
-    }, 0);
-    const valorPago = (at.pagamentosRealizados ?? []).reduce((s, p) => s + p.valor, 0);
-    const saldo = valorTotalPaciente - valorPago;
-    if (saldo <= 0.009) return;
-    rows.push({
-      protocolo: at.protocolo,
-      data: at.data,
-      cliente: at.nome,
-      convenio: at.convenio,
-      valorTotal: valorTotalPaciente,
-      valorPago,
-      saldo: Math.round(saldo * 100) / 100,
-      status: valorPago > 0 ? "parcial" : "pendente",
-      atendimento: at,
-    });
-  });
-  return rows.sort((a, b) => b.data.localeCompare(a.data));
-}
-
-/** Adaptador AReceberRowDTO (RPC) → AReceberRow do template. */
+/** Adaptador AReceberRowDTO (RPC v2) → AReceberRow do template. */
 export interface AReceberRowDTO {
   protocolo: string;
   data: string;
@@ -103,25 +76,6 @@ export function buildAReceberRowsFromRpc(rows: AReceberRowDTO[]): AReceberRow[] 
   });
 }
 
-/** Saldo agregado por convênio (lista para a sub-aba "Convênios" de A Receber). */
-export function buildAReceberConvenioRows(
-  saldoConvenios: Map<number, { saldo: number; exames: number; pacientes: Set<string> }>,
-  convenios: Array<{ id: number; nome: string }>,
-): AReceberConvenioRow[] {
-  const rows: AReceberConvenioRow[] = [];
-  saldoConvenios.forEach((v, cid) => {
-    const c = convenios.find((cc) => cc.id === cid);
-    if (!c || c.id === 0) return; // ignora Particular
-    rows.push({
-      convenioId: cid,
-      convenioNome: c.nome,
-      saldo: Math.round(v.saldo * 100) / 100,
-      qtdExames: v.exames,
-      qtdPacientes: v.pacientes.size,
-    });
-  });
-  return rows.sort((a, b) => b.saldo - a.saldo);
-}
 
 /** Filtragem + busca da aba "A Receber" (não pagina). */
 export function filterAReceberRows(

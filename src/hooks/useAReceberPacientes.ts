@@ -1,10 +1,11 @@
 // ============================================================
-// Hook: useAReceberPacientes
+// Hook: useAReceberPacientes  (Financeiro V2 — Fase 1, SSOT)
 // ------------------------------------------------------------
 // Lista paginada (cursor) de saldos a receber por paciente,
-// consumindo a RPC `a_receber_pacientes_page`. Substitui o
-// cálculo client-side baseado em getAtendimentos() quando a
-// flag `paginated_atendimentos` está ativa e USE_LEGACY_STORE OFF.
+// consumindo a RPC SSOT `financeiro_a_receber_v2` com p_tipo='paciente'.
+// Esta é agora a ÚNICA fonte de "A Receber (Pacientes)" do módulo
+// Financeiro — o cálculo client-side legacy foi removido.
+// Ver docs/financeiro/ssot.md.
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -59,7 +60,8 @@ export function useAReceberPacientes(
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.rpc("a_receber_pacientes_page", {
+      const { data, error } = await supabase.rpc("financeiro_a_receber_v2", {
+        p_tipo:        "paciente",
         p_search:      filters.search ?? undefined,
         p_date_from:   filters.dateFrom ? filters.dateFrom.toISOString() : undefined,
         p_date_to:     filters.dateTo   ? new Date(filters.dateTo.getTime() + 86_399_999).toISOString() : undefined,
@@ -70,7 +72,23 @@ export function useAReceberPacientes(
       });
       if (myReq !== reqIdRef.current) return;
       if (error) throw error;
-      const list = (data ?? []) as AReceberRowDTO[];
+      // Adapta o shape unificado do v2 ao DTO legado consumido pelos templates.
+      const list: AReceberRowDTO[] = (data ?? []).map((r: {
+        ref_id: number; protocolo: string; data: string;
+        quem: string; convenio_nome: string | null;
+        valor_total: number | string; valor_pago: number | string;
+        saldo: number | string; status: string;
+      }) => ({
+        id:             Number(r.ref_id),
+        protocolo:      r.protocolo,
+        data:           r.data,
+        paciente_nome:  r.quem,
+        convenio_nome:  r.convenio_nome ?? "Particular",
+        valor_total:    Number(r.valor_total) || 0,
+        valor_pago:     Number(r.valor_pago)  || 0,
+        saldo:          Number(r.saldo)       || 0,
+        status:         (r.status === "parcial" ? "parcial" : "pendente"),
+      }));
       setRows((prev) => reset ? list : [...prev, ...list]);
       const last = list[list.length - 1];
       if (last) {
@@ -167,4 +185,64 @@ export function useFinanceiroResumo(
   useEffect(() => { void fetchIt(); }, [fetchIt]);
 
   return { resumo, loading, refresh: () => { void fetchIt(); } };
+}
+
+// ────────────────────────────────────────────────────────────
+// A Receber — Convênios (Financeiro V2 — Fase 1, SSOT)
+// ------------------------------------------------------------
+// Consome a mesma RPC `financeiro_a_receber_v2` com p_tipo='convenio'.
+// Retorna saldo agregado por convênio (exames com cobrança ao convênio
+// que ainda não foram faturados). Substitui `fetchSaldoEmAbertoPorConvenio`.
+// ────────────────────────────────────────────────────────────
+
+export interface AReceberConvenioDTO {
+  convenioId: number;
+  convenioNome: string;
+  saldo: number;
+  qtdExames: number;
+  qtdPacientes: number;
+}
+
+export function useAReceberConvenios(
+  enabled: boolean,
+  filters: { search?: string } = {},
+): { rows: AReceberConvenioDTO[]; loading: boolean; refresh: () => void } {
+  const [rows, setRows] = useState<AReceberConvenioDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const reqIdRef = useRef(0);
+
+  const fetchIt = useCallback(async () => {
+    if (!enabled) { setRows([]); return; }
+    const myReq = ++reqIdRef.current;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("financeiro_a_receber_v2", {
+        p_tipo:   "convenio",
+        p_search: filters.search ?? undefined,
+      });
+      if (myReq !== reqIdRef.current) return;
+      if (error) throw error;
+      const list: AReceberConvenioDTO[] = (data ?? []).map((r: {
+        ref_id: number; quem: string; saldo: number | string;
+        qtd_exames: number | null; qtd_pacientes: number | null;
+      }) => ({
+        convenioId:    Number(r.ref_id),
+        convenioNome:  r.quem,
+        saldo:         Number(r.saldo) || 0,
+        qtdExames:     Number(r.qtd_exames) || 0,
+        qtdPacientes:  Number(r.qtd_pacientes) || 0,
+      }));
+      setRows(list);
+    } catch (e: unknown) {
+      if (myReq !== reqIdRef.current) return;
+      logger.warn("useAReceberConvenios", (e as Error)?.message);
+      setRows([]);
+    } finally {
+      if (myReq === reqIdRef.current) setLoading(false);
+    }
+  }, [enabled, filters.search]);
+
+  useEffect(() => { void fetchIt(); }, [fetchIt]);
+
+  return { rows, loading, refresh: () => { void fetchIt(); } };
 }
