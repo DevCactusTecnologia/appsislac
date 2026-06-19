@@ -682,6 +682,66 @@ export type Database = {
         }
         Relationships: []
       }
+      caixa_sessoes: {
+        Row: {
+          aberta_em: string
+          created_at: string
+          fechada_em: string | null
+          id: number
+          observacoes: string | null
+          responsavel_id: string | null
+          status: string
+          tenant_id: string
+          unidade_id: string
+          updated_at: string
+          valor_abertura: number
+          valor_fechamento: number | null
+        }
+        Insert: {
+          aberta_em?: string
+          created_at?: string
+          fechada_em?: string | null
+          id?: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tenant_id: string
+          unidade_id: string
+          updated_at?: string
+          valor_abertura?: number
+          valor_fechamento?: number | null
+        }
+        Update: {
+          aberta_em?: string
+          created_at?: string
+          fechada_em?: string | null
+          id?: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tenant_id?: string
+          unidade_id?: string
+          updated_at?: string
+          valor_abertura?: number
+          valor_fechamento?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixa_sessoes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_sessoes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           code_ibge: string
