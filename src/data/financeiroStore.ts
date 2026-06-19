@@ -119,6 +119,12 @@ function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
   const descricaoLimpa = formaCol ? (row.descricao || "") : legacy.descricao;
   const parts = descricaoLimpa.split(" — ");
   const cliente = parts[0] || descricaoLimpa;
+  // Fase 6 V2 — `status` é a fonte oficial; fallback para foi_pago em registros legados.
+  const rawStatus = ((row as SaidaRow & { status?: string | null }).status || "").toLowerCase();
+  const status: SaidaStatus =
+    rawStatus === "paga" || rawStatus === "cancelada" || rawStatus === "aberta"
+      ? (rawStatus as SaidaStatus)
+      : (row.foi_pago ? "paga" : "aberta");
   return {
     protocolo: row.protocolo,
     data: formatDateBR(row.data),
@@ -129,8 +135,9 @@ function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
     destinoPagamento: row.destino_pagamento || "",
     descricao: descricaoLimpa,
     dataVencimento: formatDateOnlyBR(row.data_vencimento),
-    foiPago: row.foi_pago ? "Sim" : "Não",
+    foiPago: status === "paga" ? "Sim" : "Não",
     dataPagamento: formatDateOnlyBR(row.data_pagamento),
+    status,
   };
 }
 
