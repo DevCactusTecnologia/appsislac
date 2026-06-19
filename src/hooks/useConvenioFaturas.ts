@@ -25,10 +25,11 @@ export interface ConvenioFaturaRow {
 }
 
 export function useConvenioFaturas(enabled = true) {
-  const { user, currentTenantId } = useAuth() as any;
+  const { user } = useAuth();
+  const tenantId = (user as { tenantId?: string } | null)?.tenantId ?? "anon";
 
   return useQuery<ConvenioFaturaRow[]>({
-    queryKey: ["tenant", currentTenantId, "convenio_faturas"],
+    queryKey: ["tenant", tenantId, "convenio_faturas"],
     enabled: enabled && !!user,
     staleTime: 30_000,
     queryFn: async () => {
