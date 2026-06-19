@@ -1,20 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, User, MapPin, Shield, Phone, Mail, CreditCard, Calendar, Save, Loader2, Info, Check, AlertCircle } from "lucide-react";
+import { User, MapPin, Shield, Save, Loader2, Info, Check, AlertCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { addPaciente, updatePaciente } from "@/data/pacienteStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationSelector } from "@/components/inscricao/LocationSelector";
 import { isValidCPF, sanitizeCPF } from "@/lib/cpf";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogPortal,
-  DialogOverlay
 } from "@/components/ui/dialog";
-import { ComboboxField, type ComboboxOption } from "@/components/configuracoes/_shared/ComboboxField";
 
 interface Props {
   open: boolean;
@@ -48,11 +45,6 @@ const maskCEP = (value: string) => {
     .replace(/(\d{5})(\d)/, "$1-$2");
 };
 
-const SEXO_OPTS: ComboboxOption[] = [
-  { value: "Masculino", label: "Masculino" },
-  { value: "Feminino", label: "Feminino" },
-];
-
 const maskDateBR = (value: string) => {
   const d = (value || "").replace(/\D/g, "").slice(0, 8);
   if (d.length <= 2) return d;
@@ -68,82 +60,67 @@ const isValidDateBR = (br: string): boolean => {
   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
 };
 
+const ageInYears = (br: string): number | null => {
+  if (!isValidDateBR(br)) return null;
+  const [d, m, y] = br.split("/").map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - y;
+  const mDiff = today.getMonth() - (m - 1);
+  if (mDiff < 0 || (mDiff === 0 && today.getDate() < d)) age--;
+  return age;
+};
+
+const emptyForm = {
+  nome: "",
+  nomeSocial: "",
+  cpf: "",
+  sexo: "",
+  dataNascimento: "",
+  telefone: "",
+  celular: "",
+  email: "",
+  cep: "",
+  estado: "",
+  cidade: "",
+  bairro: "",
+  endereco: "",
+  numero: "",
+  complemento: "",
+  guardianName: "",
+  guardianCpf: "",
+  consentimentoLgpd: true,
+};
+
 export default function CadastroPacienteDialog({ open, onClose, editMode, initialData, initialName, onSave }: Props) {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("pessoais");
-  const [formData, setFormData] = useState<any>({
-    nome: "",
-    cpf: "",
-    sexo: "Masculino",
-    dataNascimento: "",
-    telefone: "",
-    celular: "",
-    email: "",
-    cep: "",
-    estado: "",
-    cidade: "",
-    bairro: "",
-    endereco: "",
-    numero: "",
-    complemento: "",
-    guardianName: "",
-    guardianCpf: "",
-    consentimentoLgpd: true,
-  });
+  const [useNomeSocial, setUseNomeSocial] = useState(false);
+  const [formData, setFormData] = useState<any>(emptyForm);
 
   const cpfDigits = sanitizeCPF(formData.cpf || "");
+  const cpfFilled = cpfDigits.length > 0;
   const cpfValid = cpfDigits.length === 11 && isValidCPF(cpfDigits);
-  const cpfInvalid = cpfDigits.length === 11 && !cpfValid;
+  const cpfInvalid = cpfFilled && (cpfDigits.length < 11 || !cpfValid);
+
+  const age = useMemo(() => ageInYears(formData.dataNascimento), [formData.dataNascimento]);
+  const isNewborn = age !== null && age < 1;
+  const isMinor = age !== null && age < 18;
 
   useEffect(() => {
     if (open) {
       if (initialData) {
-        setFormData(initialData);
+        setFormData({ ...emptyForm, ...initialData });
+        setUseNomeSocial(!!initialData.nomeSocial);
       } else if (initialName) {
-        setFormData((prev: any) => ({
-          ...prev,
-          nome: initialName,
-          cpf: "",
-          sexo: "Masculino",
-          dataNascimento: "",
-          telefone: "",
-          celular: "",
-          email: "",
-          cep: "",
-          estado: "",
-          cidade: "",
-          bairro: "",
-          endereco: "",
-          numero: "",
-          complemento: "",
-          guardianName: "",
-          guardianCpf: "",
-          consentimentoLgpd: true,
-        }));
+        setFormData({ ...emptyForm, nome: initialName });
+        setUseNomeSocial(false);
       } else {
-        setFormData({
-          nome: "",
-          cpf: "",
-          sexo: "Masculino",
-          dataNascimento: "",
-          telefone: "",
-          celular: "",
-          email: "",
-          cep: "",
-          estado: "",
-          cidade: "",
-          bairro: "",
-          endereco: "",
-          numero: "",
-          complemento: "",
-          guardianName: "",
-          guardianCpf: "",
-          consentimentoLgpd: true,
-        });
+        setFormData(emptyForm);
+        setUseNomeSocial(false);
       }
+      setActiveTab("pessoais");
     }
   }, [initialData, initialName, open]);
-
 
   const handleCEPBlur = async () => {
     const cep = formData.cep.replace(/\D/g, "");
@@ -173,37 +150,38 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
       return;
     }
 
-    if (!formData.cpf) {
-      toast.error("CPF é obrigatório");
-      setActiveTab("pessoais");
-      return;
-    }
-
-    if (!cpfValid) {
-      toast.error("CPF inválido. Verifique o número digitado.");
-      setActiveTab("pessoais");
-      return;
-    }
-
     if (!formData.dataNascimento || !isValidDateBR(formData.dataNascimento)) {
       toast.error("Data de nascimento inválida. Use o formato DD/MM/AAAA.");
       setActiveTab("pessoais");
       return;
     }
 
+    if (!formData.sexo) {
+      toast.error("Selecione o sexo biológico");
+      setActiveTab("pessoais");
+      return;
+    }
+
+    if (cpfFilled && !cpfValid) {
+      toast.error("CPF inválido. Verifique o número digitado ou deixe em branco.");
+      setActiveTab("pessoais");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      nomeSocial: useNomeSocial ? formData.nomeSocial : "",
+    };
 
     setLoading(true);
     try {
       if (onSave) {
-        await onSave(formData);
+        await onSave(payload);
       } else if (editMode && initialData?.id) {
-        await updatePaciente(initialData.id, formData);
+        await updatePaciente(initialData.id, payload);
         toast.success("Paciente atualizado com sucesso!");
       } else {
-        await addPaciente({
-          ...formData,
-          status: "Ativo",
-        });
+        await addPaciente({ ...payload, status: "Ativo" });
         toast.success("Paciente cadastrado com sucesso!");
       }
       onClose();
@@ -215,6 +193,7 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
   };
 
   const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all duration-200 disabled:opacity-60";
+  const labelClass = "text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider";
 
   return (
     <Dialog open={open} onOpenChange={(val) => !loading && !val && onClose()}>
@@ -238,24 +217,15 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
           <div className="px-6 border-b border-border/40">
             <TabsList className="w-full justify-start h-12 bg-transparent gap-8 p-0">
-              <TabsTrigger 
-                value="pessoais" 
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all"
-              >
+              <TabsTrigger value="pessoais" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all">
                 <Info className="h-4 w-4" />
                 Dados Pessoais
               </TabsTrigger>
-              <TabsTrigger 
-                value="contato" 
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all"
-              >
+              <TabsTrigger value="contato" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all">
                 <MapPin className="h-4 w-4" />
                 Contato e Endereço
               </TabsTrigger>
-              <TabsTrigger 
-                value="responsavel" 
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all"
-              >
+              <TabsTrigger value="responsavel" className="data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-12 px-0 gap-2 text-[13px] font-medium transition-all">
                 <Shield className="h-4 w-4" />
                 Responsável Legal
               </TabsTrigger>
@@ -266,26 +236,80 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
             <TabsContent value="pessoais" className="mt-0 space-y-4 animate-in fade-in duration-300 outline-none">
               <div className="space-y-4">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Nome completo *</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.nome} 
-                    onChange={e => setFormData({...formData, nome: e.target.value})} 
-                    placeholder="Ex: João da Silva Santos" 
+                  <label className={labelClass}>Nome completo *</label>
+                  <input
+                    className={inputClass}
+                    disabled={loading}
+                    value={formData.nome}
+                    onChange={e => setFormData({ ...formData, nome: e.target.value })}
+                    placeholder="Ex: João da Silva Santos"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setUseNomeSocial(v => !v)}
+                    className="mt-2 text-[12px] font-medium text-primary hover:underline"
+                  >
+                    {useNomeSocial ? "Remover nome social" : "Deseja usar nome social?"}
+                  </button>
+                  {useNomeSocial && (
+                    <input
+                      className={`${inputClass} mt-2`}
+                      disabled={loading}
+                      value={formData.nomeSocial}
+                      onChange={e => setFormData({ ...formData, nomeSocial: e.target.value })}
+                      placeholder="Nome social (como o paciente prefere ser chamado)"
+                    />
+                  )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">CPF *</label>
+                    <label className={labelClass}>Data de nascimento *</label>
+                    <input
+                      className={inputClass}
+                      disabled={loading}
+                      value={formData.dataNascimento}
+                      onChange={e => setFormData({ ...formData, dataNascimento: maskDateBR(e.target.value) })}
+                      placeholder="DD/MM/AAAA"
+                      inputMode="numeric"
+                      maxLength={10}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Sexo biológico *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["Masculino", "Feminino"] as const).map(opt => {
+                        const active = formData.sexo === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            disabled={loading}
+                            onClick={() => setFormData({ ...formData, sexo: opt })}
+                            className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/30 text-foreground border-border/60 hover:bg-muted/60"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>CPF</label>
                     <div className="relative">
                       <input
                         className={inputClass + (cpfInvalid ? " border-destructive/60 focus:border-destructive/60 pr-9" : cpfValid ? " pr-9" : "")}
                         disabled={loading}
                         value={formData.cpf}
-                        onChange={e => setFormData({...formData, cpf: maskCPF(e.target.value)})}
-                        placeholder="000.000.000-00"
+                        onChange={e => setFormData({ ...formData, cpf: maskCPF(e.target.value) })}
+                        placeholder="000.000.000-00 (opcional)"
                         inputMode="numeric"
                         aria-invalid={cpfInvalid}
                       />
@@ -297,44 +321,17 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                       )}
                     </div>
                     {cpfInvalid && (
-                      <p className="text-[11px] text-destructive mt-1">CPF inválido conforme regras da Receita Federal.</p>
+                      <p className="text-[11px] text-destructive mt-1">CPF inválido. Corrija ou deixe em branco.</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Sexo biológico</label>
-                    <ComboboxField
-                      value={formData.sexo}
-                      onChange={(v) => setFormData({...formData, sexo: v})}
-                      options={SEXO_OPTS}
-                      placeholder="Selecione"
-                      allowCustom={false}
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Data de nascimento *</label>
+                    <label className={labelClass}>E-mail</label>
                     <input
                       className={inputClass}
                       disabled={loading}
-                      value={formData.dataNascimento}
-                      onChange={e => setFormData({...formData, dataNascimento: maskDateBR(e.target.value)})}
-                      placeholder="DD/MM/AAAA"
-                      inputMode="numeric"
-                      maxLength={10}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">E-mail</label>
-                    <input 
-                      className={inputClass} 
-                      disabled={loading} 
-                      value={formData.email} 
-                      onChange={e => setFormData({...formData, email: e.target.value})} 
-                      placeholder="paciente@exemplo.com" 
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="paciente@exemplo.com"
                       type="email"
                     />
                   </div>
@@ -345,41 +342,22 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
             <TabsContent value="contato" className="mt-0 space-y-4 animate-in fade-in duration-300 outline-none">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Celular</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.celular} 
-                    onChange={e => setFormData({...formData, celular: maskPhone(e.target.value)})} 
-                    placeholder="(00) 00000-0000" 
-                  />
+                  <label className={labelClass}>Celular</label>
+                  <input className={inputClass} disabled={loading} value={formData.celular} onChange={e => setFormData({ ...formData, celular: maskPhone(e.target.value) })} placeholder="(00) 00000-0000" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Telefone fixo</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.telefone} 
-                    onChange={e => setFormData({...formData, telefone: maskPhone(e.target.value)})} 
-                    placeholder="(00) 0000-0000" 
-                  />
+                  <label className={labelClass}>Telefone fixo</label>
+                  <input className={inputClass} disabled={loading} value={formData.telefone} onChange={e => setFormData({ ...formData, telefone: maskPhone(e.target.value) })} placeholder="(00) 0000-0000" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-4">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">CEP</label>
-                  <input 
-                    className={`${inputClass} max-w-[120px]`}
-                    disabled={loading} 
-                    value={formData.cep} 
-                    onChange={e => setFormData({...formData, cep: maskCEP(e.target.value)})} 
-                    onBlur={handleCEPBlur}
-                    placeholder="00000-000" 
-                  />
+                  <label className={labelClass}>CEP</label>
+                  <input className={`${inputClass} max-w-[120px]`} disabled={loading} value={formData.cep} onChange={e => setFormData({ ...formData, cep: maskCEP(e.target.value) })} onBlur={handleCEPBlur} placeholder="00000-000" />
                 </div>
                 <div className="flex flex-col justify-end">
-                  <LocationSelector 
+                  <LocationSelector
                     selectedState={formData.estado}
                     selectedCity={formData.cidade}
                     onStateChange={uf => setFormData((prev: any) => ({ ...prev, estado: uf }))}
@@ -390,79 +368,66 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Bairro</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.bairro} 
-                    onChange={e => setFormData({...formData, bairro: e.target.value})} 
-                    placeholder="Ex: Centro" 
-                  />
+                  <label className={labelClass}>Bairro</label>
+                  <input className={inputClass} disabled={loading} value={formData.bairro} onChange={e => setFormData({ ...formData, bairro: e.target.value })} placeholder="Ex: Centro" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Logradouro (Endereço)</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.endereco} 
-                    onChange={e => setFormData({...formData, endereco: e.target.value})} 
-                    placeholder="Ex: Rua das Flores" 
-                  />
+                  <label className={labelClass}>Logradouro (Endereço)</label>
+                  <input className={inputClass} disabled={loading} value={formData.endereco} onChange={e => setFormData({ ...formData, endereco: e.target.value })} placeholder="Ex: Rua das Flores" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Número</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.numero} 
-                    onChange={e => setFormData({...formData, numero: e.target.value})} 
-                    placeholder="Ex: 123" 
-                  />
+                  <label className={labelClass}>Número</label>
+                  <input className={inputClass} disabled={loading} value={formData.numero} onChange={e => setFormData({ ...formData, numero: e.target.value })} placeholder="Ex: 123" />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Complemento</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.complemento} 
-                    onChange={e => setFormData({...formData, complemento: e.target.value})} 
-                    placeholder="Ex: Apto 101" 
-                  />
+                  <label className={labelClass}>Complemento</label>
+                  <input className={inputClass} disabled={loading} value={formData.complemento} onChange={e => setFormData({ ...formData, complemento: e.target.value })} placeholder="Ex: Apto 101" />
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="responsavel" className="mt-0 space-y-4 animate-in fade-in duration-300 outline-none">
-              <div className="bg-primary/5 p-4 rounded-2xl flex gap-4 items-start mb-2 border border-primary/10">
-                <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-[13px] text-foreground">Dados do Responsável Legal</h4>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">Preencha estes campos caso o paciente seja menor de idade ou necessite de acompanhamento legal.</p>
+              {isMinor ? (
+                <div className={`p-4 rounded-2xl flex gap-3 items-start border ${isNewborn ? "bg-primary/5 border-primary/20" : "bg-amber-500/5 border-amber-500/30"}`}>
+                  <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${isNewborn ? "text-primary" : "text-amber-500"}`} />
+                  <p className="text-[12px] leading-relaxed text-foreground">
+                    {isNewborn
+                      ? "Recém-nascido (até 1 ano): preferencialmente informe os dados da mãe ou responsável legal direto."
+                      : "Paciente menor de 18 anos — recomendamos informar os dados do responsável legal."}
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-muted/30 p-4 rounded-2xl flex gap-3 items-start border border-border/60">
+                  <Shield className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-[12px] leading-relaxed text-muted-foreground">
+                    Campos opcionais. Preencha caso o paciente deseje registrar um responsável legal ou acompanhante.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-4 pt-2">
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Nome do responsável</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.guardianName} 
-                    onChange={e => setFormData({...formData, guardianName: e.target.value})} 
-                    placeholder="Nome completo do responsável" 
+                  <label className={labelClass}>{isNewborn ? "Nome da mãe / responsável" : "Nome do responsável"}</label>
+                  <input
+                    className={inputClass}
+                    disabled={loading}
+                    value={formData.guardianName}
+                    onChange={e => setFormData({ ...formData, guardianName: e.target.value })}
+                    placeholder="Nome completo do responsável"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">CPF do responsável</label>
-                  <input 
-                    className={inputClass} 
-                    disabled={loading} 
-                    value={formData.guardianCpf} 
-                    onChange={e => setFormData({...formData, guardianCpf: maskCPF(e.target.value)})} 
-                    placeholder="000.000.000-00" 
+                  <label className={labelClass}>{isNewborn ? "CPF da mãe / responsável" : "CPF do responsável"}</label>
+                  <input
+                    className={inputClass}
+                    disabled={loading}
+                    value={formData.guardianCpf}
+                    onChange={e => setFormData({ ...formData, guardianCpf: maskCPF(e.target.value) })}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
                   />
                 </div>
               </div>

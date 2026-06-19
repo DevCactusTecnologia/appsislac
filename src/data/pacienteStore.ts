@@ -15,7 +15,8 @@ export interface Paciente {
   id: number;
   friendlyId?: string;
   nome: string;
-  cpf: string;            // formato com máscara: "000.000.000-00"
+  nomeSocial?: string;
+  cpf: string;            // formato com máscara: "000.000.000-00" (opcional)
   dataNascimento: string; // formato dd/MM/yyyy
   sexo: string;           // "Masculino" | "Feminino" (compat) — DB armazena "M" | "F"
   telefone: string;
@@ -75,7 +76,8 @@ function fromRow(r: PacienteRow): Paciente {
     id: Number(r.id),
     friendlyId: (r as unknown as { friendly_id?: string }).friendly_id || "",
     nome: r.nome,
-    cpf: formatCPF(r.cpf),
+    nomeSocial: (r as unknown as { nome_social?: string | null }).nome_social || "",
+    cpf: formatCPF(r.cpf || ""),
     dataNascimento: formatDateBR(r.data_nascimento),
     sexo: sexoToLong(r.sexo),
     telefone: r.telefone || "",
@@ -102,7 +104,8 @@ function fromRow(r: PacienteRow): Paciente {
 function toRow(p: Partial<Paciente>): PacienteUpdate {
   const row: PacienteUpdate = {};
   if (p.nome !== undefined) row.nome = p.nome;
-  if (p.cpf !== undefined) row.cpf = p.cpf.replace(/\D/g, "");
+  if (p.nomeSocial !== undefined) (row as Record<string, unknown>).nome_social = p.nomeSocial ? p.nomeSocial : null;
+  if (p.cpf !== undefined) row.cpf = p.cpf ? p.cpf.replace(/\D/g, "") : null;
   if (p.dataNascimento !== undefined) row.data_nascimento = dateBRtoISO(p.dataNascimento);
   if (p.sexo !== undefined) row.sexo = sexoToShort(p.sexo);
   if (p.telefone !== undefined) row.telefone = p.telefone;
@@ -141,7 +144,7 @@ export async function _initPacientesStore(): Promise<void> {
   const cols =
     "id,friendly_id,nome,cpf,data_nascimento,sexo,telefone,email,status," +
     "celular,cep,estado,cidade,bairro,endereco,numero,complemento," +
-    "guardian_name,guardian_cpf,consentimento_lgpd,consentimento_em";
+    "guardian_name,guardian_cpf,consentimento_lgpd,consentimento_em,nome_social";
   const PAGE = 1000;
   const all: PacienteRow[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -184,7 +187,7 @@ export async function addPaciente(input: Omit<Paciente, "id" | "initials">): Pro
       tenant_id,
       // Campos NOT NULL exigidos pelo Insert (já garantidos pelo formulário)
       nome: input.nome,
-      cpf: input.cpf.replace(/\D/g, ""),
+      cpf: input.cpf ? input.cpf.replace(/\D/g, "") : null,
     };
     const data = await persistOneOrThrow<PacienteRow>(
       supabase.from("pacientes").insert(insertPayload),
