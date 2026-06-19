@@ -49,7 +49,7 @@ const ResultadoPopup = ({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             className="absolute inset-0 bg-foreground/40 backdrop-blur-[6px]"
             onClick={() => onOpenChange(false)}

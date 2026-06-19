@@ -26,7 +26,7 @@ const CelebracaoLiberacaoDialog = ({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             className="absolute inset-0 bg-foreground/45 backdrop-blur-[8px]"
             onClick={onClose}

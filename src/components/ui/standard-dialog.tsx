@@ -69,7 +69,7 @@ const StandardDialog = ({
   return (
     <AnimatePresence>
       {open && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${containerPadding}`}>
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center ${containerPadding}`}>
           <motion.div
             className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]"
             onClick={onClose}

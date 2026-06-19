@@ -585,7 +585,7 @@ const ConsultarResultados = () => {
 
       {/* ─── Motivo dialog ─── */}
       {motivoDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-[6px]" onClick={() => setMotivoDialogOpen(false)} />
           <div className="relative bg-card rounded-xl border border-border shadow-elevation-lg w-full max-w-md p-6 animate-fade-in-up">
             <div className="flex items-start gap-3 mb-4">
