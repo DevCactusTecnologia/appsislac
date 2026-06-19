@@ -54,6 +54,7 @@ import { useDicionario } from "@/hooks/useDicionario";
 import type { ExameStatus, Parametro, Exame, Paciente, DbIdMap } from "./ResultadoDetalhe/types";
 import { statusExameMap } from "./ResultadoDetalhe/types";
 import { ParamTypedInput } from "./ResultadoDetalhe/ParamTypedInput";
+import { buildValuesByChave, evaluateFormula } from "./ResultadoDetalhe/formula";
 import {
   templatesParametrosLegado,
   isoToBR,
