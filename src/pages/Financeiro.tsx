@@ -29,7 +29,7 @@ const CriarItemDialog = lazy(() => import("@/components/financeiro/CriarItemDial
 const FecharFaturaDialog = lazy(() => import("@/components/financeiro/FecharFaturaDialog"));
 const FaturaDetalheDialog = lazy(() => import("@/components/financeiro/FaturaDetalheDialog"));
 import { useEnsureStore } from "@/hooks/useEnsureStore";
-import { fetchSaldoEmAbertoPorConvenio } from "@/data/convenioFaturasStore";
+// fetchSaldoEmAbertoPorConvenio removido (Fase 1 V2 — substituído por useAReceberConvenios)
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios } from "@/hooks/useAReceberPacientes";
 import { toast } from "@/hooks/use-toast";
