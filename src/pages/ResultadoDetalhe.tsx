@@ -1033,7 +1033,7 @@ const ResultadoDetalhe = () => {
                     )}
 
                     {/* Parameters */}
-                    {(() => { const __valsM = buildValuesByChave(exame.parametros); return null; })()}
+                    
                     {exame.parametros.map((param, idx) => {
                       const isBlockedExame = isExameBloqueado(exame.status);
                       const isEditableParam = !isBlockedExame || exame.status === "Em retificação";
