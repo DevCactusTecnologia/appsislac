@@ -1176,6 +1176,7 @@ const Index = () => {
         pagamentosRealizados={pagamentoData.pagamentosRealizados}
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}
+        descontoData={selectedAtendimento?.data}
         isEditing={true}
       />
       <AtendimentoDetalheDialog
