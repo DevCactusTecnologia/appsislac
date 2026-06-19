@@ -491,7 +491,7 @@ const PagamentoDialog = ({
                         onKeyDown={e => { if (e.key === "Enter") handleAddStaging(); }}
                         placeholder={adj && stagingUnidade === "PCT" ? "0" : "0,00"}
                         autoFocus
-                        className="flex-1 h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
+                        className="flex-1 min-w-0 w-full h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
                       />
                       {adj && stagingUnidade === "PCT" && stagingEff > 0 && (
                         <span className="px-2 text-[10px] tabular-nums text-muted-foreground">≈ {fmtBRL(stagingEff)}</span>
