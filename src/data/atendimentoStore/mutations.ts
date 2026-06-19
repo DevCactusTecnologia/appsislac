@@ -285,6 +285,8 @@ async function persistUpdateAtendimentoTx(
           material: cat?.material ?? "",
           status: cancelarTudoFlag ? "cancelado" : "pendente",
           valor: Number(meta?.valor) || 0,
+          // Preço cheio antes do desconto distribuído.
+          valor_original: Number(meta?.valorOriginal ?? meta?.valor) || 0,
           ordem: idx + 1,
           motivo_cancelamento: updates.motivoCancelamento ?? null,
           cobranca_destino: meta?.cobrancaDestino ?? "paciente",
