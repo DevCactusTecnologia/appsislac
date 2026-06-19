@@ -90,7 +90,11 @@ const PagamentoDialog = ({
   const [stagingData, setStagingData] = useState<Date>(new Date());
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
+  const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
   useBodyScrollLock(open);
+
+  // Desconto histórico efetivo (zera quando o usuário remove o card).
+  const descontoHistorico = descontoHistRemovido ? 0 : descontoProp;
 
   const resetStaging = () => {
     setStagingValor("");
