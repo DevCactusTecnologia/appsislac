@@ -1933,7 +1933,7 @@ const NovoAtendimento = () => {
 
                               <div className="h-9 inline-flex items-center justify-end whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0">
                                 <span className="text-sm font-bold text-foreground">
-                                  {fmtBRL(exame.valor)}
+                                  {fmtBRL(exame.valorOriginal ?? exame.valor)}
                                 </span>
                               </div>
 
