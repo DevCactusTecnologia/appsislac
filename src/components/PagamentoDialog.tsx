@@ -91,6 +91,8 @@ const PagamentoDialog = ({
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
+  // Confirmação de remoção: 'desc' para o card de desconto, 'real-N' para realizado, 'staging-N' para staging
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   useBodyScrollLock(open);
 
   // Desconto histórico efetivo (zera quando o usuário remove o card).
@@ -181,6 +183,7 @@ const PagamentoDialog = ({
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);
+    setConfirmingRemove(null);
     onClose();
   };
 
@@ -316,13 +319,30 @@ const PagamentoDialog = ({
                         <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>
                           − {fmtBRL(descontoHistorico)}
                         </span>
-                        <button
-                          onClick={() => setDescontoHistRemovido(true)}
-                          className="p-1 rounded-md hover:bg-destructive/10 transition-colors"
-                          aria-label="Remover desconto"
-                        >
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </button>
+                        {confirmingRemove === "desc" ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { setDescontoHistRemovido(true); setConfirmingRemove(null); }}
+                              className="px-2 h-6 rounded-md text-[10px] font-semibold bg-destructive text-destructive-foreground hover:opacity-90 transition"
+                            >
+                              Remover
+                            </button>
+                            <button
+                              onClick={() => setConfirmingRemove(null)}
+                              className="px-2 h-6 rounded-md text-[10px] font-semibold border border-border text-muted-foreground hover:text-foreground transition"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmingRemove("desc")}
+                            className="p-1 rounded-md hover:bg-destructive/10 transition-colors"
+                            aria-label="Remover desconto"
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -343,9 +363,26 @@ const PagamentoDialog = ({
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
                           {onRemovePagamentoRealizado && (
-                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1 rounded-md hover:bg-destructive/10 transition-colors">
-                              <Trash2 className="h-3 w-3 text-destructive" />
-                            </button>
+                            confirmingRemove === `real-${i}` ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => { onRemovePagamentoRealizado(i); setConfirmingRemove(null); }}
+                                  className="px-2 h-6 rounded-md text-[10px] font-semibold bg-destructive text-destructive-foreground hover:opacity-90 transition"
+                                >
+                                  Remover
+                                </button>
+                                <button
+                                  onClick={() => setConfirmingRemove(null)}
+                                  className="px-2 h-6 rounded-md text-[10px] font-semibold border border-border text-muted-foreground hover:text-foreground transition"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmingRemove(`real-${i}`)} className="p-1 rounded-md hover:bg-destructive/10 transition-colors" aria-label="Remover pagamento">
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
@@ -393,9 +430,26 @@ const PagamentoDialog = ({
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-sm font-semibold tabular-nums" style={{ color }}>{sign}{fmtBRL(eff)}</span>
-                          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {confirmingRemove === `staging-${i}` ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => { remove(i); setConfirmingRemove(null); }}
+                                className="px-2 h-6 rounded-md text-[10px] font-semibold bg-destructive text-destructive-foreground hover:opacity-90 transition"
+                              >
+                                Remover
+                              </button>
+                              <button
+                                onClick={() => setConfirmingRemove(null)}
+                                className="px-2 h-6 rounded-md text-[10px] font-semibold border border-border text-muted-foreground hover:text-foreground transition"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setConfirmingRemove(`staging-${i}`)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200" aria-label="Remover pagamento">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -437,7 +491,7 @@ const PagamentoDialog = ({
                         onKeyDown={e => { if (e.key === "Enter") handleAddStaging(); }}
                         placeholder={adj && stagingUnidade === "PCT" ? "0" : "0,00"}
                         autoFocus
-                        className="flex-1 h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
+                        className="flex-1 min-w-0 w-full h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
                       />
                       {adj && stagingUnidade === "PCT" && stagingEff > 0 && (
                         <span className="px-2 text-[10px] tabular-nums text-muted-foreground">≈ {fmtBRL(stagingEff)}</span>
