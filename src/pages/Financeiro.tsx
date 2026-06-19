@@ -889,7 +889,7 @@ const Financeiro = () => {
           formasPagamento={formasPagamento}
           onCreated={() => {
             void refreshEntradas();
-            void fetchSaldoEmAbertoPorConvenio().then(setSaldoConvenios);
+            refreshConvenios();
           }}
         />
         </Suspense>
