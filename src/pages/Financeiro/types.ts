@@ -77,11 +77,11 @@ export type CaixaLinhaComSaldo = CaixaMov & { saldoAcumulado: number };
 
 export const baseTabs: { key: TabType; label: string; icon: LucideIcon }[] = [
   { key: "painel", label: "Painel", icon: LayoutDashboard },
-  { key: "entrada", label: "Recebimentos", icon: ArrowDownCircle },
-  { key: "a_receber", label: "A Receber", icon: Clock },
+  { key: "entrada", label: "Recebido", icon: ArrowDownCircle },
+  { key: "a_receber", label: "Receber", icon: Clock },
   { key: "convenios", label: "Convênios", icon: Building2 },
-  { key: "saida", label: "Saídas", icon: ArrowUpCircle },
-  { key: "caixa", label: "Caixa", icon: BookOpen },
+  { key: "saida", label: "Pagar", icon: ArrowUpCircle },
+  { key: "caixa", label: "Conferir", icon: BookOpen },
 ];
 
 export const paymentIcons: Record<string, LucideIcon> = {
