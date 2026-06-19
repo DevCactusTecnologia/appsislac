@@ -253,6 +253,8 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
   const dataPgtoISO = ddmmyyyyToISO(merged.dataPagamento);
   const dataISO = ddmmyyyyToISODateTime(merged.foiPago === "Sim" ? merged.dataPagamento : merged.dataVencimento);
 
+  const mergedStatus: SaidaStatus = merged.status
+    ?? (merged.foiPago === "Sim" ? "paga" : "aberta");
   try {
     await persistOneOrThrow<SaidaRow>(
       supabase.from("financeiro_saidas").update({
@@ -263,8 +265,9 @@ export async function updateSaida(protocolo: string, updates: Partial<Financeiro
         tipo_despesa: merged.tipoDespesa,
         destino_pagamento: merged.destinoPagamento,
         data_vencimento: dataVencISO,
-        foi_pago: merged.foiPago === "Sim",
+        foi_pago: mergedStatus === "paga",
         data_pagamento: dataPgtoISO,
+        status: mergedStatus,
       }).eq("id", dbId),
       "financeiro.atualizarSaida",
     );
