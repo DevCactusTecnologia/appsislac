@@ -336,8 +336,7 @@ export default function CadastroPacienteDialog({ open, onClose, editMode, initia
                 <div className="min-w-0">
                   <h3 className="text-[13px] font-semibold text-foreground tracking-tight leading-tight">
                     Responsável legal
-                    {isNewborn && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· obrigatório</span>}
-                    {!isNewborn && isMinor && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· recomendado</span>}
+                    {isMinor && <span className="ml-1.5 text-amber-700 dark:text-amber-400">· recomendado</span>}
                   </h3>
                   <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
                     {isNewborn
