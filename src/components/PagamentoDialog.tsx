@@ -518,8 +518,10 @@ const PagamentoDialog = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
+
 };
 
 export default PagamentoDialog;
