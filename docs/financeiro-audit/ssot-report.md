@@ -1,51 +1,30 @@
-# Single Source of Truth (SSOT) — Financeiro SISLAC
+# Fonte de Verdade (SSOT) — Financeiro
 
-> Para cada métrica/conceito, qual é a **única** fonte da verdade hoje.
+| Métrica / Conceito | Fonte de verdade | Calculado em |
+|--------------------|------------------|--------------|
+| Receita realizada (entradas) | `view public.financeiro_entradas` | Banco (UNION de `atendimento_pagamentos` + `convenio_faturas where status='paga'`) |
+| Saldo "A Receber" de paciente | `atendimento_exames` (cobranca_destino='paciente') − `atendimento_pagamentos` | RPC `a_receber_pacientes_page` (banco) **ou** `buildAReceberRowsFromAtendimentos` (cliente, fallback) |
+| Saldo "A Receber" de convênio | `atendimento_exames` (cobranca_destino='convenio') sem `convenio_fatura_itens` em fatura `paga` | `fetchSaldoEmAbertoPorConvenio` (banco) |
+| Status de pagamento do atendimento | `atendimentos.status_pagamento` | Trigger `trg_recompute_on_pagamento_change` (banco) |
+| Despesas (saídas) | `financeiro_saidas` (linha) | Banco direto |
+| Forma de pagamento de uma saída | Sufixo `[pgto:X]` em `financeiro_saidas.descricao` | Cliente (encode/decode) — **não tem SSOT canônico** |
+| Saldo de caixa por dia | `financeiro_entradas` ∪ `financeiro_saidas where foi_pago=true` | Cliente (`buildCaixaMovimentos`+`applyCaixaSaldoAcumulado`) |
+| Inadimplência | derivada de A Receber + idade da `atendimentos.data` | Implícita (não há flag/agregação canônica) |
+| Faturamento (recebido + a receber) | Σ `atendimento_exames.valor − desconto` − cancelados | Não há SSOT único; reconstruído em telas (KPIs em `computeFinanceiroSummary`) |
+| Total faturado convênio | `convenio_faturas.total` (snapshot) | Banco |
+| Resumo financeiro do dashboard | RPC `financeiro_resumo` | Banco |
+| Protocolo (ATD/FAT/SAI) | Triggers de assinatura HMAC | Banco |
 
-| Métrica / Conceito | Fonte da verdade | Onde é calculada | Observação |
-|---|---|---|---|
-| Recebimento individual de paciente | `atendimento_pagamentos` (tabela) | DB | Toda entrada de paciente é literal aqui |
-| `status_pagamento` do atendimento | Trigger `trg_recompute_on_pagamento_change` | DB | Recalculado em INSERT/UPDATE/DELETE de pagamento. Cliente NÃO deve calcular. |
-| Valor faturado de convênio | `convenio_faturas.total` + `convenio_fatura_itens.valor` | DB | `total = max(0, subtotal − desconto)` |
-| "Entradas" (regime de caixa, exibição) | View `financeiro_entradas` (UNION ALL) | DB | Read-only. Nunca escrever direto. |
-| "A Receber" (paciente, paginado) | RPC `a_receber_pacientes_page` | DB | Quando flag `paginated_atendimentos` ON e `USE_LEGACY_STORE` OFF. |
-| "A Receber" (paciente, fallback legacy) | `buildAReceberRowsFromAtendimentos` em `FinanceiroService.ts` | Cliente | Lê de `getAtendimentos()` (cache de até 100 atendimentos). **Inconsistente em volume grande**. Ver complexity. |
-| "A Receber" (convênio, saldo em aberto) | `fetchSaldoEmAbertoPorConvenio` | Cliente (mas com query SQL única) | Calcula sobre `atendimento_exames` filtrando os já-faturados. |
-| Resumo financeiro agregado (KPIs do header) | RPC `financeiro_resumo` | DB | Quando RPC mode ON. Caso contrário, derivações em cliente sobre os mesmos dados. |
-| Despesa / Saída | Tabela `financeiro_saidas` | DB | Forma de pagamento codificada na descrição. |
-| Caixa (saldo, lançamentos) | **Cliente — derivado** (`buildCaixaMovimentos` + `applyCaixaSaldoAcumulado`) | Cliente | **Não persistido**. Não existe SSOT no banco para caixa. |
-| Dicionários (tipo/destino/forma) | `select_options` (categorias `financeiro_*`) | DB | Cache local com listeners no `financeiroListasStore`. |
-| Convênios (nome ↔ id) | `convenios` | DB | Via `convenioStore`. |
-| Numeração de documentos (ATD/FAT/SAI) | Triggers PG | DB | Cliente nunca define o número final. |
+## Conclusões
 
-## Múltiplas fontes para "A Receber" — observação crítica
+1. **Entradas têm SSOT clara**: `financeiro_entradas` (view).
+2. **Saídas têm SSOT clara**: `financeiro_saidas` — porém com **um campo crítico (forma de pagamento) sem coluna**, codificado em string. Isso compromete relatórios futuros que precisem agrupar por meio de pagamento de despesa.
+3. **A Receber tem dupla implementação** (RPC paginado vs. cálculo client) controlada por feature flag — risco de divergência se as fórmulas saírem de sincronia.
+4. **Caixa não tem SSOT** — é puramente derivado em runtime no cliente. Não há materialização nem auditoria de saldo histórico.
+5. **Inadimplência, ticket médio, mix de receita por convênio**: não têm SSOT — qualquer KPI assim hoje é recomputado on-the-fly.
+6. **Faturamento global** (vendido, não necessariamente recebido): não há fonte canônica — só pode ser reconstruído a partir de `atendimento_exames` filtrando cancelados.
 
-Existe um **branch dual** controlado por feature flags em `Financeiro.tsx`:
+## Risco de inconsistência identificado
 
-```
-ffPaginated && !ffLegacy
-   → useAReceberPacientes() → RPC a_receber_pacientes_page  (DB)
-   → useFinanceiroResumo()  → RPC financeiro_resumo         (DB)
-caso contrário
-   → buildAReceberRowsFromAtendimentos(getAtendimentos())   (cliente, cache de 100)
-```
-
-Quando o branch legacy estiver ativo num tenant com mais de 100 atendimentos no cache, **A Receber e os KPIs ficam subestimados**. A RPC é a única fonte fiel ao banco em volume.
-
-## Dupla fonte para "Forma de pagamento" de despesa
-
-- **Banco:** sufixo serializado em `financeiro_saidas.descricao` (`[pgto:PIX]`).
-- **Cliente:** dicionário `financeiro_forma_pagamento` (`select_options`).
-
-A primeira é a fonte da verdade do **valor lançado**; a segunda é a fonte da verdade do **conjunto de opções permitidas**. As duas só se mantêm coerentes se o usuário não excluir uma forma já em uso (não há FK).
-
-## "Status de atendimento" e o financeiro
-
-- A RPC `financeiro_resumo` filtra `a.status_atendimento <> 'Cancelado'`.
-- A view `financeiro_entradas` **não filtra** por status do atendimento. Pagamentos lançados em atendimentos depois cancelados continuam aparecendo em "Entradas" pela view. Documentado em complexity-report como ponto de atenção.
-
-## Caixa — ausência de SSOT
-
-- Não existe abertura/fechamento de caixa, snapshot de saldo, hash de fechamento ou lacre temporal.
-- Cada navegador recalcula o caixa do zero a cada render da aba, lendo entradas + saídas pagas.
-- Saldo final é determinístico (mesmo input ⇒ mesmo output), mas **não é auditável historicamente**: se um pagamento de ontem for editado hoje, o livro-caixa de ontem muda.
+- A view `financeiro_entradas` **não filtra atendimentos cancelados** explicitamente. Pagamentos de atendimentos cancelados continuam aparecendo como entrada (intencional ou não — não há regra documentada).
+- `convenio_faturas` cancelada com `data_pagamento` previamente preenchida: a condição `WHERE cf.status='paga'` da view evita o problema, mas trocar status para `paga` e voltar para `cancelada` não tem trilha clara.

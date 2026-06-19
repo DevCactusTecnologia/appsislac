@@ -1,119 +1,136 @@
 # Inventário do Módulo Financeiro — SISLAC
 
-> Auditoria somente leitura. Nada aqui propõe mudanças; apenas documenta o que existe hoje.
+> Auditoria somente-leitura. Documenta o **estado atual** (não o ideal).
+> Data do levantamento: 2026-06-19.
 
-## 1. Página principal e sub-componentes
+## 1. Páginas (rotas)
 
-| Caminho | Linhas | Papel |
-|---|---:|---|
-| `src/pages/Financeiro.tsx` | 924 | Orquestrador da rota `/financeiro` — monta tabs, filtros, contexto, dialogs |
-| `src/pages/Financeiro/FinanceiroContext.tsx` | 108 | Context interno usado pelas abas (sem prop drilling) |
-| `src/pages/Financeiro/types.ts` | 82 | `TabType`, `FinanceiroEntry`, `AReceberRow`, `AReceberConvenioRow`, `CaixaMov`, `CaixaLinhaComSaldo` |
-| `src/pages/Financeiro/helpers.ts` | 63 | `parseDate`, `maskDateBR`, `isValidDateBR`, `saidaToEntry` |
-| `src/pages/Financeiro/hooks/useFinanceiroFilters.ts` | 41 | Estado de filtros/UI (tab, busca, datas, convênio, status, etc.) |
-| `src/pages/Financeiro/hooks/useFinanceiroDialogs.ts` | 78 | Estado dos dialogs (edit/delete/detail/pagar/receber/criar/fatura) |
+| Rota | Arquivo | Função |
+|------|---------|--------|
+| `/financeiro` | `src/pages/Financeiro.tsx` (924 linhas) | Hub com 4–5 abas: Entradas, A Receber, Saídas, Caixa, Integrações (condicional) |
+| `/orcamentos` | `src/pages/Orcamentos.tsx` (899 linhas) | CRUD de orçamentos (não é financeiro stricto sensu, mas alimenta atendimentos) |
+| `/convenios` | `src/pages/Convenios.tsx` (19 linhas) | Wrapper fino — UI de gestão fica em `Configuracoes` |
 
-### Abas (Tab components)
-| Caminho | Linhas | Aba |
-|---|---:|---|
-| `src/pages/Financeiro/components/EntradasTab.tsx` | 131 | "Entradas" (regime de caixa) |
-| `src/pages/Financeiro/components/AReceberTab.tsx` | 275 | "A Receber" — sub-tabs Pacientes / Convênios |
-| `src/pages/Financeiro/components/SaidasTab.tsx` | 120 | "Saídas" (despesas) |
-| `src/pages/Financeiro/components/CaixaTab.tsx` | 159 | "Livro-Caixa" |
-| `src/pages/Financeiro/components/EntradasSaidasTable.tsx` | 271 | Tabela compartilhada Entradas/Saídas |
+### Subdiretório `src/pages/Financeiro/`
 
-### Dialogs
-| Caminho | Função |
-|---|---|
-| `EditEntryDialog.tsx` | Editar saída |
-| `DeleteEntryDialog.tsx` | Confirmar exclusão de saída |
-| `DetailEntryDialog.tsx` | Detalhes de uma entrada/saída (com drill-down em atendimento) |
-| `PagarDespesaDialog.tsx` | Marcar despesa como paga |
-| `src/components/NovaEntradaSaidaDialog.tsx` | Criar nova entrada (pagamento) ou saída |
-| `src/components/financeiro/CriarItemDialog.tsx` | Criar item de dicionário (tipo despesa / destino / forma) |
-| `src/components/financeiro/FecharFaturaDialog.tsx` | Fechar fatura de convênio |
-| `src/components/financeiro/FaturaDetalheDialog.tsx` | Drill-down de itens de uma fatura |
-| `src/components/financeiro/IntegracoesWebhookPanel.tsx` | Histórico de webhooks de gateways de pagamento |
+```
+Financeiro/
+├── FinanceiroContext.tsx        # Provider que distribui state/derivados às abas
+├── types.ts                     # TabType, FinanceiroEntry, AReceberRow, CaixaMov, baseTabs, paymentIcons
+├── helpers.ts                   # parseDate, maskDateBR, isValidDateBR, saidaToEntry
+├── components/
+│   ├── EntradasTab.tsx
+│   ├── AReceberTab.tsx
+│   ├── SaidasTab.tsx
+│   ├── CaixaTab.tsx
+│   ├── EntradasSaidasTable.tsx
+│   └── dialogs/
+│       ├── DetailEntryDialog.tsx
+│       ├── EditEntryDialog.tsx
+│       ├── DeleteEntryDialog.tsx
+│       ├── PagarDespesaDialog.tsx
+│       └── types.ts
+├── hooks/
+│   ├── useFinanceiroDialogs.ts
+│   └── useFinanceiroFilters.ts
+└── services/                    # Funções PURAS (sem React/Supabase)
+    ├── FinanceiroService.ts     # 579 linhas — A Receber, KPIs, Caixa, builders HTML
+    ├── computeDetailExames.ts
+    ├── computeDetailTotals.ts
+    ├── computeFinanceiroSummary.ts
+    ├── filterEntradasPagas.ts
+    ├── periodoRapido.ts
+    ├── todayBR.ts
+    ├── validatePayment.ts
+    └── validateSaidaEdit.ts
+```
 
-### Outros componentes
-- `src/components/financeiro/SearchableSelect.tsx` — combobox para tipos/destinos/formas
-- `src/components/PagamentoDialog.tsx` — dialog de pagamento usado pelo NovoAtendimento e por Index (não no /financeiro diretamente)
+## 2. Componentes (fora de `pages/Financeiro`)
 
-## 2. Stores (cache + persistência)
+`src/components/financeiro/`:
+- `CriarItemDialog.tsx` — cria item de lista (tipo despesa, destino, forma pgto)
+- `FaturaDetalheDialog.tsx` — detalha fatura de convênio (itens, totais)
+- `FecharFaturaDialog.tsx` — seleciona itens faturáveis e fecha fatura
+- `IntegracoesWebhookPanel.tsx` — painel da aba Integrações
+- `SearchableSelect.tsx` — combobox utilitário
 
-| Caminho | Linhas | Responsabilidade |
-|---|---:|---|
-| `src/data/financeiroStore.ts` | 334 | Saídas (CRUD `financeiro_saidas`) + leitura da view `financeiro_entradas` |
-| `src/data/financeiroListasStore.ts` | 180 | Dicionários de tipo de despesa / destino / forma de pagamento (via `select_options`) |
-| `src/data/convenioFaturasStore.ts` | 375 | Faturas de convênio (header + itens), itens faturáveis, saldo em aberto por convênio |
-| `src/data/atendimentoStore/*` | ~vários | Atendimentos + pagamentos do paciente (fonte de "A Receber" e "Entradas") |
-| `src/data/convenioStore.ts` | — | Convênios (nome ↔ id) |
+`src/components/PagamentoDialog.tsx` (raiz de components) — diálogo de pagamento usado em `/atendimentos` e `/financeiro` (registra em `atendimento_pagamentos`).
 
-## 3. Serviços puros (sem React/IO)
+`src/components/NovaEntradaSaidaDialog.tsx` — modal único de criação de entrada manual / saída.
 
-| Caminho | Função |
-|---|---|
-| `src/pages/Financeiro/services/FinanceiroService.ts` (579L) | `buildAReceberRowsFromAtendimentos`, `buildAReceberRowsFromRpc`, `buildAReceberConvenioRows`, `filterAReceberRows`, `applyFinanceiroFilters`, `computeEntradaCounts`, `computeAReceberCounts`, `computeSaidaCounts`, `buildCaixaMovimentos`, `filterCaixaMovimentos`, `computeCaixaSaldoInicial`, `applyCaixaSaldoAcumulado`, `computeCaixaTotais`, `buildLivroCaixaHtml`, `buildDetalhadoHtml` |
-| `services/computeDetailExames.ts` | Lista de exames cobrados de paciente para drill-down |
-| `services/computeDetailTotals.ts` | Totais (totalExames, totalPago, saldo) do detalhe |
-| `services/computeFinanceiroSummary.ts` | KPIs do header por aba |
-| `services/filterEntradasPagas.ts` | Filtra entradas com `statusPagamento = "Pagamento efetuado"` |
-| `services/validateSaidaEdit.ts` | Validação de datas de vencimento/pagamento |
-| `services/validatePayment.ts` | Validação do dialog "Pagar despesa" |
-| `services/periodoRapido.ts` | Conversão de "hoje/7d/30d/mes/ano" → intervalo |
-| `services/todayBR.ts` | Data atual `dd/mm/yyyy` |
+## 3. Stores (cache/data layer client-side)
 
-## 4. Hooks dedicados
+| Store | Arquivo | Tabela/View | Tipo |
+|-------|---------|-------------|------|
+| `financeiroStore` | `src/data/financeiroStore.ts` (334) | `financeiro_saidas` (CRUD) + `financeiro_entradas` (view, read-only) | Cache síncrono + listeners |
+| `financeiroListasStore` | `src/data/financeiroListasStore.ts` (180) | `select_options` (categorias `financeiro_tipo_despesa`, `financeiro_destino_pagamento`, `financeiro_forma_pagamento`) | Cache por categoria |
+| `convenioFaturasStore` | `src/data/convenioFaturasStore.ts` (375) | `convenio_faturas`, `convenio_fatura_itens`, joins em `atendimento_exames` / `atendimentos` / `convenios` | Funções async (não cacheadas) |
+| `convenioStore` | `src/data/convenioStore.ts` | `convenios` | Cache |
+| `orcamentoStore` | `src/data/orcamentoStore.ts` (239) | `orcamentos`, `orcamento_exames` | CRUD |
+| `tabelaPrecoStore` | `src/data/tabelaPrecoStore.ts` | `tabela_preco_itens` | Resolução de preço por convênio/tabela |
+| `atendimentoStore/*` | `src/data/atendimentoStore/` | `atendimentos`, `atendimento_exames`, `atendimento_pagamentos` | Cache + realtime; **fonte dos pagamentos** |
 
-| Caminho | Função |
-|---|---|
-| `src/hooks/useAReceberPacientes.ts` | RPC `a_receber_pacientes_page` (paginado) + `useFinanceiroResumo` → RPC `financeiro_resumo` |
+## 4. Hooks específicos
 
-## 5. Tabelas e views (Postgres / Supabase)
+- `src/hooks/useAReceberPacientes.ts` — chama RPCs `a_receber_pacientes_page` (lista paginada) e `financeiro_resumo` (KPIs de "A Receber").
+- `src/hooks/useDicionario.ts` — wrapper sobre `select_options` (usado para listas financeiras).
+- `src/hooks/useEnsureStore.ts` — boot lazy das stores.
 
-| Objeto | Tipo | Papel |
-|---|---|---|
-| `atendimento_pagamentos` | tabela | Recebimentos (parciais ou totais) de paciente vinculados a um atendimento |
-| `atendimentos` | tabela | Cabeçalho do atendimento (cliente, convênio, status) |
-| `atendimento_exames` | tabela | Cobrança por exame (`cobranca_destino` paciente/convenio, `valor`, `status`) |
-| `convenio_faturas` | tabela | Cabeçalho de fatura de convênio (período, subtotal, desconto, total, status, forma_pagamento, data_pagamento) |
-| `convenio_fatura_itens` | tabela | Vínculo fatura ↔ `atendimento_exame_id` + valor congelado |
-| `financeiro_saidas` | tabela | Despesas/saídas (vencimento, pagamento, tipo, destino, forma codificada na descrição) |
-| `select_options` (categorias `financeiro_tipo_despesa`, `financeiro_destino_pagamento`, `financeiro_forma_pagamento`) | tabela | Dicionários do financeiro |
-| `financeiro_entradas` | view | UNION ALL de `atendimento_pagamentos` + `convenio_faturas (status='paga')` — fonte única da aba "Entradas" |
-| `convenios` | tabela | Convênios |
-| `tenant_payment_gateways` / `whatsapp_*` / `comprovante_links` | tabelas | Integrações (gateways, comprovantes) — visíveis pela aba Integrações |
+## 5. Tabelas de banco usadas pelo Financeiro
 
-> Tabelas legadas `financeiro_tipos_despesa`, `financeiro_destinos_pagamento`, `financeiro_formas_pagamento` foram **removidas** na migration C.3 (2026-06-13). A leitura/escrita unificada é via `select_options`.
+| Tabela | Papel |
+|--------|-------|
+| `atendimentos` | Cabeçalho do atendimento; `status_pagamento` derivado |
+| `atendimento_exames` | Item-de-fatura: `valor`, `desconto`, `cobranca_destino` (paciente/convenio), `convenio_cobranca_id` |
+| `atendimento_pagamentos` | **Cada recebimento avulso de paciente** (`tipo`, `valor`, `data`, `observacao`) |
+| `convenios` | Cadastro; `libera_fluxo_sem_pagamento`, `prazo_faturamento_dias` |
+| `convenio_faturas` | Cabeçalho da fatura por convênio: `codigo`, `periodo_*`, `subtotal`, `desconto`, `total`, `status`, `forma_pagamento`, `data_pagamento` |
+| `convenio_fatura_itens` | N:1 — vincula `atendimento_exames` → `convenio_faturas` |
+| `financeiro_saidas` | Despesas (CRUD direto na UI) |
+| `select_options` (categoria `financeiro_*`) | Dicionários: tipo despesa, destino pagamento, forma pagamento (substitui as antigas tabelas dedicadas, removidas em 2026-06-13) |
+| `financeiro_destinos_pagamento`, `financeiro_formas_pagamento`, `financeiro_tipos_despesa` | **Tabelas legadas** ainda existentes no schema com RLS, mas o código atual lê/escreve via `select_options` (resíduo histórico). |
+| `orcamentos`, `orcamento_exames` | Pré-financeiro (não viram entrada antes de virarem atendimento) |
+| `tabela_preco_itens` | Preços por tabela (Própria, CBHPM, TUSS, particulares) |
 
-## 6. RPCs (Postgres)
+## 6. Views
 
-| RPC | Uso |
-|---|---|
-| `create_atendimento_tx` | Cria atendimento + exames + pagamentos transacional |
-| `update_atendimento_tx` | Atualiza atendimento, exames e pagamentos transacional (BEGIN/COMMIT pelo PG) |
-| `a_receber_pacientes_page(p_search, p_date_from, p_date_to, p_status, p_cursor_data, p_cursor_id, p_limit)` | A Receber (pacientes) paginado por cursor |
-| `financeiro_resumo(p_date_from, p_date_to, p_convenio)` | Resumo agregado: total_recebido, qtd_recebido, total_a_receber, qtd_a_receber, total_saidas_pagas/pendentes |
-| `convenio_fatura_assign_codigo` / `convenio_fatura_sign_codigo` / `protect_convenio_fatura_codigo` / `protect_convenio_fatura_paga` / `validate_protocolo_fatura` | Triggers de proteção/atribuição de código `FAT-AAAA-NNNNNNN` e bloqueio de fatura paga |
-| `financeiro_saida_assign_protocolo` / `financeiro_saida_sign_protocolo` / `protect_financeiro_saida_protocolo` | Atribuição/proteção de protocolo `SAI-AAAA-NNNNNNN` |
-| `protect_financeiro_listas_sistema` | Bloqueia exclusão de itens de dicionário com `sistema=true` |
-| `seed_default_formas_pagamento_for_tenant` | Semente de formas de pagamento ao criar tenant |
-| `touch_convenio_faturas_updated_at` / `touch_financeiro_listas_updated_at` | Timestamps |
-| `trg_recompute_on_pagamento_change` | Trigger sobre `atendimento_pagamentos` recalcula `status_pagamento` do atendimento |
-| `audit_atendimento_pagamentos` | Trigger de auditoria |
-| `current_tenant_id`, `is_super_admin`, `has_permission`, `has_role` | Helpers de RLS (não específicos do financeiro, mas usados por toda policy) |
+- **`financeiro_entradas`** — única view do domínio. UNION:
+  - `atendimento_pagamentos` JOIN `atendimentos` → linhas tipo `'pagamento'`
+  - `convenio_faturas` (status='paga') JOIN `convenios` → linhas tipo `'fatura_convenio'`
+  - Colunas expostas: `pagamento_id`, `atendimento_id`, `fatura_id`, `origem`, `protocolo`, `data`, `cliente`, `convenio`, `payment`, `valor_total`, `observacao`, `unidade_id`, `status_pagamento`, `tenant_id`.
 
-## 7. Edge Functions
+## 7. RPCs / Funções SQL relacionadas
 
-Não existe edge function dedicada ao Financeiro. As mutações financeiras passam por:
+| Função | Uso |
+|--------|-----|
+| `a_receber_pacientes_page(...)` | Página de saldos abertos por paciente (cursor) |
+| `financeiro_resumo(...)` | KPIs de A Receber (parciais/pendentes/total) |
+| `atendimento_assign_protocolo`, `atendimento_sign_protocolo`, `protect_atendimento_protocolo`, `validate_protocolo_atendimento` | Geração/proteção do protocolo `ATD-AAAA-NNNNNNN` |
+| `convenio_fatura_assign_codigo`, `convenio_fatura_sign_codigo`, `protect_convenio_fatura_codigo`, `protect_convenio_fatura_paga`, `validate_protocolo_fatura`, `touch_convenio_faturas_updated_at` | Geração/proteção do código da fatura e travamento ao virar `paga` |
+| `financeiro_saida_assign_protocolo`, `financeiro_saida_sign_protocolo`, `protect_financeiro_saida_protocolo`, `validate_protocolo_saida` | Protocolo `SAI-AAAA-NNNNNNN` |
+| `validate_protocolo_orcamento` | Protocolo de orçamento |
+| `audit_atendimento_pagamentos` | Trigger de auditoria sobre `atendimento_pagamentos` |
+| `trg_recompute_on_pagamento_change` | Recalcula `status_pagamento` em `atendimentos` ao mudar pagamento |
+| `seed_default_formas_pagamento_for_tenant` | Seed de dicionário ao criar tenant |
+| `create_atendimento_tx` | Cria atendimento + exames + pagamentos iniciais em uma única transação |
 
-| Edge Function | Papel |
-|---|---|
-| `supabase/functions/create-atendimento` | Cria atendimento + exames + pagamentos iniciais |
-| `supabase/functions/update-atendimento` | Atualiza atendimento e/ou registra pagamentos novos / cancela tudo (inclui RBAC: `registrar_pagamento`, `editar_atendimento`, `cancelar_atendimento`) |
+> **Não há** RPCs de "abrir caixa" / "fechar caixa" / "estorno" / "glosa" / "centro de custo" / "categoria contábil". O domínio não as possui hoje.
 
-Faturas de convênio e saídas são gravadas **direto via PostgREST** pela tabela (com RLS), sem edge function.
+## 8. Edge Functions
 
-## 8. Permissões mencionadas no código
+Nenhuma edge function tem responsabilidade financeira direta. A função `create-atendimento` apenas envelopa o RPC `create_atendimento_tx` (que insere pagamentos iniciais).
 
-`gestao_financeira`, `visualizar_financeiro`, `registrar_pagamento`, `editar_atendimento`, `cancelar_atendimento`, `visualizar_atendimentos`.
+Funções `super-admin-billing` / `super-admin-change-tenant-plan` / `super-admin-tenant-snapshot` etc. tratam **billing de plataforma** (assinaturas SaaS do tenant), não o financeiro do laboratório — são domínio separado.
+
+## 9. Permissões usadas pelo módulo
+
+- `visualizar_financeiro` — leitura das telas/views
+- `gestao_financeira` — CRUD de saídas, faturas, dicionários
+- `registrar_pagamento` — INSERT/UPDATE em `atendimento_pagamentos`
+- `visualizar_atendimentos` — leitura compartilhada (entradas dependem de atendimentos)
+- Role `admin` — DELETE em saídas/faturas/convênios
+
+## 10. Feature flags / variantes
+
+- `paginated_atendimentos` (`useFeatureFlag`) controla se "A Receber" usa o RPC paginado ou o cálculo client-side a partir do cache de atendimentos.
+- Aba **Integrações** só aparece para `super_admin` ou roles com permissão de integrações.

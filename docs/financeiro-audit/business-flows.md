@@ -1,139 +1,99 @@
-# Fluxos Reais de Negócio — Financeiro SISLAC
+# Fluxos Reais de Negócio — Financeiro
 
-> Cada diagrama descreve **o que acontece hoje**, não o que deveria. Setas indicam dependências de dados e gatilhos.
+> O que **realmente** acontece hoje, com referências a código e tabelas.
 
-## Fluxo A — Atendimento Particular
-
-```
-NovoAtendimento.tsx (UI: paciente, exames, pagamento opcional)
-        │
-        ▼ submit
-edge function: create-atendimento
-        │
-        ▼ RPC
-create_atendimento_tx (Postgres, transacional)
-   ├─ INSERT atendimentos                (status_pagamento inicial)
-   ├─ INSERT atendimento_exames N×       (valor congelado, cobranca_destino='paciente')
-   └─ INSERT atendimento_pagamentos M×   (cada forma adicionada no PagamentoDialog)
-        │
-        ▼ trigger AFTER INSERT em atendimento_pagamentos
-trg_recompute_on_pagamento_change
-   └─ recalcula atendimentos.status_pagamento (Pendente / Parcial / Pago)
-        │
-        ▼ realtime + subscribeAtendimentos
-view financeiro_entradas (UNION ALL com pagamentos)
-        │
-        ▼ refreshEntradas() na rota /financeiro
-Aba "Entradas" exibe a linha (regime de caixa)
-```
-
-Pagamento posterior (paciente volta para quitar):
-- Aba **A Receber** → "Pagar" → abre `NovaEntradaSaidaDialog (tipo=entrada, protocolo)` → grava em `atendimento_pagamentos` via `update_atendimento_tx` (RBAC `registrar_pagamento`).
-
-Cancelamento do atendimento:
-- `update_atendimento_tx(_cancelar_tudo=true, _motivo_cancel)` → `status_atendimento='Cancelado'` → A Receber e Entradas filtram `<> 'Cancelado'` (RPC `financeiro_resumo` e `buildAReceberRowsFromAtendimentos`).
-
-## Fluxo B — Atendimento por Convênio (faturamento em lote)
+## Fluxo 1 — Atendimento Particular (paciente)
 
 ```
-NovoAtendimento.tsx
-   └─ exames com cobranca_destino='convenio', convenio_cobranca_id=X
-        │
-        ▼ create_atendimento_tx
-atendimento_exames (status inicial 'pendente'; sem pagamento associado)
-        │
-        ▼ operacional
-status_atendimento_exames evolui: pendente → coletado → em_analise → finalizado
-        │
-        ▼ Aba "A Receber" sub-tab "Convênios"
-fetchSaldoEmAbertoPorConvenio() ⇒ exames(cobranca_destino='convenio',
-                                         status<>'cancelado',
-                                         NÃO em convenio_fatura_itens)
-        │
-        ▼ usuário clica "Fechar fatura"
-FecharFaturaDialog → criarFatura()
-   ├─ INSERT convenio_faturas (status='aberta', codigo provisório FAT-TMP-)
-   │      └─ trigger convenio_fatura_assign_codigo substitui por FAT-AAAA-NNNNNNN
-   └─ INSERT convenio_fatura_itens (vincula atendimento_exame_id + valor)
-        │
-        ▼ usuário recebe pagamento do convênio
-marcarFaturaPaga(faturaId, formaPagamento, dataPagamentoISO)
-   └─ UPDATE convenio_faturas SET status='paga', forma_pagamento, data_pagamento
-        │
-        ▼ trigger protect_convenio_fatura_paga
-        (impede mutações destrutivas em fatura paga)
-        │
-        ▼ view financeiro_entradas reflete a fatura como 1 linha agregada
-        (origem='fatura_convenio', cliente=convênio.nome, valor=fatura.total)
-        │
-        ▼ Aba "Entradas" (regime de caixa)
+NovoAtendimento.tsx (wizard)
+  └─ PagamentoDialog (registra formas de pagamento + desconto)
+        ↓ res.novosPagamentos[]
+  └─ create-atendimento (edge fn) → RPC create_atendimento_tx
+        INSERT atendimentos
+        INSERT atendimento_exames (com cobranca_destino='paciente')
+        INSERT atendimento_pagamentos (cada forma)
+        TRIGGER trg_recompute_on_pagamento_change
+              → atualiza atendimentos.status_pagamento
+
+Pagamentos posteriores (página /atendimentos):
+  PagamentoDialog → INSERT atendimento_pagamentos
+        TRIGGER recalcula status_pagamento
+
+Reflexo no Financeiro:
+  view financeiro_entradas faz UNION pagamento|fatura_convenio
+  → aba Entradas mostra linha com origem='pagamento'
 ```
 
-Cancelamento de fatura aberta:
-- `cancelarFatura(id)` → DELETE `convenio_fatura_itens WHERE fatura_id=id` + UPDATE status='cancelada' → exames voltam a aparecer na lista de "saldo em aberto" do convênio.
+**Particularidade**: o desconto é redistribuído proporcionalmente entre `atendimento_exames.desconto` (lógica em `Index.tsx → handlePagamentoConfirm`) — não fica numa coluna global.
 
-## Fluxo C — Despesas / Saídas
-
-```
-Aba "Saídas" → botão "Nova"
-   └─ NovaEntradaSaidaDialog (tipo='saida')
-        │
-        ▼ addSaida() em financeiroStore.ts
-INSERT financeiro_saidas
-   ├─ protocolo provisório SAI-TMP-... → trigger financeiro_saida_assign_protocolo
-   │   substitui por SAI-AAAA-NNNNNNN
-   ├─ tipo_despesa, destino_pagamento (livres + dicionário)
-   ├─ valor, data_vencimento (regime de competência)
-   ├─ foi_pago (boolean), data_pagamento (regime de caixa quando pago)
-   └─ descricao codifica forma de pagamento: "...texto... [pgto:PIX]"
-        │
-        ▼ subscribeFinanceiro → atualiza saidasList in-memory
-Aba "Saídas" mostra com KPIs: vencidas, vencendo7, pagas, pendentes
-        │
-        ▼ usuário clica "Pagar" (uma ou várias selecionadas)
-PagarDespesaDialog ou marcarSaidasComoPagas (batch)
-   └─ updateSaida(protocolo, { foiPago:'Sim', dataPagamento, pagamento })
-        │
-        ▼ Aba "Caixa"
-buildCaixaMovimentos filtra saídas com foiPago='Sim' e mostra como saída de caixa
-```
-
-Edição: `EditEntryDialog` → `validateSaidaEdit` → `updateSaida` (UPDATE direto em `financeiro_saidas`).
-Exclusão: `removeSaida` (DELETE; requer role `admin` por RLS).
-
-## Fluxo D — Livro-Caixa
-
-> Não há "abertura/fechamento de caixa". É puramente uma visão derivada.
+## Fluxo 2 — Atendimento Convênio
 
 ```
-Aba "Caixa" (activeTab='caixa')
-   │
-   ▼ buildCaixaMovimentos(entradas, saidas)
-       ├─ entradas → todas as linhas da view financeiro_entradas (filterEntradasPagas)
-       └─ saidas filtradas por foiPago='Sim'
-   │
-   ▼ filterCaixaMovimentos(period, search)
-   ▼ computeCaixaSaldoInicial = Σ movimentos ANTES de dateFrom
-   ▼ applyCaixaSaldoAcumulado linha a linha
-   ▼ computeCaixaTotais (totalEntradas, totalSaidas, saldoFinal)
-   │
-   ▼ render tabela + impressão (buildLivroCaixaHtml → printHtmlInHiddenFrame)
+NovoAtendimento (define convenio_id)
+  └─ atendimento_exames criados com cobranca_destino='convenio'
+       e convenio_cobranca_id = convenio do exame
+  → atendimento.status_pagamento depende SÓ do que é cobrado do paciente
+
+Resultados/coleta/análise seguem normalmente
+  (status financeiro do paciente independe).
+
+Faturamento (manual, em /financeiro → aba A Receber → sub-aba Convênios
+ou em /convenios):
+  FecharFaturaDialog
+    └─ lista ItemFaturavel (atendimento_exames de cobranca_destino='convenio'
+       sem fatura_id), do convênio X, no período P
+    └─ seleciona itens, define desconto/observação
+    └─ INSERT convenio_faturas (status='aberta')
+    └─ INSERT convenio_fatura_itens (snapshot de valor)
+    → trigger convenio_fatura_assign_codigo gera FAT-AAAA-NNNNNNN
+
+Pagamento da fatura:
+  FaturaDetalheDialog → marca como 'paga'
+    UPDATE convenio_faturas SET status='paga', forma_pagamento, data_pagamento
+    TRIGGER protect_convenio_fatura_paga (bloqueia edição posterior)
+  → fatura aparece em financeiro_entradas com origem='fatura_convenio'
 ```
 
-## Fluxo E — Listas / Dicionários
+## Fluxo 3 — Despesa (Saída)
 
 ```
-Aba Saídas / Dialog Nova Saída
-   ▼ usuário digita novo "tipo de despesa"
-   ▼ openCriar('tipo_despesa', typed)
-   ▼ CriarItemDialog → createItem()
-   ▼ INSERT select_options (categoria='financeiro_tipo_despesa', sistema=false)
-   ▼ invalidateDicionarios() → React Query refetch
-   ▼ dropdowns atualizam
+/financeiro → aba Saídas → "Nova Saída" (NovaEntradaSaidaDialog)
+  └─ campos: descrição, valor, tipo_despesa, destino_pagamento,
+              forma_pagamento (codificada na descricao!), data_vencimento,
+              foi_pago + data_pagamento (se sim)
+  └─ INSERT financeiro_saidas
+       TRIGGER financeiro_saida_assign_protocolo gera SAI-AAAA-NNNNNNN
+
+Quitação posterior (PagarDespesaDialog):
+  UPDATE financeiro_saidas SET foi_pago=true, data_pagamento=...
 ```
 
-Exclusão: `deleteItem` ⇒ DELETE em `select_options`. Items `sistema=true` são bloqueados por trigger `protect_financeiro_listas_sistema`.
+> **NÃO há "Lançamento → Vencimento → Pagamento" como estados separados**: a saída nasce já com vencimento e flag `foi_pago`. Não há parcelamento.
 
-## Fluxo F — Integrações de pagamento (gateways/webhooks)
+## Fluxo 4 — "Caixa"
 
-A aba "Integrações" só está visível com permissão `gestao_financeira` ou `visualizar_financeiro`. Renderiza `IntegracoesWebhookPanel` — visualização do **histórico** de webhooks de gateways em `tenant_payment_gateways`/`gatewayWebhookHistory`. **Não há geração de cobrança PIX/cartão automática** dentro do módulo Financeiro hoje (a infraestrutura existe em `tenant_payment_gateways`/`comprovante_links` e é usada por outros pontos do sistema).
+```
+Aba Caixa NÃO abre/fecha sessão. Ela é puramente derivada:
+
+  buildCaixaMovimentos(entradas, saidas_pagas)
+    → CaixaMov[] ordenado por data
+  applyCaixaSaldoAcumulado(movs, saldoInicial)
+    → cada linha recebe saldoAcumulado
+  computeCaixaTotais → totalEntradas, totalSaidas, saldoFinal
+  buildLivroCaixaHtml → impressão (printHtmlInHiddenFrame)
+```
+
+Não existe `caixa.aberto`, não existe operador responsável, não existe sangria/suprimento, não existe fechamento com conferência. **É um relatório**, não uma operação.
+
+## Fluxo 5 — Entrada Manual
+
+`NovaEntradaSaidaDialog` em modo "entrada" também grava em… **`financeiro_saidas`** (com sinal/categorias específicas) **OU** cria um pagamento avulso? Auditoria indica que entradas manuais existem como atalho e dependem do contexto da aba. Veja `business-rules.md`.
+
+## Fluxo 6 — Orçamento → Atendimento
+
+```
+/orcamentos → cria orcamentos + orcamento_exames
+  (não impacta financeiro até converter)
+Conversão: Orçamento → "Gerar Atendimento"
+  → cai no Fluxo 1 ou Fluxo 2
+```
