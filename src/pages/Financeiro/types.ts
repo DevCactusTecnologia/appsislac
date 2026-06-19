@@ -29,6 +29,10 @@ export interface FinanceiroEntry {
   faturaId?: number | null;
   /** Fase 6 V2 — status oficial da saída ("aberta" | "paga" | "cancelada"). */
   statusSaida?: "aberta" | "paga" | "cancelada";
+  /** Fase 9 — id real em financeiro_saidas (para estorno). */
+  saidaId?: number | null;
+  /** Fase 9 — id real em atendimento_pagamentos (para estorno). */
+  pagamentoId?: number | null;
 }
 
 // ── Tipos do dataflow "A Receber" e "Caixa" (Fase 3 — Architectural Split) ──

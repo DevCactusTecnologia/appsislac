@@ -17,6 +17,7 @@ export function saidaToEntry(s: FinanceiroSaida): FinanceiroEntry {
     foiPago: s.foiPago,
     dataPagamento: s.dataPagamento,
     statusSaida: s.status,
+    saidaId: s.id ?? null,
   };
 }
 
@@ -32,6 +33,7 @@ export function entradaViewToEntry(e: FinanceiroEntradaView): FinanceiroEntry {
     statusPagamento: e.statusPagamento,
     origem: e.origem,
     faturaId: e.faturaId,
+    pagamentoId: e.pagamentoId,
   };
 }
 
