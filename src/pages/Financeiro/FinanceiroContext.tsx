@@ -55,7 +55,7 @@ export interface FinanceiroContextValue {
 
   // Handlers de ação (entradas/saidas table)
   handleEditClick: (entry: FinanceiroEntry) => void;
-  handleDeleteClick: (protocolo: string) => void;
+  handleDeleteClick: (entry: FinanceiroEntry) => void;
   handleDetailClick: (entry: FinanceiroEntry) => void;
 
   // Dialog: nova entrada/saída
