@@ -176,8 +176,9 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]" onClick={onClose} />
       <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] flex flex-col bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.18)] overflow-hidden animate-scale-in">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 bg-card border-b border-border/50">
+        {/* Header (fixed inside flex column — não usa sticky para evitar
+            colapso quando a área scrollable tem `min-h-0`). */}
+        <div className="flex-shrink-0 flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 bg-card border-b border-border/50">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
               <FileText className="h-5 w-5 text-primary" />
@@ -197,8 +198,11 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
           </button>
         </div>
 
-        {/* Single scrollable area covering everything */}
-        <div className="flex-1 overflow-y-auto bg-muted/30">
+        {/* Single scrollable area covering everything.
+            `min-h-0` é essencial: sem ele, `flex-1` herda min-height: auto
+            e a área cresce para o tamanho do conteúdo, estourando o
+            max-h do diálogo (header e rodapé saem do viewport). */}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30">
           {/* Quick actions */}
           <div className="bg-card px-5 sm:px-6 py-3 border-b border-border/50">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
