@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   X, Trash2, Banknote, CreditCard, QrCode, CalendarIcon,
   TrendingUp, CheckCircle2, AlertTriangle, Receipt, DollarSign,
