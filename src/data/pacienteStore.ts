@@ -76,6 +76,7 @@ function fromRow(r: PacienteRow): Paciente {
     id: Number(r.id),
     friendlyId: (r as unknown as { friendly_id?: string }).friendly_id || "",
     nome: r.nome,
+    nomeSocial: (r as unknown as { nome_social?: string | null }).nome_social || "",
     cpf: formatCPF(r.cpf || ""),
     dataNascimento: formatDateBR(r.data_nascimento),
     sexo: sexoToLong(r.sexo),
