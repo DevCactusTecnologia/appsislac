@@ -779,19 +779,31 @@ const Financeiro = () => {
         }
       />
 
-      {/* ─── Tab Navigation ─── */}
-      <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30 overflow-x-auto no-scrollbar">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }} className={cn("flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap shrink-0", isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-card/60")}>
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* ─── Tab Navigation (Segmentado moderno) ─── */}
+      <div className="overflow-x-auto no-scrollbar">
+        <nav className="inline-flex items-center p-1.5 bg-muted/50 border border-border/60 rounded-xl">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
+                className={cn(
+                  "flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap cursor-pointer",
+                  isActive
+                    ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                    : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted",
+                )}
+              >
+                <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
       </div>
+
 
       <>
 
