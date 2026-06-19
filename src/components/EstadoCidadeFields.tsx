@@ -234,7 +234,7 @@ export default function EstadoCidadeFields({
   }, [estado]);
 
   const estadoOpts = useMemo(
-    () => estados.map((e) => ({ key: e.uf, label: e.uf, sub: e.name })),
+    () => estados.map((e) => ({ key: e.uf, label: e.uf })),
     [estados]
   );
   const cidadeOpts = useMemo(
