@@ -2270,12 +2270,14 @@ const NovoAtendimento = () => {
           setValorPago(res.valorPago);
           setDesconto(res.desconto);
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
+            pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
           }
         }}
         onRemovePagamentoRealizado={index => {
           const removed = pagamentosRealizados[index];
           if (!removed) return;
+          pagamentosTouchedRef.current = true;
           setPagamentosRealizados(prev => prev.filter((_, i) => i !== index));
           setValorPago(prev => Math.max(0, prev - removed.valor));
         }}
