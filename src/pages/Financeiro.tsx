@@ -10,9 +10,11 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn, fmtBRL, searchNormalize } from "@/lib/utils";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
-import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
+import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
+import PagamentoDialog from "@/components/PagamentoDialog";
 
-import type { MockAtendimento } from "@/data/types";
+import type { MockAtendimento, PagamentoRealizado } from "@/data/types";
 // getConvenios removido — A Receber/Convênios agora vem da RPC v2 (Fase 1).
 import {
   getSaidas, subscribeFinanceiro, updateSaida,
@@ -410,10 +412,125 @@ const Financeiro = () => {
   const aReceberTotalPages = Math.max(1, Math.ceil(aReceberFiltered.length / itemsPerPage));
   const aReceberPaginated = aReceberFiltered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Handler: abrir o modal "Entrada de pagamento" pré-selecionado para o protocolo
-  const handleAReceberPagar = (row: AReceberRow) => {
-    setReceberInitial({ tipo: "protocolo", protocolo: row.protocolo });
-    setReceberDialogOpen(true);
+  // ─── Modal "Pagamento" padrão (mesmo de /atendimento) para A Receber ───
+  const [pagModalOpen, setPagModalOpen] = useState(false);
+  const [pagAtendimento, setPagAtendimento] = useState<MockAtendimento | null>(null);
+  const [pagLocalPagamentos, setPagLocalPagamentos] = useState<PagamentoRealizado[]>([]);
+
+  // Handler: abre o PagamentoDialog (modal padrão) hidratado com o atendimento.
+  const handleAReceberPagar = async (row: AReceberRow) => {
+    let at: MockAtendimento | null = getAtendimentos().find(a => a.protocolo === row.protocolo) ?? null;
+    // Se não tem exames/pagamentos hidratados, busca do servidor.
+    const hidratado = !!(at && ((at.exames?.length ?? 0) > 0 || (at.pagamentosRealizados?.length ?? 0) > 0));
+    if (!at || !hidratado) {
+      const fetched = await fetchAtendimentoByProtocolo(row.protocolo);
+      if (fetched) at = fetched;
+    }
+    if (!at) {
+      toast({ title: "Atendimento não encontrado", variant: "destructive" });
+      return;
+    }
+    setPagAtendimento(at);
+    setPagLocalPagamentos([...(at.pagamentosRealizados ?? [])]);
+    setPagModalOpen(true);
+  };
+
+  const pagamentoData = useMemo(() => {
+    if (!pagAtendimento) {
+      return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0,
+               pagamentosRealizados: [] as PagamentoRealizado[], exames: [] as { nome: string; valor: number }[] };
+    }
+    const convenioNome = pagAtendimento.convenio ?? "Particular";
+    const examesPaciente = (pagAtendimento.examesCobranca ?? pagAtendimento.exames.map(nome => ({
+      nome, cobrancaDestino: "paciente" as const, valor: 0, valorOriginal: 0,
+    })))
+      .filter(c => c.cobrancaDestino !== "convenio")
+      .map(e => {
+        const valor = Number(e.valor) || 0;
+        const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
+        const valorOriginal = Math.max(Number(e.valorOriginal) || 0, valor, valorTabela);
+        return { ...e, valor, valorOriginal };
+      });
+    const subtotal = examesPaciente.reduce((s, e) => s + e.valorOriginal, 0);
+    const totalEfetivo = examesPaciente.reduce((s, e) => s + e.valor, 0);
+    const descontoHistorico = Math.max(0, Math.round((subtotal - totalEfetivo) * 100) / 100);
+    const totalPago = (pagLocalPagamentos ?? []).reduce((s, p) => s + p.valor, 0);
+    return {
+      itens: examesPaciente.length,
+      subtotal,
+      desconto: descontoHistorico,
+      total: totalEfetivo,
+      valorPago: totalPago,
+      saldoDevedor: Math.max(0, totalEfetivo - totalPago),
+      pagamentosRealizados: pagLocalPagamentos ?? [],
+      exames: examesPaciente.map(e => ({ nome: e.nome, valor: e.valorOriginal })),
+    };
+  }, [pagAtendimento, pagLocalPagamentos]);
+
+  const handlePagamentoConfirm = async (resultado: { valorPago: number; desconto: number; novosPagamentos: PagamentoRealizado[] }) => {
+    if (!pagAtendimento) return;
+    const pagamentosFinais = [...(pagLocalPagamentos ?? []), ...(resultado.novosPagamentos ?? [])];
+    const totalComDesconto = pagamentoData.subtotal - resultado.desconto;
+    const totalPagoFinal = pagamentosFinais.reduce((s, p) => s + p.valor, 0);
+    const statusPag = totalPagoFinal >= totalComDesconto && totalComDesconto > 0
+      ? { label: "Pagamento efetuado", type: "success" as const }
+      : totalPagoFinal > 0
+        ? { label: "Pagamento parcial", type: "info" as const }
+        : { label: "Pagamento pendente", type: "warning" as const };
+
+    const updates: Partial<MockAtendimento> = {
+      pagamentosRealizados: pagamentosFinais,
+      statusPagamento: statusPag,
+    };
+    const desc = Math.max(0, Math.round((resultado.desconto || 0) * 100) / 100);
+    const examesCobrancaAtuais = pagAtendimento.examesCobranca;
+    if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+      const pacienteIdxs = examesCobrancaAtuais
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => e.cobrancaDestino !== "convenio");
+      const baseOriginalPorIdx = new Map<number, number>();
+      pacienteIdxs.forEach(({ e, i }) => {
+        const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0);
+        baseOriginalPorIdx.set(i, orig);
+      });
+      const subtotalOriginal = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + v, 0);
+      if (subtotalOriginal > 0) {
+        const totalDesc = Math.min(desc, subtotalOriginal);
+        let restante = Math.round(totalDesc * 100);
+        const novosValores = new Map<number, number>();
+        pacienteIdxs.forEach(({ i }, idx) => {
+          const orig = baseOriginalPorIdx.get(i) ?? 0;
+          const isLast = idx === pacienteIdxs.length - 1;
+          const share = isLast ? restante : Math.round((orig / subtotalOriginal) * totalDesc * 100);
+          const safeShare = Math.max(0, Math.min(share, Math.round(orig * 100)));
+          restante -= safeShare;
+          novosValores.set(i, Math.max(0, Math.round(orig * 100) - safeShare) / 100);
+        });
+        const novaCobranca = examesCobrancaAtuais.map((e, i) => {
+          const orig = baseOriginalPorIdx.get(i);
+          if (orig == null) return e;
+          return { ...e, valorOriginal: orig, valor: novosValores.has(i) ? novosValores.get(i)! : orig };
+        });
+        updates.examesCobranca = novaCobranca;
+        updates.exames = novaCobranca.map(e => e.nome);
+      }
+    }
+
+    try {
+      await updateAtendimento(pagAtendimento.protocolo, updates);
+      setPagLocalPagamentos(pagamentosFinais);
+      void refreshEntradas();
+      rpcRefresh();
+      toast({ title: "Pagamento atualizado", description: `Status alterado para "${statusPag.label}"` });
+      setPagModalOpen(false);
+      setPagAtendimento(null);
+    } catch (e) {
+      toast({ title: "Falha ao atualizar pagamento", description: (e as Error)?.message, variant: "destructive" });
+    }
+  };
+
+  const handleRemovePagamentoRealizado = (index: number) => {
+    setPagLocalPagamentos(prev => (prev ?? []).filter((_, i) => i !== index));
   };
 
   const summary = useMemo(
@@ -907,34 +1024,24 @@ const Financeiro = () => {
       />
 
 
-      {/* Receber pagamento (A Receber) — usa o mesmo modal "Entrada de pagamento" */}
-      <Suspense fallback={null}>
-      {receberDialogOpen && (
-      <NovaEntradaSaidaDialog
-        open={receberDialogOpen}
-        onClose={() => { setReceberDialogOpen(false); setReceberInitial(null); }}
-        tipo="entrada"
-        onConfirm={(entry) => {
-          handleNovaEntrada(entry);
-          setReceberDialogOpen(false);
-          setReceberInitial(null);
-        }}
-        tiposDespesa={tiposDespesa}
-        destinosPagamento={destinosPagamento}
-        formasPagamento={formasPagamento}
-        deletableTipos={deletableTipos}
-        deletableDestinos={deletableDestinos}
-        deletableFormas={deletableFormas}
-        onDeleteTipo={(v: any) => void handleDeleteItem("tipo_despesa", v)}
-        onDeleteDestino={(v: any) => void handleDeleteItem("destino_pagamento", v)}
-        onDeleteForma={(v: any) => void handleDeleteItem("forma_pagamento", v)}
-        onCreateTipoRequest={(typed: any, cb: any) => openCriar("tipo_despesa", typed, cb)}
-        onCreateDestinoRequest={(typed: any, cb: any) => openCriar("destino_pagamento", typed, cb)}
-        onCreateFormaRequest={(typed: any, cb: any) => openCriar("forma_pagamento", typed, cb)}
-        initialEntrada={receberInitial}
+      {/* Receber pagamento (A Receber) — usa o modal "Pagamento" padrão (mesmo de /atendimento) */}
+      <PagamentoDialog
+        open={pagModalOpen}
+        onClose={() => { setPagModalOpen(false); setPagAtendimento(null); }}
+        itens={pagamentoData.itens}
+        subtotal={pagamentoData.subtotal}
+        desconto={pagamentoData.desconto}
+        total={pagamentoData.total}
+        valorPago={pagamentoData.valorPago}
+        saldoDevedor={pagamentoData.saldoDevedor}
+        exames={pagamentoData.exames}
+        pagamentosRealizados={pagamentoData.pagamentosRealizados}
+        onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
+        onConfirm={handlePagamentoConfirm}
+        descontoData={pagAtendimento?.data}
+        isEditing={true}
       />
-      )}
-      </Suspense>
+
 
       {/* Mini modal: criar Tipo de despesa / Destino / Forma de pagamento */}
       <Suspense fallback={null}>
