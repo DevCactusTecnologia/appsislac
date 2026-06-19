@@ -7,7 +7,7 @@
 //     sem filtros adicionais.
 //   • Status oficial: aberta | paga | cancelada (vindo de financeiro_saidas.status).
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Undo2, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
@@ -179,9 +179,9 @@ export default function SaidasTab() {
                           onClick={() => handleEditClick(entry)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Excluir"
-                          onClick={() => handleDeleteClick(entry.protocolo)}>
-                          <Trash2 className="h-4 w-4 text-rose-600" />
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Estornar"
+                          onClick={() => handleDeleteClick(entry)}>
+                          <Undo2 className="h-4 w-4 text-amber-600" />
                         </Button>
                       </div>
                     </td>
