@@ -124,7 +124,7 @@ async function fetchPacientesColeta(): Promise<Paciente[]> {
         protocolo: r.protocolo,
         nome: r.paciente_nome,
         cpf: r.paciente_cpf,
-        sexo: r.paciente_sexo,
+        sexo: formatSexo(r.paciente_sexo),
         nascimento: isoToBR(r.paciente_nascimento),
         idade: calcIdadeAnosMeses(r.paciente_nascimento),
         coletado: false,
