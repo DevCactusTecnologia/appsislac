@@ -91,8 +91,8 @@ const PagamentoDialog = ({
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
-  // Confirmação de remoção: 'desc' para o card de desconto, número para pagamento realizado
-  const [confirmingRemove, setConfirmingRemove] = useState<"desc" | number | null>(null);
+  // Confirmação de remoção: 'desc' para o card de desconto, 'real-N' para realizado, 'staging-N' para staging
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   useBodyScrollLock(open);
 
   // Desconto histórico efetivo (zera quando o usuário remove o card).
