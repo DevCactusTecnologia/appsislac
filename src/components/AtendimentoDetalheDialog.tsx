@@ -352,10 +352,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      {exame.valorOriginal > exame.valor + 0.005 && (
-                        <span className="block text-[10px] text-muted-foreground line-through">R$ {fmtBRLNumber(exame.valorOriginal)}</span>
-                      )}
-                      <span className="text-[13px] font-semibold text-foreground">R$ {fmtBRLNumber(exame.valor)}</span>
+                      <span className="text-[13px] font-semibold text-foreground">R$ {fmtBRLNumber(exame.valorOriginal)}</span>
                     </div>
                   </div>
                 );
