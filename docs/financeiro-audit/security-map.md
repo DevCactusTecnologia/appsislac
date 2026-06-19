@@ -1,89 +1,91 @@
-# Mapa de Segurança — Financeiro SISLAC
+# Mapa de Segurança — Financeiro
 
-> Levantamento de RLS, policies e permissões reais do banco. Roles são `super_admin` (plataforma), `admin` / `manager` / `user` (tenant). Permissões são strings checadas por `has_permission(_user_id, _permission)`.
+Multi-tenant via `tenant_id = current_tenant_id()` em todas as policies. `is_super_admin()` bypass platform.
 
-## Permissões usadas pelo módulo
+## RLS por tabela
 
-| Permissão | Onde |
-|---|---|
-| `visualizar_financeiro` | SELECT em `financeiro_saidas`, `convenio_faturas`, `convenio_fatura_itens`, `atendimento_pagamentos`. Habilita aba Integrações. |
-| `gestao_financeira` | INSERT/UPDATE em `financeiro_saidas`, `convenio_faturas`, `convenio_fatura_itens` e dicionários `select_options/financeiro_*`. Habilita aba Integrações. |
-| `registrar_pagamento` | INSERT/UPDATE em `atendimento_pagamentos`. Validado também pela edge function `update-atendimento`. |
-| `editar_atendimento` | Atualizações em geral via `update-atendimento` (ex.: editar exames). |
-| `cancelar_atendimento` | Cancelamento total (`_cancelar_tudo` ou `motivo_cancel` definido). |
-| `visualizar_atendimentos` | SELECT em `atendimento_pagamentos` (alternativa a `visualizar_financeiro`). |
+### `atendimento_pagamentos`
+| Cmd | Quem |
+|-----|------|
+| SELECT | super_admin OU (mesmo tenant E (`visualizar_atendimentos` OU `visualizar_financeiro`)) |
+| INSERT | mesmo tenant E `registrar_pagamento` |
+| UPDATE | mesmo tenant E `registrar_pagamento` |
+| DELETE | super_admin OU (mesmo tenant E role `admin`) |
 
-`app_role = 'admin'` é exigido **adicionalmente** para DELETE em todas as tabelas financeiras.
+### `convenio_faturas`
+| Cmd | Quem |
+|-----|------|
+| SELECT | super_admin OU (mesmo tenant E `visualizar_financeiro`) |
+| INSERT | mesmo tenant E `gestao_financeira` |
+| UPDATE | mesmo tenant E `gestao_financeira` (+ trigger `protect_convenio_fatura_paga`) |
+| DELETE | mesmo tenant E role `admin` |
 
-## Tabela `atendimento_pagamentos`
+### `convenio_fatura_itens`
+| Cmd | Quem |
+|-----|------|
+| SELECT | super_admin OU (mesmo tenant E `visualizar_financeiro`) |
+| INSERT/UPDATE | mesmo tenant E `gestao_financeira` |
+| DELETE | mesmo tenant E role `admin` |
 
-| Comando | Quem pode | Condição |
-|---|---|---|
-| SELECT | super_admin, ou tenant com `visualizar_atendimentos` ou `visualizar_financeiro` | `tenant_id = current_tenant_id()` |
-| INSERT | tenant com `registrar_pagamento` | `tenant_id = current_tenant_id()` |
-| UPDATE | tenant com `registrar_pagamento` | both USING e WITH CHECK |
-| DELETE | super_admin, ou tenant `admin` | `tenant_id = current_tenant_id()` |
+### `convenios`
+| Cmd | Quem |
+|-----|------|
+| SELECT | super_admin OU mesmo tenant |
+| INSERT/UPDATE/DELETE | mesmo tenant E role `admin` |
 
-Defesa em profundidade: a edge function `update-atendimento` revalida `has_permission` antes da RPC.
+### `financeiro_saidas`
+| Cmd | Quem |
+|-----|------|
+| SELECT | super_admin OU (mesmo tenant E `visualizar_financeiro`) |
+| INSERT | mesmo tenant E `gestao_financeira` |
+| UPDATE | mesmo tenant E `gestao_financeira` |
+| DELETE | mesmo tenant E role `admin` |
 
-## Tabela `convenio_faturas` (cf_*)
+### `financeiro_destinos_pagamento`, `financeiro_formas_pagamento`, `financeiro_tipos_despesa` (legados)
+| Cmd | Quem |
+|-----|------|
+| SELECT/INSERT/UPDATE/DELETE | mesmo tenant OU super_admin |
 
-| Comando | Quem pode |
-|---|---|
-| SELECT | super_admin OU `visualizar_financeiro` (no tenant) |
-| INSERT | `gestao_financeira` |
-| UPDATE | `gestao_financeira` |
-| DELETE | `app_role = 'admin'` |
+> Nota: o código não usa estas tabelas hoje (lê de `select_options`). RLS está aberta para qualquer usuário autenticado do tenant.
 
-Triggers `protect_convenio_fatura_paga` e `protect_convenio_fatura_codigo` são guardas adicionais (impedem alterar fatura paga ou trocar o código).
+### `select_options` (categorias `financeiro_*`)
+- Acesso de leitura geral autenticado.
+- Escrita exige `gestao_financeira` (RLS específica por categoria, migration `20260613_select_options_per_category_rls`).
 
-## Tabela `convenio_fatura_itens` (cfi_*)
+### `orcamentos`, `orcamento_exames`
+- SELECT: tenant + permissão `visualizar_orcamentos`.
+- INSERT/UPDATE: tenant + `criar_orcamento`.
+- DELETE: admin do tenant.
 
-Mesmas permissões de `convenio_faturas`. Itens não-faturados/faturados são separados pelo simples fato de existir/não-existir um row aqui.
+## Permissões (vista funcional)
 
-## Tabela `financeiro_saidas` (fin_*)
+| Permissão | Concedida por padrão a | Habilita |
+|-----------|------------------------|----------|
+| `visualizar_financeiro` | admin, manager, financeiro | Abas Entradas/Saídas/A Receber/Caixa |
+| `gestao_financeira` | admin, manager, financeiro | CRUD saídas, fechar/cancelar fatura, gerir dicionários |
+| `registrar_pagamento` | admin, manager, recepção, financeiro | Lançar pagamentos em atendimento |
+| `visualizar_atendimentos` | quase todos os perfis operacionais | Ver linhas de pagamento (entradas tipo `pagamento`) |
 
-Mesmas permissões: SELECT (`visualizar_financeiro`), INSERT/UPDATE (`gestao_financeira`), DELETE (`admin`).
+## Quem pode fazer o quê (resposta direta)
 
-## `select_options` — categorias financeiras
-
-Migration `20260613_select_options_per_category_rls` aplica RLS por categoria:
-- Leitura: dicionário global (`tenant_id IS NULL` permitido) ou do tenant.
-- Escrita nessas 3 categorias específicas: `gestao_financeira`.
-- Exclusão de itens `sistema=true` é bloqueada por trigger.
-
-## View `financeiro_entradas`
-
-Não tem RLS própria (views não têm). A segurança vem das tabelas-base (`atendimento_pagamentos`, `convenio_faturas`, `atendimentos`, `convenios`). O usuário precisa de permissão de leitura nas tabelas-base para ver linhas.
-
-## RPCs
-
-| RPC | Marcação | Filtro tenant |
-|---|---|---|
-| `a_receber_pacientes_page` | `STABLE` (não documentado se SECURITY DEFINER aqui — depende da definição) | Implícito via `current_tenant_id()` nas tabelas-base |
-| `financeiro_resumo` | `STABLE`, `SET search_path = public` | `WHERE tenant_id = current_tenant_id()` em todas as CTEs |
-| `update_atendimento_tx` | Transacional | RLS das tabelas-base + revalidação na edge function |
-| `create_atendimento_tx` | Transacional | RLS das tabelas-base |
-
-## Quem pode o quê — resumo operacional
-
-| Ação | super_admin | admin | manager | user (com permissão) |
-|---|---|---|---|---|
-| Ver Financeiro | ✓ (cross-tenant via `is_super_admin`) | ✓ se `visualizar_financeiro` | ✓ se `visualizar_financeiro` | ✓ se `visualizar_financeiro` |
-| Lançar pagamento de paciente | ✓ | ✓ se `registrar_pagamento` | ✓ se `registrar_pagamento` | ✓ se `registrar_pagamento` |
-| Editar pagamento de paciente | mesma | mesma | mesma | mesma |
-| Excluir pagamento | ✓ | ✓ (role admin) | ✗ | ✗ |
-| Lançar saída/despesa | ✓ | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` |
-| Excluir saída | ✓ | ✓ (role admin) | ✗ | ✗ |
-| Criar fatura de convênio | ✓ | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` |
-| Marcar fatura como paga | ✓ | ✓ | ✓ | ✓ (todos com `gestao_financeira`) |
-| Cancelar fatura | ✓ | ✓ (admin) | ✗ | ✗ |
-| Cancelar atendimento | ✓ | ✓ se `cancelar_atendimento` | ✓ se permissão | ✓ se permissão |
-| Editar dicionários | ✓ | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` | ✓ se `gestao_financeira` |
-| Fechar caixa | — (não existe) | — | — | — |
+| Ação | Roles típicas |
+|------|---------------|
+| Visualizar Entradas/Saídas/Caixa/A Receber | admin, manager, financeiro (qualquer um com `visualizar_financeiro`) |
+| Lançar pagamento em atendimento | recepção, financeiro, manager, admin |
+| Lançar saída/despesa | financeiro, manager, admin |
+| Editar saída/despesa | financeiro, manager, admin |
+| Excluir saída/despesa | apenas admin |
+| Fechar fatura de convênio | financeiro, manager, admin |
+| Marcar fatura como paga | financeiro, manager, admin (uma vez `paga`, trigger trava) |
+| Cancelar fatura | financeiro, manager, admin (antes de `paga`) |
+| Excluir fatura | apenas admin |
+| Estornar/excluir pagamento | apenas admin |
+| Fechar caixa | **N/A — não existe operação de fechamento** |
+| Editar dicionários financeiros | qualquer um com `gestao_financeira` |
+| Cadastrar/editar convênio | apenas admin |
 
 ## Auditoria
 
-- Trigger `audit_atendimento_pagamentos` registra INSERT/UPDATE/DELETE em `atendimento_pagamentos` (tabela `audit_logs` ou `operational_audit`, conforme convenção).
-- `atendimento_audit` armazena auditoria de mudanças no atendimento.
-- Não há tabela dedicada de auditoria para `financeiro_saidas` ou `convenio_faturas`.
+- `audit_atendimento_pagamentos` (trigger) → `atendimento_audit`.
+- `protect_*` triggers bloqueiam adulteração de protocolo após emissão.
+- Não há trigger de auditoria em `financeiro_saidas` nem em `convenio_faturas` (apenas `touch_convenio_faturas_updated_at`).

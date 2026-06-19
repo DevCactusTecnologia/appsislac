@@ -1,101 +1,80 @@
-# Regras de Negócio — Financeiro SISLAC
+# Regras de Negócio — Financeiro (estado atual)
 
-> Levantadas a partir de código + RPCs + triggers + RLS. Sem inferência.
+## Recebimentos (entradas)
 
-## R1 — Recebimento (paciente / particular)
+- **Como é criado um recebimento de paciente?**
+  - INSERT em `atendimento_pagamentos` (vínculo obrigatório a `atendimento_id`).
+  - Forma de pagamento: campo `tipo` (string livre, validada contra `select_options.financeiro_forma_pagamento`).
+  - Não existe recebimento "solto" (sem atendimento) hoje.
+- **Status de pagamento do atendimento** é recalculado por trigger `trg_recompute_on_pagamento_change`:
+  - Soma `valor` de `atendimento_pagamentos` para o atendimento.
+  - Compara contra Σ `(atendimento_exames.valor − desconto)` onde `cobranca_destino='paciente'`.
+  - Define `status_pagamento` como `Pago`, `Parcial` ou `Pendente` (rótulos no front podem variar).
+- **Desconto**: redistribuído proporcionalmente entre `atendimento_exames.desconto` (cliente em `Index.tsx`). Não há coluna `desconto_total` no atendimento.
+- **Recebimento de fatura de convênio**: ocorre por UPDATE em `convenio_faturas.status='paga'` + `data_pagamento` + `forma_pagamento`. Não há lançamento separado em `atendimento_pagamentos`.
 
-- Toda entrada de paciente é uma linha em `atendimento_pagamentos`.
-- Trigger `trg_recompute_on_pagamento_change` é **a fonte da verdade** do `status_pagamento` do atendimento (não confiar em status calculado em outro lugar).
-- Permissão exigida para INSERT/UPDATE: `registrar_pagamento`.
-- DELETE só com `app_role = 'admin'`.
-- Cancelamento do atendimento (`status_atendimento='Cancelado'`) **exclui** o atendimento dos cálculos de "A Receber" e do `financeiro_resumo` — pagamentos já lançados continuam fisicamente em `atendimento_pagamentos` mas a view `financeiro_entradas` reflete-os porque o JOIN não filtra por status (verificado no `pg_get_viewdef`). Ver complexity-report.
-- "Pagamento efetuado" como `status_pagamento` é o filtro usado por `filterEntradasPagas` para a aba Entradas. Pagamentos parciais aparecem em A Receber, **não** em Entradas (regime de caixa estrito por status).
-- Valor pago > valor total não é bloqueado em código nem em CHECK constraint (auditado).
+## Faturamento de Convênio
 
-## R2 — Recebimento (convênio)
+- Itens elegíveis: `atendimento_exames` com `cobranca_destino='convenio'`, `convenio_cobranca_id=X`, sem `convenio_fatura_itens` ainda (não faturados).
+- `convenio_faturas.subtotal` = Σ valores brutos selecionados; `desconto` é manual; `total = subtotal − desconto`.
+- Status: `aberta` (default) → `paga` | `cancelada`.
+- Após `paga`, trigger `protect_convenio_fatura_paga` bloqueia UPDATE/DELETE de campos sensíveis.
+- **Não há recebimento parcial de fatura** — fatura é tudo-ou-nada.
+- **Não há tracking de glosa** — se o convênio pagar menos, hoje a operação é: cancelar a fatura e refaturar, ou aceitar o desconto manualmente antes de marcar `paga`.
 
-- Convênio é **faturado em lote**, nunca recebido por exame individual.
-- Um exame só é faturável se: `cobranca_destino='convenio'`, `status='finalizado'`, `convenio_cobranca_id = X`, e **não vinculado** a nenhuma `convenio_fatura_itens`.
-- Saldo em aberto do convênio (`fetchSaldoEmAbertoPorConvenio`) tem regra MAIS PERMISSIVA: `status <> 'cancelado'` (incluindo pendente/coletado/em_analise). Ou seja, "saldo em aberto" exibe potencial; "faturável" exige `finalizado`.
-- Ao criar fatura: `subtotal = Σ itens.valor`, `total = max(0, subtotal − desconto)`.
-- Permissão exigida (RLS):
-  - SELECT: `visualizar_financeiro`
-  - INSERT/UPDATE: `gestao_financeira`
-  - DELETE: `app_role = 'admin'`
-- Código de fatura é **sempre** atribuído pelo banco via trigger `convenio_fatura_assign_codigo`. Cliente envia `FAT-TMP-...` que é descartado.
-- `protect_convenio_fatura_paga` (trigger) impede mudanças destrutivas em fatura `status='paga'`.
-- Marcar como paga ⇒ UPDATE com `forma_pagamento`, `data_pagamento`. **Não cria linha em `atendimento_pagamentos`** — a entrada no caixa vem da view `financeiro_entradas` (UNION ALL).
-- Cancelar fatura: DELETE itens + UPDATE status='cancelada'. Os exames retornam ao "saldo em aberto" do convênio.
+## Pagamento de Despesas (saídas)
 
-## R3 — Despesas / Saídas
+- INSERT em `financeiro_saidas` exige: `protocolo` (provisório, substituído por trigger), `data`, `descricao`, `valor`, `tenant_id`.
+- Forma de pagamento (PIX/Dinheiro/Crédito/Débito): **codificada como sufixo `[pgto:X]`** dentro de `descricao` (não há coluna). Função `encodePagamento`/`decodePagamento` em `financeiroStore.ts`.
+- `foi_pago=true` exige `data_pagamento` (validado em `validateSaidaEdit.ts` no client; banco aceita `null`).
+- `data` (timestamp) é setada como `data_pagamento` (se foi_pago) ou `data_vencimento` (se não) — usada como "data efetiva" no livro-caixa.
 
-- Protocolo `SAI-AAAA-NNNNNNN` atribuído por trigger no INSERT (`financeiro_saida_assign_protocolo`).
-- Após atribuição, `protect_financeiro_saida_protocolo` impede alteração do protocolo.
-- Campo `foi_pago` é boolean simples — não há histórico de pagamentos parciais de uma despesa.
-- Forma de pagamento é codificada na `descricao` como sufixo `[pgto:FORMA]` (ver decode/encode em `financeiroStore.ts`). Não existe coluna dedicada em `financeiro_saidas`.
-- Validação cliente (`validateSaidaEdit`):
-  - `dataVencimento` obrigatória, formato `dd/mm/yyyy`.
-  - Se `foiPago='Sim'` ⇒ `dataPagamento` obrigatória.
-- Validação cliente (`validatePayment`): `payData` válida, `payForma` selecionada.
-- Permissão (RLS de `financeiro_saidas`):
-  - SELECT: `visualizar_financeiro`
-  - INSERT/UPDATE: `gestao_financeira`
-  - DELETE: `app_role = 'admin'`
+## Caixa
 
-## R4 — Caixa / Livro-Caixa
+- **Não há abertura nem fechamento.** A aba é uma projeção:
+  - Entradas: linhas da view `financeiro_entradas`.
+  - Saídas: `financeiro_saidas` com `foi_pago=true`.
+  - Saldo inicial: soma de tudo anterior ao `dateFrom` filtrado.
+  - Saldo final = inicial + entradas − saídas (no período).
+- Impressão: HTML montado em `buildLivroCaixaHtml` e enviado a `printHtmlInHiddenFrame`.
 
-- Caixa é **derivado**, não persistido. Não existe sessão de caixa.
-- Composição: `Entradas (view financeiro_entradas filtrada por status='Pagamento efetuado')` + `Saídas com foi_pago=true`.
-- Saídas pendentes **não** afetam o caixa (apenas as pagas).
-- Saldo inicial = `Σ movimentos com data < dateFrom` (entrada-saida). Sem dateFrom → 0.
-- Saldo final = saldo inicial + total entradas no período − total saídas no período.
-- Não há fechamento, lacre, hash de fechamento, ou bloqueio temporal.
+## Estornos
 
-## R5 — Glosa / Estorno / Conciliação
+- **Não há entidade de estorno.**
+- Para reverter um pagamento de paciente: DELETE em `atendimento_pagamentos` (RLS exige `admin` + `current_tenant_id()`). Trigger de auditoria preserva o histórico em `atendimento_audit`.
+- Para reverter fatura paga: barrado por `protect_convenio_fatura_paga`. Caminho operacional: cancelar (UPDATE para `cancelada` antes do trigger atuar) — passo prático costuma ser via correção manual em DB ou criar fatura nova compensatória.
 
-- **Glosa**: inexistente. Não há campo, tabela ou fluxo. Cancelamento de fatura é a única forma de "desfazer" cobrança convênio.
-- **Estorno de pagamento**: não há flag/registro de estorno. Operacionalmente:
-  - UPDATE em `atendimento_pagamentos` (mesma permissão de criar) — alteração in-place.
-  - DELETE em `atendimento_pagamentos` (apenas `admin`).
-  - Trigger recalcula `status_pagamento` automaticamente.
-- **Conciliação bancária**: inexistente.
+## Cancelamentos
 
-## R6 — Cancelamento de atendimento
+- Atendimento cancelado: `status_atendimento='Cancelado'`. O cliente filtra esses fora dos cálculos de A Receber (ver `buildAReceberRowsFromAtendimentos`). Pagamentos prévios continuam existindo em `atendimento_pagamentos`, mas o atendimento não conta como receita prevista.
+- Fatura cancelada: `status='cancelada'` libera os itens para refaturamento (não há FK barrando).
 
-- `update_atendimento_tx(_cancelar_tudo=true, _motivo_cancel=texto)` — exige permissão `cancelar_atendimento`.
-- A RPC marca atendimento e exames como cancelados (verificado pela edge function que mapeia para esta permissão quando `cancelar_tudo=true` ou `motivo_cancel` não vazio).
-- Pagamentos previamente lançados **permanecem** em `atendimento_pagamentos`.
-- Cálculo de A Receber filtra `status_atendimento <> 'Cancelado'`.
+## Descontos
 
-## R7 — Descontos
+- **No paciente**: distribuídos linha-a-linha em `atendimento_exames.desconto`.
+- **Na fatura de convênio**: campo `convenio_faturas.desconto` (escalar). Não impacta `atendimento_exames`.
+- Não há regra de desconto máximo por usuário/role.
 
-Dois pontos de desconto independentes:
+## Geração de protocolos
 
-1. **Atendimento (paciente)**: `desconto` distribuído entre `examesCobranca` (excluindo destino=convênio) — implementado em `distribuirDescontoEntreExames`. Persiste via `update_atendimento_tx` com `examesCobranca` recalculados.
-2. **Fatura de convênio**: `convenio_faturas.desconto` é único, do total da fatura. `total = max(0, subtotal − desconto)`.
+- `ATD-AAAA-NNNNNNN` (atendimento), `FAT-AAAA-NNNNNNN` (fatura), `SAI-AAAA-NNNNNNN` (saída), assinados via HMAC e validados por trigger. Cliente envia provisório (`*-TMP-...`) e o oficial volta no INSERT.
 
-## R8 — Tenancy
+## Tabela de preço (precificação)
 
-- TODA tabela financeira tem `tenant_id NOT NULL`.
-- Toda policy usa `current_tenant_id()` + `is_super_admin()`.
-- View `financeiro_entradas` propaga `tenant_id` em ambos os ramos do UNION (filtragem via RLS das tabelas-base).
-- RPCs financeiras usam `current_tenant_id()` para isolar (verificado em `financeiro_resumo` e `a_receber_pacientes_page`).
+- Sequência de fallback: `getPrecoExame(nome, tabelaConvenio)` → `getPrecoExame(nome, "Própria")` → `0`.
+- Tabela do convênio resolvida por `getTabelaByConvenioNome(convenioNome)` (CBHPM/TUSS/Própria/personalizada).
 
-## R9 — Numeração e protocolos
+## A Receber
 
-| Documento | Padrão | Origem |
-|---|---|---|
-| Atendimento | `ATD-AAAA-NNNNNNN` | trigger no atendimentos |
-| Fatura | `FAT-AAAA-NNNNNNN` | `convenio_fatura_assign_codigo` |
-| Saída | `SAI-AAAA-NNNNNNN` | `financeiro_saida_assign_protocolo` |
-| Pagamento | `id` bigserial (sem protocolo público) | sequência |
-| Item de fatura | `id` bigserial | sequência |
+- **Pacientes** (`a_receber_pacientes_page` RPC ou cálculo client):
+  - Total a receber = Σ `(atendimento_exames where cobranca_destino='paciente') − atendimento_pagamentos.valor`.
+  - Status `parcial` se já pagou algo, `pendente` se zero.
+  - Excluídos: atendimentos cancelados.
+- **Convênios** (`buildAReceberConvenioRows` + `fetchSaldoEmAbertoPorConvenio`):
+  - Saldo = Σ valores de `atendimento_exames where cobranca_destino='convenio'` ainda não vinculados a fatura paga.
 
-Cliente nunca define o número final — sempre placeholder `*-TMP-*` que é substituído pelo banco.
+## Listas/Dicionários
 
-## R10 — Dicionários `select_options`
-
-- Itens `sistema=true` são imutáveis (trigger `protect_financeiro_listas_sistema`).
-- `nomeJaExiste` valida duplicidade case-insensitive + sem-acento client-side.
-- RLS específica por categoria exige `gestao_financeira` para escrita (migration 20260613).
-- Categorias usadas: `financeiro_tipo_despesa`, `financeiro_destino_pagamento`, `financeiro_forma_pagamento`.
+- Persistência canônica: `select_options` (categoria + label + sistema/ativo/ordem).
+- "Sistema" (`sistema=true`) bloqueia exclusão na UI.
+- Tabelas `financeiro_tipos_despesa` / `financeiro_destinos_pagamento` / `financeiro_formas_pagamento` ainda existem com RLS, mas o **código atual não as utiliza** (resíduo histórico).

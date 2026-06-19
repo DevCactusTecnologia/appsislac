@@ -1,114 +1,79 @@
 # Relatório Executivo — Auditoria do Financeiro SISLAC
 
-> Auditoria somente leitura, em 19/06/2026. Conclusões refletem o estado atual; nenhuma alteração foi feita.
+Data: 2026-06-19. Modo: somente leitura.
 
-## 1. Como o financeiro funciona hoje (em uma página)
+## Como o Financeiro funciona hoje?
 
-O módulo `/financeiro` é uma rota single-page com 5 abas (`Entradas`, `A Receber`, `Saídas`, `Caixa`, `Integrações`) que **derivam** sua informação de quatro tabelas-base do Postgres:
+O módulo é um **livro de receitas, contas a receber e despesas** acoplado ao módulo de Atendimentos. Tudo o que entra vem de pagamentos avulsos de pacientes (`atendimento_pagamentos`) ou de faturas de convênio quitadas (`convenio_faturas`). Tudo o que sai vem de despesas manuais (`financeiro_saidas`). A aba "Caixa" é um **relatório derivado**, não uma operação com abertura/fechamento.
 
-- `atendimento_pagamentos` — recebimentos de paciente (regime de caixa).
-- `convenio_faturas` + `convenio_fatura_itens` — faturamento em lote do convênio.
-- `financeiro_saidas` — despesas (com regime de competência via `data_vencimento` + caixa via `foi_pago`/`data_pagamento`).
-- `select_options` — dicionários (tipo de despesa, destino, forma).
+## Fluxos principais
 
-Uma view `financeiro_entradas` unifica `atendimento_pagamentos` + faturas pagas como UMA fonte de leitura para a aba Entradas. Duas RPCs (`a_receber_pacientes_page`, `financeiro_resumo`) cuidam do que precisa de paginação/agregação. Mutations passam por `update_atendimento_tx` (transacional, com RBAC reforçado pela edge function `update-atendimento`) ou direto na tabela com RLS quando se trata de saída/fatura.
+1. **Particular**: NovoAtendimento → PagamentoDialog → `atendimento_pagamentos` → trigger atualiza status → view `financeiro_entradas`.
+2. **Convênio**: NovoAtendimento (cobranca_destino='convenio') → fechamento manual em FecharFaturaDialog → `convenio_faturas` (aberta) → marcar paga → view `financeiro_entradas`.
+3. **Despesa**: NovaEntradaSaidaDialog → `financeiro_saidas` → eventualmente "marcar como paga".
+4. **Caixa**: tudo agregado em runtime, com saldo acumulado e impressão HTML.
+5. **A Receber**: RPC paginado (ou cálculo client em fallback) sobre exames cobrados − pagamentos.
 
-**Caixa não é persistido.** Não existe abertura/fechamento de caixa: a aba Caixa é uma agregação client-side em tempo real de Entradas + Saídas pagas, com saldo acumulado calculado linha a linha.
+## Regras críticas
 
-## 2. Fluxos principais
+- Status de pagamento do atendimento é **autoritativo do banco** (trigger).
+- Fatura paga é **imutável** (trigger).
+- Protocolos (ATD/FAT/SAI) são **gerados e assinados em DB** com HMAC.
+- Roles: `admin` exclui; `gestao_financeira` movimenta; `registrar_pagamento` recebe; `visualizar_financeiro` lê.
+- Tudo escopado por `tenant_id = current_tenant_id()` (multi-tenant).
 
-1. **Particular**: NovoAtendimento → `create_atendimento_tx` → `atendimento_pagamentos` → trigger recalcula `status_pagamento` → view `financeiro_entradas` → aba Entradas.
-2. **Convênio**: NovoAtendimento (cobrança=convênio) → operacional finaliza → A Receber Convênios → `criarFatura` → `marcarFaturaPaga` → view `financeiro_entradas` (linha agregada).
-3. **Despesa**: aba Saídas → `addSaida` → trigger atribui protocolo `SAI-...` → marcação como paga → entra no Caixa.
-4. **Caixa**: derivação client-side a cada render.
+## Entidades principais
 
-## 3. Regras críticas (que não devem ser quebradas)
+`atendimentos`, `atendimento_exames`, `atendimento_pagamentos`, `convenios`, `convenio_faturas`, `convenio_fatura_itens`, `financeiro_saidas`, view `financeiro_entradas`, dicionários em `select_options`.
 
-- `status_pagamento` do atendimento é **propriedade exclusiva** do trigger `trg_recompute_on_pagamento_change`.
-- Códigos de documento (ATD/FAT/SAI) são **sempre** atribuídos pelo banco; cliente envia placeholders `*-TMP-*`.
-- Toda tabela financeira é multi-tenant via `tenant_id` + RLS com `current_tenant_id()` + `is_super_admin()`.
-- Fatura `status='paga'` é **imutável** pelo trigger `protect_convenio_fatura_paga`.
-- Itens `select_options.sistema=true` não podem ser deletados (trigger).
-- DELETE em qualquer tabela financeira exige `app_role='admin'`.
+## O caixa funciona como?
 
-## 4. Entidades principais
+Não funciona como sessão. É um **livro-caixa derivado**: Σ entradas (view) + Σ saídas pagas, ordenado por data, saldo acumulado linha-a-linha. Imprimível, não persistido, sem responsável e sem fechamento.
 
-| Entidade | Persistência | Papel |
-|---|---|---|
-| Atendimento | `atendimentos` | Documento mestre |
-| Exame de atendimento | `atendimento_exames` | Linha de cobrança granular |
-| Pagamento | `atendimento_pagamentos` | Recebimento de paciente |
-| Fatura de Convênio | `convenio_faturas` (+ `_itens`) | Cobrança consolidada do convênio |
-| Saída/Despesa | `financeiro_saidas` | Despesa operacional |
-| Dicionários | `select_options` | Tipo despesa / destino / forma |
+## O faturamento de convênios funciona como?
 
-Conceitos **não modelados**: glosa formal, estorno formal, conta bancária, plano de contas, centro de custo, sessão/abertura/fechamento de caixa, conciliação bancária, recorrência de despesa.
+Manual. O usuário entra na sub-aba Convênios (A Receber) ou em `/convenios`, escolhe convênio + período, vê itens elegíveis (exames com cobranca_destino='convenio' não faturados), aplica desconto opcional, fecha (`aberta`). Quando recebe, marca como `paga` informando forma e data. Não há recebimento parcial, não há glosa estruturada.
 
-## 5. Caixa — funciona como?
+## Está alinhado ao domínio laboratorial?
 
-- 100% derivado, sem persistência.
-- Composto por Entradas (view) + Saídas com `foi_pago=true`.
-- Saldo inicial = soma dos movimentos com data anterior ao período filtrado.
-- Saldo final = saldo inicial + entradas do período − saídas pagas do período.
-- Impressão via HTML inline (`buildLivroCaixaHtml` + `printHtmlInHiddenFrame`).
-- **Não é histórico imutável**: editar um pagamento antigo recompõe o livro de qualquer data.
+- **Sim** para o caso comum (paciente paga na recepção; convênio fatura mensal).
+- **Parcialmente** para casos sofisticados: glosa, recurso, recebimento parcial de convênio, conciliação bancária, comissão de solicitante, plano de contas.
 
-## 6. Faturamento de convênio — funciona como?
+## O que é simples (e funciona bem)
 
-- Lista de itens faturáveis = exames `cobranca_destino='convenio'` + `status='finalizado'` + convênio escolhido + período + **não vinculados** a nenhuma fatura.
-- Criar fatura: header (`status='aberta'`) + itens (vincula `atendimento_exame_id`).
-- `total = max(0, subtotal − desconto)` único da fatura (não distribui em itens).
-- Marcar paga: UPDATE de header → automaticamente vira linha agregada na view `financeiro_entradas`.
-- Cancelar fatura aberta: deleta itens + `status='cancelada'` → exames retornam ao "saldo em aberto".
+- Modelo de pagamentos de paciente (`atendimento_pagamentos` + trigger de status).
+- View `financeiro_entradas` unificando origens.
+- Geração de protocolos com HMAC.
+- RLS multi-tenant com permissões granulares.
+- Split de derivações puras em `FinanceiroService.ts` (testável).
 
-## 7. Alinhamento ao domínio laboratorial?
+## O que é complexo (e merece atenção futura)
 
-**Sim, no essencial.** O modelo respeita as duas dinâmicas reais:
+- Forma de pagamento de despesa codificada em string (`[pgto:X]`).
+- Duplicação RPC vs. cálculo client em A Receber.
+- Tabelas legadas de dicionários ainda presentes no schema.
+- Caixa sem SSOT (sem materialização nem auditoria).
+- Estorno e glosa como conceitos ausentes — operação informal.
+- 924 linhas em `Financeiro.tsx` mesmo após split parcial.
 
-- Particular = pagamento por encontro, com possibilidade de pagamentos parciais e múltiplas formas no mesmo atendimento.
-- Convênio = entrega de serviços agora, faturamento depois em lote, recebimento posterior.
+## O que merece revisão futura (apenas listado, não recomendado executar)
 
-A separação `cobranca_destino` no nível do **exame** (e não do atendimento) é correta para a realidade: um único atendimento pode ter exames cobrados do paciente E exames cobrados do convênio.
+- SSOT para forma de pagamento de saída (coluna dedicada).
+- Definição formal de regime de caixa vs. competência (hoje implícito).
+- Suporte a glosa e recebimento parcial de fatura.
+- Materialização de saldo de caixa para auditoria histórica.
+- Eliminação das tabelas legadas dos dicionários ou redirecionamento de uso.
 
-## 8. O que é simples
+## O que deve permanecer exatamente como está
 
-- View `financeiro_entradas` como SSOT da aba Entradas.
-- RPC `financeiro_resumo` agregando KPIs em DB com filtros padronizados.
-- Trigger único recalculando `status_pagamento`.
-- Numeração centralizada nos triggers de cada tabela.
-- RLS uniforme (`current_tenant_id()` + `is_super_admin()` + `has_permission()`).
-- Hooks `useFinanceiroFilters` / `useFinanceiroDialogs` consolidaram o estado da página.
-
-## 9. O que é complexo
-
-- Coexistência de dois caminhos para "A Receber" (RPC vs. legacy in-memory) controlada por feature flags.
-- Forma de pagamento de despesa serializada como sufixo em `descricao`, com encoder/decoder e função legada `@deprecated` ainda no mesmo arquivo.
-- Caixa puramente derivado em cliente (sem snapshot), com paginação local sobre lista paginada da RPC.
-- "Saldo em aberto por convênio" usa critério mais permissivo (`status<>'cancelado'`) que o critério de faturável (`status='finalizado'`) — gera divergência percebida.
-- View `financeiro_entradas` não filtra atendimentos cancelados, mas RPC `financeiro_resumo` filtra — KPI do header pode divergir da listagem.
-- Distribuição de desconto reaplicada em três camadas (NovoAtendimento, Index, RPC).
-
-## 10. O que merece revisão futura (apenas observado, sem ação)
-
-- Reconciliar exclusão de cancelados entre view e RPC.
-- Avaliar coluna estruturada para forma de pagamento da saída (em vez de sufixo `[pgto:]`).
-- Avaliar FK ou constraint de integridade entre `financeiro_saidas.tipo_despesa/destino_pagamento` e `select_options`.
-- Avaliar remoção da branch legacy de "A Receber" e do helper `buildSaidaFromRow` (deprecated).
-- Avaliar snapshot/fechamento de caixa caso o domínio passe a exigir histórico imutável.
-- Avaliar consumo direto de `financeiro_resumo` no header (eliminando recálculos client-side redundantes).
-- Avaliar filtro `status_atendimento` na view `financeiro_entradas`.
-
-## 11. O que deve permanecer exatamente como está
-
-- Triggers de numeração (ATD/FAT/SAI) — único caminho seguro multi-tenant.
-- Trigger `trg_recompute_on_pagamento_change` como dono de `status_pagamento`.
-- Edge function `update-atendimento` como gateway transacional para mutações em pagamentos/exames.
-- RLS com modelo `current_tenant_id() + has_permission() + is_super_admin()`.
-- View `financeiro_entradas` como ponto único de leitura da aba Entradas.
-- `cobranca_destino` por exame (granularidade correta).
+- Modelo `atendimento_pagamentos` + trigger de recálculo de `status_pagamento`.
+- View `financeiro_entradas` como única fonte de leitura de receita realizada.
 - Imutabilidade de fatura paga via trigger.
-- Bloqueio de DELETE para não-admin nas tabelas financeiras.
+- Geração e assinatura de protocolos no banco.
+- Estrutura de RLS e permissões (`visualizar_financeiro`, `gestao_financeira`, `registrar_pagamento`, role `admin`).
+- Multi-tenancy via `current_tenant_id()` em todas as queries.
+- Split de funções puras em `Financeiro/services/*` — não tem dívida visível.
 
 ---
 
-**Conclusão.** O Financeiro do SISLAC é um módulo **funcionalmente coerente** com o domínio laboratorial e seguro do ponto de vista de RLS/RBAC. As complexidades documentadas são pontuais e **identificáveis sem reescrita**. O caixa é, por design, uma visão derivada — não um livro contábil imutável; isso precisa ficar explícito antes de qualquer evolução.
+> **Parada da missão**: nenhum código, banco, RLS, RPC, trigger, edge function, rota, store ou componente foi alterado. Os relatórios desta auditoria estão em `docs/financeiro-audit/`.

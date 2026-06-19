@@ -1,100 +1,70 @@
 # Mapa de Domínio — Financeiro SISLAC
 
-## Entidades reais (no banco)
+## Entidades existentes hoje
 
 ### 1. Atendimento (`atendimentos`)
-Cabeçalho do encontro com o paciente. Campos relevantes para o financeiro:
-- `protocolo` (ATD-AAAA-NNNNNNN), `data`, `paciente_nome`, `convenio_nome`
-- `status_atendimento` (inclui valor "Cancelado" — exclui do financeiro)
-- `status_pagamento` (recalculado por trigger)
-- `valor_total`, `valor_pago`, `desconto` (snapshot calculado pelo trigger)
+Cabeçalho clínico-comercial. **Não é entidade financeira pura**, mas é a *origem* de toda receita.
+- `status_pagamento`: derivado por trigger (`trg_recompute_on_pagamento_change`) a partir da soma dos pagamentos vs. valor a cobrar do paciente.
+- `convenio_id`/`convenio_nome`: define se a receita virá por pagamento direto (Particular) ou via fatura de convênio.
 
-**Responsabilidade:** ser o "documento mestre" do qual derivam tanto a operação clínica quanto o lançamento financeiro do paciente.
+### 2. Item de atendimento (`atendimento_exames`)
+Linha cobrável. Define `valor`, `desconto`, `cobranca_destino` (`paciente` | `convenio`) e `convenio_cobranca_id`.
+- O **rateio** entre paciente e convênio acontece aqui — não há tabela separada de "co-participação".
 
-### 2. Exame de atendimento (`atendimento_exames`)
-Linha de cobrança por exame.
-- `valor` (preço congelado), `cobranca_destino` ∈ {`paciente`, `convenio`}
-- `convenio_cobranca_id` (quando convênio)
-- `status` (operacional: `pendente`/`coletado`/`em_analise`/`finalizado`/`cancelado`)
-- `tipo_processo` (INTERNO/TERCEIRIZADO), `lab_apoio_id`
+### 3. Pagamento de paciente (`atendimento_pagamentos`)
+Recebimento avulso vinculado a um atendimento. Campos: `tipo` (forma de pagamento — Dinheiro/PIX/Crédito/Débito/...), `valor`, `data`, `observacao`.
+- Imutabilidade prática: trigger de auditoria registra alterações; não há estorno formal — a remoção é DELETE direto (RLS exige role admin).
 
-**Responsabilidade:** unidade granular de faturamento. É ela que entra em fatura de convênio ou compõe o saldo do paciente.
+### 4. Fatura de convênio (`convenio_faturas`)
+Agrupamento mensal/periódico de exames com `cobranca_destino='convenio'`. Estados: `aberta` → `paga` | `cancelada`.
+- Trigger `protect_convenio_fatura_paga` impede edição depois de `paga`.
+- Quando `paga`, a fatura aparece como **uma única linha** na view `financeiro_entradas` (origem `fatura_convenio`).
 
-### 3. Pagamento de atendimento (`atendimento_pagamentos`)
-Recebimento avulso (à vista, parcial ou complementar) feito pelo paciente.
-- `tipo` (forma: PIX, Dinheiro, Crédito, Débito, etc.), `valor`, `data`, `observacao`
-- Trigger `trg_recompute_on_pagamento_change` recalcula `status_pagamento` do atendimento.
-
-**Responsabilidade:** registrar o caixa (regime de caixa) por paciente. É a fonte canônica das "Entradas" particulares.
-
-### 4. Fatura de Convênio (`convenio_faturas`)
-Agrupa N exames de N atendimentos de UM convênio em UM período.
-- `codigo` (FAT-AAAA-NNNNNNN, atribuído por trigger)
-- `periodo_inicio`, `periodo_fim`, `subtotal`, `desconto`, `total`
-- `status` ∈ {`aberta`, `paga`, `cancelada`}
-- `forma_pagamento`, `data_pagamento`
-
-**Responsabilidade:** documento de cobrança consolidada do convênio. Quando `paga`, vira UMA linha agregada de "Entrada" (regime de caixa).
-
-### 5. Item de Fatura (`convenio_fatura_itens`)
-Vínculo `fatura_id` ↔ `atendimento_exame_id` + `valor` congelado.
-
-**Responsabilidade:** marcar quais exames estão "presos" em uma fatura (impede dupla cobrança). O saldo em aberto por convênio é exatamente: exames com `cobranca_destino='convenio'` e status≠cancelado **não vinculados** a nenhuma fatura.
+### 5. Item de fatura (`convenio_fatura_itens`)
+Vínculo N:1 entre `atendimento_exames` e `convenio_faturas`, com snapshot de `valor`. Não há tracking de glosa/recurso/contestação — a coluna `valor` na fatura é a verdade.
 
 ### 6. Saída / Despesa (`financeiro_saidas`)
-Lançamento de despesa, com regime de competência (vencimento) **e** caixa (pagamento).
-- `protocolo` (SAI-AAAA-NNNNNNN)
-- `valor`, `data_vencimento`, `foi_pago`, `data_pagamento`
-- `tipo_despesa`, `destino_pagamento` (campos textuais que referenciam dicionários)
-- A **forma de pagamento** é serializada dentro de `descricao` no formato `"...texto... [pgto:PIX]"` (ver complexity-report).
+Lançamento manual de despesa. Campos: `protocolo`, `descricao`, `valor`, `tipo_despesa`, `destino_pagamento`, `data_vencimento`, `foi_pago`, `data_pagamento`.
+- Forma de pagamento (PIX/Dinheiro/etc) **não tem coluna própria** — é codificada no fim de `descricao` no formato `[pgto:PIX]` (ver `encodePagamento` em `financeiroStore.ts`).
 
-**Responsabilidade:** despesas operacionais do laboratório.
+### 7. Convênio (`convenios`)
+Cadastro do pagador. Flags relevantes:
+- `libera_fluxo_sem_pagamento` — permite avançar coleta/análise sem quitar.
+- `prazo_faturamento_dias` — sugestão para fechamento de fatura.
 
-### 7. Dicionários (`select_options`)
-Categorias usadas pelo financeiro:
-- `financeiro_tipo_despesa`
-- `financeiro_destino_pagamento`
-- `financeiro_forma_pagamento`
+### 8. Dicionários financeiros (`select_options`, categorias `financeiro_*`)
+Listas configuráveis por tenant: tipos de despesa, destinos de pagamento, formas de pagamento.
 
-`sistema=true` => imutável. RLS exige `gestao_financeira` para escrita.
+### 9. Orçamento (`orcamentos`, `orcamento_exames`)
+Pré-venda. Não gera recebimento até virar atendimento.
 
-### 8. View `financeiro_entradas`
-**Não é tabela** — é a fonte agregada da aba "Entradas":
-```
-SELECT pagamento (origem='pagamento') FROM atendimento_pagamentos JOIN atendimentos
-UNION ALL
-SELECT fatura  (origem='fatura_convenio') FROM convenio_faturas WHERE status='paga' JOIN convenios
-```
+### 10. Entrada Financeira (view `financeiro_entradas`)
+**Não é entidade física** — é projeção UNION de pagamentos + faturas pagas. É a "tabela" lida pela aba Entradas.
 
-## Entidades **derivadas** (apenas em código, não persistidas)
+## Entidades que **NÃO** existem hoje
 
-| Conceito | Onde mora | Como é calculado |
-|---|---|---|
-| **A Receber (paciente)** | RPC `a_receber_pacientes_page` ou `buildAReceberRowsFromAtendimentos` | `Σ atendimento_exames(cobranca_destino='paciente').valor − Σ atendimento_pagamentos.valor` |
-| **A Receber (convênio)** | `fetchSaldoEmAbertoPorConvenio` em `convenioFaturasStore` | Exames `cobranca_destino='convenio'`, status≠cancelado, **não-faturados** |
-| **Caixa / Livro-Caixa** | `buildCaixaMovimentos` (cliente) | Entradas (view) + Saídas pagas, ordenadas por data, saldo acumulado calculado client-side |
-| **KPIs por aba** | `computeEntradaCounts` / `computeAReceberCounts` / `computeSaidaCounts` | Reduções sobre as listas em memória |
+Importante para a auditoria, pois costumam aparecer em ERPs financeiros e foram pesquisadas:
 
-## Conceitos **inexistentes** no sistema atual
+| Conceito | Existe? | Observação |
+|----------|---------|------------|
+| Caixa (sessão com abertura/fechamento) | ❌ | A aba "Caixa" é um **livro-caixa derivado** (saldo acumulado por data), não uma sessão operacional. |
+| Movimento de caixa / Lançamento contábil | ❌ | Movimentos são reconstruídos em memória por `buildCaixaMovimentos`. |
+| Conta bancária / Carteira | ❌ | Existe apenas o conceito livre de "destino_pagamento" (string). |
+| Centro de custo | ❌ | — |
+| Categoria contábil / Plano de contas | ❌ | `tipo_despesa` é o equivalente leve. |
+| Estorno / Reversal | ❌ formal | Pagamento é deletado (admin), sem registro vinculado de reversão. |
+| Glosa / Recurso de glosa | ❌ | Fatura tem só `aberta`/`paga`/`cancelada`. |
+| Contas a pagar com parcelas | ❌ | `financeiro_saidas` é "à vista" (uma data de vencimento, um foi_pago). |
+| Recebimento parcial de fatura | ❌ | Fatura é tudo-ou-nada (`paga` define `total`). Apenas atendimentos têm pagamento parcial. |
+| Conciliação bancária | ❌ | — |
+| Comissão de solicitante | ❌ | — |
+| Caixinha por usuário/operador | ❌ | — |
 
-> Auditados explicitamente para registro:
+## Responsabilidade de cada entidade (resumo)
 
-- **Glosa** — não existe campo, tabela ou fluxo dedicado. Cancelamentos de fatura simplesmente liberam os exames para nova fatura (`cancelar_destruirItens` em `cancelarFatura`).
-- **Estorno formal de pagamento** — não há fluxo dedicado; o que existe é UPDATE em `atendimento_pagamentos` (com permissão `registrar_pagamento`) e DELETE (com role `admin`).
-- **Centro de custo** — não modelado.
-- **Categoria contábil / plano de contas** — não modelado. Existem apenas `tipo_despesa` (Fixa/Variável + livre) e `destino_pagamento` (Governo/Fornecedor/etc.) como atributos textuais de despesa.
-- **Caixa físico (sessão de caixa, abertura/fechamento)** — **não existe**. "Caixa" no SISLAC é puramente um livro-caixa em **regime de caixa**, calculado on-the-fly a partir de entradas + saídas pagas. Não há `cash_session`/`abertura`/`fechamento`/`saldo_inicial_persistido`.
-- **Conta bancária** — não modelado. Forma de pagamento é apenas um rótulo textual.
-- **Conciliação bancária** — não existe.
-- **Recorrência de despesa** — não existe (toda saída é manual e única).
-
-## Resumo de responsabilidades
-
-| Domínio | Quem é responsável |
-|---|---|
-| Receber dinheiro de paciente | `atendimento_pagamentos` (escrita via `update_atendimento_tx`) |
-| Faturar convênio | `convenio_faturas` + `convenio_fatura_itens` (escrita direta com RLS `gestao_financeira`) |
-| Pagar despesa | `financeiro_saidas` + flag `foi_pago` |
-| Apresentar entradas | view `financeiro_entradas` (read-only) |
-| Apurar a receber | RPC `a_receber_pacientes_page` (pacientes) + cálculo de saldo de exames não-faturados (convênios) |
-| Apurar caixa | Cálculo client-side em `buildCaixaMovimentos` |
+- `atendimentos` + `atendimento_exames` → **o quanto deve entrar** (valor a faturar).
+- `atendimento_pagamentos` → **quanto entrou avulso** (paciente).
+- `convenio_faturas` (+ itens) → **quanto entrará agrupado** (convênio).
+- `financeiro_saidas` → **o que saiu / vai sair**.
+- `financeiro_entradas` (view) → **leitura unificada de receita realizada**.
+- A Receber = (a faturar de paciente) + (a faturar de convênio aberto), calculado em runtime.

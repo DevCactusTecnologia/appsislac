@@ -1,68 +1,44 @@
-# Experiência Operacional — Financeiro SISLAC
+# Experiência Operacional — Financeiro
 
-> Como cada perfil utiliza efetivamente a rota `/financeiro` hoje.
+Mapeamento por perfil, com base em `usuariosStore.ts` e nas telas atuais.
 
-## Recepção (geralmente role `user` com `registrar_pagamento` + `visualizar_atendimentos`)
+## Recepção
+- Telas: `/atendimentos` (cria/edita), `/registrar-coleta`, `/orcamentos`.
+- Ações financeiras possíveis: `PagamentoDialog` (registrar pagamento avulso de paciente), aplicar desconto (redistribuído nos exames).
+- Não acessa `/financeiro` (sem `visualizar_financeiro` por padrão).
+- Informa: quanto o paciente já pagou; quanto falta (status_pagamento).
 
-| Tela usada | Ação típica |
-|---|---|
-| `/novo-atendimento` | Criar atendimento e registrar pagamento à vista no `PagamentoDialog` |
-| `/registrar-coleta`, `/atendimentos` | Receber paciente que volta para quitar — abre `PagamentoDialog` ou navega para `/financeiro → A Receber → Pagar` |
-| `/financeiro` aba **A Receber** | Listar pendências de pacientes, dar baixa parcial/total |
+## Financeiro (perfil "financeiro" / setor)
+- Telas: `/financeiro` (todas as abas), `/convenios` (faturamento), `/atendimentos` (registrar pagamento posterior).
+- Ações:
+  - Entradas: ver receita realizada, imprimir, filtrar por convênio/período.
+  - A Receber: localizar inadimplentes, abrir detalhe, registrar pagamento.
+  - Saídas: criar despesa, marcar como paga, editar (sem excluir).
+  - Caixa: imprimir Livro-Caixa do dia/período.
+  - Faturas: fechar fatura de convênio, marcar paga, cancelar.
+  - Dicionários: criar/desativar tipos de despesa, destinos, formas de pagamento.
 
-Informação que realmente precisa: saldo do paciente, formas aceitas, comprovante.
+## Gestor (manager)
+- Mesma superfície de "financeiro" + acesso a Auditoria, Dashboard com KPIs.
+- Decisões: aprovar descontos atípicos (não há fluxo formal — depende de comunicação fora do sistema).
 
-A recepção **não** lança despesa, **não** fecha fatura, **não** vê livro-caixa em geral (depende das permissões atribuídas).
+## Contador (perfil sugerido — não existe role dedicada)
+- Hoje usa o role **financeiro** ou **manager**.
+- Necessidades atendidas: imprimir Livro-Caixa, exportar (botão de impressão), ver saídas com tipo_despesa.
+- Necessidades NÃO atendidas: plano de contas, conciliação bancária, exportação para sistemas contábeis (SPED, OFX, CSV padrão), regime de competência separado de regime de caixa.
 
-## Financeiro / Tesouraria (role `manager` ou `admin` com `gestao_financeira` + `visualizar_financeiro`)
-
-| Tela | Ação |
-|---|---|
-| `/financeiro` aba **Entradas** | Conferir recebimentos do dia/período, imprimir relatório detalhado |
-| `/financeiro` aba **A Receber → Pacientes** | Acompanhar inadimplência por paciente, dar baixa |
-| `/financeiro` aba **A Receber → Convênios** | Ver saldo em aberto por convênio, criar fatura (`Fechar fatura`) |
-| Fatura existente | Marcar como paga, cancelar fatura aberta, drill-down nos itens |
-| `/financeiro` aba **Saídas** | Lançar despesa, agendar vencimento, marcar como paga (single ou em lote) |
-| `/financeiro` aba **Caixa** | Conferir e imprimir Livro-Caixa do período |
-| `/financeiro` aba **Integrações** | Ver histórico de webhooks de gateway |
-
-Informação central: total recebido vs. total a receber, saídas vencendo, saldo do caixa.
-
-## Gestor / Diretor (admin)
-
-Mesmo acesso da Tesouraria + capacidade de exclusão (DELETE). Usa principalmente:
-- KPIs do header
-- Aba Caixa para fechamento gerencial mensal (impressão)
-- Aba A Receber → Convênios para acompanhamento da carteira
-- Auditoria via `/auditoria` (fora do módulo Financeiro)
-
-## Contador (geralmente acesso somente leitura — `visualizar_financeiro`)
-
-- Aba **Entradas** com filtro por período (mensal) → impressão "Detalhado"
-- Aba **Saídas** com filtro por período → impressão "Detalhado"
-- Aba **Caixa** → impressão "Livro-Caixa"
-- Não há export contábil (CSV/SPED). A entrega é via PDF/print do navegador.
+## Admin
+- Tudo do gestor + DELETE em saídas/faturas/pagamentos + cadastro de convênio.
 
 ## Super Admin (plataforma)
+- Vê dados via `is_super_admin()` mas opera fora do tenant; não usa o financeiro do tenant no dia-a-dia.
+- Edge functions `super-admin-billing` etc. tratam **assinatura SaaS**, não financeiro do laboratório.
 
-- Não usa `/financeiro` operacionalmente — `is_super_admin` permite SELECT cross-tenant para suporte/auditoria, mas o fluxo de gestão financeira é responsabilidade do tenant.
-- Dashboard `/super-admin` cobre métricas agregadas SaaS (assinaturas, planos), não o financeiro do laboratório.
+## Pontos de fricção observados (somente documentação, sem julgamento de mérito)
 
-## Mapa "perfil × tela × intenção"
-
-```
-Recepção         → A Receber             → "Quanto este paciente deve?"
-Tesouraria       → Entradas + Saídas     → "Quanto entrou? Quanto pagar?"
-Tesouraria       → A Receber Convênios   → "O que faturar este mês?"
-Tesouraria/Gestor → Caixa                → "Sobrou caixa? Imprimir."
-Contador         → Entradas/Saídas/Caixa → "Conferir/baixar período."
-```
-
-## Observações de UX (descritivas, não prescritivas)
-
-- O período rápido aplicado no header é **global** para todas as abas (filtra entradas, A Receber, saídas e caixa simultaneamente).
-- Existe paginação local de 8 itens por página em todas as abas com tabela.
-- A busca textual (NFD-normalizada, debounce 300ms) atua sobre `protocolo + cliente + pagamento` (ou `categoria/descricao` no caixa).
-- Impressão é via `printHtmlInHiddenFrame` (HTML inline, sem PDF gerado server-side).
-- Aba Integrações fica oculta para quem não tem `gestao_financeira`/`visualizar_financeiro`.
-- Receber pagamento de A Receber abre **o mesmo** `NovaEntradaSaidaDialog (tipo=entrada)` que a entrada manual — diferencial é o `receberInitial = { tipo: "protocolo", protocolo }`.
+1. **Nova entrada manual** chama o mesmo `NovaEntradaSaidaDialog` usado para saídas — o usuário precisa entender o contexto da aba.
+2. **Forma de pagamento da saída** não é exibida em coluna — vem decodificada de `[pgto:...]` na descrição.
+3. **Caixa não tem operador**: qualquer um com permissão imprime o livro-caixa do dia, sem rastrear quem "responde" pelo dinheiro.
+4. **A Receber convênios** depende do usuário lembrar de fechar fatura — nada é automatizado por `prazo_faturamento_dias`.
+5. **Estorno de pagamento** = exclusão (apenas admin), sem motivo formal.
+6. **Glosa** não tem fluxo: o usuário cancela e refatura ou reduz manualmente o desconto antes de marcar paga.
