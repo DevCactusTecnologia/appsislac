@@ -714,7 +714,6 @@ const Financeiro = () => {
       <PageHeader
         eyebrow="Financeiro"
         title="Financeiro"
-        description="Controle de entradas, saídas e livro caixa."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={periodoRapido} onValueChange={(v) => aplicarPeriodoRapido(v as typeof periodoRapido)}>
