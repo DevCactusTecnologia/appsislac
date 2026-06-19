@@ -125,6 +125,19 @@ export async function getExamesOperacionaisByStatus(
     return [];
   }
 
+  // Buscar sexo dos pacientes (evita hardcode "M")
+  const pacIds = Array.from(
+    new Set((atRows ?? []).map((a) => a.paciente_id).filter((v): v is number => v != null))
+  );
+  const sexoByPacId = new Map<number, string>();
+  if (pacIds.length > 0) {
+    const { data: pacRows } = await supabase
+      .from("pacientes")
+      .select("id, sexo")
+      .in("id", pacIds);
+    (pacRows ?? []).forEach((p) => sexoByPacId.set(Number(p.id), (p.sexo as string) || "M"));
+  }
+
   return (atRows ?? []).map((at) => {
     const exs = examesByAt.get(at.id) ?? [];
     const responsavel = exs.find((e) => e.analista)?.analista ?? "";
@@ -135,7 +148,7 @@ export async function getExamesOperacionaisByStatus(
       paciente_id: at.paciente_id ?? null,
       paciente_nome: at.paciente_nome,
       paciente_cpf: (at.paciente_cpf ?? "").replace(/\D/g, ""),
-      paciente_sexo: "M",
+      paciente_sexo: (at.paciente_id != null ? sexoByPacId.get(at.paciente_id) : undefined) || "M",
       paciente_nascimento: at.paciente_nascimento ?? "",
       unidade_id: at.unidade_id,
       responsavel,
