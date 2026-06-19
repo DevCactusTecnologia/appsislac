@@ -870,6 +870,8 @@ const Financeiro = () => {
         detailAtendimento={detailAtendimento}
         detailExames={detailExames}
         detailTotalExames={detailTotalExames}
+        detailSubtotalExames={detailSubtotalExames}
+        detailDescontoExames={detailDescontoExames}
         detailTotalPago={detailTotalPago}
         detailSaldo={detailSaldo}
         onClose={() => setDetailDialogOpen(false)}
