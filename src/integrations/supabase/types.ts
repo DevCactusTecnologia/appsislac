@@ -2123,6 +2123,7 @@ export type Database = {
           forma_pagamento: string | null
           id: number
           protocolo: string
+          status: string
           tenant_id: string
           tipo_despesa: string
           updated_at: string
@@ -2140,6 +2141,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: number
           protocolo: string
+          status?: string
           tenant_id: string
           tipo_despesa?: string
           updated_at?: string
@@ -2157,6 +2159,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: number
           protocolo?: string
+          status?: string
           tenant_id?: string
           tipo_despesa?: string
           updated_at?: string
