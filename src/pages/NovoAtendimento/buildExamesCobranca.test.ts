@@ -24,6 +24,7 @@ describe("buildExamesCobranca", () => {
         cobrancaDestino: "paciente",
         convenioCobrancaId: null,
         valor: 50,
+        valorOriginal: 50,
         amostraSeq: 1,
         grupoExameId: null,
         tipoProcesso: "INTERNO",
@@ -106,5 +107,14 @@ describe("buildExamesCobranca", () => {
     );
     expect(out.map(o => o.nome)).toEqual(["A", "B", "C"]);
     expect(out.reduce((s, o) => s + o.valor, 0)).toBe(60);
+  });
+
+  it("preserva valorOriginal quando o exame já tem desconto distribuído", () => {
+    const out = buildExamesCobranca(
+      [ex({ id: 1, nome: "A", valor: 260, valorOriginal: 280 })],
+      ["X"],
+    );
+    expect(out[0].valor).toBe(260);
+    expect(out[0].valorOriginal).toBe(280);
   });
 });
