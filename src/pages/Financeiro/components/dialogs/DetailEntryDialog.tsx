@@ -18,6 +18,8 @@ interface Props {
   detailAtendimento: MockAtendimento | null;
   detailExames: DetailExameValor[];
   detailTotalExames: number;
+  detailSubtotalExames: number;
+  detailDescontoExames: number;
   detailTotalPago: number;
   detailSaldo: number;
   onClose: () => void;
@@ -27,7 +29,8 @@ interface Props {
 
 export default function DetailEntryDialog({
   open, detailEntry, detailAtendimento, detailExames,
-  detailTotalExames, detailTotalPago, detailSaldo,
+  detailTotalExames, detailSubtotalExames, detailDescontoExames,
+  detailTotalPago, detailSaldo,
   onClose, onPagar, onEdit,
 }: Props) {
   const handlePrint = () => {
