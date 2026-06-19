@@ -168,7 +168,7 @@ const Financeiro = () => {
   // Estados ligados a effects (permanecem no orquestrador).
   const [saidasList, setSaidasList] = useState<FinanceiroEntry[]>(() => getSaidas().map(saidaToEntry));
   const [entradasView, setEntradasView] = useState<FinanceiroEntradaView[]>([]);
-  const [saldoConvenios, setSaldoConvenios] = useState<Map<number, { saldo: number; exames: number; pacientes: Set<string> }>>(new Map());
+  // saldoConvenios removido — agora servido por useAReceberConvenios (Fase 1 V2).
 
   
 
