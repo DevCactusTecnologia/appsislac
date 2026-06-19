@@ -108,6 +108,7 @@ const ResultadoDetalhe = () => {
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
   const [dbRows, setDbRows] = useState<AtendimentoExameRow[]>([]);
   const [dbIdMap, setDbIdMap] = useState<DbIdMap>({});
+  const [layoutHtmlByExameId, setLayoutHtmlByExameId] = useState<Record<string, string>>({});
   const [selectedExameId, setSelectedExameId] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [retificando, setRetificando] = useState(false);
