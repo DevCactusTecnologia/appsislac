@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import OrigemBadge from "@/components/OrigemBadge";
 import PagamentoDialog from "@/components/PagamentoDialog";
 import AtendimentoDetalheDialog from "@/components/AtendimentoDetalheDialog";
+import { calculateExamPrice } from "@/domains/appointment/services/pricing";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { requerConfirmacaoEdicao, mensagemAlertaEdicao, setAuditJustificativa } from "@/lib/atendimentoPolicy";
 import { useDicionario } from "@/hooks/useDicionario";
@@ -648,15 +649,19 @@ const Index = () => {
   const pagamentoData = useMemo(() => {
     if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"], exames: [] as { nome: string; valor: number }[] };
     // Apenas exames cobrados do PACIENTE entram no cálculo do modal de pagamento.
+    const convenioNome = selectedAtendimento.convenio ?? "Particular";
     const examesPaciente = (selectedAtendimento.examesCobranca ?? selectedAtendimento.exames.map(nome => ({ nome, cobrancaDestino: "paciente" as const, valor: 0, valorOriginal: 0 })))
-      .filter(c => c.cobrancaDestino !== "convenio");
+      .filter(c => c.cobrancaDestino !== "convenio")
+      .map(e => {
+        const valor = Number(e.valor) || 0;
+        const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
+        const valorOriginal = Math.max(Number(e.valorOriginal) || 0, valor, valorTabela);
+        return { ...e, valor, valorOriginal };
+      });
     // Subtotal = soma dos valores ORIGINAIS (preço cheio antes do desconto).
     // O desconto histórico aparece destacado como linha separada.
-    const subtotal = examesPaciente.reduce((sum, e) => {
-      const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : Number(e.valor) || 0;
-      return sum + orig;
-    }, 0);
-    const totalEfetivo = examesPaciente.reduce((sum, e) => sum + (Number(e.valor) || 0), 0);
+    const subtotal = examesPaciente.reduce((sum, e) => sum + e.valorOriginal, 0);
+    const totalEfetivo = examesPaciente.reduce((sum, e) => sum + e.valor, 0);
     const descontoHistorico = Math.max(0, Math.round((subtotal - totalEfetivo) * 100) / 100);
     const totalPago = (localPagamentos ?? []).reduce((sum, p) => sum + p.valor, 0);
     return {
@@ -668,10 +673,7 @@ const Index = () => {
       saldoDevedor: Math.max(0, totalEfetivo - totalPago),
       pagamentosRealizados: localPagamentos ?? [],
       // Exames com valor ORIGINAL (descontos novos no dialog se aplicam sobre o cheio).
-      exames: examesPaciente.map(e => ({
-        nome: e.nome,
-        valor: Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0),
-      })),
+      exames: examesPaciente.map(e => ({ nome: e.nome, valor: e.valorOriginal })),
     };
   }, [selectedAtendimento, localPagamentos]);
 
