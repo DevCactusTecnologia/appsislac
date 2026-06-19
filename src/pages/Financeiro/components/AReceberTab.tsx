@@ -1,16 +1,10 @@
-// AReceberTab — Fase 7 (slim, pacientes-only).
-//
-// Filosofia: olhou, entendeu, usou.
-//   • A aba "A Receber" agora trata exclusivamente de saldos de PACIENTES.
-//   • Convênios ganharam área dedicada em ./ConveniosTab.
-//   • Estrutura: Quem · Quanto · Desde · Status · ação "Receber".
+// AReceberTab — V3 (refinado, compacto, design system unificado).
 import { Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
 
-const COL_HEADER =
-  "text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider";
+const TH = "text-left px-4 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.08em]";
 
 function formatBR(d: string | null | undefined): string {
   if (!d) return "—";
@@ -37,11 +31,12 @@ function diasDesde(d: string | null | undefined): number | null {
 
 function StatusPill({ kind }: { kind: "parcial" | "pendente" }) {
   const map = {
-    parcial:  { label: "Parcial",  cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900" },
-    pendente: { label: "Pendente", cls: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900" },
+    parcial:  { label: "Parcial",  dot: "bg-amber-500", cls: "bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900" },
+    pendente: { label: "Pendente", dot: "bg-rose-500",  cls: "bg-rose-50 text-rose-700 border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900" },
   }[kind];
   return (
-    <span className={cn("inline-flex items-center px-2.5 h-7 rounded-full border text-[11px] font-medium", map.cls)}>
+    <span className={cn("inline-flex items-center gap-1.5 px-2 h-6 rounded-md border text-[11px] font-medium", map.cls)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", map.dot)} />
       {map.label}
     </span>
   );
@@ -56,41 +51,41 @@ export default function AReceberTab() {
   } = useFinanceiroContext();
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border/40 bg-muted/20">
-                <th className={COL_HEADER}>Quem</th>
-                <th className={COL_HEADER + " text-right"}>Quanto</th>
-                <th className={COL_HEADER}>Desde</th>
-                <th className={COL_HEADER + " text-center"}>Status</th>
-                <th className={COL_HEADER + " text-center w-[120px]"}></th>
+              <tr className="border-b border-border/40 bg-muted/15">
+                <th className={TH}>Quem</th>
+                <th className={cn(TH, "text-right")}>Quanto</th>
+                <th className={TH}>Desde</th>
+                <th className={cn(TH, "text-center")}>Status</th>
+                <th className={cn(TH, "text-center w-[110px]")}></th>
               </tr>
             </thead>
             <tbody>
               {aReceberPaginated.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-16 text-sm text-muted-foreground">Nenhum paciente com saldo em aberto</td></tr>
+                <tr><td colSpan={5} className="text-center py-14 text-sm text-muted-foreground">Nenhum paciente com saldo em aberto</td></tr>
               ) : aReceberPaginated.map((row) => {
                 const dias = diasDesde(row.data);
                 return (
-                  <tr key={row.protocolo} className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors group">
-                    <td className="px-5 py-4">
+                  <tr key={row.protocolo} className="border-b border-border/15 last:border-0 even:bg-muted/[0.04] hover:bg-primary/[0.04] transition-colors group">
+                    <td className="px-4 py-2.5">
                       <div className="flex flex-col gap-0.5 max-w-[280px]">
-                        <span className="text-sm font-medium text-foreground truncate">{row.cliente}</span>
+                        <span className="text-[13px] font-medium text-foreground truncate">{row.cliente}</span>
                         <span className="text-[11px] text-muted-foreground tabular-nums truncate">
                           {row.protocolo}{row.atendimento.convenio !== "Particular" ? ` · ${row.convenio}` : ""}
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <div className="flex flex-col gap-0.5 items-end">
-                        <span className="text-sm font-semibold text-foreground tabular-nums">{fmtBRL(row.saldo)}</span>
+                        <span className="text-[13px] font-semibold text-foreground tabular-nums">{fmtBRL(row.saldo)}</span>
                         <span className="text-[11px] text-muted-foreground tabular-nums">de {fmtBRL(row.valorTotal)}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-foreground tabular-nums">
+                    <td className="px-4 py-2.5 text-[13px] text-foreground tabular-nums">
                       <div className="flex flex-col gap-0.5">
                         <span>{formatBR(row.data)}</span>
                         {dias !== null && (
@@ -100,12 +95,10 @@ export default function AReceberTab() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <StatusPill kind={row.status} />
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <Button size="sm" onClick={() => handleAReceberPagar(row)} className="rounded-xl h-8 text-xs gap-1.5">
-                        <Wallet className="h-3.5 w-3.5" />
+                    <td className="px-4 py-2.5 text-center"><StatusPill kind={row.status} /></td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Button size="sm" onClick={() => handleAReceberPagar(row)} className="rounded-md h-7 text-[11px] gap-1.5 px-3">
+                        <Wallet className="h-3 w-3" />
                         Receber
                       </Button>
                     </td>
@@ -119,44 +112,40 @@ export default function AReceberTab() {
         {/* Mobile */}
         <div className="md:hidden divide-y divide-border/30">
           {aReceberPaginated.length === 0 ? (
-            <div className="p-16 text-center text-sm text-muted-foreground">Nenhum paciente com saldo em aberto</div>
+            <div className="p-14 text-center text-sm text-muted-foreground">Nenhum paciente com saldo em aberto</div>
           ) : aReceberPaginated.map((row) => (
             <div key={row.protocolo} className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{row.cliente}</p>
-                  <p className="text-[11px] text-muted-foreground tabular-nums truncate">
-                    {row.protocolo} · {formatBR(row.data)}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground tabular-nums truncate">{row.protocolo} · {formatBR(row.data)}</p>
                 </div>
                 <p className="text-sm font-semibold text-foreground shrink-0 tabular-nums">{fmtBRL(row.saldo)}</p>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <StatusPill kind={row.status} />
-                <Button size="sm" onClick={() => handleAReceberPagar(row)} className="rounded-xl h-8 text-xs gap-1.5">
-                  <Wallet className="h-3.5 w-3.5" />
-                  Receber
+                <Button size="sm" onClick={() => handleAReceberPagar(row)} className="rounded-md h-7 text-[11px] gap-1.5 px-3">
+                  <Wallet className="h-3 w-3" /> Receber
                 </Button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Paginação */}
         {aReceberTotalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-border/40 bg-muted/10">
-            <span className="text-xs text-muted-foreground tabular-nums">
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/40 bg-muted/[0.06]">
+            <span className="text-[11px] text-muted-foreground tabular-nums">
               {((currentPage - 1) * itemsPerPage) + 1}–{Math.min(currentPage * itemsPerPage, aReceberFilteredLength)} de {aReceberFilteredLength}
             </span>
             <div className="flex items-center gap-1">
-              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg"
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0 rounded-md"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}>
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <span className="text-xs text-muted-foreground px-2 tabular-nums">{currentPage} / {aReceberTotalPages}</span>
-              <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-lg"
+              <span className="text-[11px] text-muted-foreground px-2 tabular-nums">{currentPage} / {aReceberTotalPages}</span>
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0 rounded-md"
                 onClick={() => setCurrentPage(p => Math.min(aReceberTotalPages, p + 1))} disabled={currentPage >= aReceberTotalPages}>
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
