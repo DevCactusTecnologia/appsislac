@@ -107,7 +107,7 @@ export default function EntradasSaidasTable() {
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => handleEditClick(entry)} className="p-2 rounded-xl hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                          <button onClick={() => handleDeleteClick(entry.protocolo)} className="p-2 rounded-xl hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button>
+                          <button onClick={() => handleDeleteClick(entry)} className="p-2 rounded-xl hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button>
                           <button onClick={() => handleDetailClick(entry)} className="p-2 rounded-xl hover:bg-muted transition-colors"><Eye className="h-3.5 w-3.5 text-muted-foreground" /></button>
                         </div>
                       </td>
@@ -242,7 +242,7 @@ export default function EntradasSaidasTable() {
                 {activeTab === "saida" && (
                   <>
                     <button onClick={() => handleEditClick(entry)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5" />Editar</button>
-                    <button onClick={() => handleDeleteClick(entry.protocolo)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" />Excluir</button>
+                    <button onClick={() => handleDeleteClick(entry)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5" />Excluir</button>
                   </>
                 )}
                 <button onClick={() => handleDetailClick(entry)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"><Eye className="h-3.5 w-3.5" />Detalhes</button>
