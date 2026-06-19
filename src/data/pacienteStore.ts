@@ -184,7 +184,7 @@ export async function addPaciente(input: Omit<Paciente, "id" | "initials">): Pro
       tenant_id,
       // Campos NOT NULL exigidos pelo Insert (já garantidos pelo formulário)
       nome: input.nome,
-      cpf: input.cpf.replace(/\D/g, ""),
+      cpf: input.cpf ? input.cpf.replace(/\D/g, "") : null,
     };
     const data = await persistOneOrThrow<PacienteRow>(
       supabase.from("pacientes").insert(insertPayload),
