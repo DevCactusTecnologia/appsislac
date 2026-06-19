@@ -52,6 +52,8 @@ export type AReceberConvenioRow = {
   saldo: number;
   qtdExames: number;
   qtdPacientes: number;
+  /** Data do atendimento mais antigo com exame em aberto (Fase 5 V2). */
+  desde: string | null;
 };
 
 export type CaixaMov = {
