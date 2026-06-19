@@ -82,6 +82,7 @@ const PagamentoDialog = ({
   open, onClose, itens = 0, subtotal = 0, desconto: descontoProp = 0,
   valorPago: valorPagoProp = 0, exames = [], onConfirm,
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
+  descontoData,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
