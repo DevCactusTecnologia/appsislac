@@ -2296,11 +2296,16 @@ const NovoAtendimento = () => {
         itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
         exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
-        descontoData={(() => { const d = (dataAtendimento || "").split("T")[0]; if (!d) return undefined; const [y, m, dd] = d.split("-"); return y && m && dd ? `${dd}/${m}/${y}` : undefined; })()}
+        descontoData={descontoDataExibicao}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
-          setDesconto(res.desconto);
+          if (isEditing) {
+            aplicarDescontoTotalNosExames(res.desconto);
+            setDesconto(0);
+          } else {
+            setDesconto(res.desconto);
+          }
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
             pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
