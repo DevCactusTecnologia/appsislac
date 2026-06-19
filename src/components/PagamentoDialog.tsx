@@ -286,29 +286,51 @@ const PagamentoDialog = ({
           <div className="px-5 sm:px-6 py-4 space-y-5">
 
             {/* Realized payments */}
-            {pagamentosRealizados.length > 0 && (
+            {(pagamentosRealizados.length > 0 || descontoProp > 0) && (
               <section>
                 <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pagamentos realizados</h3>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
+                  {/* Linha de desconto histórico — exibida no topo quando houver. */}
+                  {descontoProp > 0 && (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${hsl("var(--status-success)")}10` }}
+                        >
+                          <Percent className="h-3.5 w-3.5" style={{ color: hsl("var(--status-success)") }} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-[12px] font-medium text-foreground block leading-tight">Desconto</span>
+                          {descontoData && (
+                            <p className="text-[10px] text-muted-foreground leading-tight">{descontoData}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>
+                        − {fmtBRL(descontoProp)}
+                      </span>
+                    </div>
+                  )}
                   {pagamentosRealizados.map((pr, i) => {
                     const meta = METHODS.find(m => m.label === pr.tipo);
                     const Icon = meta?.icon ?? Banknote;
                     return (
-                      <div key={i} className="group flex items-center justify-between px-4 py-3 rounded-2xl bg-card border border-border hover:border-primary/40 hover:shadow-sm transition-all duration-200">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${methodColor(pr.tipo)}10` }}>
-                            <Icon className="h-4 w-4" style={{ color: methodColor(pr.tipo) }} />
+                      <div key={i} className="group flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border hover:border-primary/40 transition-colors">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${methodColor(pr.tipo)}10` }}>
+                            <Icon className="h-3.5 w-3.5" style={{ color: methodColor(pr.tipo) }} />
                           </div>
-                          <div>
-                            <span className="text-[13px] font-medium text-foreground">{pr.tipo}</span>
-                            <p className="text-[11px] text-muted-foreground">{pr.data}</p>
+                          <div className="min-w-0">
+                            <span className="text-[12px] font-medium text-foreground block leading-tight">{pr.tipo}</span>
+                            <p className="text-[10px] text-muted-foreground leading-tight">{pr.data}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>{fmtBRL(pr.valor)}</span>
                           {onRemovePagamentoRealizado && (
-                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-all duration-200">
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            <button onClick={() => onRemovePagamentoRealizado(i)} className="p-1 rounded-md hover:bg-destructive/10 transition-colors">
+                              <Trash2 className="h-3 w-3 text-destructive" />
                             </button>
                           )}
                         </div>
