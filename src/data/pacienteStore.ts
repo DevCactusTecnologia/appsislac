@@ -144,7 +144,7 @@ export async function _initPacientesStore(): Promise<void> {
   const cols =
     "id,friendly_id,nome,cpf,data_nascimento,sexo,telefone,email,status," +
     "celular,cep,estado,cidade,bairro,endereco,numero,complemento," +
-    "guardian_name,guardian_cpf,consentimento_lgpd,consentimento_em";
+    "guardian_name,guardian_cpf,consentimento_lgpd,consentimento_em,nome_social";
   const PAGE = 1000;
   const all: PacienteRow[] = [];
   for (let from = 0; ; from += PAGE) {
