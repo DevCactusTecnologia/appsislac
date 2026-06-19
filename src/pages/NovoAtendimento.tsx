@@ -655,6 +655,15 @@ const NovoAtendimento = () => {
   // do convênio (módulo Financeiro › A Receber › Convênios), portanto NÃO entram no que o paciente paga.
   const subtotal = exames.reduce((sum, e) => e.cobrancaDestino === "convenio" ? sum : sum + e.valor, 0);
   const subtotalConvenio = exames.reduce((sum, e) => e.cobrancaDestino === "convenio" ? sum + e.valor : sum, 0);
+  // Subtotal calculado pelo valor cheio (valorOriginal) — usado apenas para exibição.
+  const subtotalOriginal = exames.reduce((sum, e) => {
+    if (e.cobrancaDestino === "convenio") return sum;
+    return sum + (e.valorOriginal ?? e.valor);
+  }, 0);
+  // Desconto embutido nos exames (distribuído ao salvar). Não altera lógica de save.
+  const descontoHistorico = Math.max(0, Math.round((subtotalOriginal - subtotal) * 100) / 100);
+  // Desconto exibido no resumo = histórico (já embutido no valor) + manual (state).
+  const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
   const saldoDevedor = Math.max(0, total - valorPago);
 
