@@ -69,6 +69,13 @@ const formatAnaliseDate = (iso: string | null): string | null => {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
+const formatSexo = (s: string | null | undefined): string => {
+  const v = (s ?? "").trim().toUpperCase();
+  if (v === "M" || v.startsWith("MASC")) return "Masculino";
+  if (v === "F" || v.startsWith("FEM")) return "Feminino";
+  return s ?? "";
+};
+
 async function fetchPacientesAnalise(): Promise<Paciente[]> {
   const rows = await getExamesOperacionaisByStatus(["coletado", "em_bancada", "analisado", "cancelado"]);
   return rows
