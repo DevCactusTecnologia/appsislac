@@ -6,12 +6,12 @@
 //   • Sem cards de resumo (Painel cobre o macro), sem busca textual extra,
 //     sem filtros adicionais.
 //   • Status oficial: aberta | paga | cancelada (vindo de financeiro_saidas.status).
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
-import { getSaidas, updateSaida } from "@/data/financeiroStore";
+import { getSaidas, updateSaida, subscribeFinanceiro } from "@/data/financeiroStore";
 import type { FinanceiroEntry } from "../types";
 import { saidaToEntry, parseDate } from "../helpers";
 import NovaDespesaDialog from "./dialogs/NovaDespesaDialog";
