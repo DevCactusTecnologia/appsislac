@@ -757,6 +757,9 @@ const Financeiro = () => {
           {activeTab === "saida" && <SaidasTab />}
           {activeTab === "entrada" && <EntradasTab />}
 
+          {/* ─── Tab Painel (Fase 3 V2) ─── */}
+          {activeTab === "painel" && <PainelTab />}
+
           {/* ─── Tab A Receber (Fase 4 — Passo 4): consome FinanceiroContext ─── */}
           {activeTab === "a_receber" && <AReceberTab />}
 
