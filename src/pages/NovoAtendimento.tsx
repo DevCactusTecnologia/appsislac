@@ -1980,11 +1980,18 @@ const NovoAtendimento = () => {
 
                 {/* Summary bar */}
                 {exames.length > 0 && (
-                  <div className="flex items-center justify-between px-5 py-3 bg-primary/5 border border-primary/15 rounded-2xl">
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3 px-5 py-3 bg-primary/5 border border-primary/15 rounded-2xl flex-wrap">
+                    <span className="text-sm text-muted-foreground shrink-0">
                       <span className="font-bold text-foreground">{filteredExames.length}</span> exame{filteredExames.length !== 1 ? "s" : ""}
                     </span>
-                    <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
+                    <div className="flex items-baseline gap-2 tabular-nums whitespace-nowrap">
+                      {descontoHistorico > 0 && (
+                        <span className="text-[11px] text-muted-foreground line-through">
+                          {fmtBRL(subtotalOriginal)}
+                        </span>
+                      )}
+                      <span className="text-sm font-bold text-foreground">{fmtBRL(subtotal)}</span>
+                    </div>
                   </div>
                 )}
 
