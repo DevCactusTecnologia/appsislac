@@ -67,9 +67,7 @@ import {
   isValidDateBR,
 } from "./Financeiro/helpers";
 import {
-  buildAReceberRowsFromAtendimentos,
   buildAReceberRowsFromRpc,
-  buildAReceberConvenioRows,
   filterAReceberRows,
   applyFinanceiroFilters,
   computeEntradaCounts,
