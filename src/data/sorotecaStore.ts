@@ -512,7 +512,7 @@ export async function getAmostraDetalhe(id: string): Promise<AmostraDetalhe | nu
       paciente = {
         id: p.id,
         nome: p.nome,
-        cpf: p.cpf,
+        cpf: p.cpf || "",
         nascimento: p.data_nascimento,
         sexo: p.sexo,
       };
