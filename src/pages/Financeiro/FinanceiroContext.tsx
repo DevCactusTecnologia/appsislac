@@ -5,10 +5,14 @@
 // o provider apenas recebe o `value` montado no orquestrador.
 import { createContext, useContext, type ReactNode } from "react";
 import type { FinanceiroEntry, AReceberRow, AReceberConvenioRow, CaixaLinhaComSaldo } from "./types";
+import type { PainelKpis } from "./services/computePainelKpis";
 
 type CategoriaDicionario = "tipo_despesa" | "destino_pagamento" | "forma_pagamento";
 
 export interface FinanceiroContextValue {
+  // Painel (Fase 3 V2)
+  painelKpis: PainelKpis;
+
   // Tabs / navegação
   activeTab: string;
   setActiveTab: (t: any) => void;
