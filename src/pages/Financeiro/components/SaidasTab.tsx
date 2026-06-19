@@ -49,8 +49,10 @@ export default function SaidasTab() {
 
   const [filter, setFilter] = useState<StatusFilter>("todas");
   const [novaOpen, setNovaOpen] = useState(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => subscribeFinanceiro(() => setTick(t => t + 1)), []);
 
-  const todas = useMemo(() => getSaidas().map(saidaToEntry), []);
+  const todas = useMemo(() => getSaidas().map(saidaToEntry), [tick]);
   // O store atualiza por subscribe; mas para simplicidade usamos um tick local
   // disparado por re-mount do dialog. (Os outros tabs também leem do store.)
 
