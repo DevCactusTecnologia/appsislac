@@ -16,6 +16,7 @@ export function saidaToEntry(s: FinanceiroSaida): FinanceiroEntry {
     dataVencimento: s.dataVencimento,
     foiPago: s.foiPago,
     dataPagamento: s.dataPagamento,
+    statusSaida: s.status,
   };
 }
 
