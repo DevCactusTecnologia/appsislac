@@ -13,7 +13,7 @@ import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getAtendimentos, subscribe as subscribeAtendimentos, updateAtendimento } from "@/data/atendimentoStore";
 
 import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getConvenios } from "@/data/convenioStore";
+// getConvenios removido — A Receber/Convênios agora vem da RPC v2 (Fase 1).
 import {
   getSaidas, subscribeFinanceiro, removeSaida, updateSaida,
   fetchEntradasView, type FinanceiroSaida, type FinanceiroEntradaView,
