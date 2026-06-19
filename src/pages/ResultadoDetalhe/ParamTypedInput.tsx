@@ -14,12 +14,15 @@ export const ParamTypedInput = ({
   disabled,
   className,
   onChange,
+  computedValue,
 }: {
   param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number };
   isCritico?: boolean;
   disabled?: boolean;
   className?: string;
   onChange: (v: string) => void;
+  /** Valor calculado (usado quando tipo === "Formula"). */
+  computedValue?: string;
 }) => {
   const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 font-semibold text-foreground ${
     isCritico ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger" : "focus:ring-ring/20"
@@ -51,7 +54,17 @@ export const ParamTypedInput = ({
     );
   }
   if (param.tipo === "Formula") {
-    return <input type="text" value={param.valor} disabled className={`${base} opacity-60`} title="Tipo Fórmula: runtime ainda não implementado." />;
+    return (
+      <input
+        type="text"
+        value={computedValue ?? ""}
+        readOnly
+        disabled
+        placeholder="—"
+        className={`${base} bg-muted/40 cursor-not-allowed`}
+        title="Calculado automaticamente"
+      />
+    );
   }
   if (param.tipo === "Número") {
     const casas = typeof param.casasDecimais === "number" ? param.casasDecimais : 2;
