@@ -14,13 +14,11 @@ import { fmtBRLNumber, searchNormalize } from "@/lib/utils";
 import type {
   FinanceiroSaida, FinanceiroEntradaView,
 } from "@/data/financeiroStore";
-import type { MockAtendimento, ExameCobrancaInfo } from "@/data/types";
-import { getTabelaByConvenioNome } from "@/data/convenioStore";
-import { getPrecoExame, type TabelaTipo } from "@/data/tabelaPrecoStore";
+import type { MockAtendimento } from "@/data/types";
 import { parseDate } from "../helpers";
 import type {
   FinanceiroEntry, SaidaStatusFilter,
-  AReceberRow, AReceberConvenioRow, CaixaMov, CaixaLinhaComSaldo,
+  AReceberRow, CaixaMov, CaixaLinhaComSaldo,
   TabType,
 } from "../types";
 
