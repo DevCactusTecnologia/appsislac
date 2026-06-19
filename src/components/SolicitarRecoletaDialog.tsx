@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { RotateCcw, AlertTriangle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { RotateCcw, AlertTriangle, Check, ChevronsUpDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useDicionario } from "@/hooks/useDicionario";
 import { criarRecoleta, type RecoletaEtapa } from "@/data/recoletasStore";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface SolicitarRecoletaDialogProps {
   open: boolean;
