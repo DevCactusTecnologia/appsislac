@@ -2120,6 +2120,7 @@ export type Database = {
           descricao: string
           destino_pagamento: string
           foi_pago: boolean
+          forma_pagamento: string | null
           id: number
           protocolo: string
           tenant_id: string
@@ -2136,6 +2137,7 @@ export type Database = {
           descricao?: string
           destino_pagamento?: string
           foi_pago?: boolean
+          forma_pagamento?: string | null
           id?: number
           protocolo: string
           tenant_id: string
@@ -2152,6 +2154,7 @@ export type Database = {
           descricao?: string
           destino_pagamento?: string
           foi_pago?: boolean
+          forma_pagamento?: string | null
           id?: number
           protocolo?: string
           tenant_id?: string
