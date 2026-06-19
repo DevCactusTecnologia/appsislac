@@ -1931,12 +1931,7 @@ const NovoAtendimento = () => {
                                 </select>
                               )}
 
-                              <div className="h-9 inline-flex flex-col items-end justify-center whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0 leading-tight">
-                                {exame.valorOriginal != null && exame.valorOriginal > exame.valor && (
-                                  <span className="text-[10px] text-muted-foreground line-through">
-                                    {fmtBRL(exame.valorOriginal)}
-                                  </span>
-                                )}
+                              <div className="h-9 inline-flex items-center justify-end whitespace-nowrap min-w-[72px] md:min-w-[88px] tabular-nums shrink-0">
                                 <span className="text-sm font-bold text-foreground">
                                   {fmtBRL(exame.valor)}
                                 </span>
