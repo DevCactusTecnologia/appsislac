@@ -90,7 +90,11 @@ const PagamentoDialog = ({
   const [stagingData, setStagingData] = useState<Date>(new Date());
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
+  const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
   useBodyScrollLock(open);
+
+  // Desconto histórico efetivo (zera quando o usuário remove o card).
+  const descontoHistorico = descontoHistRemovido ? 0 : descontoProp;
 
   const resetStaging = () => {
     setStagingValor("");
@@ -113,7 +117,7 @@ const PagamentoDialog = ({
       const pagoAtual = pagamentos
         .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia")
         .reduce((s, p) => s + parse(p.valor), 0);
-      const totalAjust = subtotalLocal - descontoProp - descAtual + acreAtual;
+      const totalAjust = subtotalLocal - descontoHistorico - descAtual + acreAtual;
       const saldoAtual = Math.max(0, totalAjust - valorPagoProp - pagoAtual);
       if (saldoAtual <= 0) return;
       setPagamentos(p => [...p, {
@@ -159,7 +163,7 @@ const PagamentoDialog = ({
     return { totalPag: pag, totalDesc: desc, totalAcre: acre };
   }, [pagamentos, subtotal, exames]);
 
-  const descontoTotal = descontoProp + totalDesc;
+  const descontoTotal = descontoHistorico + totalDesc;
   const totalAjustado = subtotal - descontoTotal + totalAcre;
   const valorPagoTotal = valorPagoProp + totalPag;
   const saldo = totalAjustado - valorPagoTotal;
@@ -176,6 +180,7 @@ const PagamentoDialog = ({
     onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
+    setDescontoHistRemovido(false);
     onClose();
   };
 
@@ -286,13 +291,13 @@ const PagamentoDialog = ({
           <div className="px-5 sm:px-6 py-4 space-y-5">
 
             {/* Realized payments */}
-            {(pagamentosRealizados.length > 0 || descontoProp > 0) && (
+            {(pagamentosRealizados.length > 0 || descontoHistorico > 0) && (
               <section>
                 <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pagamentos realizados</h3>
                 <div className="space-y-1.5">
                   {/* Linha de desconto histórico — exibida no topo quando houver. */}
-                  {descontoProp > 0 && (
-                    <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border">
+                  {descontoHistorico > 0 && (
+                    <div className="group flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border hover:border-primary/40 transition-colors">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
                           className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
@@ -307,9 +312,18 @@ const PagamentoDialog = ({
                           )}
                         </div>
                       </div>
-                      <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>
-                        − {fmtBRL(descontoProp)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-success)") }}>
+                          − {fmtBRL(descontoHistorico)}
+                        </span>
+                        <button
+                          onClick={() => setDescontoHistRemovido(true)}
+                          className="p-1 rounded-md hover:bg-destructive/10 transition-colors"
+                          aria-label="Remover desconto"
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </button>
+                      </div>
                     </div>
                   )}
                   {pagamentosRealizados.map((pr, i) => {
@@ -413,7 +427,7 @@ const PagamentoDialog = ({
                     <span className="text-[12px] font-semibold text-foreground w-16 shrink-0 truncate">{selectedMethod}</span>
 
                     <div className="flex items-center flex-1 min-w-0 h-9 rounded-xl border border-border bg-card overflow-hidden focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
-                      <span className="px-3 text-[11px] font-semibold text-foreground select-none">
+                      <span className="px-3 text-[11px] font-semibold text-foreground select-none shrink-0">
                         {adj && stagingUnidade === "PCT" ? "%" : "R$"}
                       </span>
                       <input
