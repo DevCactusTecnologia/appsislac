@@ -109,50 +109,47 @@ function buildSaidaFromRow(row: SaidaRow & { _forma_pgto?: string }): Financeiro
   };
 }
 
-// Como a tabela financeiro_saidas não tem campo "forma de pagamento" separado,
-// armazenamos a forma no campo destino_pagamento de forma híbrida? Não.
-// Solução: criamos um wrapper interno usando colunas existentes:
-// - destino_pagamento: Governo/Funcionário/Fornecedor/Serviço/Outro
-// - tipo_despesa: Fixa/Variável
-// - "pagamento" (PIX/Dinheiro/Crédito/Débito) é codificado no fim da descricao
-//   no formato "...descricao... [pgto:PIX]" para preservar.
-// Para evitar perda de dados, usamos esse marcador.
+// Fase 2 — Financeiro V2: a forma de pagamento agora vive em coluna própria
+// `financeiro_saidas.forma_pagamento`. O antigo sufixo `[pgto:X]` em descricao
+// foi normalizado pelo backfill da migration; este código:
+//  - sempre ESCREVE em `forma_pagamento` (sem injetar sufixo na descricao);
+//  - LÊ preferindo a coluna; se NULL, faz fallback ao decodificador legado para
+//    cobrir hipotéticos registros antigos não migrados.
 
-function encodePagamento(descricao: string, cliente: string, pagamento: string): string {
-  const base = descricao || cliente || "";
-  const marker = pagamento ? `[pgto:${pagamento}]` : "";
-  // Se já tem marker, substitui
-  const cleaned = base.replace(/\s*\[pgto:[^\]]+\]\s*$/i, "");
-  return marker ? `${cleaned} ${marker}` : cleaned;
-}
-
-function decodePagamento(descricao: string | null | undefined): { descricao: string; pagamento: string; cliente: string } {
+function decodePagamentoLegacy(descricao: string | null | undefined): { descricao: string; pagamento: string; cliente: string } {
   const raw = descricao || "";
   const m = /\s*\[pgto:([^\]]+)\]\s*$/i.exec(raw);
   const pagamento = m ? m[1] : "";
   const clean = raw.replace(/\s*\[pgto:[^\]]+\]\s*$/i, "").trim();
-  // cliente = primeiro segmento antes de " — " (se houver)
   const parts = clean.split(" — ");
   const cliente = parts[0] || clean;
   return { descricao: clean, pagamento, cliente };
 }
 
 function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
-  const dec = decodePagamento(row.descricao);
+  // forma_pagamento é a fonte oficial (Fase 2). Fallback: decodifica [pgto:X] legado.
+  const formaCol = (row as SaidaRow & { forma_pagamento?: string | null }).forma_pagamento ?? null;
+  const legacy = decodePagamentoLegacy(row.descricao);
+  const pagamento = (formaCol && formaCol.trim()) || legacy.pagamento || "—";
+  // Se a coluna já existe, a descricao já está limpa; senão, usa a versão decodificada.
+  const descricaoLimpa = formaCol ? (row.descricao || "") : legacy.descricao;
+  const parts = descricaoLimpa.split(" — ");
+  const cliente = parts[0] || descricaoLimpa;
   return {
     protocolo: row.protocolo,
     data: formatDateBR(row.data),
-    cliente: dec.cliente,
+    cliente,
     valorTotal: Number(row.valor) || 0,
-    pagamento: dec.pagamento || "—",
+    pagamento,
     tipoDespesa: row.tipo_despesa || "",
     destinoPagamento: row.destino_pagamento || "",
-    descricao: dec.descricao,
+    descricao: descricaoLimpa,
     dataVencimento: formatDateOnlyBR(row.data_vencimento),
     foiPago: row.foi_pago ? "Sim" : "Não",
     dataPagamento: formatDateOnlyBR(row.data_pagamento),
   };
 }
+
 
 export async function _initFinanceiroStore(): Promise<void> {
   const { data, error } = await supabase
