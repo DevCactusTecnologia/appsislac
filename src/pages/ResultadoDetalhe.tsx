@@ -1033,12 +1033,19 @@ const ResultadoDetalhe = () => {
                     )}
 
                     {/* Parameters */}
+                    {(() => { const __valsM = buildValuesByChave(exame.parametros); return null; })()}
                     {exame.parametros.map((param, idx) => {
                       const isBlockedExame = isExameBloqueado(exame.status);
                       const isEditableParam = !isBlockedExame || exame.status === "Em retificação";
                       const ref = getResolvedRef(exame.nome, param);
-                      const inRange = isBlockedExame && param.valor ? isValueInRange(param.valor, ref.refMin, ref.refMax) : null;
+                      const valuesByChave = buildValuesByChave(exame.parametros);
+                      const computedFormula = param.tipo === "Formula"
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        : "";
+                      const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
+                      const inRange = isBlockedExame && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                       const isOutOfRange = inRange === false;
+
 
                       return (
                         <Fragment key={idx}>
