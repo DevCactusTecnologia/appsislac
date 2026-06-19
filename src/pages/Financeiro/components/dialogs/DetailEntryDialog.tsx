@@ -102,8 +102,30 @@ export default function DetailEntryDialog({
             <>
               <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
                 <p className="text-xs font-semibold text-primary uppercase tracking-wider">Exames</p>
-                {detailExames.map((e, i) => <div key={i} className="flex justify-between text-sm"><span className="text-muted-foreground">{e.nome}</span><span className="font-medium text-foreground">{fmtBRL(e.valor)}</span></div>)}
+                {detailExames.map((e, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{e.nome}</span>
+                    <div className="text-right">
+                      {e.valorOriginal > e.valor + 0.005 && (
+                        <span className="block text-[10px] text-muted-foreground line-through">{fmtBRL(e.valorOriginal)}</span>
+                      )}
+                      <span className="font-medium text-foreground">{fmtBRL(e.valor)}</span>
+                    </div>
+                  </div>
+                ))}
                 <div className="h-px bg-border/40" />
+                {detailDescontoExames > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="text-foreground">{fmtBRL(detailSubtotalExames)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-status-success">Desconto aplicado</span>
+                      <span className="font-medium text-status-success">− {fmtBRL(detailDescontoExames)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm font-bold"><span>Total exames</span><span>{fmtBRL(detailTotalExames)}</span></div>
               </div>
               <div className="rounded-2xl border border-border/60 bg-card p-4 space-y-3">
