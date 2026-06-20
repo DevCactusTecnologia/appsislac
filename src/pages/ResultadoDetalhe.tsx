@@ -1140,7 +1140,7 @@ const ResultadoDetalhe = () => {
                       const ref = getResolvedRef(exame.nome, param);
                       const valuesByChave = buildValuesByChave(exame.parametros);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
