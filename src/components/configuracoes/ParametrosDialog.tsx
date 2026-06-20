@@ -339,9 +339,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
         </aside>
 
         {/* RIGHT: Form */}
-        <section className="flex flex-col overflow-hidden">
+        <section className="flex flex-col overflow-hidden min-h-0">
           {/* Sticky header */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between">
+          <div className="shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between">
             <div>
               <h3 className="text-[14px] font-semibold text-foreground">
                 {selectedId ? "Editar parâmetro" : "Novo parâmetro"}
@@ -360,7 +360,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             )}
           </div>
 
-          <div className="p-6 space-y-6 max-w-3xl">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-3xl">
+
             {/* STEP 1 — Type */}
             <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado.">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
