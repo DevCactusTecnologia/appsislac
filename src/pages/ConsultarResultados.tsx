@@ -334,7 +334,7 @@ const ConsultarResultados = () => {
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap justify-end">
                         <StatusPill status={item.status} />
-                        {item.temRetificacao && <RetificacaoPill />}
+                        
                       </div>
                     </div>
 
@@ -418,7 +418,7 @@ const ConsultarResultados = () => {
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap justify-end">
                         <StatusPill status={item.status} />
-                        {item.temRetificacao && <RetificacaoPill />}
+                        
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 text-[11px] mb-3">
@@ -490,7 +490,7 @@ const ConsultarResultados = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <StatusPill status={item.status} />
-                            {item.temRetificacao && <RetificacaoPill />}
+                            
                             {item.status === "Cancelado" && item.motivoCancelamento && (
                               <button
                                 onClick={() => { setSelectedMotivo(item.motivoCancelamento!); setMotivoDialogOpen(true); }}
