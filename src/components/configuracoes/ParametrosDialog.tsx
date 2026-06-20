@@ -505,39 +505,86 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 )}
 
                 {(tipoSelecionado === "Número" || tipoSelecionado === "Formula") && (
-                  <div>
-                    <label className={labelClass}>Casas decimais</label>
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1">
-                        {[0, 1, 2, 3, 4].map((n) => (
-                          <button
-                            key={n}
-                            type="button"
-                            onClick={() => setCasasDecimais(n)}
-                            className={`h-9 w-10 rounded-xl border text-[13px] font-semibold transition-all duration-200 ${
-                              casasDecimais === n
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                            }`}
-                          >
-                            {n}
-                          </button>
-                        ))}
+                  <div className="space-y-3">
+                    <div>
+                      <label className={labelClass}>Casas decimais</label>
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                          {[0, 1, 2, 3, 4].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setCasasDecimais(n)}
+                              className={`h-9 w-10 rounded-xl border text-[13px] font-semibold transition-all duration-200 ${
+                                casasDecimais === n
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                              }`}
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10}
+                          value={casasDecimais}
+                          onChange={(e) => {
+                            const v = Math.max(0, Math.min(10, Number(e.target.value) || 0));
+                            setCasasDecimais(v);
+                          }}
+                          className={`${inputClass} w-20`}
+                        />
                       </div>
-                      <input
-                        type="number"
-                        min={0}
-                        max={10}
-                        value={casasDecimais}
-                        onChange={(e) => {
-                          const v = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-                          setCasasDecimais(v);
-                        }}
-                        className={`${inputClass} w-20`}
-                      />
-                      <p className="text-[10.5px] text-muted-foreground">
-                        Ex.: <span className="font-mono text-foreground/70">{(1234.56789).toFixed(casasDecimais)}</span>
-                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>Separador decimal</label>
+                        <div className="flex gap-1.5">
+                          {([
+                            { v: ".", lbl: "Ponto", sample: "14.000" },
+                            { v: ",", lbl: "Vírgula", sample: "14,000" },
+                          ] as const).map((opt) => (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              onClick={() => setSeparadorDecimal(opt.v)}
+                              className={`flex-1 h-9 rounded-xl border text-[12px] font-semibold transition-all duration-200 ${
+                                separadorDecimal === opt.v
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                              }`}
+                            >
+                              {opt.lbl} <span className="font-mono text-[11px] opacity-70">({opt.sample})</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Qtd. dígitos (total)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={20}
+                          value={qtdDigitos || ""}
+                          onChange={(e) => {
+                            const v = Math.max(0, Math.min(20, Number(e.target.value) || 0));
+                            setQtdDigitos(v);
+                          }}
+                          className={inputClass}
+                          placeholder="—"
+                        />
+                        <p className="text-[10.5px] text-muted-foreground mt-1.5">
+                          Inteiros + decimais. Ex.: 5 dígitos com 3 casas decimais → {" "}
+                          <span className="font-mono text-foreground/70">
+                            {qtdDigitos > casasDecimais
+                              ? `${"1".padEnd(qtdDigitos - casasDecimais, "4")}${separadorDecimal}${"0".repeat(casasDecimais)}`
+                              : `0${separadorDecimal}${"0".repeat(casasDecimais)}`}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
