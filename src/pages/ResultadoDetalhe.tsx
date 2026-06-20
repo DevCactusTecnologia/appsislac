@@ -881,6 +881,22 @@ const ResultadoDetalhe = () => {
    */
   const resolveCustomLayouts = useCallback(async (printable: Exame[]): Promise<{ map: Record<number, string>; margins: { top: number; right: number; bottom: number; left: number } }> => {
     await preloadLayoutsParaExames(printable.map((e) => e.nome));
+    // Formata "Data Coleta: DD/MM/AAAA às HH:MM:SS" priorizando a data/hora real
+    // de coleta da amostra (atendimento_exames.data_coleta). Fallback: data de
+    // análise; em último caso, a data de cadastro do atendimento (sem hora).
+    const fmtDataColeta = (exame: Exame): string => {
+      const iso = exame.dataColetaISO || exame.dataAnaliseISO || null;
+      if (iso) {
+        const d = new Date(iso);
+        if (!Number.isNaN(d.getTime())) {
+          const data = d.toLocaleDateString("pt-BR");
+          const hora = d.toLocaleTimeString("pt-BR", { hour12: false });
+          return `Data Coleta: ${data} às ${hora}`;
+        }
+      }
+      const cadastro = (paciente.dataCadastro || "").trim();
+      return cadastro ? `Data Coleta: ${cadastro}` : "";
+    };
     const entries = await Promise.all(
       printable.map(async (exame) => {
         const resultados: Record<string, string> = {};
@@ -899,6 +915,7 @@ const ResultadoDetalhe = () => {
             cpf: paciente.cpf,
             protocolo: paciente.protocolo,
           },
+          fmtDataColeta(exame),
         );
         return { id: exame.id, html, margins };
       })
@@ -912,7 +929,8 @@ const ResultadoDetalhe = () => {
       }
     }
     return { map, margins: pageMargins };
-  }, [paciente.sexo, paciente.idade]);
+  }, [paciente.sexo, paciente.idade, paciente.nome, paciente.nascimento, paciente.cpf, paciente.protocolo, paciente.dataCadastro]);
+
 
   const markAsImpresso = (printable: Exame[]) => {
     updatePacienteExames((all) =>
