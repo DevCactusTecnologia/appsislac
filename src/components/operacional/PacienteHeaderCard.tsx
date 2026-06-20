@@ -176,8 +176,9 @@ export function PacienteHeaderCard({
       </div>
 
       {/* Linha 3: ações (se houver) */}
-      {!actionsInline && actions.length > 0 && (
+      {!actionsInline && (actions.length > 0 || actionsExtraLeft) && (
         <div className="mt-3 pt-3 border-t border-border flex items-center justify-end gap-1.5 flex-wrap">
+          {actionsExtraLeft}
           {others.map((a) => <ActionButton key={a.key} action={a} />)}
           {primary && <ActionButton action={primary} />}
         </div>
