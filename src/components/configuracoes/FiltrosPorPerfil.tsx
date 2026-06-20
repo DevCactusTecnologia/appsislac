@@ -179,20 +179,43 @@ const FiltrosPorPerfil = ({ exameNome, parametros, referencias, onMutate }: Prop
   };
 
   const patchDraft = (id: number, patch: Partial<{ min: string; max: string; descricao: string; unidade: string }>) => {
-    setDraft((d) => ({ ...d, [id]: { ...(d[id] ?? { min: "", max: "", descricao: "", unidade: "" }), ...patch } }));
+    setDraft((d) => {
+      // Sempre que o usuário começa a editar uma célula, semeamos o draft
+      // com os valores atuais do VR — assim alterar só "min" não zera "max".
+      const base = d[id] ?? (() => {
+        const r = referencias.find((x) => x.id === id);
+        return {
+          min: r?.valorMin ?? "",
+          max: r?.valorMax ?? "",
+          descricao: r?.descricao ?? "",
+          unidade: r?.unidade ?? "",
+        };
+      })();
+      return { ...d, [id]: { ...base, ...patch } };
+    });
   };
 
   const persist = async (r: ValorReferencia) => {
     const d = draft[r.id];
     if (!d) return;
-    const changed = d.min !== r.valorMin || d.max !== r.valorMax || d.descricao !== (r.descricao || "") || d.unidade !== r.unidade;
+    const next = {
+      min: (d.min ?? r.valorMin ?? "").trim(),
+      max: (d.max ?? r.valorMax ?? "").trim(),
+      descricao: (d.descricao ?? r.descricao ?? "").trim(),
+      unidade: (d.unidade ?? r.unidade ?? "").trim(),
+    };
+    const changed =
+      next.min !== (r.valorMin ?? "").trim() ||
+      next.max !== (r.valorMax ?? "").trim() ||
+      next.descricao !== (r.descricao ?? "").trim() ||
+      next.unidade !== (r.unidade ?? "").trim();
     if (!changed) { setDraft((x) => { const c = { ...x }; delete c[r.id]; return c; }); return; }
     const ok = await updateValorReferencia(r.id, {
       ...r,
-      valorMin: d.min.trim(),
-      valorMax: d.max.trim(),
-      descricao: d.descricao.trim(),
-      unidade: d.unidade.trim(),
+      valorMin: next.min,
+      valorMax: next.max,
+      descricao: next.descricao,
+      unidade: next.unidade,
     });
     if (!ok) { toast({ title: "Erro ao salvar", variant: "destructive" }); return; }
     setDraft((x) => { const c = { ...x }; delete c[r.id]; return c; });
