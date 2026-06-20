@@ -1096,15 +1096,6 @@ const ResultadoDetalhe = () => {
                   title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined,
                   disabled: !podeImprimirTodos,
                 },
-                {
-                  key: "imprimir-vetorial",
-                  label: "Imprimir Vetorial",
-                  icon: <Printer className="h-4 w-4" />,
-                  onClick: () => handleImprimirVetorial(paciente.exames),
-                  variant: "secondary",
-                  title: "PoC: imprime via window.print() (vetorial nativo, sem html2pdf)",
-                  disabled: !podeImprimirTodos,
-                },
               ]) as PacienteHeaderAction[]}
               actionsExtraLeft={
                 <MaisAcoesMenu
