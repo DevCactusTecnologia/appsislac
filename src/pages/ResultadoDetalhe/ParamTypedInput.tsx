@@ -17,7 +17,7 @@ export const ParamTypedInput = ({
   computedValue,
   statusColor,
 }: {
-  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number };
+  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number };
   isCritico?: boolean;
   disabled?: boolean;
   className?: string;
@@ -79,16 +79,40 @@ export const ParamTypedInput = ({
   }
   if (param.tipo === "Número") {
     const casas = typeof param.casasDecimais === "number" ? param.casasDecimais : 2;
-    const step = casas > 0 ? `0.${"0".repeat(Math.max(0, casas - 1))}1` : "1";
+    const sep: "." | "," = param.separadorDecimal === "," ? "," : ".";
+    const totalDig = typeof param.qtdDigitos === "number" ? param.qtdDigitos : 0;
+    const maxIntDig = totalDig > 0 ? Math.max(0, totalDig - casas) : Infinity;
+    const handleChange = (raw: string) => {
+      // mantém somente dígitos e o separador escolhido (ignora o outro)
+      const other = sep === "." ? "," : ".";
+      let cleaned = raw.replace(new RegExp(`[^0-9${sep === "." ? "\\." : ","}\\-]`, "g"), "");
+      // converte separador alternativo digitado por engano
+      cleaned = cleaned.split(other).join(sep);
+      // só um separador
+      const firstSep = cleaned.indexOf(sep);
+      if (firstSep !== -1) {
+        cleaned = cleaned.slice(0, firstSep + 1) + cleaned.slice(firstSep + 1).replace(new RegExp(sep === "." ? "\\." : ",", "g"), "");
+      }
+      // sinal "-" só no início
+      cleaned = cleaned.replace(/(?!^)-/g, "");
+      // limita partes
+      const negative = cleaned.startsWith("-");
+      const body = negative ? cleaned.slice(1) : cleaned;
+      let [intP = "", decP = ""] = body.split(sep);
+      if (Number.isFinite(maxIntDig)) intP = intP.slice(0, maxIntDig);
+      if (casas >= 0) decP = decP.slice(0, casas);
+      const out = (negative ? "-" : "") + intP + (body.includes(sep) ? sep + decP : "");
+      onChange(out);
+    };
     return (
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
-        step={step}
         value={param.valor}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         disabled={disabled}
         className={base}
+        placeholder={totalDig > 0 ? `${"0".repeat(Math.min(maxIntDig, 3))}${casas > 0 ? sep + "0".repeat(casas) : ""}` : undefined}
       />
     );
   }

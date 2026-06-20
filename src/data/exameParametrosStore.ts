@@ -29,6 +29,10 @@ export interface ExameParametro {
   criticoMin: string;
   /** Limite superior crítico/pânico (texto numérico). Vazio = sem alerta de pânico alto. */
   criticoMax: string;
+  /** Separador decimal usado na entrada/exibição: '.' ou ','. */
+  separadorDecimal: "." | ",";
+  /** Quantidade total de dígitos (inteiros + decimais). 0/undefined = sem limite. */
+  qtdDigitos: number;
 }
 
 const cache = new Map<string, ExameParametro[]>();
@@ -53,6 +57,8 @@ const fromRow = (r: any): ExameParametro => ({
   casasDecimais: typeof r.casas_decimais === "number" ? r.casas_decimais : 2,
   criticoMin: r.critico_min ?? "",
   criticoMax: r.critico_max ?? "",
+  separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
+  qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
@@ -73,6 +79,8 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.casasDecimais !== undefined && { casas_decimais: p.casasDecimais }),
   ...(p.criticoMin !== undefined && { critico_min: p.criticoMin }),
   ...(p.criticoMax !== undefined && { critico_max: p.criticoMax }),
+  ...(p.separadorDecimal !== undefined && { separador_decimal: p.separadorDecimal }),
+  ...(p.qtdDigitos !== undefined && { qtd_digitos: p.qtdDigitos || null }),
 });
 
 /**

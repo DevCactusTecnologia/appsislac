@@ -30,6 +30,8 @@ export interface Parametro {
   tipo?: ExameParametro["tipo"];
   opcoesSelect?: string[];
   casasDecimais?: number;
+  separadorDecimal?: "." | ",";
+  qtdDigitos?: number;
   criticoMin?: string;
   criticoMax?: string;
   parametroId?: number;
