@@ -2308,9 +2308,12 @@ const NovoAtendimento = () => {
             )}
             <button
               onClick={finalizarComValidacao}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isEditing ? "Atualizar atendimento" : "Finalizar atendimento"}
+              {isSubmitting
+                ? (isEditing ? "Atualizando..." : "Salvando...")
+                : (isEditing ? "Atualizar atendimento" : "Finalizar atendimento")}
             </button>
           </div>
         </div>
