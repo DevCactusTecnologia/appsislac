@@ -1581,136 +1581,227 @@ const ResultadoDetalhe = () => {
                     // digitação quanto em consulta. O layout científico (CKEditor) é
                     // mantido apenas para impressão/laudo, não para a tela de digitação.
                     void editing; void layoutHtml;
+                    // Pareamento %/(absoluto) — pré-processa parâmetros em linhas
+                    // onde cada linha pode conter um par "principal" (%) e seu
+                    // contraponto "(absoluto)" renderizado em coluna à direita.
+                    const isAbsName = (n: string) => /\(\s*abs(oluto)?\s*\)/i.test(n || "");
+                    const baseOf = (n: string) =>
+                      (n || "")
+                        .replace(/\(\s*abs(oluto)?\s*\)/i, "")
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .toLowerCase();
+                    type Param = typeof selectedExame.parametros[number];
+                    type Row = { main: Param; mainIdx: number; abs?: Param; absIdx?: number };
+                    const rows: Row[] = [];
+                    const used = new Set<number>();
+                    selectedExame.parametros.forEach((p, i) => {
+                      if (used.has(i)) return;
+                      if (isAbsName(p.nome)) {
+                        rows.push({ main: p, mainIdx: i });
+                        used.add(i);
+                        return;
+                      }
+                      const base = baseOf(p.nome);
+                      const sibIdx = selectedExame.parametros.findIndex(
+                        (q, j) => j > i && !used.has(j) && isAbsName(q.nome) && baseOf(q.nome) === base,
+                      );
+                      if (sibIdx >= 0) {
+                        rows.push({ main: p, mainIdx: i, abs: selectedExame.parametros[sibIdx], absIdx: sibIdx });
+                        used.add(i);
+                        used.add(sibIdx);
+                      } else {
+                        rows.push({ main: p, mainIdx: i });
+                        used.add(i);
+                      }
+                    });
+                    const hasAnyAbs = rows.some((r) => !!r.abs);
+
+                    const valuesByChave = buildValuesByChave(selectedExame.parametros);
+
+                    const renderResultCard = (param: Param, idx: number) => {
+                      const ref = getResolvedRef(selectedExame.nome, param);
+                      const computedFormula = param.tipo === "Formula"
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        : "";
+                      const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
+                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
+                      const isOutOfRange = inRange === false;
+                      const v = parseFloat((displayValor || "").replace(",", "."));
+                      const lo = parseFloat((ref.refMin || "").replace(",", "."));
+                      const hi = parseFloat((ref.refMax || "").replace(",", "."));
+                      const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
+                      const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
+                      const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
+                      const isCriticoParam = nivelCritico !== "normal";
+                      const barColorClass = inRange === true
+                        ? "bg-status-success"
+                        : isOutOfRange
+                          ? (above ? "bg-status-danger" : "bg-orange-500")
+                          : "bg-transparent";
+                      return (
+                        <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
+                          <span className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-background shadow-sm">
+                            {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                            {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                            {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
+                            {inRange === null && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
+                          </span>
+                          <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+                            {isBlocked && !retificando ? (
+                              displayValor ? (
+                                <>
+                                  <span className={`text-[15px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
+                                    {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground">{param.unidade}</span>
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground italic">—</span>
+                              )
+                            ) : (
+                              <>
+                                <ParamTypedInput
+                                  param={param}
+                                  isCritico={isCriticoParam}
+                                  computedValue={computedFormula}
+                                  onChange={(v) => updateParametro(selectedExame.id, idx, v)}
+                                  disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
+                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-8 w-full text-[15px] font-bold tabular-nums focus:!ring-0"
+                                />
+                                <span className="text-sm text-muted-foreground shrink-0">{param.unidade}</span>
+                              </>
+                            )}
+                          </div>
+                          <span className={`absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full ${barColorClass}`} />
+                        </div>
+                      );
+                    };
+
+                    const renderRefCard = (param: Param) => {
+                      const ref = getResolvedRef(selectedExame.nome, param);
+                      const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
+                      if (!hasRef) {
+                        return (
+                          <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
+                            Sem referência
+                          </div>
+                        );
+                      }
+                      return (
+                        <>
+                          <div className="relative flex items-center gap-2 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30">
+                            <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                              {(ref.refMin || ref.refMax) ? (
+                                <>
+                                  <span className="text-[15px] font-medium text-foreground tabular-nums truncate">
+                                    {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground shrink-0">{ref.refUnidade}</span>
+                                </>
+                              ) : (
+                                <span className="text-sm text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
+                              )}
+                            </div>
+                            <span className="absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full bg-foreground/85" />
+                          </div>
+                          {(ref.refMin || ref.refMax) && ref.descricao && (
+                            <p className="text-[10px] text-muted-foreground italic mt-1 pl-4 whitespace-pre-line">{ref.descricao}</p>
+                          )}
+                        </>
+                      );
+                    };
+
                     return (
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-separate border-spacing-y-2">
+                      <colgroup>
+                        <col className="w-[22%]" />
+                        <col className={hasAnyAbs ? "w-[20%]" : "w-[40%]"} />
+                        {hasAnyAbs && <col className="w-[20%]" />}
+                        <col className="w-3" />
+                        <col />
+                      </colgroup>
                       <thead>
                         <tr>
-                          <th className="text-left pb-2 pr-4 text-xs font-semibold tracking-[0.18em] text-muted-foreground/70 w-[22%]"></th>
-                          <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground w-[40%]">RESULTADO</th>
-                          <th className="w-3" />
+                          <th className="text-left pb-2 pr-4 text-xs font-semibold tracking-[0.18em] text-muted-foreground/70"></th>
+                          <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">
+                            {hasAnyAbs ? "RESULTADO (%)" : "RESULTADO"}
+                          </th>
+                          {hasAnyAbs && (
+                            <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">
+                              ABSOLUTO
+                            </th>
+                          )}
+                          <th />
                           <th className="text-left pb-2 pl-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">VALOR DE REFERÊNCIA</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(() => {
-                          const valuesByChave = buildValuesByChave(selectedExame.parametros);
-                          return selectedExame.parametros.map((param, idx) => {
-                          const ref = getResolvedRef(selectedExame.nome, param);
-                          const computedFormula = param.tipo === "Formula"
+                        {rows.map((row, rIdx) => {
+                          const param = row.main;
+                          const idx = row.mainIdx;
+                          const displayValorMain = param.tipo === "Formula"
                             ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
-                            : "";
-                          const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                          // Avalia faixa para ambos os modos (digitação e consulta) quando há valor.
-                          const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
-                          const isOutOfRange = inRange === false;
-                          // Direção do desvio (abaixo / acima da faixa)
-                          const v = parseFloat((displayValor || "").replace(",", "."));
-                          const lo = parseFloat((ref.refMin || "").replace(",", "."));
-                          const hi = parseFloat((ref.refMax || "").replace(",", "."));
-                          const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
-                          const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
-                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
+                            : param.valor;
+                          const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValorMain);
                           const isCriticoParam = nivelCritico !== "normal";
-                          const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
-                          // Cor da barra lateral do card de resultado
-                          const barColorClass = inRange === true
-                            ? "bg-status-success"
-                            : isOutOfRange
-                              ? (above ? "bg-status-danger" : "bg-orange-500")
-                              : "bg-transparent";
+                          // Nome base sem o sufixo "(absoluto)" se este parâmetro for o absoluto isolado
+                          const displayName = isAbsName(param.nome)
+                            ? param.nome.replace(/\(\s*abs(oluto)?\s*\)/i, "").trim() || param.nome
+                            : param.nome;
                           return (
-                            <Fragment key={idx}>
-                            {param.headerAntes && (
-                              <tr>
-                                <td colSpan={4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
-                                  {param.headerAntes}
+                            <Fragment key={rIdx}>
+                              {param.headerAntes && (
+                                <tr>
+                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                                    {param.headerAntes}
+                                  </td>
+                                </tr>
+                              )}
+                              <tr className="group">
+                                <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
+                                  {displayName}
+                                  {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
+                                  {isCriticoParam && (
+                                    <span title={nivelCritico === "critico_baixo" ? "Crítico baixo (pânico)" : "Crítico alto (pânico)"}>
+                                      <AlertOctagon className="inline h-3.5 w-3.5 ml-1.5 text-status-danger animate-pulse" />
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-1 px-2 align-middle">
+                                  {isAbsName(param.nome) && hasAnyAbs ? (
+                                    <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                  ) : (
+                                    renderResultCard(param, idx)
+                                  )}
+                                </td>
+                                {hasAnyAbs && (
+                                  <td className="py-1 px-2 align-middle">
+                                    {row.abs ? (
+                                      renderResultCard(row.abs, row.absIdx!)
+                                    ) : isAbsName(param.nome) ? (
+                                      renderResultCard(param, idx)
+                                    ) : (
+                                      <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                    )}
+                                  </td>
+                                )}
+                                <td />
+                                <td className="py-1 pl-2 align-middle">
+                                  {row.abs ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {renderRefCard(param)}
+                                      {renderRefCard(row.abs)}
+                                    </div>
+                                  ) : (
+                                    renderRefCard(param)
+                                  )}
                                 </td>
                               </tr>
-                            )}
-                            <tr className="group">
-                              <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
-                                {param.nome}
-                                {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
-                                {isCriticoParam && (
-                                  <span title={nivelCritico === "critico_baixo" ? "Crítico baixo (pânico)" : "Crítico alto (pânico)"}>
-                                    <AlertOctagon className="inline h-3.5 w-3.5 ml-1.5 text-status-danger animate-pulse" />
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-1 px-2 align-middle">
-                                {/* Card de resultado — pílula clara com ícone de status, valor e barra lateral colorida */}
-                                <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
-                                  {/* ícone de status */}
-                                  <span className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-background shadow-sm">
-                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                                    {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                                    {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
-                                    {inRange === null && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
-                                  </span>
-                                  {/* input ou valor consolidado */}
-                                  <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-                                    {isBlocked && !retificando ? (
-                                      displayValor ? (
-                                        <>
-                                          <span className={`text-[15px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
-                                            {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
-                                          </span>
-                                          <span className="text-sm text-muted-foreground">{param.unidade}</span>
-                                        </>
-                                      ) : (
-                                        <span className="text-sm text-muted-foreground italic">—</span>
-                                      )
-                                    ) : (
-                                      <>
-                                        <ParamTypedInput
-                                          param={param}
-                                          isCritico={isCriticoParam}
-                                          computedValue={computedFormula}
-                                          onChange={(v) => updateParametro(selectedExame.id, idx, v)}
-                                          disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                          className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-8 w-full text-[15px] font-bold tabular-nums focus:!ring-0"
-                                        />
-                                        <span className="text-sm text-muted-foreground shrink-0">{param.unidade}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {/* barra lateral colorida */}
-                                  <span className={`absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full ${barColorClass}`} />
-                                </div>
-                              </td>
-                              <td className="w-3" />
-                              <td className="py-1 pl-2 align-middle">
-                                {(ref.refMin || ref.refMax || ref.descricao) ? (
-                                  <div className="relative flex items-center gap-2 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30">
-                                    <div className="flex-1 min-w-0 flex items-baseline gap-2">
-                                      {(ref.refMin || ref.refMax) ? (
-                                        <>
-                                          <span className="text-[15px] font-medium text-foreground tabular-nums truncate">
-                                            {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
-                                          </span>
-                                          <span className="text-sm text-muted-foreground shrink-0">{ref.refUnidade}</span>
-                                        </>
-                                      ) : (
-                                        <span className="text-sm text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
-                                      )}
-                                    </div>
-                                    {hasRef && <span className="absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full bg-foreground/85" />}
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
-                                    Sem referência
-                                  </div>
-                                )}
-                                {(ref.refMin || ref.refMax) && ref.descricao && (
-                                  <p className="text-[10px] text-muted-foreground italic mt-1 pl-4 whitespace-pre-line">{ref.descricao}</p>
-                                )}
-                              </td>
-                            </tr>
                             </Fragment>
                           );
-                        });
-                        })()}
+                        })}
                       </tbody>
                     </table>
                   </div>
