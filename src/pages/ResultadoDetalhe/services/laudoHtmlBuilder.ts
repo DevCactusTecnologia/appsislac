@@ -64,7 +64,9 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   const m = pageMargins ?? { top: 4, right: 11, bottom: 4, left: 11 };
   const pageContentWidthMm = 210 - m.left - m.right;
   const printBottomMarginMm = Number.isFinite(m.bottom) ? m.bottom : 4;
-  const pageContentHeightMm = 297 - m.top - printBottomMarginMm;
+  // Margem de segurança de 3mm para evitar que arredondamentos do html2canvas
+  // (px → mm) gerem 1mm de overflow e o html2pdf crie uma 2ª página em branco.
+  const pageContentHeightMm = 297 - m.top - printBottomMarginMm - 3;
   // A arte institucional do rodapé define uma faixa lateral direita protegida
   // ligeiramente maior que a margem técnica do @page. A assinatura deve terminar
   // exatamente no limite interno visual dessa faixa, sem invadir a margem.
