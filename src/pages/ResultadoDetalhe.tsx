@@ -1958,15 +1958,17 @@ const ResultadoDetalhe = () => {
                       Salvar
                     </button>
                   )}
-                  {canLiberar && (
+                  {canLiberar && (selectedExame?.status === "Resultado salvo" || selectedExame?.status === "Em retificação") && (
                     <button
                       onClick={() => setShowConfirmarLiberar(true)}
                       className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                      title="Disponível somente após salvar o resultado"
                     >
-                      {isBlocked ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                      {isBlocked ? "Assinar e Liberar" : "Analisar e Liberar"}
+                      <ShieldCheck className="h-4 w-4" />
+                      Assinar e Liberar
                     </button>
                   )}
+
                 </div>
               )}
             </div>
