@@ -1104,13 +1104,18 @@ const ResultadoDetalhe = () => {
                         ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                      const inRange = isBlockedExame && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
+                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                       const isOutOfRange = inRange === false;
+                      const v = parseFloat((displayValor || "").replace(",", "."));
+                      const lo = parseFloat((ref.refMin || "").replace(",", "."));
+                      const hi = parseFloat((ref.refMax || "").replace(",", "."));
+                      const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
+                      const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
 
 
                       return (
                         <Fragment key={idx}>
-                        {param.headerAntes && (
+                        {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
                           <p className="pt-3 pb-1 text-sm font-bold uppercase tracking-wide text-foreground">
                             {param.headerAntes}
                           </p>
@@ -1121,19 +1126,15 @@ const ResultadoDetalhe = () => {
                             {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                           </p>
                           <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-2">
                               <span className="text-xs text-muted-foreground">Resultado</span>
                               {isBlockedExame && !retificando ? (
                                 <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${isOutOfRange ? "bg-status-danger/10" : "bg-accent/50"}`}>
-                                  {inRange !== null && (
-                                    inRange ? (
-                                      <CheckCircle2 className="h-4 w-4 text-status-success" />
-                                    ) : (
-                                      <AlertCircle className="h-4 w-4 text-status-danger" />
-                                    )
-                                  )}
+                                  {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                                  {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                                  {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
                                    {displayValor ? (
-                                    <span className={`text-sm font-bold ${isOutOfRange ? "text-status-danger" : "text-foreground"}`}>
+                                    <span className={`text-sm font-bold ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
                                       {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
                                     </span>
                                   ) : (
@@ -1142,6 +1143,9 @@ const ResultadoDetalhe = () => {
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-1.5">
+                                  {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                                  {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                                  {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
                                   <ParamTypedInput
                                     param={param}
                                     computedValue={computedFormula}
@@ -1641,7 +1645,7 @@ const ResultadoDetalhe = () => {
                           : "bg-transparent";
                       return (
                         <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
-                          <span className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-background shadow-sm">
+                          <span className="shrink-0 inline-flex items-center justify-center h-5 w-5">
                             {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
                             {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
                             {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
@@ -1730,7 +1734,6 @@ const ResultadoDetalhe = () => {
                           </th>
                           {hasAnyAbs && (
                             <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">
-                              ABSOLUTO
                             </th>
                           )}
                           <th />
@@ -1753,7 +1756,7 @@ const ResultadoDetalhe = () => {
                           const isObservation = /^\s*observa[cç][aã]o/i.test(param.nome) || param.tipo === "Texto";
                           return (
                             <Fragment key={rIdx}>
-                              {param.headerAntes && (
+                              {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
                                 <tr>
                                   <td colSpan={hasAnyAbs ? 5 : 4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
                                     {param.headerAntes}
