@@ -1140,6 +1140,81 @@ const ResultadoDetalhe = () => {
     }
   };
 
+  /**
+   * PoC — Impressão Vetorial.
+   *
+   * Reusa EXATAMENTE o mesmo HTML produzido por buildLaudoHtml (com @page e
+   * @media print já embutidos), abre em uma nova aba e dispara window.print().
+   * Não passa por html2canvas/html2pdf — o navegador renderiza vetorial nativo
+   * (texto selecionável/pesquisável, qualquer zoom, paginação respeita @page).
+   *
+   * Não altera layouts, CKEditor nem templates. Coexiste com o motor legado
+   * para permitir comparação A/B.
+   */
+  const doImprimirVetorial = async (printable: Exame[], solicitanteLabel?: string) => {
+    const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
+    const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
+
+    const newTab = window.open("", "_blank");
+    if (!newTab) {
+      toast.error("Pop-up bloqueado. Habilite pop-ups para usar a impressão vetorial.");
+      return;
+    }
+
+    const t0 = performance.now();
+    try {
+      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
+      const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
+
+
+      // Auto-print quando a aba terminar de carregar (fontes/imagens prontas).
+      const autoPrint = `
+<script>
+  (function(){
+    function go(){
+      try { window.focus(); window.print(); } catch (e) {}
+    }
+    if (document.readyState === 'complete') {
+      setTimeout(go, 50);
+    } else {
+      window.addEventListener('load', function(){ setTimeout(go, 50); });
+    }
+  })();
+</script>`;
+
+      // Injeta título + script de auto-print sem alterar o HTML do laudo.
+      const injected = html
+        .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
+        .replace(/<\/body>/i, `${autoPrint}</body>`);
+
+      newTab.document.open();
+      newTab.document.write(injected);
+      newTab.document.close();
+
+      const t1 = performance.now();
+      // Telemetria simples no console para a comparação A/B.
+      // eslint-disable-next-line no-console
+      console.info(
+        `[PDF Vetorial] HTML renderizado em ${(t1 - t0).toFixed(0)}ms — exames=${printable.length}`,
+      );
+    } catch (err) {
+      try { newTab.close(); } catch { /* ignore */ }
+      toast.error("Falha ao abrir impressão vetorial.");
+      throw err;
+    }
+  };
+
+  const handleImprimirVetorial = (exames: Exame[]) => {
+    const printable = exames.filter((e) => canPrint(e.status));
+    if (printable.length === 0) {
+      toast.warning("Nenhum exame disponível para impressão.");
+      return;
+    }
+    void doImprimirVetorial(printable);
+  };
+
+
+
 
   const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
@@ -1278,6 +1353,15 @@ const ResultadoDetalhe = () => {
                   onClick: () => handleImprimir(paciente.exames),
                   variant: "primary",
                   title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined,
+                  disabled: !podeImprimirTodos,
+                },
+                {
+                  key: "imprimir-vetorial",
+                  label: "Imprimir Vetorial",
+                  icon: <Printer className="h-4 w-4" />,
+                  onClick: () => handleImprimirVetorial(paciente.exames),
+                  variant: "secondary",
+                  title: "PoC: imprime via window.print() (vetorial nativo, sem html2pdf)",
                   disabled: !podeImprimirTodos,
                 },
               ]) as PacienteHeaderAction[]}
@@ -1753,6 +1837,7 @@ const ResultadoDetalhe = () => {
                 actionsInline={modoConsulta}
                 actions={([
                   { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined, disabled: !podeImprimirTodos },
+                  { key: "imprimir-vetorial", label: "Imprimir Vetorial", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimirVetorial(paciente.exames), variant: "secondary", title: "PoC: imprime via window.print() (vetorial nativo, sem html2pdf)", disabled: !podeImprimirTodos },
                 ]) as PacienteHeaderAction[]}
                 actionsExtraLeft={
                   <MaisAcoesMenu
