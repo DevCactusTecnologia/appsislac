@@ -244,94 +244,83 @@ export async function exportAuditLogsPdf(
   onProgress?: (p: { rendered: number; total: number }) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  // Usa html2pdf (já instalado no projeto) para imprimir um HTML estruturado.
-  const html2pdf = (await import("html2pdf.js")).default as unknown as (
-    el: HTMLElement,
-  ) => { set: (opt: Record<string, unknown>) => { from: (el: HTMLElement) => { save: () => Promise<void> } } };
+  // Vetorial nativo via window.print() — sem html2pdf/html2canvas.
+  // O usuário escolhe "Salvar como PDF" no diálogo do navegador.
+  const { printHtmlInHiddenFrame } = await import("@/lib/printHtml");
 
   const generatedAt = new Date().toLocaleString("pt-BR");
   const total = logs.length;
 
-  const wrapper = document.createElement("div");
-  wrapper.style.padding = "24px";
-  wrapper.style.fontFamily = "Inter, system-ui, sans-serif";
-  wrapper.style.color = "#0f172a";
-  wrapper.innerHTML = `
-    <h1 style="font-size:18px;font-weight:700;margin:0 0 4px">Auditoria técnica</h1>
-    <p style="font-size:11px;color:#64748b;margin:0 0 16px">
-      Exportado em ${escapeHtml(generatedAt)} — ${escapeHtml(String(total))} registro(s)
-    </p>
-    <table style="width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed">
-      <thead style="display:table-header-group">
-        <tr style="background:#f1f5f9">
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:14%">Data/Hora</th>
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:18%">Usuário</th>
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:8%">Ação</th>
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:14%">Tabela</th>
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:14%">Registro</th>
-          <th style="text-align:left;padding:6px;border:1px solid #e2e8f0;width:32%">Resumo</th>
-        </tr>
-      </thead>
-      <tbody id="audit-pdf-body" style="display:table-row-group"></tbody>
-    </table>
-  `;
-
-  const tbody = wrapper.querySelector("#audit-pdf-body") as HTMLTableSectionElement;
-
-  // Renderiza linhas em chunks de 100 — cede o thread entre eles para
-  // manter a UI responsiva mesmo com dezenas de milhares de logs.
+  // Renderiza linhas em chunks para manter UI responsiva mesmo com dezenas de
+  // milhares de logs (cede o thread entre lotes).
   const CHUNK = 100;
+  const rowsParts: string[] = [];
   let failed = 0;
   for (let i = 0; i < total; i += CHUNK) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     const slice = logs.slice(i, i + CHUNK);
-    const rows: string[] = [];
     for (const l of slice) {
       try {
-        rows.push(`
+        rowsParts.push(`
           <tr>
-            <td style="padding:6px;border:1px solid #e2e8f0;white-space:nowrap;word-break:break-word">${escapeHtml(new Date(l.createdAt).toLocaleString("pt-BR"))}</td>
-            <td style="padding:6px;border:1px solid #e2e8f0;word-break:break-word">${escapeHtml(l.userEmail ?? "Sistema")}</td>
-            <td style="padding:6px;border:1px solid #e2e8f0">${escapeHtml(l.acao)}</td>
-            <td style="padding:6px;border:1px solid #e2e8f0;font-family:monospace;word-break:break-all">${escapeHtml(l.tabela)}</td>
-            <td style="padding:6px;border:1px solid #e2e8f0;font-family:monospace;word-break:break-all">${escapeHtml(l.registroId ?? "—")}</td>
-            <td style="padding:6px;border:1px solid #e2e8f0;word-break:break-word">${escapeHtml(summarizeDiff(l))}</td>
-          </tr>
-        `);
+            <td>${escapeHtml(new Date(l.createdAt).toLocaleString("pt-BR"))}</td>
+            <td>${escapeHtml(l.userEmail ?? "Sistema")}</td>
+            <td>${escapeHtml(l.acao)}</td>
+            <td class="mono">${escapeHtml(l.tabela)}</td>
+            <td class="mono">${escapeHtml(l.registroId ?? "—")}</td>
+            <td>${escapeHtml(summarizeDiff(l))}</td>
+          </tr>`);
       } catch {
         failed++;
       }
     }
-    const html = rows.join("");
-    tbody.insertAdjacentHTML("beforeend", html);
     onProgress?.({ rendered: Math.min(i + CHUNK, total), total });
     await yieldToBrowser();
   }
 
-  // Renderiza fora da tela para não impactar a UI durante a captura
-  wrapper.style.position = "fixed";
-  wrapper.style.left = "-99999px";
-  wrapper.style.top = "0";
-  document.body.appendChild(wrapper);
-  try {
-    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-    await html2pdf(wrapper)
-      .set({
-        margin: 10,
-        filename,
-        image: { type: "jpeg", quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-        // `avoid-all` evita quebrar uma <tr> ao meio; combinado com
-        // `display:table-header-group` no <thead>, jsPDF repete o cabeçalho
-        // automaticamente em todas as páginas geradas.
-        pagebreak: { mode: ["css", "legacy", "avoid-all"], avoid: "tr" },
-      })
-      .from(wrapper)
-      .save();
-  } finally {
-    wrapper.remove();
-  }
+  const title = filename.replace(/\.pdf$/i, "");
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr { page-break-inside: avoid; } }
+    body { margin: 0; font-family: Inter, system-ui, sans-serif; color: #0f172a; }
+    h1 { font-size: 16px; margin: 0 0 4px; }
+    .meta { font-size: 11px; color: #64748b; margin: 0 0 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+    th { background: #f1f5f9; text-align: left; padding: 6px; border: 1px solid #e2e8f0; }
+    td { padding: 6px; border: 1px solid #e2e8f0; word-break: break-word; vertical-align: top; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+    col.c1 { width: 14%; } col.c2 { width: 18%; } col.c3 { width: 8%; }
+    col.c4 { width: 14%; } col.c5 { width: 14%; } col.c6 { width: 32%; }
+  </style>
+</head>
+<body>
+  <h1>Auditoria técnica</h1>
+  <p class="meta">Exportado em ${escapeHtml(generatedAt)} — ${escapeHtml(String(total))} registro(s)</p>
+  <table>
+    <colgroup><col class="c1"/><col class="c2"/><col class="c3"/><col class="c4"/><col class="c5"/><col class="c6"/></colgroup>
+    <thead>
+      <tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Tabela</th><th>Registro</th><th>Resumo</th></tr>
+    </thead>
+    <tbody>${rowsParts.join("")}</tbody>
+  </table>
+  <script>
+    (function(){
+      function go(){ try { window.focus(); window.print(); } catch (e) {} }
+      if (document.readyState === 'complete') setTimeout(go, 50);
+      else window.addEventListener('load', function(){ setTimeout(go, 50); });
+    })();
+  </script>
+</body>
+</html>`;
+
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  printHtmlInHiddenFrame({ html, documentTitle: title });
+
   if (failed > 0) {
     try {
       window.dispatchEvent(new CustomEvent("auditExport:partialFailure", { detail: { kind: "pdf", failed } }));
