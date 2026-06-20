@@ -1752,7 +1752,7 @@ const ResultadoDetalhe = () => {
                           const isObservation = /^\s*observa[cç][aã]o/i.test(param.nome) || param.tipo === "Texto";
                           return (
                             <Fragment key={rIdx}>
-                              {param.headerAntes && (
+                              {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
                                 <tr>
                                   <td colSpan={hasAnyAbs ? 5 : 4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
                                     {param.headerAntes}
