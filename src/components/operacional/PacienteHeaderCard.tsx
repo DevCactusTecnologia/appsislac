@@ -55,6 +55,8 @@ interface Props {
    * onde o cabeçalho deve ser enxuto.
    */
   actionsInline?: boolean;
+  /** Slot opcional renderizado na linha de ações, à esquerda dos botões. */
+  actionsExtraLeft?: React.ReactNode;
 }
 
 function iniciais(nome: string): string {
@@ -117,6 +119,7 @@ export function PacienteHeaderCard({
   statusType,
   actions = [],
   actionsInline = false,
+  actionsExtraLeft,
 }: Props) {
   const primary = actions.find((a) => a.variant === "primary");
   const others = actions.filter((a) => a.variant !== "primary");
@@ -173,8 +176,9 @@ export function PacienteHeaderCard({
       </div>
 
       {/* Linha 3: ações (se houver) */}
-      {!actionsInline && actions.length > 0 && (
+      {!actionsInline && (actions.length > 0 || actionsExtraLeft) && (
         <div className="mt-3 pt-3 border-t border-border flex items-center justify-end gap-1.5 flex-wrap">
+          {actionsExtraLeft}
           {others.map((a) => <ActionButton key={a.key} action={a} />)}
           {primary && <ActionButton action={primary} />}
         </div>
