@@ -138,6 +138,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       casasDecimais: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? casasDecimais : 0,
       criticoMin: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? criticoMin.trim() : "",
       criticoMax: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? criticoMax.trim() : "",
+      separadorDecimal: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? separadorDecimal : ".",
+      qtdDigitos: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? qtdDigitos : 0,
     };
     let ok = false;
     if (selectedId) ok = await updateParametro(selectedId, exameId, payload);
