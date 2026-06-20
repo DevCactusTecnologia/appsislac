@@ -1764,7 +1764,7 @@ const ResultadoDetalhe = () => {
                             <Fragment key={rIdx}>
                               {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
                                 <tr>
-                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
                                     {param.headerAntes}
                                   </td>
                                 </tr>
