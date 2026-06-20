@@ -265,6 +265,14 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         }
         /* Evita quebra de exame e assinatura entre páginas. */
         .exame-bloco { page-break-inside: avoid; break-inside: avoid; }
+        /* Remove parágrafos vazios (deixados pelo editor CKEditor) que criavam
+           grandes espaços entre o cabeçalho, o nome do exame e o resultado nos
+           layouts científicos customizados. */
+        #laudo-content .exame-bloco-custom p:empty,
+        #laudo-content .exame-bloco-custom p:has(> br:only-child),
+        #laudo-content .exame-bloco-custom div:empty { display: none !important; }
+        #laudo-content .exame-bloco-custom > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
+        #laudo-content .exame-bloco-custom > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .assinatura-bloco { page-break-inside: avoid; break-inside: avoid; }
         .exame-bloco + .assinatura-bloco { page-break-before: avoid; break-before: avoid; }
         @media print {
