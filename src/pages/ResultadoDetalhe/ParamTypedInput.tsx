@@ -15,6 +15,7 @@ export const ParamTypedInput = ({
   className,
   onChange,
   computedValue,
+  statusColor,
 }: {
   param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number };
   isCritico?: boolean;
@@ -23,10 +24,18 @@ export const ParamTypedInput = ({
   onChange: (v: string) => void;
   /** Valor calculado (usado quando tipo === "Formula"). */
   computedValue?: string;
+  /** Override de cor para indicar status semântico (ex.: contador OK/erro). */
+  statusColor?: "success" | "danger";
 }) => {
-  const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 font-semibold text-foreground ${
-    isCritico ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger" : "focus:ring-ring/20"
-  } ${className ?? ""}`;
+  const statusClasses =
+    statusColor === "success"
+      ? "border-status-success/60 ring-2 ring-status-success/30 text-status-success"
+      : statusColor === "danger"
+      ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
+      : isCritico
+      ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
+      : "focus:ring-ring/20";
+  const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 font-semibold text-foreground ${statusClasses} ${className ?? ""}`;
   if (param.tipo === "Select" && (param.opcoesSelect?.length ?? 0) > 0) {
     return (
       <Select
