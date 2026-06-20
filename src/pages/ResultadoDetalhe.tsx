@@ -1006,7 +1006,13 @@ const ResultadoDetalhe = () => {
     };
   };
 
-  const removeHtml2PdfTrailingBlankPages = (pdf: any, container: HTMLElement) => {
+  type LaudoPdfDocument = {
+    getNumberOfPages?: () => number;
+    internal?: { getNumberOfPages?: () => number };
+    deletePage?: (pageNumber: number) => void;
+  };
+
+  const removeHtml2PdfTrailingBlankPages = (pdf: LaudoPdfDocument, container: HTMLElement) => {
     const expectedPages = Math.max(1, container.querySelectorAll(".laudo-a4-page").length || 1);
     const getTotalPages = () => {
       if (typeof pdf?.getNumberOfPages === "function") return pdf.getNumberOfPages();
@@ -1069,7 +1075,7 @@ const ResultadoDetalhe = () => {
           })
           .from(container)
           .toPdf();
-        await worker.get("pdf").then((pdf: any) => removeHtml2PdfTrailingBlankPages(pdf, container));
+        await worker.get("pdf").then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container));
         const blob: Blob = await worker.outputPdf("blob");
 
         const url = URL.createObjectURL(blob);
@@ -1125,7 +1131,7 @@ const ResultadoDetalhe = () => {
             .toPdf();
           return worker
             .get("pdf")
-            .then((pdf: any) => removeHtml2PdfTrailingBlankPages(pdf, container))
+            .then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container))
             .then(() => worker.save());
         })
         .then(() => { document.body.removeChild(container); resolve(); })
