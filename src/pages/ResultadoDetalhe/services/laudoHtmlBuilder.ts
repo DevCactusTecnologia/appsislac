@@ -86,6 +86,23 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       dataFinalizacao: new Date().toLocaleDateString("pt-BR"),
     },
   });
+  // Remove blocos vazios/whitespace no final do cabeçalho (ex.: <p>&nbsp;</p>,
+  // <p><br></p>, <div></div>) que criam um espaço visível entre o cabeçalho
+  // e o nome do exame mesmo quando o template não tem conteúdo ali.
+  const trimTrailingEmptyBlocks = (html: string): string => {
+    let out = html;
+    // executa repetidamente até estabilizar
+    for (let i = 0; i < 20; i++) {
+      const next = out.replace(
+        /(?:\s|<p[^>]*>\s*(?:&nbsp;|&#160;|\u00a0)?\s*(?:<br\s*\/?>\s*)*<\/p>|<div[^>]*>\s*(?:&nbsp;|&#160;|\u00a0)?\s*(?:<br\s*\/?>\s*)*<\/div>|<br\s*\/?>)+\s*$/i,
+        "",
+      );
+      if (next === out) break;
+      out = next;
+    }
+    return out;
+  };
+  const cabecalhoPadraoTrimmed = trimTrailingEmptyBlocks(cabecalhoPadrao);
   const rodapePadrao = renderRodapePadrao({
     paciente: {
       nome: paciente.nome,
