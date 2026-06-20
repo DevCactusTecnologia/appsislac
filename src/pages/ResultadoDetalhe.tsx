@@ -1682,9 +1682,13 @@ const ResultadoDetalhe = () => {
                       );
                     };
 
-                    const renderRefCard = (param: Param) => {
-                      const ref = getResolvedRef(selectedExame.nome, param);
-                      const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
+                    const renderRefCard = (param: Param, fallbackParam?: Param) => {
+                      let ref = getResolvedRef(selectedExame.nome, param);
+                      let hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
+                      if (!hasRef && fallbackParam) {
+                        ref = getResolvedRef(selectedExame.nome, fallbackParam);
+                        hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
+                      }
                       if (!hasRef) {
                         return (
                           <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
@@ -1817,7 +1821,7 @@ const ResultadoDetalhe = () => {
                                     {row.abs ? (
                                       <div className="grid grid-cols-2 gap-2">
                                         {renderRefCard(param)}
-                                        {renderRefCard(row.abs)}
+                                        {renderRefCard(row.abs, param)}
                                       </div>
                                     ) : (
                                       renderRefCard(param)
