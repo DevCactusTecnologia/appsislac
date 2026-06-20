@@ -153,6 +153,12 @@ const ResultadoDetalhe = () => {
     return () => { cancelled = true; };
   }, [authUser?.id]);
   const [retificados, setRetificados] = useState<Set<number>>(new Set());
+  // Snapshot dos valores ANTES da retificação — usado para detectar se houve
+  // alteração efetiva ao salvar. Se o usuário entrar em modo de retificação e
+  // salvar sem alterar nenhum valor, o sistema NÃO grava como retificado.
+  const [valoresAntesRetificacao, setValoresAntesRetificacao] = useState<
+    Record<number, Array<{ chave: string; rotulo: string; valor: string }>>
+  >({});
   // Re-render quando o store de valores de referência hidratar (assíncrono).
   // Sem isso, o primeiro render acontece com VR vazio e nunca recalcula a
   // resolução por sexo/idade — mesmo após o store popular.
