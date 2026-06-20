@@ -221,6 +221,7 @@ export async function renderExameComLayout(
   pacienteSexo?: string,
   pacienteIdade?: string,
   pacienteExtra?: { nome?: string; nascimento?: string; cpf?: string; protocolo?: string },
+  dataColetaLabel?: string,
 ): Promise<{ html: string | null; margins: LayoutMargins }> {
   const catalogo = getExamesCatalogo().find((c) => c.nome === exameNome);
   if (!catalogo) {
@@ -252,11 +253,21 @@ export async function renderExameComLayout(
       }
     : DEFAULT_MARGINS;
 
+  // Cabeçalho do bloco do exame: nome à esquerda, "Data Coleta: …" à direita.
+  // Espelha o padrão do laudo Laravel (LabMedCenter) — uma linha por exame com a
+  // data/hora exata em que a amostra foi coletada (com fallback para o cadastro
+  // do atendimento quando o carimbo de coleta não existir).
+  const dataColetaHtml = dataColetaLabel
+    ? `<span style="font-size:9pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
+    : "";
+  const tituloHtml = `<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;padding-bottom:0;margin-bottom:2px;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;">${exameNome}</div>${dataColetaHtml}</div>`;
+
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
-  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;"><div style="font-size:10pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;white-space:normal;">${exameNome}</div><div style="font-size:9pt;line-height:1.4;color:#1a1a2e;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
+  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;">${tituloHtml}<div style="font-size:9pt;line-height:1.4;color:#1a1a2e;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
   return { html, margins };
 }
+
 
 /** Pré-carrega layouts/parâmetros de uma lista de nomes de exame em paralelo. */
 export async function preloadLayoutsParaExames(exameNomes: string[]): Promise<void> {

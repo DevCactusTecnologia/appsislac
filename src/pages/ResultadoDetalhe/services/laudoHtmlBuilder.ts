@@ -319,6 +319,24 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           });
           const regFooter = renderRegulatorioFooterHtml(reg);
 
+          // "Data Coleta: DD/MM/AAAA às HH:MM:SS" à direita do nome do exame —
+          // espelha o padrão Laravel/LabMedCenter. Fallback: dataCadastro do
+          // atendimento quando não houver carimbo de coleta/análise.
+          const isoColeta = exame.dataColetaISO || exame.dataAnaliseISO || null;
+          let dataColetaLabel = "";
+          if (isoColeta) {
+            const d = new Date(isoColeta);
+            if (!Number.isNaN(d.getTime())) {
+              dataColetaLabel = `Data Coleta: ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", { hour12: false })}`;
+            }
+          }
+          if (!dataColetaLabel && paciente.dataCadastro) {
+            dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
+          }
+          const dataColetaHtml = dataColetaLabel
+            ? `<span style="font-size:9pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
+            : "";
+
           // Se houver layout cadastrado para este exame, usa-o.
           const custom = customByExame?.[exame.id];
           if (custom) return `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${custom}${regFooter}</div>`;
@@ -331,8 +349,9 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           });
           return `
             <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="font-size:12pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;"><div style="font-size:12pt;font-weight:700;color:#000000;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>${dataColetaHtml}</div>
               <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier Prime',Courier,'Courier New',monospace;">
+
                 <thead><tr>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Resultado</th>
