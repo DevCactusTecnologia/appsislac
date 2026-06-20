@@ -119,6 +119,7 @@ export function PacienteHeaderCard({
   statusType,
   actions = [],
   actionsInline = false,
+  actionsExtraLeft,
 }: Props) {
   const primary = actions.find((a) => a.variant === "primary");
   const others = actions.filter((a) => a.variant !== "primary");
