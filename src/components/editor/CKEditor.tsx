@@ -84,7 +84,7 @@ const FONT_FAMILIES = [
   "Calibri, sans-serif",
   "Georgia, serif",
   "Times New Roman, Times, serif",
-  "Courier New, Courier, monospace",
+  "Courier, monospace",
   "Verdana, Geneva, sans-serif",
   "Tahoma, Geneva, sans-serif",
   "Trebuchet MS, sans-serif",
