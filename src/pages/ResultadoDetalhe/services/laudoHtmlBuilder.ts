@@ -108,16 +108,20 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   });
   return `
       <style>
-        /* O laudo é renderizado como um único "página A4" via flexbox:
-           o cabeçalho fica no topo, o corpo cresce e o rodapé é empurrado
-           para o limite inferior definido pelo usuário (m.bottom). */
-        @page { size: A4; margin: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm; }
+        /* Cada .laudo-a4-page representa UMA folha A4 completa (210x297mm)
+           com as margens aplicadas como padding interno. Isso evita que o
+           html2pdf adicione margens externas em cima do nosso cálculo de
+           altura, que era a causa do rodapé fora de posição e da 2ª página
+           em branco. O html2pdf é configurado com margin:0 e page-break
+           explícito entre as páginas paginadas pelo `paginateLaudo`. */
+        @page { size: A4; margin: 0; }
         .laudo-a4-page {
-          width: ${pageContentWidthMm}mm !important;
-          min-height: ${pageContentHeightMm}mm !important;
-          max-height: ${pageContentHeightMm}mm !important;
+          width: 210mm !important;
+          height: 297mm !important;
+          min-height: 297mm !important;
+          max-height: 297mm !important;
           margin: 0 !important;
-          padding: 0 !important;
+          padding: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm !important;
           box-sizing: border-box !important;
           background: #ffffff !important;
           display: flex !important;
@@ -125,7 +129,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           overflow: hidden !important;
         }
         .laudo-a4-cabecalho { flex: 0 0 auto; }
-        .laudo-a4-corpo { flex: 1 1 auto; }
+        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; }
         .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
         /* Fontes do laudo: Helvetica para títulos/cabeçalhos e Courier New
            para o corpo dos resultados, sobrescrevendo fontes inline herdadas
