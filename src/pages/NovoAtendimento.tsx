@@ -458,6 +458,9 @@ const NovoAtendimento = () => {
   // o update NÃO envia `pagamentosRealizados`, evitando que a RPC tente DELETE
   // em registros pós-deploy (bloqueado por trigger — exige fluxo de estorno).
   const pagamentosTouchedRef = useRef(false);
+  // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
+  const isSubmittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
 
   // Edit mode
@@ -593,6 +596,11 @@ const NovoAtendimento = () => {
   const hasChangesStep3 = examesChanged;
 
   const finalizarAtendimento = async (pagamentoEfetuado: boolean) => {
+    // Trava reentrante: bloqueia clicks duplicados / chamadas concorrentes.
+    // Atendimento NUNCA pode ser duplicado.
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     // Converte o input datetime-local (interpretado como horário de Brasília)
     // para o formato BR usado pelo store ("dd/MM/yyyy HH:mm:ss").
     const buildDataStr = (): string => {
@@ -675,6 +683,9 @@ const NovoAtendimento = () => {
       setSuccessOpen(true);
     } catch (e) {
       showError(e, { scope: "NovoAtendimento.finalizar", userMessage: "Não foi possível salvar o atendimento. Tente novamente." });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -2297,9 +2308,12 @@ const NovoAtendimento = () => {
             )}
             <button
               onClick={finalizarComValidacao}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isEditing ? "Atualizar atendimento" : "Finalizar atendimento"}
+              {isSubmitting
+                ? (isEditing ? "Atualizando..." : "Salvando...")
+                : (isEditing ? "Atualizar atendimento" : "Finalizar atendimento")}
             </button>
           </div>
         </div>
