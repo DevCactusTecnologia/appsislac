@@ -547,6 +547,23 @@ const ResultadoDetalhe = () => {
       toast.error("Exame não encontrado no banco.");
       return;
     }
+    // 🔒 Bloqueio: contagem diferencial da série branca DEVE totalizar 100%.
+    const contParam = selectedExame.parametros.find(
+      (p) => (p.chave ?? "").toUpperCase() === "CONT",
+    );
+    if (contParam) {
+      const valuesByChave = buildValuesByChave(selectedExame.parametros);
+      const contValor = contParam.tipo === "Formula"
+        ? evaluateFormula(contParam.valorReferencia, valuesByChave, contParam.casasDecimais ?? 0)
+        : contParam.valor;
+      const contN = parseFloat((contValor || "").replace(",", "."));
+      if (!isFinite(contN) || contN !== 100) {
+        toast.error("A soma da contagem diferencial da série branca deve totalizar 100%.", {
+          description: isFinite(contN) ? `Total atual: ${contN}%` : "Contagem incompleta.",
+        });
+        return;
+      }
+    }
     // 🚨 Se houver parâmetros com valores críticos, abre modal de confirmação.
     const criticos = getParametrosCriticosDoExame(selectedExame);
     if (criticos.length > 0 && !criticoConfirmDados) {
