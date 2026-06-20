@@ -222,7 +222,8 @@ const ExamesTerceirizadosPanel = ({ rows, onChanged }: Props) => {
               <IntegrationWarningsList warnings={warnings} className="mb-3" />
 
 
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <IntegrationStatusBadge row={row} />
                 {row.integracao_ativa ? (
                   <>
                     {row.status_externo === "AGUARDANDO_ENVIO" && (
