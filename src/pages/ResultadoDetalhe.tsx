@@ -957,7 +957,7 @@ const ResultadoDetalhe = () => {
   return (
     <div className="min-h-screen bg-background">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 mt-6 rounded-xl">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 animate-fade-in">
         {/* Back link — strategic contextual breadcrumb */}
         <div className="mb-4">
           <button
@@ -1254,45 +1254,45 @@ const ResultadoDetalhe = () => {
         </div>
 
         {/* ===== DESKTOP SPLIT VIEW (xl and above) ===== */}
-        <div className="hidden lg:flex flex-row gap-0 min-h-[calc(100vh-140px)] bg-card rounded-xl overflow-hidden border shadow-sm">
-          {/* Sidebar */}
-          <div className="w-80 shrink-0 border-r border-border flex flex-col max-h-[calc(100vh-140px)]">
-              {/* Sidebar header: progress + counters */}
-              <div className="p-4 border-b bg-muted/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Progresso</span>
-                  <span className="text-xs font-bold text-foreground">{concluidos}/{counters.total} · {progresso}%</span>
+        <div className="hidden lg:flex flex-row gap-0 min-h-[calc(100vh-140px)] bg-card rounded-2xl overflow-hidden border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          {/* Sidebar — compact, SA-style */}
+          <div className="w-60 shrink-0 border-r border-border/60 flex flex-col max-h-[calc(100vh-140px)] bg-muted/10">
+              {/* Sidebar header: progress + counters (compact) */}
+              <div className="px-3 py-3 border-b border-border/60">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Progresso</span>
+                  <span className="text-[11px] font-semibold tabular-nums text-foreground">{concluidos}/{counters.total} · {progresso}%</span>
                 </div>
-                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-status-success transition-all"
+                    className="h-full bg-primary transition-all"
                     style={{ width: `${progresso}%` }}
                   />
                 </div>
                 {counters.pendentes > 0 && (
                   <button
                     onClick={goToNextPendente}
-                    className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+                    className="mt-2.5 w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
                   >
                     Próximo pendente
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight className="h-3 w-3" />
                   </button>
                 )}
               </div>
 
-              <div className="p-4 pb-2">
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="px-3 pt-3 pb-1">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar mnemônico ou nome"
-                    className="pl-10 pr-3 py-2 w-full bg-background border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+                    placeholder="Buscar exame"
+                    className="pl-8 pr-2.5 h-9 w-full bg-card border border-border/60 rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                   />
                 </div>
 
-                {/* Status filter chips — sempre em uma linha; oculta os zerados (exceto Todos e o filtro ativo) */}
+                {/* Status filter chips — uma linha; oculta zerados */}
                 <div className="flex gap-1 mb-1 w-full">
                   {([
                     { key: "todos", label: "Todos", count: counters.total },
@@ -1306,10 +1306,10 @@ const ResultadoDetalhe = () => {
                     <button
                       key={f.key}
                       onClick={() => setStatusFilter(f.key)}
-                      className={`flex-1 min-w-0 px-1.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-tight transition-colors whitespace-nowrap ${
+                      className={`flex-1 min-w-0 px-1 py-1 rounded-md text-[9px] font-semibold uppercase tracking-tight transition-colors whitespace-nowrap ${
                         statusFilter === f.key
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-accent"
+                          : "bg-muted/60 text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {f.label} <span className="opacity-70">{f.count}</span>
@@ -1318,7 +1318,7 @@ const ResultadoDetalhe = () => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+              <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
 
                 {filteredExames.length === 0 && (
                   <p className="text-center text-xs text-muted-foreground py-8">Nenhum exame nesse filtro.</p>
@@ -1333,15 +1333,15 @@ const ResultadoDetalhe = () => {
                   <div
                     key={exame.id}
                     className={`rounded-lg border transition-colors ${
-                      isSelected ? "bg-accent border-primary/30" : "border-transparent hover:bg-accent/50"
+                      isSelected ? "bg-card border-primary/40 shadow-[0_1px_2px_rgba(77,65,243,0.08)]" : "border-transparent hover:bg-accent/50"
                     }`}
                   >
                     <button
                       onClick={() => setSelectedExameId(exame.id)}
-                      className="w-full text-left p-3"
+                      className="w-full text-left px-2.5 py-2"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-extrabold tracking-wider text-primary uppercase font-mono truncate">
+                        <span className="text-[11px] font-extrabold tracking-[0.08em] text-primary uppercase font-mono truncate">
                           {getMnemonico(exame.nome)}
                         </span>
                         <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
@@ -1414,7 +1414,7 @@ const ResultadoDetalhe = () => {
           {/* Main content */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/30">
             {/* Patient header — componente compartilhado, sem sobreposição */}
-            <div className="px-4 sm:px-6 py-3 border-b bg-card space-y-2">
+            <div className="px-4 sm:px-5 py-3 border-b border-border/60 bg-card space-y-2">
               <div className="flex justify-end">
                 <MaisAcoesMenu
                   modoConsulta={modoConsulta}
@@ -1447,13 +1447,13 @@ const ResultadoDetalhe = () => {
 
             {/* Exam detail */}
             {selectedExame ? (
-              <div className="flex-1 flex flex-col p-5 sm:p-6 overflow-y-auto space-y-5">
-                <div className="bg-card rounded-xl p-6 shadow-sm">
+              <div className="flex-1 flex flex-col p-4 sm:p-5 overflow-y-auto space-y-4">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 {/* Exam header */}
-                <div className="mb-5">
-                  <div className="mb-4">
+                <div className="mb-4">
+                  <div className="mb-3">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <h2 className="text-2xl font-extrabold tracking-tight text-foreground leading-tight uppercase min-w-0 flex-1">
+                      <h2 className="text-xl font-bold tracking-tight text-foreground leading-tight uppercase min-w-0 flex-1">
                         {selectedExame.nome}
                       </h2>
                       {!selectedIsTerceirizada && !modoConsulta && (
