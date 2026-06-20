@@ -1788,7 +1788,7 @@ const ResultadoDetalhe = () => {
                           const param = row.main;
                           const idx = row.mainIdx;
                           const displayValorMain = param.tipo === "Formula"
-                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                             : param.valor;
                           const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValorMain);
                           const isCriticoParam = nivelCritico !== "normal";
