@@ -19,3 +19,14 @@ export function sanitizeHtml(input: string | null | undefined): string {
   if (!input) return "";
   return DOMPurify.sanitize(String(input), sharedConfig) as unknown as string;
 }
+
+/** Sanitiza HTML de impressão preservando o <style> gerado pelo sistema.
+ *  Uso restrito a HTML montado internamente para PDF, onde o CSS de página
+ *  define A4, margens e rodapé. */
+export function sanitizeHtmlForPrint(input: string | null | undefined): string {
+  if (!input) return "";
+  return DOMPurify.sanitize(String(input), {
+    ...sharedConfig,
+    ADD_TAGS: ["style"],
+  }) as unknown as string;
+}

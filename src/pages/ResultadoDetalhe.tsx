@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolverReferencia, getValoresReferencia, subscribeValoresReferencia, _initValoresReferenciaStore } from "@/data/valoresReferenciaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
-import { sanitizeHtml } from "@/lib/sanitizeHtml";
+import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
@@ -939,7 +939,7 @@ const ResultadoDetalhe = () => {
   ) => {
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
-    container.innerHTML = sanitizeHtml(html);
+    container.innerHTML = sanitizeHtmlForPrint(html);
     container.style.position = "fixed";
     container.style.left = "0";
     container.style.top = "0";
@@ -1006,66 +1006,6 @@ const ResultadoDetalhe = () => {
   };
 
   /**
-   * Pagina o laudo em múltiplos blocos `.laudo-a4-page`, cada um com seu
-   * próprio cabeçalho no topo e rodapé na base — equivalente ao PDF do
-   * Laravel de referência. Mede a altura disponível por página em px,
-   * empacota os filhos do `#laudo-content` em chunks que cabem, e
-   * reescreve o DOM com `page-break-after: always` entre páginas.
-   */
-  const paginateLaudo = (
-    container: HTMLElement,
-    margins: { top: number; right: number; bottom: number; left: number },
-  ) => {
-    const original = container.querySelector(".laudo-a4-page") as HTMLElement | null;
-    if (!original) return;
-    const cab = original.querySelector(".laudo-a4-cabecalho") as HTMLElement | null;
-    const rod = original.querySelector(".laudo-a4-rodape") as HTMLElement | null;
-    const corpoInner = original.querySelector("#laudo-content") as HTMLElement | null;
-    if (!corpoInner) return;
-    const cabHTML = cab?.outerHTML ?? "";
-    const rodHTML = rod?.outerHTML ?? "";
-
-    const children = Array.from(corpoInner.children) as HTMLElement[];
-    if (children.length === 0) return;
-
-    const pxPerMm = 96 / 25.4;
-    // Cada .laudo-a4-page é uma folha A4 inteira (297mm) com padding interno
-    // igual às margens. A altura útil do corpo = 297 − top − bottom − header − footer.
-    const pageContentHeightMm = 297 - margins.top - margins.bottom;
-    const pageHeightPx = pageContentHeightMm * pxPerMm;
-    const headerH = cab?.getBoundingClientRect().height ?? 0;
-    const footerH = rod?.getBoundingClientRect().height ?? 0;
-    // 2mm de respiro para evitar que arredondamentos do html2canvas
-    // empurrem 1px de conteúdo sobre o rodapé.
-    const safetyPx = 2 * pxPerMm;
-    const bodyAvailPx = Math.max(100, pageHeightPx - headerH - footerH - safetyPx);
-
-    // Empacota filhos em páginas. Cada filho é tratado como bloco indivisível.
-    const pages: string[][] = [[]];
-    let currentH = 0;
-    for (const child of children) {
-      const h = child.getBoundingClientRect().height || child.offsetHeight || 0;
-      if (currentH + h > bodyAvailPx && pages[pages.length - 1].length > 0) {
-        pages.push([]);
-        currentH = 0;
-      }
-      pages[pages.length - 1].push(child.outerHTML);
-      currentH += h;
-    }
-
-    const parent = original.parentElement;
-    if (!parent) return;
-    const html = pages
-      .map((items, idx) => {
-        const isLast = idx === pages.length - 1;
-        const breakStyle = !isLast ? "page-break-after:always;break-after:page;" : "";
-        return `<div class="laudo-a4-page" style="${breakStyle}">${cabHTML}<div class="laudo-a4-corpo"><div id="laudo-content">${items.join("")}</div></div>${rodHTML}</div>`;
-      })
-      .join("");
-    original.outerHTML = html;
-  };
-
-  /**
    * Gera o PDF do laudo e exibe via <iframe> em uma nova aba (mesmo modelo
    * do sistema Laravel de referência: clicou em imprimir → aba abre com o
    * PDF pronto). A aba já é aberta antes da geração para preservar o gesto
@@ -1100,7 +1040,6 @@ const ResultadoDetalhe = () => {
 
       try {
         await waitForLaudoPdfReady(container);
-        paginateLaudo(container, margins);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
@@ -1155,7 +1094,6 @@ const ResultadoDetalhe = () => {
     return new Promise<void>((resolve, reject) => {
       waitForLaudoPdfReady(container)
         .then(() => {
-          paginateLaudo(container, margins);
           return html2pdf()
             .set({
               margin: 0,
