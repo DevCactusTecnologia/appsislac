@@ -45,7 +45,7 @@ import RegistrarEntregaDialog from "@/components/rastreabilidade/RegistrarEntreg
 import { renderExameComLayout, preloadLayoutsParaExames } from "@/lib/laudoLayout";
 import { resolveResultadoRegulatorio, renderRegulatorioFooterHtml } from "@/lib/regulatorioResolver";
 
-import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+
 import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
@@ -153,6 +153,12 @@ const ResultadoDetalhe = () => {
     return () => { cancelled = true; };
   }, [authUser?.id]);
   const [retificados, setRetificados] = useState<Set<number>>(new Set());
+  // Snapshot dos valores ANTES da retificação — usado para detectar se houve
+  // alteração efetiva ao salvar. Se o usuário entrar em modo de retificação e
+  // salvar sem alterar nenhum valor, o sistema NÃO grava como retificado.
+  const [valoresAntesRetificacao, setValoresAntesRetificacao] = useState<
+    Record<number, Array<{ chave: string; rotulo: string; valor: string }>>
+  >({});
   // Re-render quando o store de valores de referência hidratar (assíncrono).
   // Sem isso, o primeiro render acontece com VR vazio e nunca recalcula a
   // resolução por sexo/idade — mesmo após o store popular.
@@ -525,6 +531,29 @@ const ResultadoDetalhe = () => {
       selectedExame.parametros.map((p) => p.valor || ""),
     );
 
+    // 🔎 Em modo retificação: compara os valores atuais com o snapshot tirado
+    // ao iniciar a retificação. Se nada mudou, aborta o save (não grava como
+    // retificado). Caso contrário, monta texto de auditoria com o "antes → depois".
+    let diffsRetificacao: Array<{ rotulo: string; antes: string; depois: string }> = [];
+    if (retificando) {
+      const snap = valoresAntesRetificacao[selectedExameId] ?? [];
+      const snapByKey = new Map(snap.map((s) => [s.chave || s.rotulo, s]));
+      diffsRetificacao = selectedExame.parametros
+        .map((p) => {
+          const key = p.chave || p.nome;
+          const antes = (snapByKey.get(key)?.valor ?? "").trim();
+          const depois = (p.valor ?? "").trim();
+          return { rotulo: p.rotulo || p.nome, antes, depois };
+        })
+        .filter((d) => d.antes !== d.depois);
+      if (diffsRetificacao.length === 0) {
+        toast.warning("Nenhuma alteração detectada — o resultado não foi salvo como retificado.", {
+          description: "Altere ao menos um valor para concluir a retificação.",
+        });
+        return;
+      }
+    }
+
     const res = await updateAtendimentoExame(dbId, {
       status: "em_analise",
       resultados: resultadosJson,
@@ -543,7 +572,20 @@ const ResultadoDetalhe = () => {
     );
     if (retificando) {
       setRetificados((prev) => new Set(prev).add(selectedExameId));
-      addAuditEntry(selectedExameId, "Resultado salvo (após retificação)", dadosParams);
+      const diffText = diffsRetificacao
+        .map((d) => `• ${d.rotulo}: "${d.antes || "—"}" → "${d.depois || "—"}"`)
+        .join("\n");
+      addAuditEntry(
+        selectedExameId,
+        "Resultado salvo (após retificação)",
+        `Alterações (${diffsRetificacao.length}):\n${diffText}\n\nValores finais:\n${dadosParams}`,
+      );
+      // Limpa snapshot — próxima retificação tira novo snapshot.
+      setValoresAntesRetificacao((prev) => {
+        const next = { ...prev };
+        delete next[selectedExameId];
+        return next;
+      });
     } else {
       addAuditEntry(selectedExameId, "Resultado salvo", dadosParams);
     }
@@ -888,12 +930,63 @@ const ResultadoDetalhe = () => {
 
   const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-    const docName = `${(paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim()} - ${paciente.protocolo}`;
-    printHtmlInHiddenFrame({
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${docName}</title></head><body>${buildLaudoHtml(printable, customByExame, solicitanteLabel, margins)}</body></html>`,
-      frameId: "laudo-print-frame",
-      documentTitle: docName,
-    });
+    const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
+    const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
+
+    // Abre a aba imediatamente (mantém o gesto do usuário) — em seguida
+    // trocamos a URL pelo blob do PDF gerado. Sem isso, alguns navegadores
+    // bloqueiam window.open após o await.
+    const newTab = window.open("", "_blank");
+    if (newTab) {
+      newTab.document.write(
+        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
+          `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
+          `Gerando PDF…</body></html>`,
+      );
+    }
+
+    const container = document.createElement("div");
+    container.innerHTML = sanitizeHtml(
+      buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+    );
+    container.style.position = "fixed";
+    container.style.left = "0";
+    container.style.top = "0";
+    container.style.width = `${210 - margins.left - margins.right}mm`;
+    container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
+    container.style.margin = "0";
+    container.style.padding = "0";
+    container.style.boxSizing = "border-box";
+    container.style.background = "#ffffff";
+    container.style.overflow = "hidden";
+    document.body.appendChild(container);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const html2pdf = (await import("html2pdf.js")).default as any;
+      const blob: Blob = await html2pdf()
+        .set({
+          margin: [margins.top, margins.right, 4, margins.left],
+          filename,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.offsetWidth },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
+        })
+        .from(container)
+        .outputPdf("blob");
+
+      const url = URL.createObjectURL(blob);
+      if (newTab && !newTab.closed) {
+        newTab.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
+      // Libera o blob depois de um tempo (após a aba ter carregado).
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
@@ -955,7 +1048,7 @@ const ResultadoDetalhe = () => {
         if (action === "imprimir") await doImprimirHtml(printable);
         else await doExportPdf(printable);
         markAsImpresso(printable);
-        if (action === "imprimir") toast.success(`Laudo com ${printable.length} exame(s) enviado para impressão.`);
+        if (action === "imprimir") toast.success(`PDF do laudo aberto em nova aba (${printable.length} exame(s)).`);
         else toast.success(`PDF exportado com ${printable.length} exame(s).`);
       } catch {
         toast.error("Erro ao gerar laudo.");
@@ -980,7 +1073,7 @@ const ResultadoDetalhe = () => {
       markAsImpresso(printable);
       toast.success(
         action === "imprimir"
-          ? `${geradas} laudo(s) enviado(s) para impressão (uma cópia por solicitante).`
+          ? `${geradas} PDF(s) do laudo abertos em novas abas (um por solicitante).`
           : `${geradas} PDF(s) exportado(s) (um por solicitante).`,
       );
     }
@@ -2056,13 +2149,23 @@ const ResultadoDetalhe = () => {
                   return;
                 }
                 if (selectedExame) {
+                  // Snapshot dos valores ANTES da retificação — base para o
+                  // diff exibido na auditoria e para bloquear save sem alteração.
+                  const snap = selectedExame.parametros.map((p) => ({
+                    chave: p.chave || p.nome,
+                    rotulo: p.rotulo || p.nome,
+                    valor: (p.valor ?? "").trim(),
+                  }));
+                  setValoresAntesRetificacao((prev) => ({ ...prev, [selectedExameId]: snap }));
+
                   const dbId = dbIdMap[selectedExameId];
                   if (dbId) {
-                    // Volta exame para "em_analise" no banco (libera para edição) e limpa resultados.
-                    // A justificativa precisa ir junto na mesma transação/RPC da mutação.
+                    // Volta exame para "em_analise" no banco (libera para edição).
+                    // Mantemos os resultados anteriores carregados para que o
+                    // analista veja os valores atuais e possa editá-los; o
+                    // diff é calculado no save contra o snapshot acima.
                     const res = await updateAtendimentoExame(dbId, {
                       status: "em_analise",
-                      resultados: {},
                       data_liberacao: null,
                       retificado: true,
                     }, justificativa);
@@ -2075,7 +2178,7 @@ const ResultadoDetalhe = () => {
                   updatePacienteExames((exames) =>
                     exames.map((e) =>
                       e.id === selectedExameId
-                        ? { ...e, status: "Em retificação" as ExameStatus, parametros: e.parametros.map((p) => ({ ...p, valor: "" })) }
+                        ? { ...e, status: "Em retificação" as ExameStatus }
                         : e
                     )
                   );
