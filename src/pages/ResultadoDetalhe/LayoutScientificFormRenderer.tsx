@@ -197,7 +197,7 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
         if (idx != null) {
           const param = parametros[idx];
           const ref = getResolvedRef(param);
-          const txt = ref.refUnidade || param.unidade || "";
+          const txt = (ref?.refUnidade) || param.unidade || "";
           out.push(<span key={placeholderKey} className="text-muted-foreground">{txt}</span>);
         }
       } else if (upKey.startsWith("FLAG_")) {
