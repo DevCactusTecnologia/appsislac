@@ -63,7 +63,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   // e alinhamento entre cabeçalho, corpo e rodapé em todas as páginas.
   const m = pageMargins ?? { top: 4, right: 11, bottom: 4, left: 11 };
   const pageContentWidthMm = 210 - m.left - m.right;
-  const printBottomMarginMm = 4;
+  const printBottomMarginMm = Number.isFinite(m.bottom) ? m.bottom : 4;
   const pageContentHeightMm = 297 - m.top - printBottomMarginMm;
   // A arte institucional do rodapé define uma faixa lateral direita protegida
   // ligeiramente maior que a margem técnica do @page. A assinatura deve terminar

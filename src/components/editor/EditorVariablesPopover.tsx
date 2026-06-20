@@ -61,7 +61,7 @@ const EditorVariablesPopover = ({ items, onInsert, disabled, className }: Props)
           <ChevronDown className="h-3 w-3 opacity-60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0" align="end">
+      <PopoverContent className="w-[320px] p-0 z-[110]" align="end">
         <div className="px-2.5 py-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />

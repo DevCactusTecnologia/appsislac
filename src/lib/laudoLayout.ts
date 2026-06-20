@@ -240,9 +240,17 @@ export async function renderExameComLayout(
   const valueMap = buildValueMap(exameNome, resultados, parametros, pacienteSexo, pacienteIdade, pacienteExtra);
   const corpo = preserveVisibleTextSpacing(applyPlaceholders(layoutPadrao.conteudo, valueMap));
 
-  // Margens institucionais de impressão do laudo: 4mm topo, 11mm laterais e 9mm inferior.
-  // Ignora margens herdadas de layouts antigos para manter a página centralizada.
-  const margins = DEFAULT_MARGINS;
+  // Respeita as margens definidas pelo usuário no layout (config.margins).
+  // Faz merge com DEFAULT_MARGINS para preencher campos ausentes.
+  const cfgMargins = layoutPadrao.config?.margins;
+  const margins: LayoutMargins = cfgMargins
+    ? {
+        top: Number.isFinite(cfgMargins.top) ? cfgMargins.top : DEFAULT_MARGINS.top,
+        right: Number.isFinite(cfgMargins.right) ? cfgMargins.right : DEFAULT_MARGINS.right,
+        bottom: Number.isFinite(cfgMargins.bottom) ? cfgMargins.bottom : DEFAULT_MARGINS.bottom,
+        left: Number.isFinite(cfgMargins.left) ? cfgMargins.left : DEFAULT_MARGINS.left,
+      }
+    : DEFAULT_MARGINS;
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
