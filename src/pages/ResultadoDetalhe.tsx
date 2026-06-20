@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { resolverReferencia } from "@/data/valoresReferenciaStore";
+import { resolverReferencia, getValoresReferencia, subscribeValoresReferencia, _initValoresReferenciaStore } from "@/data/valoresReferenciaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getLabsApoio } from "@/data/labApoioStore";
