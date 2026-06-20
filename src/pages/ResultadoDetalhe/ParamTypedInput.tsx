@@ -17,7 +17,7 @@ export const ParamTypedInput = ({
   computedValue,
   statusColor,
 }: {
-  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number };
+  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number };
   isCritico?: boolean;
   disabled?: boolean;
   className?: string;
