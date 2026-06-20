@@ -45,7 +45,7 @@ export const buildLayoutTemplate = ({ exameNome, parametros }: BuildTemplateInpu
         </tr>`;
 
   return `
-<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+<div style="font-family:Courier,monospace;color:#0f172a;">
   <h2 style="margin:0 0 4px;font-size:16px;color:#1e293b;border-bottom:2px solid #4D41F3;padding-bottom:6px;">
     ${escapeHtml(exameNome)}
   </h2>
