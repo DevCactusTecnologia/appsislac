@@ -57,6 +57,8 @@ const fromRow = (r: any): ExameParametro => ({
   casasDecimais: typeof r.casas_decimais === "number" ? r.casas_decimais : 2,
   criticoMin: r.critico_min ?? "",
   criticoMax: r.critico_max ?? "",
+  separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
+  qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
