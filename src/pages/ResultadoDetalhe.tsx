@@ -1824,7 +1824,7 @@ const ResultadoDetalhe = () => {
                                         {renderRefCard(row.abs, param)}
                                       </div>
                                     ) : (
-                                      renderRefCard(param, row.main && isAbsName(param.nome) ? rows.find((r) => r.abs?.parametroId === param.parametroId)?.main : undefined)
+                                      renderRefCard(param)
                                     )}
                                   </td>
                                 </tr>
