@@ -1223,10 +1223,10 @@ const ResultadoDetalhe = () => {
                     })}
 
 
-                    {/* Mobile footer actions */}
-                    <div className="flex flex-col gap-2 pt-2 border-t">
+                    {/* Mobile footer actions — secundárias estão em "Mais ações" no topo */}
+                    <div className="flex flex-col gap-3 pt-3 border-t border-border/60">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 border-2 border-status-info">
+                        <Avatar className="h-7 w-7 border border-status-info/40">
                           <AvatarFallback className="bg-status-info-bg text-status-info text-[10px] font-semibold">
                             {analistaAtual.iniciais}
                           </AvatarFallback>
@@ -1238,54 +1238,44 @@ const ResultadoDetalhe = () => {
                           </span>
                         ) : (
                           <>
-                            <span className="text-xs text-foreground font-medium">{analistaAtual.nome}</span>
+                            <div className="flex flex-col leading-tight flex-1 min-w-0">
+                              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analista</span>
+                              <span className="text-xs font-medium text-foreground truncate">{analistaAtual.nome}</span>
+                            </div>
                             <button
                               onClick={() => { setAnalistaEmail(""); setAnalistaSenha(""); setAnalistaErro(""); setShowAlterarAnalista(true); }}
-                              className="text-xs text-muted-foreground hover:text-foreground border rounded px-2 py-0.5"
+                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1"
                             >
-                              Alterar
+                              <Edit className="h-3 w-3" />
+                              Trocar
                             </button>
                           </>
                         )}
                       </div>
-                      {!modoConsulta && (
-                      <>
+                      {!modoConsulta && (canAnalisar || canLiberar) && (
                       <div className="flex gap-2">
-                        {canCancelarExame && (
-                          <button
-                            onClick={handleCancelarAnalise}
-                            className="flex-1 px-3 py-2 border rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                          >
-                            Cancelar análise
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setShowRecoletaDialog(true)}
-                          className="flex-1 px-3 py-2 border rounded-lg text-xs font-medium text-warning hover:bg-warning/5 transition-colors"
-                          title="Solicitar nova coleta da amostra"
-                        >
-                          Solicitar recoleta
-                        </button>
                         {canAnalisar && (
                           <button
                             onClick={handleSalvar}
-                            className="flex-1 px-3 py-2 border rounded-lg text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent transition-colors"
                           >
-                            Salvar resultado
+                            <Save className="h-3.5 w-3.5" />
+                            Salvar
+                          </button>
+                        )}
+                        {canLiberar && (
+                          <button
+                            onClick={() => setShowConfirmarLiberar(true)}
+                            className="flex-[1.6] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                          >
+                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? <ShieldCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? "Assinar e Liberar" : "Analisar e Liberar"}
                           </button>
                         )}
                       </div>
-                      {canLiberar && (
-                        <button
-                          onClick={() => setShowConfirmarLiberar(true)}
-                          className="px-4 py-2 border-2 border-foreground rounded-lg text-sm font-bold text-foreground hover:bg-accent transition-colors"
-                        >
-                          {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? "Assinar e Liberar" : "Analisar e Liberar"}
-                        </button>
-                      )}
-                      </>
                       )}
                     </div>
+
                     </>
                     )}
                   </div>
