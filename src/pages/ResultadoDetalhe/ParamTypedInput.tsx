@@ -25,11 +25,13 @@ export const ParamTypedInput = ({
   /** Valor calculado (usado quando tipo === "Formula"). */
   computedValue?: string;
   /** Override de cor para indicar status semântico (ex.: contador OK/erro). */
-  statusColor?: "success" | "danger";
+  statusColor?: "success" | "warning" | "danger";
 }) => {
   const statusClasses =
     statusColor === "success"
       ? "border-status-success/60 ring-2 ring-status-success/30 text-status-success"
+      : statusColor === "warning"
+      ? "border-status-warning/60 ring-2 ring-status-warning/30 text-status-warning"
       : statusColor === "danger"
       ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
       : isCritico
