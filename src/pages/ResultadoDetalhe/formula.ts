@@ -18,14 +18,25 @@ export function buildValuesByChave(parametros: Parametro[]): Record<string, stri
   return out;
 }
 
-/** Substitui ##CHAVE## por número e avalia. Retorna "" se faltar valor ou erro. */
+/** Substitui ##CHAVE## por número e avalia.
+ *
+ * • `allowPartial = false` (padrão): se faltar QUALQUER valor referenciado,
+ *   retorna "" — usado em fórmulas tipo V.C.M = (HCT/HEMA)*10, onde um
+ *   resultado parcial não faz sentido.
+ * • `allowPartial = true`: trata valores ausentes como 0 e sempre devolve o
+ *   resultado parcial — usado no contador da série branca (CONT), que deve
+ *   somar em tempo real conforme o usuário digita os diferenciais.
+ *   Retorna "" apenas quando NENHUM valor foi preenchido ainda.
+ */
 export function evaluateFormula(
   formula: string | undefined | null,
   valuesByChave: Record<string, string>,
   casasDecimais = 2,
+  allowPartial = false,
 ): string {
   if (!formula) return "";
   let missing = false;
+  let anyFilled = false;
   const expr = formula.replace(/##([A-Za-z0-9_+\-.]+)##/g, (_, key: string) => {
     const raw = valuesByChave[key.toUpperCase()] ?? "";
     if (raw === "" || raw == null) {
@@ -37,9 +48,11 @@ export function evaluateFormula(
       missing = true;
       return "0";
     }
+    anyFilled = true;
     return String(n);
   });
-  if (missing) return "";
+  if (missing && !allowPartial) return "";
+  if (allowPartial && !anyFilled) return "";
   // Allowlist seguro: dígitos, operadores, parênteses e pontos.
   if (!/^[0-9+\-*/().\s]+$/.test(expr)) return "";
   try {

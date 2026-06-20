@@ -1140,7 +1140,7 @@ const ResultadoDetalhe = () => {
                       const ref = getResolvedRef(exame.nome, param);
                       const valuesByChave = buildValuesByChave(exame.parametros);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
@@ -1665,7 +1665,7 @@ const ResultadoDetalhe = () => {
                     const renderResultCard = (param: Param, idx: number) => {
                       const ref = getResolvedRef(selectedExame.nome, param);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
@@ -1788,7 +1788,7 @@ const ResultadoDetalhe = () => {
                           const param = row.main;
                           const idx = row.mainIdx;
                           const displayValorMain = param.tipo === "Formula"
-                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                             : param.valor;
                           const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValorMain);
                           const isCriticoParam = nivelCritico !== "normal";
