@@ -1109,7 +1109,9 @@ const ResultadoDetalhe = () => {
                     ) : (
                     <>
                     {/* Exam action buttons */}
-                    {!modoConsulta && (
+                    {!modoConsulta && (() => {
+                      const isBlockedExameLocal = isExameBloqueado(exame.status);
+                      return (
                     <div className="flex items-center gap-2 pb-2 border-b">
                       <button
                         onClick={() => setShowImportarDialog(true)}
@@ -1117,17 +1119,18 @@ const ResultadoDetalhe = () => {
                       >
                         Importar
                       </button>
-                       {isExameBloqueado(exame.status) && canLiberar && (
-                        <button
-                          onClick={() => setShowRetificarDialog(true)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                        >
-                          <Edit className="h-3 w-3" />
-                          Retificar
-                        </button>
-                      )}
+                      <ExameAcoesMenu
+                        size="sm"
+                        canRetificar={canLiberar && isBlockedExameLocal && !retificando}
+                        canCancelar={canCancelarExame}
+                        onRetificar={() => setShowRetificarDialog(true)}
+                        onRecoleta={() => setShowRecoletaDialog(true)}
+                        onCancelarAnalise={handleCancelarAnalise}
+                      />
                     </div>
-                    )}
+                      );
+                    })()}
+
 
                     {/* Parameters */}
                     
