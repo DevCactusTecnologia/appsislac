@@ -1665,7 +1665,7 @@ const ResultadoDetalhe = () => {
                     const renderResultCard = (param: Param, idx: number) => {
                       const ref = getResolvedRef(selectedExame.nome, param);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
+                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
