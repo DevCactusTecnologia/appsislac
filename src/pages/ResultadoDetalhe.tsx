@@ -1110,7 +1110,7 @@ const ResultadoDetalhe = () => {
         if (action === "imprimir") await doImprimirHtml(printable);
         else await doExportPdf(printable);
         markAsImpresso(printable);
-        if (action === "imprimir") toast.success(`PDF do laudo aberto em nova aba (${printable.length} exame(s)).`);
+        if (action === "imprimir") toast.success(`Laudo aberto para impressão (${printable.length} exame(s)).`);
         else toast.success(`PDF exportado com ${printable.length} exame(s).`);
       } catch {
         toast.error("Erro ao gerar laudo.");
