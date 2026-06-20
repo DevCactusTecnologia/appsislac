@@ -1723,12 +1723,16 @@ const ResultadoDetalhe = () => {
                               <>
                                 <ParamTypedInput
                                   param={param}
-                                  isCritico={isCriticoParam}
+                                  isCritico={isCriticoParam && !contStatus}
+                                  statusColor={contStatus}
                                   computedValue={computedFormula}
                                   onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                   disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0"
+                                  className={`!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0 ${
+                                    contStatus === "success" ? "!text-status-success" : contStatus === "warning" ? "!text-status-warning" : contStatus === "danger" ? "!text-status-danger" : ""
+                                  }`}
                                 />
+
                                 <span className="text-xs text-muted-foreground shrink-0">{param.unidade}</span>
                               </>
                             )}
