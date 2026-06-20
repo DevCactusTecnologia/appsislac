@@ -928,6 +928,69 @@ const ResultadoDetalhe = () => {
     return Array.from(set);
   };
 
+  const createLaudoPdfContainer = (
+    html: string,
+    margins: { top: number; right: number; bottom: number; left: number },
+  ) => {
+    const container = document.createElement("div");
+    container.setAttribute("aria-hidden", "true");
+    container.innerHTML = sanitizeHtml(html);
+    container.style.position = "fixed";
+    container.style.left = "0";
+    container.style.top = "0";
+    container.style.width = `${210 - margins.left - margins.right}mm`;
+    container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
+    container.style.margin = "0";
+    container.style.padding = "0";
+    container.style.boxSizing = "border-box";
+    container.style.background = "#ffffff";
+    container.style.color = "#000000";
+    container.style.pointerEvents = "none";
+    container.style.zIndex = "2147483647";
+    document.body.appendChild(container);
+    return container;
+  };
+
+  const waitForLaudoPdfReady = async (container: HTMLElement) => {
+    if (document.fonts?.ready) {
+      await document.fonts.ready.catch(() => undefined);
+    }
+    await Promise.all(
+      Array.from(container.querySelectorAll("img")).map(
+        (img) => new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          window.setTimeout(done, 2500);
+        }),
+      ),
+    );
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
+  };
+
+  const getLaudoCanvasOptions = (container: HTMLElement) => {
+    const width = Math.max(container.scrollWidth, container.offsetWidth, 1);
+    const height = Math.max(container.scrollHeight, container.offsetHeight, 1);
+    return {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: width,
+      width,
+      height,
+      letterRendering: true,
+      logging: false,
+    };
+  };
+
   const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
@@ -953,24 +1016,13 @@ const ResultadoDetalhe = () => {
 
     try {
       const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const container = document.createElement("div");
-      container.innerHTML = sanitizeHtml(
+      const container = createLaudoPdfContainer(
         buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+        margins,
       );
-      // Off-screen, mas renderizável para html2canvas (não pode ser display:none).
-      container.style.position = "fixed";
-      container.style.left = "-100000px";
-      container.style.top = "0";
-      container.style.width = `${210 - margins.left - margins.right}mm`;
-      container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
-      container.style.margin = "0";
-      container.style.padding = "0";
-      container.style.boxSizing = "border-box";
-      container.style.background = "#ffffff";
-      container.style.overflow = "hidden";
-      document.body.appendChild(container);
 
       try {
+        await waitForLaudoPdfReady(container);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
@@ -978,7 +1030,7 @@ const ResultadoDetalhe = () => {
             margin: [margins.top, margins.right, 4, margins.left],
             filename,
             image: { type: "jpeg", quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.offsetWidth },
+            html2canvas: getLaudoCanvasOptions(container),
             jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
             pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
           })
@@ -1018,43 +1070,27 @@ const ResultadoDetalhe = () => {
 
   const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-    const container = document.createElement("div");
-    // Sanitiza HTML antes do innerHTML para neutralizar qualquer XSS armazenado
-    // (templates de laudo são HTML editáveis). Não altera formatação visível
-    // (preserva tabelas, classes, estilos inline) — apenas remove scripts e
-    // handlers de evento.
-    container.innerHTML = sanitizeHtml(
+    const container = createLaudoPdfContainer(
       buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+      margins,
     );
-    // html2pdf aplica as margens no jsPDF; o DOM precisa estar na largura útil
-    // exata da página, sem margem/padding próprios, para não somar/desbalancear.
-    container.style.position = "fixed";
-    container.style.left = "0";
-    container.style.top = "0";
-    container.style.width = `${210 - margins.left - margins.right}mm`;
-    container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
-    container.style.margin = "0";
-    container.style.padding = "0";
-    container.style.boxSizing = "border-box";
-    container.style.background = "#ffffff";
-    container.style.overflow = "hidden";
-    document.body.appendChild(container);
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     // Carrega html2pdf sob demanda — evita ~370 KB no chunk inicial.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const html2pdf = (await import("html2pdf.js")).default as any;
     return new Promise<void>((resolve, reject) => {
-      html2pdf()
-        .set({
-          margin: [margins.top, margins.right, 4, margins.left],
-          filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.offsetWidth },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
-        })
-        .from(container)
-        .save()
+      waitForLaudoPdfReady(container)
+        .then(() => html2pdf()
+          .set({
+            margin: [margins.top, margins.right, 4, margins.left],
+            filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: getLaudoCanvasOptions(container),
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
+          })
+          .from(container)
+          .save())
         .then(() => { document.body.removeChild(container); resolve(); })
         .catch((err: unknown) => { document.body.removeChild(container); reject(err); });
     });
