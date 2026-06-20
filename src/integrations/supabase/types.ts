@@ -1630,7 +1630,9 @@ export type Database = {
           opcoes_select: string[]
           ordem: number
           qtd_caracteres: string
+          qtd_digitos: number | null
           rotulo: string
+          separador_decimal: string
           tenant_id: string
           tipo: string
           updated_at: string
@@ -1653,7 +1655,9 @@ export type Database = {
           opcoes_select?: string[]
           ordem?: number
           qtd_caracteres?: string
+          qtd_digitos?: number | null
           rotulo: string
+          separador_decimal?: string
           tenant_id: string
           tipo?: string
           updated_at?: string
@@ -1676,7 +1680,9 @@ export type Database = {
           opcoes_select?: string[]
           ordem?: number
           qtd_caracteres?: string
+          qtd_digitos?: number | null
           rotulo?: string
+          separador_decimal?: string
           tenant_id?: string
           tipo?: string
           updated_at?: string
