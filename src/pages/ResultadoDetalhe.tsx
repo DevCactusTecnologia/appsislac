@@ -1363,7 +1363,7 @@ const ResultadoDetalhe = () => {
                           </span>
                         </div>
                       )}
-                      {isTerc && dbRow && (
+                      {isTerc && dbRow && dbRow.status_externo !== "NAO_APLICAVEL" && (
                         <div className="mt-1.5">
                           <IntegrationStatusBadge row={dbRow} compact />
                           <IntegrationWarningsList

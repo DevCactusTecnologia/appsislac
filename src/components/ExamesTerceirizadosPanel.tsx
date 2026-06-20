@@ -167,7 +167,7 @@ const ExamesTerceirizadosPanel = ({ rows, onChanged }: Props) => {
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5 space-y-4">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
             <Building2 className="h-4 w-4 text-primary" />
@@ -179,22 +179,23 @@ const ExamesTerceirizadosPanel = ({ rows, onChanged }: Props) => {
             </p>
           </div>
         </div>
+
+        {/* Fase 4 — impressão em lote por laboratório (no canto direito do header) */}
+        <ImpressaoLotePorLab
+          exames={terceirizados.map(r => ({
+            atendimentoExameId: r.id,
+            tipoProcesso: r.tipo_processo,
+            labApoioId: r.lab_apoio_id,
+            // No painel de terceirizados, mesmo sem amostra real geramos uma "guia de remessa".
+            amostraId: (r as { amostra_id?: string | null }).amostra_id ?? null,
+            nomeExame: r.nome_exame,
+          }))}
+          laboratorioPropriaNome={getCachedTenantNome()}
+          compact
+          permitirGuiaRemessa
+        />
       </header>
 
-      {/* Fase 4 — impressão em lote por laboratório */}
-      <ImpressaoLotePorLab
-        exames={terceirizados.map(r => ({
-          atendimentoExameId: r.id,
-          tipoProcesso: r.tipo_processo,
-          labApoioId: r.lab_apoio_id,
-          // No painel de terceirizados, mesmo sem amostra real geramos uma "guia de remessa".
-          amostraId: (r as { amostra_id?: string | null }).amostra_id ?? null,
-          nomeExame: r.nome_exame,
-        }))}
-        laboratorioPropriaNome={getCachedTenantNome()}
-        compact
-        permitirGuiaRemessa
-      />
 
       <div className="space-y-2">
         {terceirizados.map((row) => {
