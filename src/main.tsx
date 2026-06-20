@@ -108,7 +108,8 @@ if (typeof window !== "undefined") {
     } catch { /* ignore */ }
   });
 
-  const RELOAD_FLAG = "sislac-chunk-reload";
+  const RELOAD_FLAG = "sislac-chunk-reload-at";
+  const RELOAD_COOLDOWN_MS = 30_000;
 
   const isChunkLoadError = (msg: string) =>
     msg.includes("Failed to fetch dynamically imported module") ||
@@ -119,8 +120,14 @@ if (typeof window !== "undefined") {
   const tryReload = (msg: string) => {
     if (!isChunkLoadError(msg)) return;
     try {
-      if (sessionStorage.getItem(RELOAD_FLAG)) return;
-      sessionStorage.setItem(RELOAD_FLAG, "1");
+      const last = Number(sessionStorage.getItem(RELOAD_FLAG) ?? "0");
+      if (last && Date.now() - last < RELOAD_COOLDOWN_MS) {
+        // Já recarregamos há pouco — não entrar em loop.
+        // eslint-disable-next-line no-console
+        console.warn("[sislac] chunk-reload suprimido (cooldown):", msg);
+        return;
+      }
+      sessionStorage.setItem(RELOAD_FLAG, String(Date.now()));
     } catch { /* ignore */ }
     // eslint-disable-next-line no-console
     console.warn("[sislac] chunk-reload acionado por:", msg);
@@ -136,11 +143,7 @@ if (typeof window !== "undefined") {
     const msg = typeof reason === "string" ? reason : reason?.message ?? "";
     tryReload(msg);
   });
-
-  // Limpa o flag após carga bem-sucedida.
-  window.addEventListener("load", () => {
-    try { sessionStorage.removeItem(RELOAD_FLAG); } catch { /* ignore */ }
-  });
 }
+
 
 createRoot(document.getElementById("root")!).render(<App />);
