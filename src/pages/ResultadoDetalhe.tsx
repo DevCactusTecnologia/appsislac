@@ -1035,16 +1035,12 @@ const ResultadoDetalhe = () => {
                 <MaisAcoesMenu
                   modoConsulta={modoConsulta}
                   semExameSelecionado={!selectedExame}
-                  canRetificar={canLiberar}
-                  canCancelar={canCancelarExame}
                   onAuditoria={() => setShowAuditoria(true)}
                   onCritico={() => setShowCriticoDialog(true)}
                   onEntrega={() => setShowEntregaDialog(true)}
-                  onRetificar={() => setShowRetificarDialog(true)}
-                  onRecoleta={() => setShowRecoletaDialog(true)}
-                  onCancelarAnalise={handleCancelarAnalise}
                 />
               }
+
             />
           </div>
 
