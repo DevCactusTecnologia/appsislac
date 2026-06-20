@@ -957,7 +957,7 @@ const ResultadoDetalhe = () => {
   return (
     <div className="min-h-screen bg-background">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 mt-6 rounded-xl">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 animate-fade-in">
         {/* Back link — strategic contextual breadcrumb */}
         <div className="mb-4">
           <button
