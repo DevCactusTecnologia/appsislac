@@ -444,6 +444,75 @@ const CKEditorComponent = ({
             true,
           );
 
+          // ============================================================
+          // Reposiciona a barra flutuante de tabela (widget toolbar) para
+          // aparecer ao lado do clique, em vez de fixada no topo da tabela
+          // — que com tabelas grandes some da viewport e confunde o usuário.
+          // ============================================================
+          let lastClick: { x: number; y: number; t: number } | null = null;
+          root.addEventListener(
+            "mousedown",
+            (ev) => {
+              const t = ev.target as HTMLElement | null;
+              if (t?.closest("table")) {
+                lastClick = { x: ev.clientX, y: ev.clientY, t: Date.now() };
+              }
+            },
+            true,
+          );
+
+          const repositionBalloon = (panel: HTMLElement) => {
+            if (!lastClick) return;
+            // Considera o clique recente (até 4s) para evitar reposicionar
+            // balões abertos por outras interações.
+            if (Date.now() - lastClick.t > 4000) return;
+            // Apenas balões que contenham a barra de tabela.
+            const hasTableToolbar = panel.querySelector(
+              '.ck-toolbar [data-cke-tooltip-text*="tabela" i],' +
+              '.ck-toolbar [data-cke-tooltip-text*="table" i],' +
+              '.ck-toolbar .ck-button[class*="table" i]',
+            );
+            if (!hasTableToolbar) return;
+            const rect = panel.getBoundingClientRect();
+            const margin = 8;
+            let left = lastClick.x + 12;
+            let top = lastClick.y + 12;
+            if (left + rect.width + margin > window.innerWidth) {
+              left = Math.max(margin, window.innerWidth - rect.width - margin);
+            }
+            if (top + rect.height + margin > window.innerHeight) {
+              top = Math.max(margin, lastClick.y - rect.height - 12);
+            }
+            panel.style.left = `${left}px`;
+            panel.style.top = `${top}px`;
+            panel.style.transform = "none";
+          };
+
+          const balloonObserver = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+              m.addedNodes.forEach((n) => {
+                if (!(n instanceof HTMLElement)) return;
+                const panels = n.matches?.(".ck-balloon-panel")
+                  ? [n]
+                  : Array.from(n.querySelectorAll?.(".ck-balloon-panel") ?? []);
+                panels.forEach((p) => {
+                  // Aguarda render para medir e reposicionar.
+                  requestAnimationFrame(() => repositionBalloon(p as HTMLElement));
+                });
+              });
+              // Reage a mudanças de visibilidade/posição de panels existentes.
+              if (m.target instanceof HTMLElement && m.target.classList?.contains("ck-balloon-panel")) {
+                requestAnimationFrame(() => repositionBalloon(m.target as HTMLElement));
+              }
+            }
+          });
+          balloonObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["class", "style"],
+          });
+
           root.addEventListener("contextmenu", (ev) => {
             const target = ev.target as HTMLElement | null;
             const inTable = !!target?.closest("table");
