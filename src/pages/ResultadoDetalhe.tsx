@@ -1027,7 +1027,7 @@ const ResultadoDetalhe = () => {
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
           .set({
-            margin: [margins.top, margins.right, 4, margins.left],
+            margin: [margins.top, margins.right, margins.bottom, margins.left],
             filename,
             image: { type: "jpeg", quality: 0.98 },
             html2canvas: getLaudoCanvasOptions(container),
@@ -1082,7 +1082,7 @@ const ResultadoDetalhe = () => {
       waitForLaudoPdfReady(container)
         .then(() => html2pdf()
           .set({
-            margin: [margins.top, margins.right, 4, margins.left],
+            margin: [margins.top, margins.right, margins.bottom, margins.left],
             filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
             image: { type: "jpeg", quality: 0.98 },
             html2canvas: getLaudoCanvasOptions(container),
