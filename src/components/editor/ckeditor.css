@@ -135,10 +135,17 @@
   max-height: 70vh;
 }
 
-/* A folha A4 propriamente dita. */
+/* A folha A4 propriamente dita.
+   ATENÇÃO: usamos `height` fixo (não `min-height`) para travar a folha no
+   tamanho absoluto A4 — pressionar Enter não faz a página crescer
+   indefinidamente. O conteúdo que ultrapassa a área útil rola dentro da
+   folha (overflow:auto), preservando o cabeçalho/rodapé visualmente
+   "fixos" nas bordas, como em um documento Word. */
 .sislac-ckeditor .ck.ck-editor__main > .ck-editor__editable {
   width: var(--sislac-a4-width);
-  min-height: var(--sislac-a4-height);
+  height: var(--sislac-a4-height);
+  max-height: var(--sislac-a4-height);
+  overflow-y: auto;
   padding: var(--sislac-pad-top, 10mm) var(--sislac-pad-right, 10mm) var(--sislac-pad-bottom, 10mm) var(--sislac-pad-left, 10mm);
   margin: 0 auto;
   background: #ffffff;
