@@ -352,10 +352,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             </div>
             {selectedId && (
               <button
-                onClick={resetForm}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                onClick={handleRemover}
+                className="h-8 px-3 rounded-lg border border-destructive/30 text-destructive text-[12px] font-medium flex items-center gap-1.5 hover:bg-destructive/10 transition-all duration-200"
               >
-                <Plus className="h-3 w-3" /> novo
+                <Trash2 className="h-3.5 w-3.5" /> Remover parâmetro
               </button>
             )}
           </div>
