@@ -168,6 +168,12 @@ const RegistrarColeta = () => {
   const [cancelMotivo, setCancelMotivo] = useState("");
   const [cancelMotivoCustom, setCancelMotivoCustom] = useState("");
   const [successDialog, setSuccessDialog] = useState(false);
+  // Snapshot do atendimento que acabou de concluir — preserva a lista de
+  // exames coletados para permitir (re)impressão das etiquetas dentro do modal
+  // "Coleta concluída!". Necessário porque após a celebração limpamos o
+  // selectedPaciente e o item some da fila.
+  const [successPaciente, setSuccessPaciente] = useState<Paciente | null>(null);
+  const [printingAll, setPrintingAll] = useState(false);
   const [allCancelledDialog, setAllCancelledDialog] = useState(false);
   const [showAlterarResponsavel, setShowAlterarResponsavel] = useState(false);
   const celebratedIdsRef = useRef<Set<number>>(new Set());
