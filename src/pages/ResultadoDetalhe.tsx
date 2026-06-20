@@ -1730,7 +1730,6 @@ const ResultadoDetalhe = () => {
                           </th>
                           {hasAnyAbs && (
                             <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">
-                              ABSOLUTO
                             </th>
                           )}
                           <th />
