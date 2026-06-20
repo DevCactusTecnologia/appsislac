@@ -1207,7 +1207,7 @@ const ResultadoDetalhe = () => {
                                 )}
                               </div>
                             ) : (
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex flex-col gap-1">
                                 <span className="text-xs text-muted-foreground">Resultado</span>
                                 {isBlockedExame && !retificando ? (
                                   <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${isOutOfRange ? "bg-status-danger/10" : "bg-accent/50"}`}>
@@ -1223,18 +1223,22 @@ const ResultadoDetalhe = () => {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                                    {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                                    {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
-                                    <ParamTypedInput
-                                      param={param}
-                                      computedValue={computedFormula}
-                                      onChange={(v) => updateParametro(exame.id, idx, v)}
-                                      disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
-                                      className="w-24 text-right"
-                                    />
-                                    <span className="text-xs text-muted-foreground">{param.unidade}</span>
+                                  <div className="flex items-center gap-2 w-full">
+                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success shrink-0" />}
+                                    {below && <ArrowDown className="h-4 w-4 text-orange-500 shrink-0" />}
+                                    {above && <ArrowUp className="h-4 w-4 text-status-danger shrink-0" />}
+                                    <div className="flex-1 min-w-0">
+                                      <ParamTypedInput
+                                        param={param}
+                                        computedValue={computedFormula}
+                                        onChange={(v) => updateParametro(exame.id, idx, v)}
+                                        disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {param.unidade && (
+                                      <span className="text-xs text-muted-foreground shrink-0">{param.unidade}</span>
+                                    )}
                                   </div>
                                 )}
                               </div>
