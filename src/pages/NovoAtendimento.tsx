@@ -458,6 +458,9 @@ const NovoAtendimento = () => {
   // o update NÃO envia `pagamentosRealizados`, evitando que a RPC tente DELETE
   // em registros pós-deploy (bloqueado por trigger — exige fluxo de estorno).
   const pagamentosTouchedRef = useRef(false);
+  // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
+  const isSubmittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
 
   // Edit mode
