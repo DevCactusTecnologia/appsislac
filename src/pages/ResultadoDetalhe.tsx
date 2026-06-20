@@ -1644,24 +1644,24 @@ const ResultadoDetalhe = () => {
                           ? (above ? "bg-status-danger" : "bg-orange-500")
                           : "bg-transparent";
                       return (
-                        <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
-                          <span className="shrink-0 inline-flex items-center justify-center h-5 w-5">
-                            {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                            {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                            {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
-                            {inRange === null && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
+                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
+                          <span className="shrink-0 inline-flex items-center justify-center h-4 w-4">
+                            {inRange === true && <CheckCircle2 className="h-3.5 w-3.5 text-status-success" />}
+                            {below && <ArrowDown className="h-3.5 w-3.5 text-orange-500" />}
+                            {above && <ArrowUp className="h-3.5 w-3.5 text-status-danger" />}
+                            {inRange === null && <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />}
                           </span>
                           <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
                             {isBlocked && !retificando ? (
                               displayValor ? (
                                 <>
-                                  <span className={`text-[15px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
+                                  <span className={`text-[13px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
                                     {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
                                   </span>
-                                  <span className="text-sm text-muted-foreground">{param.unidade}</span>
+                                  <span className="text-xs text-muted-foreground">{param.unidade}</span>
                                 </>
                               ) : (
-                                <span className="text-sm text-muted-foreground italic">—</span>
+                                <span className="text-xs text-muted-foreground italic">—</span>
                               )
                             ) : (
                               <>
@@ -1671,13 +1671,13 @@ const ResultadoDetalhe = () => {
                                   computedValue={computedFormula}
                                   onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                   disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-8 w-full text-[15px] font-bold tabular-nums focus:!ring-0"
+                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0"
                                 />
-                                <span className="text-sm text-muted-foreground shrink-0">{param.unidade}</span>
+                                <span className="text-xs text-muted-foreground shrink-0">{param.unidade}</span>
                               </>
                             )}
                           </div>
-                          <span className={`absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full ${barColorClass}`} />
+                          <span className={`absolute right-1 top-1 bottom-1 w-1 rounded-full ${barColorClass}`} />
                         </div>
                       );
                     };
