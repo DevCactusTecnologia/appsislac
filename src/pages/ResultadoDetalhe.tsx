@@ -1006,6 +1006,27 @@ const ResultadoDetalhe = () => {
     };
   };
 
+  type LaudoPdfDocument = {
+    getNumberOfPages?: () => number;
+    internal?: { getNumberOfPages?: () => number };
+    deletePage?: (pageNumber: number) => void;
+  };
+
+  const removeHtml2PdfTrailingBlankPages = (pdf: LaudoPdfDocument, container: HTMLElement) => {
+    const expectedPages = Math.max(1, container.querySelectorAll(".laudo-a4-page").length || 1);
+    const getTotalPages = () => {
+      if (typeof pdf?.getNumberOfPages === "function") return pdf.getNumberOfPages();
+      if (typeof pdf?.internal?.getNumberOfPages === "function") return pdf.internal.getNumberOfPages();
+      return expectedPages;
+    };
+
+    let totalPages = getTotalPages();
+    while (totalPages > expectedPages && typeof pdf?.deletePage === "function") {
+      pdf.deletePage(totalPages);
+      totalPages = getTotalPages();
+    }
+  };
+
   /**
    * Gera o PDF do laudo e exibe via <iframe> em uma nova aba (mesmo modelo
    * do sistema Laravel de referência: clicou em imprimir → aba abre com o
@@ -1043,7 +1064,7 @@ const ResultadoDetalhe = () => {
         await waitForLaudoPdfReady(container);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const html2pdf = (await import("html2pdf.js")).default as any;
-        const blob: Blob = await html2pdf()
+        const worker = html2pdf()
           .set({
             margin: 0,
             filename,
@@ -1053,7 +1074,9 @@ const ResultadoDetalhe = () => {
             pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
           })
           .from(container)
-          .outputPdf("blob");
+          .toPdf();
+        await worker.get("pdf").then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container));
+        const blob: Blob = await worker.outputPdf("blob");
 
         const url = URL.createObjectURL(blob);
         if (newTab && !newTab.closed) {
@@ -1095,7 +1118,7 @@ const ResultadoDetalhe = () => {
     return new Promise<void>((resolve, reject) => {
       waitForLaudoPdfReady(container)
         .then(() => {
-          return html2pdf()
+          const worker = html2pdf()
             .set({
               margin: 0,
               filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
@@ -1105,7 +1128,11 @@ const ResultadoDetalhe = () => {
               pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
             })
             .from(container)
-            .save();
+            .toPdf();
+          return worker
+            .get("pdf")
+            .then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container))
+            .then(() => worker.save());
         })
         .then(() => { document.body.removeChild(container); resolve(); })
         .catch((err: unknown) => { document.body.removeChild(container); reject(err); });
