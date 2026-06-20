@@ -19,3 +19,16 @@ export function sanitizeHtml(input: string | null | undefined): string {
   if (!input) return "";
   return DOMPurify.sanitize(String(input), sharedConfig) as unknown as string;
 }
+
+/** Sanitiza HTML de impressão preservando o <style> gerado pelo sistema.
+ *  Uso restrito a HTML montado internamente para PDF, onde o CSS de página
+ *  define A4, margens e rodapé. */
+export function sanitizeHtmlForPrint(input: string | null | undefined): string {
+  if (!input) return "";
+  const raw = String(input);
+  const firstStyleMatch = raw.match(/<style\b[^>]*>[\s\S]*?<\/style>/i);
+  const systemStyle = firstStyleMatch?.[0] ?? "";
+  const withoutStyleTags = raw.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+  const safeBody = DOMPurify.sanitize(withoutStyleTags, sharedConfig) as unknown as string;
+  return `${systemStyle}${safeBody}`;
+}
