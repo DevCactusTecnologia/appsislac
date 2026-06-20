@@ -113,7 +113,8 @@ const SUPPORTED_TAGS = new Set([
 /* Componente principal                                                        */
 /* -------------------------------------------------------------------------- */
 
-const RefText: React.FC<{ ref: ResolvedRef }> = ({ ref }) => {
+const RefText: React.FC<{ ref?: ResolvedRef | null }> = ({ ref }) => {
+  if (!ref) return <span className="text-muted-foreground italic">—</span>;
   if (ref.refMin || ref.refMax) {
     if (ref.refMin && ref.refMax) {
       return <span className="text-foreground">{ref.refMin} - {ref.refMax}</span>;
@@ -126,7 +127,8 @@ const RefText: React.FC<{ ref: ResolvedRef }> = ({ ref }) => {
   return <span className="text-muted-foreground italic">—</span>;
 };
 
-const FlagSymbol: React.FC<{ ref: ResolvedRef; valor: string }> = ({ ref, valor }) => {
+const FlagSymbol: React.FC<{ ref?: ResolvedRef | null; valor: string }> = ({ ref, valor }) => {
+  if (!ref) return null;
   const v = parseFloat((valor || "").replace(",", "."));
   const lo = parseFloat((ref.refMin || "").replace(",", "."));
   const hi = parseFloat((ref.refMax || "").replace(",", "."));
