@@ -2098,13 +2098,23 @@ const ResultadoDetalhe = () => {
                   return;
                 }
                 if (selectedExame) {
+                  // Snapshot dos valores ANTES da retificação — base para o
+                  // diff exibido na auditoria e para bloquear save sem alteração.
+                  const snap = selectedExame.parametros.map((p) => ({
+                    chave: p.chave || p.nome,
+                    rotulo: p.rotulo || p.nome,
+                    valor: (p.valor ?? "").trim(),
+                  }));
+                  setValoresAntesRetificacao((prev) => ({ ...prev, [selectedExameId]: snap }));
+
                   const dbId = dbIdMap[selectedExameId];
                   if (dbId) {
-                    // Volta exame para "em_analise" no banco (libera para edição) e limpa resultados.
-                    // A justificativa precisa ir junto na mesma transação/RPC da mutação.
+                    // Volta exame para "em_analise" no banco (libera para edição).
+                    // Mantemos os resultados anteriores carregados para que o
+                    // analista veja os valores atuais e possa editá-los; o
+                    // diff é calculado no save contra o snapshot acima.
                     const res = await updateAtendimentoExame(dbId, {
                       status: "em_analise",
-                      resultados: {},
                       data_liberacao: null,
                       retificado: true,
                     }, justificativa);
@@ -2117,7 +2127,7 @@ const ResultadoDetalhe = () => {
                   updatePacienteExames((exames) =>
                     exames.map((e) =>
                       e.id === selectedExameId
-                        ? { ...e, status: "Em retificação" as ExameStatus, parametros: e.parametros.map((p) => ({ ...p, valor: "" })) }
+                        ? { ...e, status: "Em retificação" as ExameStatus }
                         : e
                     )
                   );
