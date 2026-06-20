@@ -2110,7 +2110,14 @@ const ResultadoDetalhe = () => {
             ) : (
               <div className="flex-1 flex flex-col p-5 sm:p-6 overflow-y-auto">
                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm bg-card rounded-xl shadow-sm min-h-[200px]">
-                  Selecione um exame na lista lateral.
+                  {isHydrating ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                      <span className="text-xs">Carregando exames…</span>
+                    </div>
+                  ) : (
+                    "Selecione um exame na lista lateral."
+                  )}
                 </div>
               </div>
             )}
