@@ -1722,7 +1722,7 @@ const ResultadoDetalhe = () => {
 
                     return (
                   <div className="overflow-x-auto">
-                    <table className="w-full table-fixed border-separate border-spacing-y-2">
+                    <table className="w-full table-fixed border-separate border-spacing-y-1">
                       <colgroup>
                         <col className="w-[22%]" />
                         <col className={hasAnyAbs ? "w-[20%]" : "w-[40%]"} />
