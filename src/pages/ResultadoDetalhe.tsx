@@ -946,7 +946,7 @@ const ResultadoDetalhe = () => {
     container.style.background = "#ffffff";
     container.style.color = "#000000";
     container.style.pointerEvents = "none";
-    container.style.zIndex = "-2147483647";
+    container.style.zIndex = "2147483647";
     document.body.appendChild(container);
     return container;
   };
