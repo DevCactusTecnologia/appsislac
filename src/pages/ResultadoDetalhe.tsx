@@ -190,10 +190,13 @@ const ResultadoDetalhe = () => {
     // Caminho novo: hidrata o atendimento por protocolo direto do banco.
     const useLegacy = isFeatureEnabled("USE_LEGACY_STORE");
     const flagOn = isFeatureEnabled("paginated_atendimentos");
-    const [rows, atFromDb] = await Promise.all([
-      getAtendimentoExamesDB(id),
-      !useLegacy && flagOn ? fetchAtendimentoByProtocolo(id) : Promise.resolve(null),
-    ]);
+    // IMPORTANTE: fetchAtendimentoByProtocolo precisa rodar ANTES de
+    // getAtendimentoExamesDB para popular `cache.idByProtocolo`.
+    // Caso contrário, navegação direta (URL) retorna [] e a tela fica vazia.
+    const atFromDb = !useLegacy
+      ? await fetchAtendimentoByProtocolo(id)
+      : (flagOn ? await fetchAtendimentoByProtocolo(id) : null);
+    const rows = await getAtendimentoExamesDB(id);
     setDbRows(rows);
     // Inclui INTERNOS + TERCEIRIZADOS na lista lateral. Os terceirizados
     // são renderizados em modo somente-leitura (painel de apoio) ao serem
