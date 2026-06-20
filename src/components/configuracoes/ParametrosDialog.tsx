@@ -80,6 +80,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setExibirAnterior(false); setExibirMapa(false); setObrigatorio(false);
     setValorReferencia(""); setOpcoesSelect([]); setNovaOpcao("");
     setCasasDecimais(2);
+    setSeparadorDecimal(".");
+    setQtdDigitos(0);
     setCriticoMin(""); setCriticoMax("");
     setTipoSelecionado("Texto");
   };
