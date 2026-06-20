@@ -612,7 +612,10 @@ const NovoAtendimento = () => {
       }
       const [yyyy, mm, dd] = d.split("-");
       const [hh, mi] = t.split(":");
-      return `${dd}/${mm}/${yyyy} ${hh}:${mi}:00`;
+      // datetime-local não traz segundos — usa os segundos do relógio real para
+      // garantir timestamp único de salvamento (evita "10:33:00" fixo).
+      const ss = String(new Date().getSeconds()).padStart(2, "0");
+      return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
     };
     const dataStr = buildDataStr();
     let novoProtocolo: string | null = null;
