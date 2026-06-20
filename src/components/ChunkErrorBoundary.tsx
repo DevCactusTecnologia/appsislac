@@ -31,14 +31,17 @@ export default class ChunkErrorBoundary extends Component<Props, State> {
     if (!isChunk) return;
 
     try {
-      const flag = "sislac-chunk-boundary-reload";
-      if (sessionStorage.getItem(flag)) return;
-      sessionStorage.setItem(flag, "1");
+      const flag = "sislac-chunk-boundary-reload-at";
+      const COOLDOWN_MS = 30_000;
+      const last = Number(sessionStorage.getItem(flag) ?? "0");
+      if (last && Date.now() - last < COOLDOWN_MS) return;
+      sessionStorage.setItem(flag, String(Date.now()));
       window.location.reload();
     } catch {
       window.location.reload();
     }
   }
+
 
   private isChunkError(): boolean {
     const msg = this.state.error?.message ?? "";
