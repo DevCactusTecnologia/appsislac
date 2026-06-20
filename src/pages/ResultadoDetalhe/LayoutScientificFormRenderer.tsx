@@ -117,25 +117,27 @@ const SUPPORTED_TAGS = new Set([
 /* Componente principal                                                        */
 /* -------------------------------------------------------------------------- */
 
-const RefText: React.FC<{ ref?: ResolvedRef | null }> = ({ ref }) => {
-  if (!ref) return <span className="text-muted-foreground italic">—</span>;
-  if (ref.refMin || ref.refMax) {
-    if (ref.refMin && ref.refMax) {
-      return <span className="text-foreground">{ref.refMin} - {ref.refMax}</span>;
+// IMPORTANTE: o prop NÃO pode se chamar `ref` — em React isso é reservado
+// para forwardRef e não é entregue como prop comum. Use `resolved`.
+const RefText: React.FC<{ resolved?: ResolvedRef | null }> = ({ resolved }) => {
+  if (!resolved) return <span className="text-muted-foreground italic">—</span>;
+  if (resolved.refMin || resolved.refMax) {
+    if (resolved.refMin && resolved.refMax) {
+      return <span className="text-foreground">{resolved.refMin} - {resolved.refMax}</span>;
     }
-    return <span className="text-foreground">{ref.refMin || ref.refMax}</span>;
+    return <span className="text-foreground">{resolved.refMin || resolved.refMax}</span>;
   }
-  if (ref.descricao) {
-    return <span className="text-foreground whitespace-pre-line">{ref.descricao}</span>;
+  if (resolved.descricao) {
+    return <span className="text-foreground whitespace-pre-line">{resolved.descricao}</span>;
   }
   return <span className="text-muted-foreground italic">—</span>;
 };
 
-const FlagSymbol: React.FC<{ ref?: ResolvedRef | null; valor: string }> = ({ ref, valor }) => {
-  if (!ref) return null;
+const FlagSymbol: React.FC<{ resolved?: ResolvedRef | null; valor: string }> = ({ resolved, valor }) => {
+  if (!resolved) return null;
   const v = parseFloat((valor || "").replace(",", "."));
-  const lo = parseFloat((ref.refMin || "").replace(",", "."));
-  const hi = parseFloat((ref.refMax || "").replace(",", "."));
+  const lo = parseFloat((resolved.refMin || "").replace(",", "."));
+  const hi = parseFloat((resolved.refMax || "").replace(",", "."));
   if (!isFinite(v)) return null;
   if (isFinite(lo) && v < lo) return <span className="text-status-danger font-bold ml-1">↓</span>;
   if (isFinite(hi) && v > hi) return <span className="text-status-danger font-bold ml-1">↑</span>;
