@@ -258,7 +258,7 @@ export async function renderExameComLayout(
   // data/hora exata em que a amostra foi coletada (com fallback para o cadastro
   // do atendimento quando o carimbo de coleta não existir).
   const dataColetaHtml = dataColetaLabel
-    ? `<span style="font-size:9pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
+    ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
     : "";
   const tituloHtml = `<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;padding-bottom:0;margin-bottom:2px;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;">${exameNome}</div>${dataColetaHtml}</div>`;
 

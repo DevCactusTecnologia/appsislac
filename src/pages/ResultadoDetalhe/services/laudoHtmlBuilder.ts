@@ -337,7 +337,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
             dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
           }
           const dataColetaHtml = dataColetaLabel
-            ? `<span style="font-size:9pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
+            ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
             : "";
 
           // Se houver layout cadastrado para este exame, usa-o.
