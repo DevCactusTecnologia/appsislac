@@ -107,6 +107,10 @@ const ResultadoDetalhe = () => {
   const canAnalisar = hasPermission("analisar_amostra") || hasPermission("editar_atendimento");
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
+  // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
+  // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
+  // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
+  const [isHydrating, setIsHydrating] = useState(true);
   const [dbRows, setDbRows] = useState<AtendimentoExameRow[]>([]);
   const [dbIdMap, setDbIdMap] = useState<DbIdMap>({});
   const [layoutHtmlByExameId, setLayoutHtmlByExameId] = useState<Record<string, string>>({});
@@ -318,6 +322,7 @@ const ResultadoDetalhe = () => {
     // Reconstrói o log a partir do estado vindo do banco, preservando hora/minuto/segundo.
     const log = buildAuditLogFromDb(rows, exames, idMap);
     setAuditLog(log);
+    setIsHydrating(false);
   }, [id]);
 
   useEffect(() => {
@@ -940,6 +945,10 @@ const ResultadoDetalhe = () => {
     container.style.top = "0";
     container.style.width = `${210 - margins.left - margins.right}mm`;
     container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
+    // Garante que a página A4 tenha altura mínima útil (297mm − margens),
+    // permitindo que o flexbox interno (.laudo-a4-page) empurre o rodapé
+    // para a base da página via `margin-top:auto`.
+    container.style.minHeight = `${297 - margins.top - margins.bottom}mm`;
     container.style.margin = "0";
     container.style.padding = "0";
     container.style.boxSizing = "border-box";
@@ -978,7 +987,10 @@ const ResultadoDetalhe = () => {
     const width = Math.max(container.scrollWidth, container.offsetWidth, 1);
     const height = Math.max(container.scrollHeight, container.offsetHeight, 1);
     return {
-      scale: 2,
+      // Scale 1.5 mantém legibilidade do laudo e reduz drasticamente o tempo
+      // de rasterização do html2canvas (em ~55% vs scale 2). Para laudos
+      // com texto puro, a diferença visual é imperceptível.
+      scale: 1.5,
       useCORS: true,
       backgroundColor: "#ffffff",
       scrollX: 0,
@@ -988,80 +1000,83 @@ const ResultadoDetalhe = () => {
       height,
       letterRendering: true,
       logging: false,
+      // Pula leituras computedStyle de elementos invisíveis — micro-otimização
+      // que ajuda em laudos com muitos blocos.
+      removeContainer: true,
     };
   };
 
   /**
-   * Impressão NATIVA via window.print() — espelha a abordagem do sistema
-   * Laravel de referência (.../appointments/{id}/pdf): em vez de rasterizar
-   * o DOM com html2canvas/jsPDF (que leva ~1 min), apenas escrevemos o HTML
-   * do laudo numa nova aba e disparamos window.print(). O navegador renderiza
-   * de forma vetorial e instantânea (frações de segundo), e o usuário pode
-   * salvar como PDF pelo próprio diálogo nativo. Compatível com Chrome,
-   * Edge, Firefox e Safari.
+   * Gera o PDF do laudo e exibe via <iframe> em uma nova aba (mesmo modelo
+   * do sistema Laravel de referência: clicou em imprimir → aba abre com o
+   * PDF pronto). A aba já é aberta antes da geração para preservar o gesto
+   * do usuário (evita popup-block).
    */
   const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
-    const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
+    const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
 
-    // Abre a aba imediatamente (mantém o gesto do usuário evitando popup-block).
     const newTab = window.open("", "_blank");
-    if (!newTab) {
-      toast.error("Bloqueio de pop-up. Permita pop-ups para gerar o laudo.");
-      return;
-    }
-
-    try {
-      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const laudoHtml = sanitizeHtml(buildLaudoHtml(printable, customByExame, solicitanteLabel, margins));
-
-      const doc = `<!DOCTYPE html><html lang="pt-BR"><head>
-<meta charset="utf-8" />
-<title>${title}</title>
-<style>
-  html, body { margin: 0; padding: 0; background: #ffffff; color: #000; }
-  body { font-family: 'Courier New', Courier, monospace; }
-  @media print {
-    body { margin: 0 !important; }
-  }
-</style>
-</head><body>${laudoHtml}
-<script>
-  (function(){
-    function ready(){ return (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve(); }
-    function imgs(){
-      var list = Array.prototype.slice.call(document.images || []);
-      return Promise.all(list.map(function(img){
-        if (img.complete) return Promise.resolve();
-        return new Promise(function(res){
-          img.addEventListener('load', res, { once: true });
-          img.addEventListener('error', res, { once: true });
-          setTimeout(res, 3000);
-        });
-      }));
-    }
-    Promise.all([ready(), imgs()]).then(function(){
-      setTimeout(function(){
-        try { window.focus(); window.print(); } catch(e) {}
-      }, 50);
-    });
-    // Em alguns navegadores, o evento afterprint permite fechar a aba;
-    // mantemos a aba aberta caso o usuário queira reimprimir.
-  })();
-</script>
-</body></html>`;
-
-      newTab.document.open();
-      newTab.document.write(doc);
-      newTab.document.close();
-    } catch (err) {
+    const writeStatus = (msg: string) => {
+      if (!newTab || newTab.closed) return;
       try {
         newTab.document.open();
         newTab.document.write(
-          `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px;color:#444;">Falha ao gerar o laudo. Tente novamente.</body></html>`,
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
+            `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
+            msg +
+            `</body></html>`,
         );
         newTab.document.close();
       } catch { /* ignore */ }
+    };
+    writeStatus("Gerando PDF…");
+
+    try {
+      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
+      const container = createLaudoPdfContainer(
+        buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+        margins,
+      );
+
+      try {
+        await waitForLaudoPdfReady(container);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const html2pdf = (await import("html2pdf.js")).default as any;
+        const blob: Blob = await html2pdf()
+          .set({
+            margin: [margins.top, margins.right, margins.bottom, margins.left],
+            filename,
+            image: { type: "jpeg", quality: 0.95 },
+            html2canvas: getLaudoCanvasOptions(container),
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape"] },
+          })
+          .from(container)
+          .outputPdf("blob");
+
+        const url = URL.createObjectURL(blob);
+        if (newTab && !newTab.closed) {
+          try {
+            newTab.document.open();
+            newTab.document.write(
+              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>` +
+                `<style>html,body{margin:0;padding:0;height:100%;background:#525659;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
+                `</head><body><iframe src="${url}" title="${filename}"></iframe></body></html>`,
+            );
+            newTab.document.close();
+          } catch {
+            newTab.location.href = url;
+          }
+        } else {
+          window.open(url, "_blank");
+        }
+        setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+      } finally {
+        document.body.removeChild(container);
+      }
+    } catch (err) {
+      writeStatus("Falha ao gerar o PDF. Tente novamente.");
       throw err;
     }
   };
@@ -1560,7 +1575,15 @@ const ResultadoDetalhe = () => {
               <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
 
                 {filteredExames.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground py-8">Nenhum exame nesse filtro.</p>
+                  isHydrating ? (
+                    <div className="space-y-1.5 py-2">
+                      {[0,1,2,3,4].map((i) => (
+                        <div key={i} className="h-10 rounded-lg bg-muted/40 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-xs text-muted-foreground py-8">Nenhum exame nesse filtro.</p>
+                  )
                 )}
                 {filteredExames.map((exame) => {
                   const liberado = isExameLiberado(exame.status);
@@ -2095,7 +2118,14 @@ const ResultadoDetalhe = () => {
             ) : (
               <div className="flex-1 flex flex-col p-5 sm:p-6 overflow-y-auto">
                 <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm bg-card rounded-xl shadow-sm min-h-[200px]">
-                  Selecione um exame na lista lateral.
+                  {isHydrating ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-6 w-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                      <span className="text-xs">Carregando exames…</span>
+                    </div>
+                  ) : (
+                    "Selecione um exame na lista lateral."
+                  )}
                 </div>
               </div>
             )}
