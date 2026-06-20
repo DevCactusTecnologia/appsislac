@@ -152,6 +152,18 @@ const ResultadoDetalhe = () => {
     return () => { cancelled = true; };
   }, [authUser?.id]);
   const [retificados, setRetificados] = useState<Set<number>>(new Set());
+  // Re-render quando o store de valores de referência hidratar (assíncrono).
+  // Sem isso, o primeiro render acontece com VR vazio e nunca recalcula a
+  // resolução por sexo/idade — mesmo após o store popular.
+  const [vrTick, setVrTick] = useState(0);
+  useEffect(() => {
+    if (getValoresReferencia().length === 0) {
+      void _initValoresReferenciaStore();
+    } else {
+      setVrTick((t) => t + 1);
+    }
+    return subscribeValoresReferencia(() => setVrTick((t) => t + 1));
+  }, []);
   const [statusAnterior, setStatusAnterior] = useState<Record<number, ExameStatus>>({});
   const [auditLog, setAuditLog] = useState<Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]>>({});
   const [statusFilter, setStatusFilter] = useState<"todos" | "pendentes" | "salvos" | "liberados" | "cancelados">("todos");
