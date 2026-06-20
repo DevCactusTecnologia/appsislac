@@ -461,19 +461,21 @@ const CKEditorComponent = ({
             true,
           );
 
+          // Marca panels já reposicionados para não entrar em loop com o
+          // próprio CKEditor (que reposiciona via transform a cada update).
+          const isRepositioning = new WeakSet<HTMLElement>();
+
           const repositionBalloon = (panel: HTMLElement) => {
             if (!lastClick) return;
-            // Considera o clique recente (até 4s) para evitar reposicionar
-            // balões abertos por outras interações.
+            // Considera o clique recente (até 4s).
             if (Date.now() - lastClick.t > 4000) return;
-            // Apenas balões que contenham a barra de tabela.
-            const hasTableToolbar = panel.querySelector(
-              '.ck-toolbar [data-cke-tooltip-text*="tabela" i],' +
-              '.ck-toolbar [data-cke-tooltip-text*="table" i],' +
-              '.ck-toolbar .ck-button[class*="table" i]',
-            );
-            if (!hasTableToolbar) return;
+            // Precisa conter uma toolbar (widget toolbar de tabela/imagem).
+            if (!panel.querySelector(".ck-toolbar")) return;
+            // Evita reentrada quando nós mesmos alteramos o style.
+            if (isRepositioning.has(panel)) return;
+
             const rect = panel.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
             const margin = 8;
             let left = lastClick.x + 12;
             let top = lastClick.y + 12;
@@ -483,9 +485,21 @@ const CKEditorComponent = ({
             if (top + rect.height + margin > window.innerHeight) {
               top = Math.max(margin, lastClick.y - rect.height - 12);
             }
-            panel.style.left = `${left}px`;
-            panel.style.top = `${top}px`;
-            panel.style.transform = "none";
+            // Se já está na posição-alvo (tolerância 1px), não escreve de novo.
+            const curLeft = parseFloat(panel.style.left || "0");
+            const curTop = parseFloat(panel.style.top || "0");
+            if (Math.abs(curLeft - left) < 1 && Math.abs(curTop - top) < 1 && panel.style.transform === "none") {
+              return;
+            }
+            isRepositioning.add(panel);
+            panel.style.setProperty("left", `${left}px`, "important");
+            panel.style.setProperty("top", `${top}px`, "important");
+            panel.style.setProperty("transform", "none", "important");
+            // Libera após o frame para permitir novas reposições legítimas
+            // (ex.: clique em outra célula).
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => isRepositioning.delete(panel));
+            });
           };
 
           const balloonObserver = new MutationObserver((mutations) => {
@@ -496,11 +510,9 @@ const CKEditorComponent = ({
                   ? [n]
                   : Array.from(n.querySelectorAll?.(".ck-balloon-panel") ?? []);
                 panels.forEach((p) => {
-                  // Aguarda render para medir e reposicionar.
                   requestAnimationFrame(() => repositionBalloon(p as HTMLElement));
                 });
               });
-              // Reage a mudanças de visibilidade/posição de panels existentes.
               if (m.target instanceof HTMLElement && m.target.classList?.contains("ck-balloon-panel")) {
                 requestAnimationFrame(() => repositionBalloon(m.target as HTMLElement));
               }
