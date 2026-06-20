@@ -1375,7 +1375,7 @@ const ResultadoDetalhe = () => {
                         </Avatar>
                         {modoConsulta ? (
                           <span className="text-xs text-foreground">
-                            <span className="text-muted-foreground">Analisado por:</span>{" "}
+                            <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
                             <span className="font-medium">{analistaAtual.nome}</span>
                           </span>
                         ) : (
