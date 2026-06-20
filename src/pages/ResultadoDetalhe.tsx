@@ -1644,24 +1644,24 @@ const ResultadoDetalhe = () => {
                           ? (above ? "bg-status-danger" : "bg-orange-500")
                           : "bg-transparent";
                       return (
-                        <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
-                          <span className="shrink-0 inline-flex items-center justify-center h-5 w-5">
-                            {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                            {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                            {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
-                            {inRange === null && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
+                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
+                          <span className="shrink-0 inline-flex items-center justify-center h-4 w-4">
+                            {inRange === true && <CheckCircle2 className="h-3.5 w-3.5 text-status-success" />}
+                            {below && <ArrowDown className="h-3.5 w-3.5 text-orange-500" />}
+                            {above && <ArrowUp className="h-3.5 w-3.5 text-status-danger" />}
+                            {inRange === null && <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />}
                           </span>
                           <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
                             {isBlocked && !retificando ? (
                               displayValor ? (
                                 <>
-                                  <span className={`text-[15px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
+                                  <span className={`text-[13px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
                                     {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
                                   </span>
-                                  <span className="text-sm text-muted-foreground">{param.unidade}</span>
+                                  <span className="text-xs text-muted-foreground">{param.unidade}</span>
                                 </>
                               ) : (
-                                <span className="text-sm text-muted-foreground italic">—</span>
+                                <span className="text-xs text-muted-foreground italic">—</span>
                               )
                             ) : (
                               <>
@@ -1671,13 +1671,13 @@ const ResultadoDetalhe = () => {
                                   computedValue={computedFormula}
                                   onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                   disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-8 w-full text-[15px] font-bold tabular-nums focus:!ring-0"
+                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0"
                                 />
-                                <span className="text-sm text-muted-foreground shrink-0">{param.unidade}</span>
+                                <span className="text-xs text-muted-foreground shrink-0">{param.unidade}</span>
                               </>
                             )}
                           </div>
-                          <span className={`absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full ${barColorClass}`} />
+                          <span className={`absolute right-1 top-1 bottom-1 w-1 rounded-full ${barColorClass}`} />
                         </div>
                       );
                     };
@@ -1691,30 +1691,30 @@ const ResultadoDetalhe = () => {
                       }
                       if (!hasRef) {
                         return (
-                          <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
+                          <div className="flex items-center h-9 px-3 rounded-lg bg-muted/30 text-xs text-muted-foreground italic">
                             Sem referência
                           </div>
                         );
                       }
                       return (
                         <>
-                          <div className="relative flex items-center gap-2 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30">
-                            <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                          <div className="relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30">
+                            <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
                               {(ref.refMin || ref.refMax) ? (
                                 <>
-                                  <span className="text-[15px] font-medium text-foreground tabular-nums truncate">
+                                  <span className="text-[13px] font-medium text-foreground tabular-nums truncate">
                                     {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
                                   </span>
-                                  <span className="text-sm text-muted-foreground shrink-0">{ref.refUnidade}</span>
+                                  <span className="text-xs text-muted-foreground shrink-0">{ref.refUnidade}</span>
                                 </>
                               ) : (
-                                <span className="text-sm text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
+                                <span className="text-xs text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
                               )}
                             </div>
-                            <span className="absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full bg-foreground/85" />
+                            <span className="absolute right-1 top-1 bottom-1 w-1 rounded-full bg-foreground/85" />
                           </div>
                           {(ref.refMin || ref.refMax) && ref.descricao && (
-                            <p className="text-[10px] text-muted-foreground italic mt-1 pl-4 whitespace-pre-line">{ref.descricao}</p>
+                            <p className="text-[10px] text-muted-foreground italic mt-0.5 pl-3 whitespace-pre-line">{ref.descricao}</p>
                           )}
                         </>
                       );
@@ -1722,7 +1722,7 @@ const ResultadoDetalhe = () => {
 
                     return (
                   <div className="overflow-x-auto">
-                    <table className="w-full table-fixed border-separate border-spacing-y-2">
+                    <table className="w-full table-fixed border-separate border-spacing-y-1">
                       <colgroup>
                         <col className="w-[22%]" />
                         <col className={hasAnyAbs ? "w-[20%]" : "w-[40%]"} />
@@ -1764,62 +1764,62 @@ const ResultadoDetalhe = () => {
                             <Fragment key={rIdx}>
                               {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
                                 <tr>
-                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
                                     {param.headerAntes}
                                   </td>
                                 </tr>
                               )}
                               {isObservation ? (
                                 <tr className="group">
-                                  <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
+                                  <td className="py-0.5 pr-3 text-[13px] font-medium text-foreground align-middle">
                                     {displayName}
                                     {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                                   </td>
-                                  <td colSpan={hasAnyAbs ? 4 : 3} className="py-1 px-2 align-middle">
+                                  <td colSpan={hasAnyAbs ? 4 : 3} className="py-0.5 px-1.5 align-middle">
                                     {renderResultCard(param, idx)}
                                   </td>
                                 </tr>
                               ) : (
                                 <tr className="group">
-                                  <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
+                                  <td className="py-0.5 pr-3 text-[13px] font-medium text-foreground align-middle">
                                     {displayName}
                                     {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                                     {isCriticoParam && (
                                       <span title={nivelCritico === "critico_baixo" ? "Crítico baixo (pânico)" : "Crítico alto (pânico)"}>
-                                        <AlertOctagon className="inline h-3.5 w-3.5 ml-1.5 text-status-danger animate-pulse" />
+                                        <AlertOctagon className="inline h-3 w-3 ml-1 text-status-danger animate-pulse" />
                                       </span>
                                     )}
                                   </td>
                                   {hasAnyAbs && !row.abs && !isAbsName(param.nome) ? (
-                                    <td colSpan={2} className="py-1 px-2 align-middle">
+                                    <td colSpan={2} className="py-0.5 px-1.5 align-middle">
                                       {renderResultCard(param, idx)}
                                     </td>
                                   ) : (
                                     <>
-                                      <td className="py-1 px-2 align-middle">
+                                      <td className="py-0.5 px-1.5 align-middle">
                                         {isAbsName(param.nome) && hasAnyAbs ? (
-                                          <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                          <div className="h-9 rounded-lg bg-muted/20 border border-dashed border-muted-foreground/20" />
                                         ) : (
                                           renderResultCard(param, idx)
                                         )}
                                       </td>
                                       {hasAnyAbs && (
-                                        <td className="py-1 px-2 align-middle">
+                                        <td className="py-0.5 px-1.5 align-middle">
                                           {row.abs ? (
                                             renderResultCard(row.abs, row.absIdx!)
                                           ) : isAbsName(param.nome) ? (
                                             renderResultCard(param, idx)
                                           ) : (
-                                            <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                            <div className="h-9 rounded-lg bg-muted/20 border border-dashed border-muted-foreground/20" />
                                           )}
                                         </td>
                                       )}
                                     </>
                                   )}
                                   <td />
-                                  <td className="py-1 pl-2 align-middle">
+                                  <td className="py-0.5 pl-1.5 align-middle">
                                     {row.abs ? (
-                                      <div className="grid grid-cols-2 gap-2">
+                                      <div className="grid grid-cols-2 gap-1.5">
                                         {renderRefCard(param)}
                                         {renderRefCard(row.abs, param)}
                                       </div>
