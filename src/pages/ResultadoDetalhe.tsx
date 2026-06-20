@@ -502,7 +502,21 @@ const ResultadoDetalhe = () => {
       toast.error("Exame não encontrado no banco.");
       return;
     }
+    // 🔒 Validação de obrigatórios — não salva enquanto algum campo
+    // marcado como obrigatório estiver vazio. Parâmetros do tipo "Formula"
+    // são derivados e ficam fora da exigência.
+    const obrigFaltando = selectedExame.parametros
+      .filter((p) => p.obrigatorio && p.tipo !== "Formula")
+      .filter((p) => !(p.valor && String(p.valor).trim().length > 0))
+      .map((p) => p.rotulo || p.nome);
+    if (obrigFaltando.length > 0) {
+      toast.error("Preencha os campos obrigatórios para salvar o resultado.", {
+        description: obrigFaltando.slice(0, 6).join(", ") + (obrigFaltando.length > 6 ? "…" : ""),
+      });
+      return;
+    }
     const dadosParams = selectedExame.parametros.map((p) => `${p.nome}: ${p.valor || "—"}`).join("\n");
+
     // LayoutScientificRuntime: jsonb canônico indexado por CHAVE do parâmetro.
     // Resultados antigos (indexados por nome) continuam legíveis via dual-read
     // em `readParametroValor`.
