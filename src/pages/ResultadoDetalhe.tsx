@@ -1168,7 +1168,7 @@ const ResultadoDetalhe = () => {
 
                       // Texto livre (observação, etc.) — não tem referência e
                       // precisa de largura ampla para digitação confortável.
-                      const isTextoLivre = !["Select", "Formula", "Número"].includes(param.tipo);
+                      const isTextoLivre = !["Select", "Formula", "Número"].includes(param.tipo ?? "");
                       const temReferencia = !!(ref.refMin || ref.refMax || ref.descricao);
 
                       return (
