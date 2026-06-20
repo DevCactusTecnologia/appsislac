@@ -547,6 +547,23 @@ const ResultadoDetalhe = () => {
       toast.error("Exame não encontrado no banco.");
       return;
     }
+    // 🔒 Bloqueio: contagem diferencial da série branca DEVE totalizar 100%.
+    const contParam = selectedExame.parametros.find(
+      (p) => (p.chave ?? "").toUpperCase() === "CONT",
+    );
+    if (contParam) {
+      const valuesByChave = buildValuesByChave(selectedExame.parametros);
+      const contValor = contParam.tipo === "Formula"
+        ? evaluateFormula(contParam.valorReferencia, valuesByChave, contParam.casasDecimais ?? 0)
+        : contParam.valor;
+      const contN = parseFloat((contValor || "").replace(",", "."));
+      if (!isFinite(contN) || contN !== 100) {
+        toast.error("A soma da contagem diferencial da série branca deve totalizar 100%.", {
+          description: isFinite(contN) ? `Total atual: ${contN}%` : "Contagem incompleta.",
+        });
+        return;
+      }
+    }
     // 🚨 Se houver parâmetros com valores críticos, abre modal de confirmação.
     const criticos = getParametrosCriticosDoExame(selectedExame);
     if (criticos.length > 0 && !criticoConfirmDados) {
@@ -611,13 +628,35 @@ const ResultadoDetalhe = () => {
       return;
     }
 
+    // 🔒 Bloqueio: contagem diferencial (CONT) ≠ 100 invalida liberação em lote.
+    const contInvalidos: typeof liberaveis = [];
     // Separa críticos × seguros usando o MESMO avaliador do fluxo unitário.
     const criticosNoLote: typeof liberaveis = [];
     const seguros: typeof liberaveis = [];
     for (const ex of liberaveis) {
+      const contParam = ex.parametros.find((p) => (p.chave ?? "").toUpperCase() === "CONT");
+      if (contParam) {
+        const vbc = buildValuesByChave(ex.parametros);
+        const cv = contParam.tipo === "Formula"
+          ? evaluateFormula(contParam.valorReferencia, vbc, contParam.casasDecimais ?? 0)
+          : contParam.valor;
+        const cn = parseFloat((cv || "").replace(",", "."));
+        if (!isFinite(cn) || cn !== 100) {
+          contInvalidos.push(ex);
+          continue;
+        }
+      }
       const criticos = getParametrosCriticosDoExame(ex);
       if (criticos.length > 0) criticosNoLote.push(ex);
       else seguros.push(ex);
+    }
+
+    if (contInvalidos.length > 0) {
+      toast.error("A soma da contagem diferencial da série branca deve totalizar 100%.", {
+        description: `${contInvalidos.length} exame(s) com diferencial incompleto/excedido.`,
+      });
+      setSelectedExameId(contInvalidos[0].id);
+      return;
     }
 
     if (criticosNoLote.length > 0) {
