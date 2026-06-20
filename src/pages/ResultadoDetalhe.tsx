@@ -2050,7 +2050,7 @@ const ResultadoDetalhe = () => {
                 </Avatar>
                 {modoConsulta ? (
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analisado por</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analisado e Liberado por</span>
                     <span className="text-sm font-medium text-foreground">{analistaAtual.nome}</span>
                   </div>
                 ) : (
