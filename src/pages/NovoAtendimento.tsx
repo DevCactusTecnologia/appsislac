@@ -596,6 +596,11 @@ const NovoAtendimento = () => {
   const hasChangesStep3 = examesChanged;
 
   const finalizarAtendimento = async (pagamentoEfetuado: boolean) => {
+    // Trava reentrante: bloqueia clicks duplicados / chamadas concorrentes.
+    // Atendimento NUNCA pode ser duplicado.
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     // Converte o input datetime-local (interpretado como horário de Brasília)
     // para o formato BR usado pelo store ("dd/MM/yyyy HH:mm:ss").
     const buildDataStr = (): string => {
