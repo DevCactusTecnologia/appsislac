@@ -246,7 +246,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       title="Parâmetros do exame"
       subtitle={exameNome || "Defina os campos de resultado"}
       headerActions={headerActions}
-      footer={footer}
+      
       maxWidth="7xl"
       allowMaximize={true}
       defaultMaximized={defaultMaximized}
