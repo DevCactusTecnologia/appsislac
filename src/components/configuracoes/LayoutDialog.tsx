@@ -296,7 +296,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[260px] p-2.5" align="end">
+                <PopoverContent className="w-[260px] p-2.5 z-[110]" align="end">
                   <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
                     Margens de impressão (mm)
                   </p>
