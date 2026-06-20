@@ -1099,6 +1099,7 @@ const ResultadoDetalhe = () => {
 
       try {
         await waitForLaudoPdfReady(container);
+        paginateLaudo(container, margins);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
@@ -1108,7 +1109,7 @@ const ResultadoDetalhe = () => {
             image: { type: "jpeg", quality: 0.95 },
             html2canvas: getLaudoCanvasOptions(container),
             jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape"] },
+            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
           })
           .from(container)
           .outputPdf("blob");
