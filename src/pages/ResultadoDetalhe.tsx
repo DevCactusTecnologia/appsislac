@@ -1414,7 +1414,7 @@ const ResultadoDetalhe = () => {
           {/* Main content */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/30">
             {/* Patient header — componente compartilhado, sem sobreposição */}
-            <div className="px-4 sm:px-6 py-3 border-b bg-card space-y-2">
+            <div className="px-4 sm:px-5 py-3 border-b border-border/60 bg-card space-y-2">
               <div className="flex justify-end">
                 <MaisAcoesMenu
                   modoConsulta={modoConsulta}
