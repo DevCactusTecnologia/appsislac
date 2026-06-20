@@ -233,12 +233,14 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
           padding-right: 0 !important;
-          line-height: 1.5 !important;
-          font-size: 8pt !important;
+          line-height: 1.4 !important;
+          font-size: 6pt !important;
         }
+        #laudo-content .assinatura-liberado-linha *,
         #laudo-content .assinatura-liberado-prefixo,
         #laudo-content .assinatura-liberado-nome {
-          font-size: 8pt !important;
+          font-size: 6pt !important;
+          line-height: 1.4 !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
