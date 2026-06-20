@@ -1158,7 +1158,7 @@ const ResultadoDetalhe = () => {
           paginateLaudo(container, margins);
           return html2pdf()
             .set({
-              margin: [margins.top, margins.right, margins.bottom, margins.left],
+              margin: 0,
               filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
               image: { type: "jpeg", quality: 0.98 },
               html2canvas: getLaudoCanvasOptions(container),
