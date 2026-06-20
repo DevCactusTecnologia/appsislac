@@ -318,8 +318,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
 
       <div class="laudo-a4-page">
         <div class="laudo-a4-cabecalho">
-          ${cabecalhoPadrao
-            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
+          ${cabecalhoPadraoTrimmed
+            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadraoTrimmed}</div>`
             : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
                 <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
                 <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
