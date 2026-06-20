@@ -322,6 +322,7 @@ const ResultadoDetalhe = () => {
     // Reconstrói o log a partir do estado vindo do banco, preservando hora/minuto/segundo.
     const log = buildAuditLogFromDb(rows, exames, idMap);
     setAuditLog(log);
+    setIsHydrating(false);
   }, [id]);
 
   useEffect(() => {
