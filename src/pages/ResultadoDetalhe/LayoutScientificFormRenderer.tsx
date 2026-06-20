@@ -172,6 +172,34 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
     return doc.body;
   }, [layoutHtml]);
 
+  /* ----- Contador da SÉRIE BRANCA (chave CONT) -----
+     Regra clínica: a soma dos diferenciais leucocitários deve ser exatamente 100.
+       • = 100 → verde (ok)
+       • ≠ 100 → vermelho (ainda incompleto OU excedeu)
+       • > 100 → dispara alerta (toast), mas NUNCA bloqueia digitação/salvamento. */
+  const contIdx = paramIndexByKey.get("CONT");
+  const contParam = contIdx != null ? parametros[contIdx] : undefined;
+  const contValue = contParam
+    ? (contParam.tipo === "Formula" ? evaluateFormulaFor(contParam) : contParam.valor)
+    : "";
+  const contNumeric = parseFloat((contValue || "").replace(",", "."));
+  const contStatus: "success" | "danger" | undefined = contParam
+    ? (isFinite(contNumeric) && contNumeric === 100 ? "success" : "danger")
+    : undefined;
+  const lastOverRef = useRef(false);
+  useEffect(() => {
+    const over = isFinite(contNumeric) && contNumeric > 100;
+    if (over && !lastOverRef.current) {
+      toast({
+        variant: "destructive",
+        title: "Soma da série branca excede 100",
+        description: `Total atual: ${contNumeric}. O ideal é exatamente 100. Ajuste os diferenciais — você pode continuar a digitação e salvar.`,
+      });
+    }
+    lastOverRef.current = over;
+  }, [contNumeric]);
+
+
   /* ----- Conversão recursiva DOM → React ----- */
 
   const renderTextWithPlaceholders = (text: string, keyPrefix: string): React.ReactNode[] => {
