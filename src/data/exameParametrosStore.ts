@@ -79,6 +79,8 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.casasDecimais !== undefined && { casas_decimais: p.casasDecimais }),
   ...(p.criticoMin !== undefined && { critico_min: p.criticoMin }),
   ...(p.criticoMax !== undefined && { critico_max: p.criticoMax }),
+  ...(p.separadorDecimal !== undefined && { separador_decimal: p.separadorDecimal }),
+  ...(p.qtdDigitos !== undefined && { qtd_digitos: p.qtdDigitos || null }),
 });
 
 /**
