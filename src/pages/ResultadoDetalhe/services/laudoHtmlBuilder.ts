@@ -105,6 +105,9 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   });
   return `
       <style>
+        /* Courier Prime: outline font web crisp para o corpo dos resultados,
+           evita o aspecto "embaçado" da bitmap "Courier" em alguns sistemas. */
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
         /* Cada .laudo-a4-page representa UMA folha A4 completa (210x297mm)
            com as margens aplicadas como padding interno. Isso evita que o
            html2pdf adicione margens externas em cima do nosso cálculo de
@@ -112,6 +115,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            em branco. O html2pdf é configurado com margin:0 porque a margem
            real já está no padding interno da folha. */
         @page { size: A4; margin: 0; }
+
         .laudo-a4-page {
           width: 210mm !important;
           height: 297mm !important;
