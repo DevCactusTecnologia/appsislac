@@ -233,12 +233,14 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
           padding-right: 0 !important;
-          line-height: 1.5 !important;
-          font-size: 8pt !important;
+          line-height: 1.4 !important;
+          font-size: 6pt !important;
         }
+        #laudo-content .assinatura-liberado-linha *,
         #laudo-content .assinatura-liberado-prefixo,
         #laudo-content .assinatura-liberado-nome {
-          font-size: 8pt !important;
+          font-size: 6pt !important;
+          line-height: 1.4 !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
@@ -375,7 +377,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           `;
         }).join("")}
         <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
-          <p class="assinatura-liberado-linha" style="font-size:8pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.5;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
+          <p class="assinatura-liberado-linha" style="font-size:6pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.4;"><span class="assinatura-liberado-prefixo" style="font-size:6pt;">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome" style="font-size:6pt;">${(analistaAtual.nome || "").toUpperCase()}</span></p>
           <div style="height:28px;"></div>
           <div style="text-align:center;color:#000;line-height:1.6;">
             ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
