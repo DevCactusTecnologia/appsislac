@@ -985,11 +985,13 @@ const ResultadoDetalhe = () => {
   const getLaudoCanvasOptions = (container: HTMLElement) => {
     const width = Math.max(container.scrollWidth, container.offsetWidth, 1);
     const height = Math.max(container.scrollHeight, container.offsetHeight, 1);
+    // Scale 3 dobra a resolução de rasterização do html2canvas, tornando
+    // textos e bordas significativamente mais nítidos no PDF final
+    // (alinha com a qualidade do laudo de referência Laravel).
+    const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+    const scale = Math.max(3, dpr * 2);
     return {
-      // Scale 1.5 mantém legibilidade do laudo e reduz drasticamente o tempo
-      // de rasterização do html2canvas (em ~55% vs scale 2). Para laudos
-      // com texto puro, a diferença visual é imperceptível.
-      scale: 1.5,
+      scale,
       useCORS: true,
       backgroundColor: "#ffffff",
       scrollX: 0,
@@ -999,8 +1001,6 @@ const ResultadoDetalhe = () => {
       height,
       letterRendering: true,
       logging: false,
-      // Pula leituras computedStyle de elementos invisíveis — micro-otimização
-      // que ajuda em laudos com muitos blocos.
       removeContainer: true,
     };
   };
@@ -1046,7 +1046,7 @@ const ResultadoDetalhe = () => {
           .set({
             margin: 0,
             filename,
-            image: { type: "jpeg", quality: 0.95 },
+            image: { type: "png" },
             html2canvas: getLaudoCanvasOptions(container),
             jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
             pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
@@ -1098,7 +1098,7 @@ const ResultadoDetalhe = () => {
             .set({
               margin: 0,
               filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
-              image: { type: "jpeg", quality: 0.98 },
+              image: { type: "png" },
               html2canvas: getLaudoCanvasOptions(container),
               jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
               pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },

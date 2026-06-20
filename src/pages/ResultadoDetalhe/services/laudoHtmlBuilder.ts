@@ -128,11 +128,11 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-a4-cabecalho { flex: 0 0 auto; }
         .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; }
         .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
-        /* Fontes do laudo: Helvetica para títulos/cabeçalhos e Courier New
-           para o corpo dos resultados, sobrescrevendo fontes inline herdadas
-           de layouts customizados antigos. */
-        .exame-bloco-custom, .exame-bloco-custom * { font-family: 'Courier New', Courier, monospace !important; }
-        .exame-bloco-custom > div:first-child, .exame-bloco-custom h1, .exame-bloco-custom h2, .exame-bloco-custom h3 { font-family: Helvetica, Arial, sans-serif !important; }
+        /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
+           do Layout Científico (font-family inline). Aplicamos apenas um
+           fallback quando o layout não define fonte alguma, sem !important
+           para não sobrescrever a escolha do usuário. */
+        .exame-bloco-custom { font-family: Helvetica, Arial, sans-serif; }
         /* Cabeçalho/rodapé do laudo: Helvetica 9pt (espelha o padrão do laudo de referência),
            sobrescrevendo qualquer fonte inline herdada do template configurado. */
         .laudo-cabecalho-wrap, .laudo-cabecalho-wrap *,
