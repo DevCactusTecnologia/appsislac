@@ -1677,13 +1677,30 @@ const ResultadoDetalhe = () => {
                       const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
                       const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
                       const isCriticoParam = nivelCritico !== "normal";
-                      const barColorClass = inRange === true
+                      // Status semântico do contador da série branca (CONT):
+                      //   = 100 → verde · 99/101 → amarelo · demais → vermelho.
+                      const isCont = (param.chave ?? "").toUpperCase() === "CONT";
+                      const contN = isCont ? parseFloat((displayValor || "").replace(",", ".")) : NaN;
+                      const contStatus: "success" | "warning" | "danger" | undefined = isCont
+                        ? (isFinite(contN) && contN === 100
+                            ? "success"
+                            : isFinite(contN) && (contN === 99 || contN === 101)
+                            ? "warning"
+                            : "danger")
+                        : undefined;
+                      const barColorClass = contStatus
+                        ? (contStatus === "success" ? "bg-status-success" : contStatus === "warning" ? "bg-status-warning" : "bg-status-danger")
+                        : inRange === true
                         ? "bg-status-success"
                         : isOutOfRange
                           ? (above ? "bg-status-danger" : "bg-orange-500")
                           : "bg-transparent";
+                      const ringClass = contStatus
+                        ? (contStatus === "success" ? "ring-1 ring-status-success/40" : contStatus === "warning" ? "ring-1 ring-status-warning/50" : "ring-1 ring-status-danger/40")
+                        : isCriticoParam ? "ring-1 ring-status-danger/30" : "";
                       return (
-                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
+                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${ringClass}`}>
+
                           <span className="shrink-0 inline-flex items-center justify-center h-4 w-4">
                             {inRange === true && <CheckCircle2 className="h-3.5 w-3.5 text-status-success" />}
                             {below && <ArrowDown className="h-3.5 w-3.5 text-orange-500" />}
@@ -1706,12 +1723,16 @@ const ResultadoDetalhe = () => {
                               <>
                                 <ParamTypedInput
                                   param={param}
-                                  isCritico={isCriticoParam}
+                                  isCritico={isCriticoParam && !contStatus}
+                                  statusColor={contStatus}
                                   computedValue={computedFormula}
                                   onChange={(v) => updateParametro(selectedExame.id, idx, v)}
                                   disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                  className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0"
+                                  className={`!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-7 w-full text-[13px] font-bold tabular-nums focus:!ring-0 ${
+                                    contStatus === "success" ? "!text-status-success" : contStatus === "warning" ? "!text-status-warning" : contStatus === "danger" ? "!text-status-danger" : ""
+                                  }`}
                                 />
+
                                 <span className="text-xs text-muted-foreground shrink-0">{param.unidade}</span>
                               </>
                             )}
