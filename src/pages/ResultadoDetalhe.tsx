@@ -1073,7 +1073,7 @@ const ResultadoDetalhe = () => {
       markAsImpresso(printable);
       toast.success(
         action === "imprimir"
-          ? `${geradas} laudo(s) enviado(s) para impressão (uma cópia por solicitante).`
+          ? `${geradas} PDF(s) do laudo abertos em novas abas (um por solicitante).`
           : `${geradas} PDF(s) exportado(s) (um por solicitante).`,
       );
     }
