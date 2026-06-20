@@ -952,6 +952,9 @@ const ResultadoDetalhe = () => {
   };
 
   const waitForLaudoPdfReady = async (container: HTMLElement) => {
+    if (document.fonts?.ready) {
+      await document.fonts.ready.catch(() => undefined);
+    }
     await Promise.all(
       Array.from(container.querySelectorAll("img")).map(
         (img) => new Promise<void>((resolve) => {
@@ -968,6 +971,7 @@ const ResultadoDetalhe = () => {
     );
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
   };
 
   const getLaudoCanvasOptions = (container: HTMLElement) => {
