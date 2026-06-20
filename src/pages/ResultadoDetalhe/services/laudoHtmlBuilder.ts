@@ -233,6 +233,11 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           white-space: normal !important;
           padding-right: 0 !important;
           line-height: 1.6 !important;
+          font-size: 10pt !important;
+        }
+        #laudo-content .assinatura-liberado-prefixo,
+        #laudo-content .assinatura-liberado-nome {
+          font-size: 10pt !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
@@ -247,6 +252,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
         }
+
         /* Padrão institucional: padding 0 em todas as tabelas/células do laudo. */
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
