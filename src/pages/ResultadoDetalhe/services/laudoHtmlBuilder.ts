@@ -159,9 +159,9 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         /* Esconde parágrafos vazios deixados por templates do editor para que
            a distância entre cabeçalho e nome do exame seja de apenas 1 linha. */
         .laudo-cabecalho-wrap p:empty,
-        .laudo-cabecalho-wrap p:has(> br:only-child),
-        .laudo-rodape-wrap p:empty,
-        .laudo-rodape-wrap p:has(> br:only-child) { display: none !important; }
+        .laudo-rodape-wrap p:empty { display: none !important; }
+        .laudo-cabecalho-wrap p > br:only-child,
+        .laudo-rodape-wrap p > br:only-child { display: none !important; }
         /* Garante que imagens (cabeçalho/rodapé) nunca ultrapassem a largura útil,
            evitando que o html2canvas amplie a windowWidth e desbalanceie a margem direita. */
         .laudo-cabecalho-wrap img, .laudo-rodape-wrap img { max-width: 100% !important; height: auto !important; display: block; }
@@ -269,8 +269,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            grandes espaços entre o cabeçalho, o nome do exame e o resultado nos
            layouts científicos customizados. */
         #laudo-content .exame-bloco-custom p:empty,
-        #laudo-content .exame-bloco-custom p:has(> br:only-child),
         #laudo-content .exame-bloco-custom div:empty { display: none !important; }
+        #laudo-content .exame-bloco-custom p > br:only-child { display: none !important; }
         #laudo-content .exame-bloco-custom > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         #laudo-content .exame-bloco-custom > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .assinatura-bloco { page-break-inside: avoid; break-inside: avoid; }
