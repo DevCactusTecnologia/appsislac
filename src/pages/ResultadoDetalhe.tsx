@@ -5,6 +5,7 @@ import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCirc
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
+import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
 import { isValueInRange } from "@/components/ResultadoValidationBar";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import CelebracaoLiberacaoDialog from "@/components/CelebracaoLiberacaoDialog";
