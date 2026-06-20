@@ -1153,17 +1153,20 @@ const ResultadoDetalhe = () => {
     const html2pdf = (await import("html2pdf.js")).default as any;
     return new Promise<void>((resolve, reject) => {
       waitForLaudoPdfReady(container)
-        .then(() => html2pdf()
-          .set({
-            margin: [margins.top, margins.right, margins.bottom, margins.left],
-            filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: getLaudoCanvasOptions(container),
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
-          })
-          .from(container)
-          .save())
+        .then(() => {
+          paginateLaudo(container, margins);
+          return html2pdf()
+            .set({
+              margin: [margins.top, margins.right, margins.bottom, margins.left],
+              filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
+              image: { type: "jpeg", quality: 0.98 },
+              html2canvas: getLaudoCanvasOptions(container),
+              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+              pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
+            })
+            .from(container)
+            .save();
+        })
         .then(() => { document.body.removeChild(container); resolve(); })
         .catch((err: unknown) => { document.body.removeChild(container); reject(err); });
     });
