@@ -1333,15 +1333,15 @@ const ResultadoDetalhe = () => {
                   <div
                     key={exame.id}
                     className={`rounded-lg border transition-colors ${
-                      isSelected ? "bg-accent border-primary/30" : "border-transparent hover:bg-accent/50"
+                      isSelected ? "bg-card border-primary/40 shadow-[0_1px_2px_rgba(77,65,243,0.08)]" : "border-transparent hover:bg-accent/50"
                     }`}
                   >
                     <button
                       onClick={() => setSelectedExameId(exame.id)}
-                      className="w-full text-left p-3"
+                      className="w-full text-left px-2.5 py-2"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-extrabold tracking-wider text-primary uppercase font-mono truncate">
+                        <span className="text-[11px] font-extrabold tracking-[0.08em] text-primary uppercase font-mono truncate">
                           {getMnemonico(exame.nome)}
                         </span>
                         <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
