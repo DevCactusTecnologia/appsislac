@@ -5,6 +5,7 @@ import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCirc
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
+import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
 import { isValueInRange } from "@/components/ResultadoValidationBar";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import CelebracaoLiberacaoDialog from "@/components/CelebracaoLiberacaoDialog";
@@ -1035,16 +1036,12 @@ const ResultadoDetalhe = () => {
                 <MaisAcoesMenu
                   modoConsulta={modoConsulta}
                   semExameSelecionado={!selectedExame}
-                  canRetificar={canLiberar}
-                  canCancelar={canCancelarExame}
                   onAuditoria={() => setShowAuditoria(true)}
                   onCritico={() => setShowCriticoDialog(true)}
                   onEntrega={() => setShowEntregaDialog(true)}
-                  onRetificar={() => setShowRetificarDialog(true)}
-                  onRecoleta={() => setShowRecoletaDialog(true)}
-                  onCancelarAnalise={handleCancelarAnalise}
                 />
               }
+
             />
           </div>
 
@@ -1112,7 +1109,9 @@ const ResultadoDetalhe = () => {
                     ) : (
                     <>
                     {/* Exam action buttons */}
-                    {!modoConsulta && (
+                    {!modoConsulta && (() => {
+                      const isBlockedExameLocal = isExameBloqueado(exame.status);
+                      return (
                     <div className="flex items-center gap-2 pb-2 border-b">
                       <button
                         onClick={() => setShowImportarDialog(true)}
@@ -1120,17 +1119,18 @@ const ResultadoDetalhe = () => {
                       >
                         Importar
                       </button>
-                       {isExameBloqueado(exame.status) && canLiberar && (
-                        <button
-                          onClick={() => setShowRetificarDialog(true)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-medium text-foreground hover:bg-accent transition-colors"
-                        >
-                          <Edit className="h-3 w-3" />
-                          Retificar
-                        </button>
-                      )}
+                      <ExameAcoesMenu
+                        size="sm"
+                        canRetificar={canLiberar && isBlockedExameLocal && !retificando}
+                        canCancelar={canCancelarExame}
+                        onRetificar={() => setShowRetificarDialog(true)}
+                        onRecoleta={() => setShowRecoletaDialog(true)}
+                        onCancelarAnalise={handleCancelarAnalise}
+                      />
                     </div>
-                    )}
+                      );
+                    })()}
+
 
                     {/* Parameters */}
                     
@@ -1464,16 +1464,12 @@ const ResultadoDetalhe = () => {
                   <MaisAcoesMenu
                     modoConsulta={modoConsulta}
                     semExameSelecionado={!selectedExame}
-                    canRetificar={canLiberar}
-                    canCancelar={canCancelarExame}
                     onAuditoria={() => setShowAuditoria(true)}
                     onCritico={() => setShowCriticoDialog(true)}
                     onEntrega={() => setShowEntregaDialog(true)}
-                    onRetificar={() => setShowRetificarDialog(true)}
-                    onRecoleta={() => setShowRecoletaDialog(true)}
-                    onCancelarAnalise={handleCancelarAnalise}
                   />
                 }
+
               />
             </div>
 
@@ -1499,21 +1495,16 @@ const ResultadoDetalhe = () => {
                           >
                             <Download className="h-4 w-4 rotate-180" />
                           </button>
-                          {canLiberar && (
-                            <button
-                              onClick={() => {
-                                if (isBlocked && !retificando) {
-                                  setShowRetificarDialog(true);
-                                }
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                              Retificar
-                            </button>
-                          )}
+                          <ExameAcoesMenu
+                            canRetificar={canLiberar && isBlocked && !retificando}
+                            canCancelar={canCancelarExame}
+                            onRetificar={() => setShowRetificarDialog(true)}
+                            onRecoleta={() => setShowRecoletaDialog(true)}
+                            onCancelarAnalise={handleCancelarAnalise}
+                          />
                         </div>
                       )}
+
                     </div>
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
                       <StatusBadge
