@@ -1641,7 +1641,7 @@ const ResultadoDetalhe = () => {
                           : "bg-transparent";
                       return (
                         <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
-                          <span className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-background shadow-sm">
+                          <span className="shrink-0 inline-flex items-center justify-center h-5 w-5">
                             {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
                             {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
                             {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
