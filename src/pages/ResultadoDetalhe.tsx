@@ -940,6 +940,10 @@ const ResultadoDetalhe = () => {
     container.style.top = "0";
     container.style.width = `${210 - margins.left - margins.right}mm`;
     container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
+    // Garante que a página A4 tenha altura mínima útil (297mm − margens),
+    // permitindo que o flexbox interno (.laudo-a4-page) empurre o rodapé
+    // para a base da página via `margin-top:auto`.
+    container.style.minHeight = `${297 - margins.top - margins.bottom}mm`;
     container.style.margin = "0";
     container.style.padding = "0";
     container.style.boxSizing = "border-box";
