@@ -270,30 +270,18 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       </style>
 
       <div class="laudo-a4-page">
-        <table class="laudo-print-table">
-          <thead>
-            <tr><td class="laudo-print-header-cell">
-              ${cabecalhoPadrao
-                ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
-                : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
-                    <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
-                    <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
-                    ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
-                  </div>`}
-            </td></tr>
-          </thead>
-          <tfoot>
-            <tr><td class="laudo-print-footer-cell">
-              ${rodapePadrao
-                ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
-                : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
-                    <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
-                  </div>`}
-            </td></tr>
-          </tfoot>
-          <tbody>
-            <tr><td class="laudo-print-body-cell">
-              <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
+        <div class="laudo-a4-cabecalho">
+          ${cabecalhoPadrao
+            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
+            : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
+                <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
+                <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
+                ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
+              </div>`}
+        </div>
+        <div class="laudo-a4-corpo">
+          <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
+
         ${printable.map((exame) => {
           // Snapshot regulatório (metodologia/unidade) — exibido de forma discreta
           // abaixo do bloco do exame, respeitando flags do catálogo.
