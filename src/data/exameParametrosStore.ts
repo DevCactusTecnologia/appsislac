@@ -29,6 +29,10 @@ export interface ExameParametro {
   criticoMin: string;
   /** Limite superior crítico/pânico (texto numérico). Vazio = sem alerta de pânico alto. */
   criticoMax: string;
+  /** Separador decimal usado na entrada/exibição: '.' ou ','. */
+  separadorDecimal: "." | ",";
+  /** Quantidade total de dígitos (inteiros + decimais). 0/undefined = sem limite. */
+  qtdDigitos: number;
 }
 
 const cache = new Map<string, ExameParametro[]>();
