@@ -16,12 +16,16 @@
 // Usado APENAS em modo de digitação (edição/retificação). Modo consulta e
 // mobile mantêm a renderização atual em tabela própria.
 // ============================================================================
-import React, { Fragment, useMemo } from "react";
+import React, { Fragment, useEffect, useMemo, useRef } from "react";
 import { AlertOctagon } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { ParamTypedInput } from "./ParamTypedInput";
 import type { Parametro } from "./types";
 import type { NivelCritico } from "@/lib/criticoChecker";
+import { toast } from "@/hooks/use-toast";
+
+/** Regex que casa elementos cujo conteúdo de texto é exatamente um único placeholder. */
+const ALONE_PLACEHOLDER_RE = /^\s*##[A-Za-z0-9_+\-.]+##\s*$/;
 
 interface ResolvedRef {
   refMin: string;
