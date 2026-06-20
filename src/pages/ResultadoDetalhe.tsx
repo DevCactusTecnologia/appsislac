@@ -1753,7 +1753,9 @@ const ResultadoDetalhe = () => {
                           const displayName = isAbsName(param.nome)
                             ? param.nome.replace(/\(\s*abs(oluto)?\s*\)/i, "").trim() || param.nome
                             : param.nome;
-                          const isObservation = /^\s*observa[cç][aã]o/i.test(param.nome) || param.tipo === "Texto";
+                          const refMain = getResolvedRef(selectedExame.nome, param);
+                          const hasRefMain = Boolean(refMain.refMin || refMain.refMax || refMain.descricao);
+                          const isObservation = /^\s*observa[cç][aã]o/i.test(param.nome) || (param.tipo === "Texto" && !hasRefMain);
                           return (
                             <Fragment key={rIdx}>
                               {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
