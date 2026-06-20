@@ -219,38 +219,11 @@ const ExamesTerceirizadosPanel = ({ rows, onChanged }: Props) => {
 
           return (
             <div key={row.id} className="rounded-xl border border-border/60 bg-muted/20 p-4">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold text-foreground truncate">{row.nome_exame}</h3>
-                    <LabBadge
-                      tipoProcesso="TERCEIRIZADO"
-                      labApoioId={row.lab_apoio_id}
-                      labApoioNome={lab?.nome ?? null}
-                      laboratorioPropriaNome={getCachedTenantNome()}
-                      compact
-                    />
-                    {row.integracao_ativa && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
-                        <Zap className="h-2.5 w-2.5" /> Integração ativa
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {labNome}{row.protocolo_externo ? ` · Protocolo externo ${row.protocolo_externo}` : ""}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-                    {row.data_envio && <span>Enviado: <span className="text-foreground font-medium">{fmtDate(row.data_envio)}</span></span>}
-                    {row.data_retorno && <span>Retorno: <span className="text-foreground font-medium">{fmtDate(row.data_retorno)}</span></span>}
-                  </div>
-                </div>
+              <IntegrationWarningsList warnings={warnings} className="mb-3" />
 
+
+              <div className="flex items-center gap-2 flex-wrap">
                 <IntegrationStatusBadge row={row} />
-              </div>
-
-              <IntegrationWarningsList warnings={warnings} className="mt-3" />
-
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {row.integracao_ativa ? (
                   <>
                     {row.status_externo === "AGUARDANDO_ENVIO" && (
