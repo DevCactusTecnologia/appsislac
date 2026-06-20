@@ -1576,27 +1576,11 @@ const ResultadoDetalhe = () => {
                     const dbRowSel = dbRows.find((r) => r.id === dbIdMap[selectedExame.id]);
                     const exameCatId = dbRowSel?.exame_id ?? null;
                     const layoutHtml = exameCatId ? layoutHtmlByExameId[exameCatId] : "";
-                    const useScientific = editing && !modoConsulta && !!layoutHtml;
-                    if (useScientific) {
-                      const valuesByChave = buildValuesByChave(selectedExame.parametros);
-                      return (
-                        <div className="overflow-x-auto">
-                          <LayoutScientificFormRenderer
-                            layoutHtml={layoutHtml}
-                            parametros={selectedExame.parametros}
-                            onChangeParam={(idx, v) => updateParametro(selectedExame.id, idx, v)}
-                            getResolvedRef={(p) => getResolvedRef(selectedExame.nome, p)}
-                            evaluateFormulaFor={(p) =>
-                              evaluateFormula(p.valorReferencia, valuesByChave, p.casasDecimais ?? 2)
-                            }
-                            avaliarNivelCritico={(nome, valor) =>
-                              avaliarNivelCritico(selectedExame.nome, nome, valor)
-                            }
-                            disabled={selectedExame.status === "Cancelado" || !isEditable}
-                          />
-                        </div>
-                      );
-                    }
+                    // Design unificado: todos os exames (incluindo HEMOGRAMA) usam a
+                    // mesma tabela em cards (resultado + valor de referência) tanto em
+                    // digitação quanto em consulta. O layout científico (CKEditor) é
+                    // mantido apenas para impressão/laudo, não para a tela de digitação.
+                    void editing; void layoutHtml;
                     return (
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed border-separate border-spacing-y-2">
