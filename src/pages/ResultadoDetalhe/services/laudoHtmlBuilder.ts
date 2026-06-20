@@ -332,7 +332,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           return `
             <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
               <div style="font-size:12pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>
-              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier New',Courier,monospace;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier Prime',Courier,'Courier New',monospace;">
                 <thead><tr>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Resultado</th>
