@@ -254,7 +254,7 @@ export async function renderExameComLayout(
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
-  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:'Courier New',Courier,monospace;white-space:break-spaces;"><div style="font-size:10pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;white-space:normal;">${exameNome}</div><div style="font-size:9pt;line-height:1.4;color:#1a1a2e;font-family:'Courier New',Courier,monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
+  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;"><div style="font-size:10pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;white-space:normal;">${exameNome}</div><div style="font-size:9pt;line-height:1.4;color:#1a1a2e;font-family:'Courier Prime',Courier,'Courier New',monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
   return { html, margins };
 }
 

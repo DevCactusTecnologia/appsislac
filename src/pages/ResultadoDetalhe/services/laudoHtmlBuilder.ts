@@ -105,6 +105,9 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   });
   return `
       <style>
+        /* Courier Prime: outline font web crisp para o corpo dos resultados,
+           evita o aspecto "embaçado" da bitmap "Courier" em alguns sistemas. */
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
         /* Cada .laudo-a4-page representa UMA folha A4 completa (210x297mm)
            com as margens aplicadas como padding interno. Isso evita que o
            html2pdf adicione margens externas em cima do nosso cálculo de
@@ -112,6 +115,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            em branco. O html2pdf é configurado com margin:0 porque a margem
            real já está no padding interno da folha. */
         @page { size: A4; margin: 0; }
+
         .laudo-a4-page {
           width: 210mm !important;
           height: 297mm !important;
@@ -229,6 +233,11 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           white-space: normal !important;
           padding-right: 0 !important;
           line-height: 1.6 !important;
+          font-size: 10pt !important;
+        }
+        #laudo-content .assinatura-liberado-prefixo,
+        #laudo-content .assinatura-liberado-nome {
+          font-size: 10pt !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
@@ -243,6 +252,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
         }
+
         /* Padrão institucional: padding 0 em todas as tabelas/células do laudo. */
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
@@ -322,7 +332,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           return `
             <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
               <div style="font-size:12pt;font-weight:700;color:#000000;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>
-              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier New',Courier,monospace;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier Prime',Courier,'Courier New',monospace;">
                 <thead><tr>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Resultado</th>
