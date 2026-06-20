@@ -1447,13 +1447,13 @@ const ResultadoDetalhe = () => {
 
             {/* Exam detail */}
             {selectedExame ? (
-              <div className="flex-1 flex flex-col p-5 sm:p-6 overflow-y-auto space-y-5">
-                <div className="bg-card rounded-xl p-6 shadow-sm">
+              <div className="flex-1 flex flex-col p-4 sm:p-5 overflow-y-auto space-y-4">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 {/* Exam header */}
-                <div className="mb-5">
-                  <div className="mb-4">
+                <div className="mb-4">
+                  <div className="mb-3">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <h2 className="text-2xl font-extrabold tracking-tight text-foreground leading-tight uppercase min-w-0 flex-1">
+                      <h2 className="text-xl font-bold tracking-tight text-foreground leading-tight uppercase min-w-0 flex-1">
                         {selectedExame.nome}
                       </h2>
                       {!selectedIsTerceirizada && !modoConsulta && (
