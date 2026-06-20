@@ -99,7 +99,7 @@ export function buildExamesFromDB(
             : undefined;
         parametros.push({
           nome,
-          obrigatorio: !!parametro.obrigatorio,
+          obrigatorio: String(parametro.obrigatorio ?? "").trim().toUpperCase() === "SIM",
           unidade: "",
           refMin: "",
           refMax: "",
