@@ -1418,21 +1418,7 @@ const ResultadoDetalhe = () => {
           {/* Main content */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/30">
             {/* Patient header — componente compartilhado, sem sobreposição */}
-            <div className="px-4 sm:px-5 py-3 border-b border-border/60 bg-card space-y-2">
-              <div className="flex justify-end">
-                <MaisAcoesMenu
-                  modoConsulta={modoConsulta}
-                  semExameSelecionado={!selectedExame}
-                  canRetificar={canLiberar}
-                  canCancelar={canCancelarExame}
-                  onAuditoria={() => setShowAuditoria(true)}
-                  onCritico={() => setShowCriticoDialog(true)}
-                  onEntrega={() => setShowEntregaDialog(true)}
-                  onRetificar={() => setShowRetificarDialog(true)}
-                  onRecoleta={() => setShowRecoletaDialog(true)}
-                  onCancelarAnalise={handleCancelarAnalise}
-                />
-              </div>
+            <div className="px-4 sm:px-5 py-3 border-b border-border/60 bg-card">
               <PacienteHeaderCard
                 nome={paciente.nome}
                 sexo={paciente.sexo}
@@ -1445,6 +1431,20 @@ const ResultadoDetalhe = () => {
                 actions={([
                   { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined, disabled: !podeImprimirTodos },
                 ]) as PacienteHeaderAction[]}
+                actionsExtraLeft={
+                  <MaisAcoesMenu
+                    modoConsulta={modoConsulta}
+                    semExameSelecionado={!selectedExame}
+                    canRetificar={canLiberar}
+                    canCancelar={canCancelarExame}
+                    onAuditoria={() => setShowAuditoria(true)}
+                    onCritico={() => setShowCriticoDialog(true)}
+                    onEntrega={() => setShowEntregaDialog(true)}
+                    onRetificar={() => setShowRetificarDialog(true)}
+                    onRecoleta={() => setShowRecoletaDialog(true)}
+                    onCancelarAnalise={handleCancelarAnalise}
+                  />
+                }
               />
             </div>
 
