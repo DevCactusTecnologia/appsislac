@@ -249,6 +249,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content th, #laudo-content td { text-align: left !important; vertical-align: top !important; }
         /* Espaçamento entre linhas padrão. */
         #laudo-content, #laudo-content * { line-height: 1.4 !important; }
+        /* Cor preta forçada em todos os textos do laudo, cabeçalho e rodapé. */
+        #laudo-content, #laudo-content *,
+        .laudo-cabecalho-wrap, .laudo-cabecalho-wrap *,
+        .laudo-rodape-wrap, .laudo-rodape-wrap * { color: #000 !important; }
         #laudo-content p, #laudo-content div, #laudo-content h1, #laudo-content h2,
         #laudo-content h3, #laudo-content h4, #laudo-content h5, #laudo-content h6,
         #laudo-content ul, #laudo-content ol, #laudo-content li, #laudo-content pre {
