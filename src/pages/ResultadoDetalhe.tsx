@@ -929,65 +929,92 @@ const ResultadoDetalhe = () => {
   };
 
   const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
-    const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
 
-    // Abre a aba imediatamente (mantém o gesto do usuário) — em seguida
-    // trocamos a URL pelo blob do PDF gerado. Sem isso, alguns navegadores
-    // bloqueiam window.open após o await.
+    // Abre a aba imediatamente (mantém o gesto do usuário). Em seguida injetamos
+    // um <iframe> apontando para o blob do PDF — caminho mais robusto que
+    // navegar a aba inteira para o blob URL (evita falhas em alguns navegadores).
     const newTab = window.open("", "_blank");
-    if (newTab) {
-      newTab.document.write(
-        `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
-          `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
-          `Gerando PDF…</body></html>`,
-      );
-    }
-
-    const container = document.createElement("div");
-    container.innerHTML = sanitizeHtml(
-      buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
-    );
-    container.style.position = "fixed";
-    container.style.left = "0";
-    container.style.top = "0";
-    container.style.width = `${210 - margins.left - margins.right}mm`;
-    container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
-    container.style.margin = "0";
-    container.style.padding = "0";
-    container.style.boxSizing = "border-box";
-    container.style.background = "#ffffff";
-    container.style.overflow = "hidden";
-    document.body.appendChild(container);
+    const writeStatus = (msg: string) => {
+      if (!newTab || newTab.closed) return;
+      try {
+        newTab.document.open();
+        newTab.document.write(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
+            `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
+            msg +
+            `</body></html>`,
+        );
+        newTab.document.close();
+      } catch { /* ignore */ }
+    };
+    writeStatus("Gerando PDF…");
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const html2pdf = (await import("html2pdf.js")).default as any;
-      const blob: Blob = await html2pdf()
-        .set({
-          margin: [margins.top, margins.right, 4, margins.left],
-          filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.offsetWidth },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
-        })
-        .from(container)
-        .outputPdf("blob");
+      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
+      const container = document.createElement("div");
+      container.innerHTML = sanitizeHtml(
+        buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
+      );
+      // Off-screen, mas renderizável para html2canvas (não pode ser display:none).
+      container.style.position = "fixed";
+      container.style.left = "-100000px";
+      container.style.top = "0";
+      container.style.width = `${210 - margins.left - margins.right}mm`;
+      container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
+      container.style.margin = "0";
+      container.style.padding = "0";
+      container.style.boxSizing = "border-box";
+      container.style.background = "#ffffff";
+      container.style.overflow = "hidden";
+      document.body.appendChild(container);
 
-      const url = URL.createObjectURL(blob);
-      if (newTab && !newTab.closed) {
-        newTab.location.href = url;
-      } else {
-        window.open(url, "_blank");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const html2pdf = (await import("html2pdf.js")).default as any;
+        const blob: Blob = await html2pdf()
+          .set({
+            margin: [margins.top, margins.right, 4, margins.left],
+            filename,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: container.offsetWidth },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
+          })
+          .from(container)
+          .outputPdf("blob");
+
+        const url = URL.createObjectURL(blob);
+        if (newTab && !newTab.closed) {
+          // Embute o PDF num <iframe> dentro da aba já aberta — funciona de
+          // forma consistente em Chrome/Edge/Firefox/Safari, inclusive quando
+          // o blob URL foi criado no documento opener (mesma origin).
+          try {
+            newTab.document.open();
+            newTab.document.write(
+              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>` +
+                `<style>html,body{margin:0;padding:0;height:100%;background:#525659;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
+                `</head><body><iframe src="${url}" title="${filename}"></iframe></body></html>`,
+            );
+            newTab.document.close();
+          } catch {
+            newTab.location.href = url;
+          }
+        } else {
+          window.open(url, "_blank");
+        }
+        // Libera o blob depois de tempo suficiente para o iframe carregar.
+        setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
+      } finally {
+        document.body.removeChild(container);
       }
-      // Libera o blob depois de um tempo (após a aba ter carregado).
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } finally {
-      document.body.removeChild(container);
+    } catch (err) {
+      writeStatus("Falha ao gerar o PDF. Tente novamente.");
+      throw err;
     }
   };
+
 
   const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
@@ -1375,7 +1402,7 @@ const ResultadoDetalhe = () => {
                         </Avatar>
                         {modoConsulta ? (
                           <span className="text-xs text-foreground">
-                            <span className="text-muted-foreground">Analisado por:</span>{" "}
+                            <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
                             <span className="font-medium">{analistaAtual.nome}</span>
                           </span>
                         ) : (
@@ -2050,7 +2077,7 @@ const ResultadoDetalhe = () => {
                 </Avatar>
                 {modoConsulta ? (
                   <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analisado por</span>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analisado e Liberado por</span>
                     <span className="text-sm font-medium text-foreground">{analistaAtual.nome}</span>
                   </div>
                 ) : (
