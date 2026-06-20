@@ -951,303 +951,42 @@ const ResultadoDetalhe = () => {
     return Array.from(set);
   };
 
-  const createLaudoPdfContainer = (
-    html: string,
-    _margins: { top: number; right: number; bottom: number; left: number },
-  ) => {
-    const host = document.createElement("div");
-    host.dataset.laudoPdfHost = "true";
-    // O host fica em coordenadas reais (0,0). Não use left/top negativos aqui:
-    // html2pdf/html2canvas calcula o bounding box real do elemento antes de
-    // clonar, e fonte offscreen pode virar captura branca no PDF.
-    host.style.position = "fixed";
-    host.style.left = "0";
-    host.style.top = "0";
-    host.style.width = "210mm";
-    host.style.margin = "0";
-    host.style.padding = "0";
-    host.style.pointerEvents = "none";
-    host.style.opacity = "1";
-    host.style.visibility = "visible";
-    host.style.zIndex = "-1";
-
-    const container = document.createElement("div");
-    container.setAttribute("aria-hidden", "true");
-    container.innerHTML = sanitizeHtmlForPrint(html);
-    // Mantém dimensões reais (210mm) no elemento-fonte, mas sem posicionamento
-    // offscreen inline. Isso impede PDF branco por captura deslocada.
-    container.style.width = "210mm";
-    container.style.maxWidth = "210mm";
-    container.style.margin = "0";
-    container.style.padding = "0";
-    container.style.boxSizing = "border-box";
-    container.style.background = "#ffffff";
-    container.style.color = "#000000";
-    container.style.opacity = "1";
-    container.style.visibility = "visible";
-
-    host.appendChild(container);
-    document.body.appendChild(host);
-    return container;
-  };
-
-  const removeLaudoPdfContainer = (container: HTMLElement) => {
-    const host = container.parentElement;
-    if (host?.dataset.laudoPdfHost === "true") {
-      host.remove();
-      return;
-    }
-    container.remove();
-  };
-
-  const waitForLaudoPdfReady = async (container: HTMLElement) => {
-    const styles = window.getComputedStyle(container);
-    const width = Math.max(container.scrollWidth, container.offsetWidth, 0);
-    const height = Math.max(container.scrollHeight, container.offsetHeight, 0);
-    if (styles.display === "none" || styles.visibility === "hidden" || Number(styles.opacity) === 0 || width === 0 || height === 0) {
-      throw new Error("LAUDO_PDF_CONTAINER_NOT_RENDERABLE");
-    }
-    if (document.fonts?.ready) {
-      await document.fonts.ready.catch(() => undefined);
-    }
-    await Promise.all(
-      Array.from(container.querySelectorAll("img")).map(
-        (img) => new Promise<void>((resolve) => {
-          if (img.complete) {
-            resolve();
-            return;
-          }
-          const done = () => resolve();
-          img.addEventListener("load", done, { once: true });
-          img.addEventListener("error", done, { once: true });
-          window.setTimeout(done, 2500);
-        }),
-      ),
-    );
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 50));
-  };
-
-  const getLaudoCanvasOptions = (container: HTMLElement) => {
-    const width = Math.max(container.scrollWidth, container.offsetWidth, 1);
-    const height = Math.max(container.scrollHeight, container.offsetHeight, 1);
-    // Scale 3 dobra a resolução de rasterização do html2canvas, tornando
-    // textos e bordas significativamente mais nítidos no PDF final
-    // (alinha com a qualidade do laudo de referência Laravel).
-    const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
-    const scale = Math.max(3, dpr * 2);
-    return {
-      scale,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: width,
-      width,
-      height,
-      letterRendering: true,
-      logging: false,
-      removeContainer: true,
-    };
-  };
-
-  type LaudoPdfDocument = {
-    getNumberOfPages?: () => number;
-    internal?: { getNumberOfPages?: () => number };
-    deletePage?: (pageNumber: number) => void;
-  };
-
-  const removeHtml2PdfTrailingBlankPages = (pdf: LaudoPdfDocument, container: HTMLElement) => {
-    const expectedPages = Math.max(1, container.querySelectorAll(".laudo-a4-page").length || 1);
-    const getTotalPages = () => {
-      if (typeof pdf?.getNumberOfPages === "function") return pdf.getNumberOfPages();
-      if (typeof pdf?.internal?.getNumberOfPages === "function") return pdf.internal.getNumberOfPages();
-      return expectedPages;
-    };
-
-    let totalPages = getTotalPages();
-    while (totalPages > expectedPages && typeof pdf?.deletePage === "function") {
-      pdf.deletePage(totalPages);
-      totalPages = getTotalPages();
-    }
-  };
-
   /**
-   * Gera o PDF do laudo e exibe via <iframe> em uma nova aba (mesmo modelo
-   * do sistema Laravel de referência: clicou em imprimir → aba abre com o
-   * PDF pronto). A aba já é aberta antes da geração para preservar o gesto
-   * do usuário (evita popup-block).
-   */
-  const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
-    const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
-    const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
-
-    const newTab = window.open("", "_blank");
-    const writeStatus = (msg: string) => {
-      if (!newTab || newTab.closed) return;
-      try {
-        newTab.document.open();
-        newTab.document.write(
-          `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
-            `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
-            msg +
-            `</body></html>`,
-        );
-        newTab.document.close();
-      } catch { /* ignore */ }
-    };
-    writeStatus("Gerando PDF…");
-
-    try {
-      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const container = createLaudoPdfContainer(
-        buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
-        margins,
-      );
-
-      try {
-        await waitForLaudoPdfReady(container);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const html2pdf = (await import("html2pdf.js")).default as any;
-        const worker = html2pdf()
-          .set({
-            margin: 0,
-            filename,
-            image: { type: "png" },
-            html2canvas: getLaudoCanvasOptions(container),
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
-            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
-          })
-          .from(container)
-          .toPdf();
-        await worker.get("pdf").then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container));
-        const blob: Blob = await worker.outputPdf("blob");
-
-        const url = URL.createObjectURL(blob);
-        if (newTab && !newTab.closed) {
-          newTab.location.href = url;
-        } else {
-          window.open(url, "_blank");
-        }
-        setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
-      } finally {
-        removeLaudoPdfContainer(container);
-      }
-    } catch (err) {
-      writeStatus("Falha ao gerar o PDF. Tente novamente.");
-      throw err;
-    }
-  };
-
-  /**
-   * PoC — Impressão Vetorial.
+   * Impressão vetorial nativa do laudo.
    *
-   * Reusa EXATAMENTE o mesmo HTML produzido por buildLaudoHtml (com @page e
-   * @media print já embutidos), abre em uma nova aba e dispara window.print().
-   * Não passa por html2canvas/html2pdf — o navegador renderiza vetorial nativo
-   * (texto selecionável/pesquisável, qualquer zoom, paginação respeita @page).
-   *
-   * Não altera layouts, CKEditor nem templates. Coexiste com o motor legado
-   * para permitir comparação A/B.
+   * Reusa EXATAMENTE o HTML produzido por `buildLaudoHtml` (com `@page` e
+   * `@media print` embutidos) e aciona `window.print()` num iframe oculto.
+   * Não passa por html2canvas/html2pdf — o navegador renderiza vetorial
+   * (texto selecionável, qualquer zoom, paginação respeita @page). O usuário
+   * escolhe "Imprimir" ou "Salvar como PDF" no diálogo nativo do browser.
    */
-  const doImprimirVetorial = async (printable: Exame[], solicitanteLabel?: string) => {
+  const doImprimirLaudo = async (printable: Exame[], solicitanteLabel?: string) => {
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
-    const newTab = window.open("", "_blank");
-    if (!newTab) {
-      toast.error("Pop-up bloqueado. Habilite pop-ups para usar a impressão vetorial.");
-      return;
-    }
-
     const t0 = performance.now();
-    try {
-      const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
+    const { map: customByExame, margins } = await resolveCustomLayouts(printable);
+    const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
 
-
-      // Auto-print quando a aba terminar de carregar (fontes/imagens prontas).
-      const autoPrint = `
+    // Injeta título + auto-print sem tocar no HTML do laudo.
+    const autoPrint = `
 <script>
   (function(){
-    function go(){
-      try { window.focus(); window.print(); } catch (e) {}
-    }
-    if (document.readyState === 'complete') {
-      setTimeout(go, 50);
-    } else {
-      window.addEventListener('load', function(){ setTimeout(go, 50); });
-    }
+    function go(){ try { window.focus(); window.print(); } catch (e) {} }
+    if (document.readyState === 'complete') setTimeout(go, 50);
+    else window.addEventListener('load', function(){ setTimeout(go, 50); });
   })();
 </script>`;
+    const injected = sanitizeHtmlForPrint(html)
+      .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
+      .replace(/<\/body>/i, `${autoPrint}</body>`);
 
-      // Injeta título + script de auto-print sem alterar o HTML do laudo.
-      const injected = html
-        .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
-        .replace(/<\/body>/i, `${autoPrint}</body>`);
-
-      newTab.document.open();
-      newTab.document.write(injected);
-      newTab.document.close();
-
-      const t1 = performance.now();
-      // Telemetria simples no console para a comparação A/B.
-      // eslint-disable-next-line no-console
-      console.info(
-        `[PDF Vetorial] HTML renderizado em ${(t1 - t0).toFixed(0)}ms — exames=${printable.length}`,
-      );
-    } catch (err) {
-      try { newTab.close(); } catch { /* ignore */ }
-      toast.error("Falha ao abrir impressão vetorial.");
-      throw err;
-    }
-  };
-
-  const handleImprimirVetorial = (exames: Exame[]) => {
-    const printable = exames.filter((e) => canPrint(e.status));
-    if (printable.length === 0) {
-      toast.warning("Nenhum exame disponível para impressão.");
-      return;
-    }
-    void doImprimirVetorial(printable);
-  };
-
-
-
-
-  const doExportPdf = async (printable: Exame[], solicitanteLabel?: string, suffix?: string) => {
-    const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-    const container = createLaudoPdfContainer(
-      buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
-      margins,
+    printHtmlInHiddenFrame({ html: injected, documentTitle: title });
+    const t1 = performance.now();
+    // eslint-disable-next-line no-console
+    console.info(
+      `[PDF Vetorial] HTML renderizado em ${(t1 - t0).toFixed(0)}ms — exames=${printable.length}`,
     );
-    const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
-    // Carrega html2pdf sob demanda — evita ~370 KB no chunk inicial.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const html2pdf = (await import("html2pdf.js")).default as any;
-    return new Promise<void>((resolve, reject) => {
-      waitForLaudoPdfReady(container)
-        .then(() => {
-          const worker = html2pdf()
-            .set({
-              margin: 0,
-              filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
-              image: { type: "png" },
-              html2canvas: getLaudoCanvasOptions(container),
-              jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-              pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
-            })
-            .from(container)
-            .toPdf();
-          return worker
-            .get("pdf")
-            .then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container))
-            .then(() => worker.save());
-        })
-        .then(() => { removeLaudoPdfContainer(container); resolve(); })
-        .catch((err: unknown) => { removeLaudoPdfContainer(container); reject(err); });
-    });
   };
 
   /**
