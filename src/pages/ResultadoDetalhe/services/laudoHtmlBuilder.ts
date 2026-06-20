@@ -86,6 +86,23 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       dataFinalizacao: new Date().toLocaleDateString("pt-BR"),
     },
   });
+  // Remove blocos vazios/whitespace no final do cabeçalho (ex.: <p>&nbsp;</p>,
+  // <p><br></p>, <div></div>) que criam um espaço visível entre o cabeçalho
+  // e o nome do exame mesmo quando o template não tem conteúdo ali.
+  const trimTrailingEmptyBlocks = (html: string): string => {
+    let out = html;
+    // executa repetidamente até estabilizar
+    for (let i = 0; i < 20; i++) {
+      const next = out.replace(
+        /(?:\s|<p[^>]*>\s*(?:&nbsp;|&#160;|\u00a0)?\s*(?:<br\s*\/?>\s*)*<\/p>|<div[^>]*>\s*(?:&nbsp;|&#160;|\u00a0)?\s*(?:<br\s*\/?>\s*)*<\/div>|<br\s*\/?>)+\s*$/i,
+        "",
+      );
+      if (next === out) break;
+      out = next;
+    }
+    return out;
+  };
+  const cabecalhoPadraoTrimmed = trimTrailingEmptyBlocks(cabecalhoPadrao);
   const rodapePadrao = renderRodapePadrao({
     paciente: {
       nome: paciente.nome,
@@ -130,8 +147,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           flex-direction: column !important;
           overflow: hidden !important;
         }
-        .laudo-a4-cabecalho { flex: 0 0 auto; }
-        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; }
+        .laudo-a4-cabecalho { flex: 0 0 auto; padding: 0 !important; margin: 0 !important; }
+        .laudo-a4-cabecalho > *:last-child, .laudo-a4-cabecalho * :last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        .laudo-cabecalho-wrap > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; padding-top: 0 !important; margin-top: 0 !important; }
         .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
         /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
            do Layout Científico (font-family inline). Aplicamos apenas um
@@ -301,8 +320,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
 
       <div class="laudo-a4-page">
         <div class="laudo-a4-cabecalho">
-          ${cabecalhoPadrao
-            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
+          ${cabecalhoPadraoTrimmed
+            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadraoTrimmed}</div>`
             : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
                 <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
                 <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
