@@ -185,8 +185,14 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
     ? (contParam.tipo === "Formula" ? evaluateFormulaFor(contParam) : contParam.valor)
     : "";
   const contNumeric = parseFloat((contValue || "").replace(",", "."));
-  const contStatus: "success" | "danger" | undefined = contParam
-    ? (isFinite(contNumeric) && contNumeric === 100 ? "success" : "danger")
+  // Verde = exatamente 100; Amarelo = 99 ou 101 (tolerância opcional);
+  // Vermelho = qualquer outro valor (incluindo vazio/incompleto).
+  const contStatus: "success" | "warning" | "danger" | undefined = contParam
+    ? (isFinite(contNumeric) && contNumeric === 100
+        ? "success"
+        : isFinite(contNumeric) && (contNumeric === 99 || contNumeric === 101)
+        ? "warning"
+        : "danger")
     : undefined;
   const lastOverRef = useRef(false);
   useEffect(() => {
