@@ -374,6 +374,7 @@ const RegistrarColeta = () => {
       pacientes.forEach((p) => {
         if (isPacienteTodoCancelado(p)) celebratedIdsRef.current.add(p.id);
       });
+      setSuccessPaciente(justCompleted);
       setSuccessDialog(true);
       setSelectedId(null);
       setSelectedExames([]);
