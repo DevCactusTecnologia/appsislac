@@ -1179,15 +1179,6 @@ const ResultadoDetalhe = () => {
                       );
                     })}
 
-                    {/* Observação mobile */}
-                    <div>
-                      <label className="text-xs font-medium text-foreground">Observação</label>
-                      <textarea
-                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none disabled:cursor-not-allowed disabled:opacity-60"
-                        rows={2}
-                        disabled={modoConsulta || isExameBloqueado(exame.status) || exame.status === "Cancelado"}
-                      />
-                    </div>
 
                     {/* Mobile footer actions */}
                     <div className="flex flex-col gap-2 pt-2 border-t">
@@ -1732,16 +1723,6 @@ const ResultadoDetalhe = () => {
                     );
                   })()}
 
-                  {/* Observação */}
-                  <div className="mt-4">
-                    <label className="text-sm font-medium text-foreground">Observação</label>
-                    <textarea
-                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring/20 resize-none disabled:cursor-not-allowed disabled:opacity-60"
-                      rows={2}
-                      placeholder=""
-                      disabled={modoConsulta || isExameBloqueado(selectedExame.status) || selectedExame.status === "Cancelado"}
-                    />
-                  </div>
                   </>
                   )}
                 </div>
