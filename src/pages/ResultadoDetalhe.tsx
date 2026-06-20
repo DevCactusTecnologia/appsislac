@@ -1105,7 +1105,7 @@ const ResultadoDetalhe = () => {
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
           .set({
-            margin: [margins.top, margins.right, margins.bottom, margins.left],
+            margin: 0,
             filename,
             image: { type: "jpeg", quality: 0.95 },
             html2canvas: getLaudoCanvasOptions(container),
