@@ -939,11 +939,11 @@ const ResultadoDetalhe = () => {
   ) => {
     const host = document.createElement("div");
     host.dataset.laudoPdfHost = "true";
-    // O host fica fora da viewport para não piscar na tela. O elemento passado
-    // ao html2pdf NÃO pode carregar left/top negativos, porque a biblioteca clona
-    // estilos inline e o html2canvas acaba capturando uma área branca.
+    // O host fica em coordenadas reais (0,0). Não use left/top negativos aqui:
+    // html2pdf/html2canvas calcula o bounding box real do elemento antes de
+    // clonar, e fonte offscreen pode virar captura branca no PDF.
     host.style.position = "fixed";
-    host.style.left = "-10000px";
+    host.style.left = "0";
     host.style.top = "0";
     host.style.width = "210mm";
     host.style.margin = "0";
@@ -951,6 +951,7 @@ const ResultadoDetalhe = () => {
     host.style.pointerEvents = "none";
     host.style.opacity = "1";
     host.style.visibility = "visible";
+    host.style.zIndex = "-1";
 
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
