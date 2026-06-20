@@ -906,12 +906,81 @@ const RegistrarColeta = () => {
         </div>
       </Overlay>
 
-      <SuccessOverlay
+      <Overlay
         open={successDialog}
-        onClose={() => setSuccessDialog(false)}
-        title="Coleta concluída!"
-        description="Todas as amostras deste atendimento foram registradas. Bom trabalho!"
-      />
+        onClose={() => { setSuccessDialog(false); setSuccessPaciente(null); }}
+      >
+        <div className="py-2">
+          <div className="text-center">
+            <div className="mx-auto h-14 w-14 rounded-full bg-[hsl(var(--status-success-bg))] flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-7 w-7 text-[hsl(var(--status-success))]" />
+            </div>
+            <h2 className="text-base font-semibold text-foreground mb-1">Coleta concluída!</h2>
+            <p className="text-xs text-muted-foreground mb-5">
+              {successPaciente?.nome
+                ? <>Todas as amostras de <span className="font-medium text-foreground">{successPaciente.nome}</span> foram registradas.</>
+                : "Todas as amostras deste atendimento foram registradas."}
+            </p>
+          </div>
+
+          {successPaciente && (() => {
+            const coletados = successPaciente.exames.filter(e => e.status === "coletado");
+            if (coletados.length === 0) return null;
+            return (
+              <div className="border border-border/60 rounded-lg overflow-hidden mb-5">
+                <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b border-border/60">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Etiquetas ({coletados.length})
+                  </span>
+                  <button
+                    type="button"
+                    disabled={printingAll}
+                    onClick={async () => {
+                      setPrintingAll(true);
+                      try {
+                        for (const ex of coletados) {
+                          await imprimirEtiquetaPorAtendimentoExame(ex.id);
+                        }
+                      } finally {
+                        setPrintingAll(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Printer className="h-3 w-3" />
+                    {printingAll ? "Imprimindo..." : "Imprimir todas"}
+                  </button>
+                </div>
+                <ul className="divide-y divide-border/60 max-h-56 overflow-auto no-scrollbar">
+                  {coletados.map((ex) => (
+                    <li key={ex.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                      <span className="text-xs text-foreground truncate">{ex.nome}</span>
+                      <button
+                        type="button"
+                        onClick={() => void imprimirEtiquetaPorAtendimentoExame(ex.id)}
+                        className="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] font-medium border border-border text-foreground hover:bg-accent transition-colors shrink-0"
+                      >
+                        <Printer className="h-3 w-3" />
+                        Imprimir
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
+
+          <div className="flex justify-center">
+            <button
+              onClick={() => { setSuccessDialog(false); setSuccessPaciente(null); }}
+              className="h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      </Overlay>
+
 
       <Overlay open={allCancelledDialog} onClose={() => { setAllCancelledDialog(false); setSelectedId(null); }}>
         <div className="text-center py-2">
