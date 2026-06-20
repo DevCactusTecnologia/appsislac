@@ -113,7 +113,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            html2pdf adicione margens externas em cima do nosso cálculo de
            altura, que era a causa do rodapé fora de posição e da 2ª página
            em branco. O html2pdf é configurado com margin:0 e page-break
-           explícito entre as páginas paginadas pelo `paginateLaudo`. */
+           explícito entre as páginas paginadas pelo paginateLaudo. */
         @page { size: A4; margin: 0; }
         .laudo-a4-page {
           width: 210mm !important;
