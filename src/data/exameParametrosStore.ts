@@ -128,7 +128,17 @@ export async function addParametro(
   data: Omit<ExameParametro, "id" | "exameId">
 ): Promise<ExameParametro | null> {
   try {
+    // Pré-checagem: sem sessão válida o PostgREST trata como anon e a RLS
+    // bloqueia o INSERT mesmo com profile/admin corretos. Damos um erro
+    // claro em vez do criptográfico "row-level security policy".
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      throw new Error("Sessão expirada. Faça login novamente para criar o parâmetro.");
+    }
     const tenant_id = await getCurrentTenantId();
+    if (!tenant_id) {
+      throw new Error("Não foi possível identificar o laboratório (tenant) do usuário logado.");
+    }
     const row = await persistOneOrThrow<any>(
       supabase.from("exame_parametros").insert({ ...toRow({ ...data, exameId }), tenant_id }),
       "exameParametros.add",
