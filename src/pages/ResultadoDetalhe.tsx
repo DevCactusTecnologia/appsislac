@@ -963,6 +963,12 @@ const ResultadoDetalhe = () => {
   };
 
   const waitForLaudoPdfReady = async (container: HTMLElement) => {
+    const styles = window.getComputedStyle(container);
+    const width = Math.max(container.scrollWidth, container.offsetWidth, 0);
+    const height = Math.max(container.scrollHeight, container.offsetHeight, 0);
+    if (styles.display === "none" || styles.visibility === "hidden" || Number(styles.opacity) === 0 || width === 0 || height === 0) {
+      throw new Error("LAUDO_PDF_CONTAINER_NOT_RENDERABLE");
+    }
     if (document.fonts?.ready) {
       await document.fonts.ready.catch(() => undefined);
     }
