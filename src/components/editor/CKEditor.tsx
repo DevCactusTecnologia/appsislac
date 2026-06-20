@@ -79,6 +79,7 @@ export interface CKEditorProps {
 const FONT_FAMILIES = [
   "default",
   "Inter, system-ui, sans-serif",
+  "Helvetica, Arial, sans-serif",
   "Arial, Helvetica, sans-serif",
   "Calibri, sans-serif",
   "Georgia, serif",
