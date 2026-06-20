@@ -531,6 +531,29 @@ const ResultadoDetalhe = () => {
       selectedExame.parametros.map((p) => p.valor || ""),
     );
 
+    // 🔎 Em modo retificação: compara os valores atuais com o snapshot tirado
+    // ao iniciar a retificação. Se nada mudou, aborta o save (não grava como
+    // retificado). Caso contrário, monta texto de auditoria com o "antes → depois".
+    let diffsRetificacao: Array<{ rotulo: string; antes: string; depois: string }> = [];
+    if (retificando) {
+      const snap = valoresAntesRetificacao[selectedExameId] ?? [];
+      const snapByKey = new Map(snap.map((s) => [s.chave || s.rotulo, s]));
+      diffsRetificacao = selectedExame.parametros
+        .map((p) => {
+          const key = p.chave || p.nome;
+          const antes = (snapByKey.get(key)?.valor ?? "").trim();
+          const depois = (p.valor ?? "").trim();
+          return { rotulo: p.rotulo || p.nome, antes, depois };
+        })
+        .filter((d) => d.antes !== d.depois);
+      if (diffsRetificacao.length === 0) {
+        toast.warning("Nenhuma alteração detectada — o resultado não foi salvo como retificado.", {
+          description: "Altere ao menos um valor para concluir a retificação.",
+        });
+        return;
+      }
+    }
+
     const res = await updateAtendimentoExame(dbId, {
       status: "em_analise",
       resultados: resultadosJson,
@@ -549,7 +572,20 @@ const ResultadoDetalhe = () => {
     );
     if (retificando) {
       setRetificados((prev) => new Set(prev).add(selectedExameId));
-      addAuditEntry(selectedExameId, "Resultado salvo (após retificação)", dadosParams);
+      const diffText = diffsRetificacao
+        .map((d) => `• ${d.rotulo}: "${d.antes || "—"}" → "${d.depois || "—"}"`)
+        .join("\n");
+      addAuditEntry(
+        selectedExameId,
+        "Resultado salvo (após retificação)",
+        `Alterações (${diffsRetificacao.length}):\n${diffText}\n\nValores finais:\n${dadosParams}`,
+      );
+      // Limpa snapshot — próxima retificação tira novo snapshot.
+      setValoresAntesRetificacao((prev) => {
+        const next = { ...prev };
+        delete next[selectedExameId];
+        return next;
+      });
     } else {
       addAuditEntry(selectedExameId, "Resultado salvo", dadosParams);
     }
