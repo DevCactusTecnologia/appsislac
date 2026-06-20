@@ -1492,21 +1492,16 @@ const ResultadoDetalhe = () => {
                           >
                             <Download className="h-4 w-4 rotate-180" />
                           </button>
-                          {canLiberar && (
-                            <button
-                              onClick={() => {
-                                if (isBlocked && !retificando) {
-                                  setShowRetificarDialog(true);
-                                }
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                              Retificar
-                            </button>
-                          )}
+                          <ExameAcoesMenu
+                            canRetificar={canLiberar && isBlocked && !retificando}
+                            canCancelar={canCancelarExame}
+                            onRetificar={() => setShowRetificarDialog(true)}
+                            onRecoleta={() => setShowRecoletaDialog(true)}
+                            onCancelarAnalise={handleCancelarAnalise}
+                          />
                         </div>
                       )}
+
                     </div>
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
                       <StatusBadge
