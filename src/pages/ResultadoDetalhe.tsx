@@ -1575,7 +1575,15 @@ const ResultadoDetalhe = () => {
               <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
 
                 {filteredExames.length === 0 && (
-                  <p className="text-center text-xs text-muted-foreground py-8">Nenhum exame nesse filtro.</p>
+                  isHydrating ? (
+                    <div className="space-y-1.5 py-2">
+                      {[0,1,2,3,4].map((i) => (
+                        <div key={i} className="h-10 rounded-lg bg-muted/40 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-xs text-muted-foreground py-8">Nenhum exame nesse filtro.</p>
+                  )
                 )}
                 {filteredExames.map((exame) => {
                   const liberado = isExameLiberado(exame.status);
