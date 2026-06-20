@@ -935,7 +935,7 @@ const ResultadoDetalhe = () => {
 
   const createLaudoPdfContainer = (
     html: string,
-    margins: { top: number; right: number; bottom: number; left: number },
+    _margins: { top: number; right: number; bottom: number; left: number },
   ) => {
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
@@ -943,12 +943,11 @@ const ResultadoDetalhe = () => {
     container.style.position = "fixed";
     container.style.left = "0";
     container.style.top = "0";
-    container.style.width = `${210 - margins.left - margins.right}mm`;
-    container.style.maxWidth = `${210 - margins.left - margins.right}mm`;
-    // Garante que a página A4 tenha altura mínima útil (297mm − margens),
-    // permitindo que o flexbox interno (.laudo-a4-page) empurre o rodapé
-    // para a base da página via `margin-top:auto`.
-    container.style.minHeight = `${297 - margins.top - margins.bottom}mm`;
+    // Cada .laudo-a4-page é uma folha A4 completa (210x297mm) com padding
+    // interno = margens. O container é apenas o "wrapper" — sem altura
+    // forçada, sem margens próprias.
+    container.style.width = `210mm`;
+    container.style.maxWidth = `210mm`;
     container.style.margin = "0";
     container.style.padding = "0";
     container.style.boxSizing = "border-box";
@@ -1030,13 +1029,15 @@ const ResultadoDetalhe = () => {
     if (children.length === 0) return;
 
     const pxPerMm = 96 / 25.4;
-    const pageContentHeightMm = 297 - margins.top - margins.bottom - 3;
+    // Cada .laudo-a4-page é uma folha A4 inteira (297mm) com padding interno
+    // igual às margens. A altura útil do corpo = 297 − top − bottom − header − footer.
+    const pageContentHeightMm = 297 - margins.top - margins.bottom;
     const pageHeightPx = pageContentHeightMm * pxPerMm;
     const headerH = cab?.getBoundingClientRect().height ?? 0;
     const footerH = rod?.getBoundingClientRect().height ?? 0;
-    // 4mm de respiro entre cabeçalho/rodapé e o corpo, para evitar
-    // que arredondamentos coloquem 1px de conteúdo sobre o rodapé.
-    const safetyPx = 4 * pxPerMm;
+    // 2mm de respiro para evitar que arredondamentos do html2canvas
+    // empurrem 1px de conteúdo sobre o rodapé.
+    const safetyPx = 2 * pxPerMm;
     const bodyAvailPx = Math.max(100, pageHeightPx - headerH - footerH - safetyPx);
 
     // Empacota filhos em páginas. Cada filho é tratado como bloco indivisível.
@@ -1104,7 +1105,7 @@ const ResultadoDetalhe = () => {
         const html2pdf = (await import("html2pdf.js")).default as any;
         const blob: Blob = await html2pdf()
           .set({
-            margin: [margins.top, margins.right, margins.bottom, margins.left],
+            margin: 0,
             filename,
             image: { type: "jpeg", quality: 0.95 },
             html2canvas: getLaudoCanvasOptions(container),
@@ -1157,7 +1158,7 @@ const ResultadoDetalhe = () => {
           paginateLaudo(container, margins);
           return html2pdf()
             .set({
-              margin: [margins.top, margins.right, margins.bottom, margins.left],
+              margin: 0,
               filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
               image: { type: "jpeg", quality: 0.98 },
               html2canvas: getLaudoCanvasOptions(container),
