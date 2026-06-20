@@ -240,6 +240,38 @@ const ResultadoDetalhe = () => {
     const { exames, idMap } = buildExamesFromDB(rows, segmentosPorRowId);
     const pac = buildPacienteFromAtendimento(id, exames, atFromDb);
     pac.idade = calcIdadeAnosMeses(pac.nascimento);
+    // Resolve sexo/nascimento direto da tabela `pacientes` (atendimento não
+    // carrega sexo). Sem isso, o resolver de VR cai sempre no default
+    // "Masculino" e ignora a faixa correta por sexo+idade.
+    try {
+      const cpfDigits = (pac.cpf || "").replace(/\D/g, "");
+      let pacRow: { sexo?: string | null; data_nascimento?: string | null } | null = null;
+      if (cpfDigits) {
+        const { data } = await supabase
+          .from("pacientes")
+          .select("sexo, data_nascimento")
+          .eq("cpf", cpfDigits)
+          .maybeSingle();
+        pacRow = data;
+      }
+      if (!pacRow) {
+        const { data } = await supabase
+          .from("atendimentos")
+          .select("pacientes:paciente_id(sexo, data_nascimento)")
+          .eq("protocolo", id)
+          .maybeSingle();
+          pacRow = (data as { pacientes?: { sexo?: string | null; data_nascimento?: string | null } } | null)?.pacientes ?? null;
+      }
+      if (pacRow?.sexo) {
+        pac.sexo = pacRow.sexo === "M" ? "Masculino" : pacRow.sexo === "F" ? "Feminino" : pacRow.sexo;
+      }
+      if (!pac.nascimento && pacRow?.data_nascimento) {
+        pac.nascimento = pacRow.data_nascimento;
+        pac.idade = calcIdadeAnosMeses(pac.nascimento);
+      }
+    } catch {
+      // silencioso — mantém defaults se a busca falhar
+    }
     setPaciente(pac);
     setDbIdMap(idMap);
     setSelectedExameId(prev => prev || (exames[0]?.id ?? 0));
