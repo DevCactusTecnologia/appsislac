@@ -1098,7 +1098,7 @@ const ResultadoDetalhe = () => {
             .set({
               margin: 0,
               filename: `${safeNome} - ${paciente.protocolo}${suffix ? ` - ${suffix}` : ""}.pdf`,
-              image: { type: "jpeg", quality: 0.98 },
+              image: { type: "png" },
               html2canvas: getLaudoCanvasOptions(container),
               jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
               pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
