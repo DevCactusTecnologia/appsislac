@@ -20,7 +20,7 @@ import {
 import AlterarResponsavelPopup from "@/components/AlterarResponsavelPopup";
 import PacienteHeaderCard from "@/components/operacional/PacienteHeaderCard";
 
-import SuccessOverlay from "@/components/SuccessOverlay";
+
 // Dialogs lazy-loaded — só baixam chunks quando abertos.
 const SolicitarRecoletaDialog = lazy(() => import("@/components/SolicitarRecoletaDialog"));
 const ConfirmarIdentidadeDialog = lazy(() => import("@/components/rastreabilidade/ConfirmarIdentidadeDialog"));
