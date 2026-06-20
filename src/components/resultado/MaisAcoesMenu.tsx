@@ -45,6 +45,12 @@ export function MaisAcoesMenu({
   canRetificar = true,
   canCancelar = true,
 }: Props) {
+  // Defer ação para após o Radix terminar de fechar o dropdown e restaurar pointer-events.
+  // Sem isso, abrir um Dialog direto do onClick deixa a página "travada" (body com pointer-events:none).
+  const run = (fn?: () => void) => {
+    if (!fn) return;
+    setTimeout(() => fn(), 0);
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -60,18 +66,18 @@ export function MaisAcoesMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Ações do atendimento</DropdownMenuLabel>
-        <DropdownMenuItem onClick={onAuditoria}>
+        <DropdownMenuItem onSelect={() => run(onAuditoria)}>
           <ClipboardList className="h-4 w-4 mr-2" />
           Auditoria
         </DropdownMenuItem>
         {!modoConsulta && onCritico && (
-          <DropdownMenuItem onClick={onCritico}>
+          <DropdownMenuItem onSelect={() => run(onCritico)}>
             <AlertTriangle className="h-4 w-4 mr-2 text-[hsl(var(--status-danger))]" />
             Comunicar valor crítico
           </DropdownMenuItem>
         )}
         {!modoConsulta && onEntrega && (
-          <DropdownMenuItem onClick={onEntrega}>
+          <DropdownMenuItem onSelect={() => run(onEntrega)}>
             <Send className="h-4 w-4 mr-2" />
             Registrar entrega
           </DropdownMenuItem>
@@ -81,19 +87,19 @@ export function MaisAcoesMenu({
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Exame selecionado</DropdownMenuLabel>
             {onRetificar && canRetificar && (
-              <DropdownMenuItem onClick={onRetificar} disabled={semExameSelecionado}>
+              <DropdownMenuItem onSelect={() => run(onRetificar)} disabled={semExameSelecionado}>
                 <Edit className="h-4 w-4 mr-2" />
                 Retificar
               </DropdownMenuItem>
             )}
             {onRecoleta && (
-              <DropdownMenuItem onClick={onRecoleta} disabled={semExameSelecionado}>
+              <DropdownMenuItem onSelect={() => run(onRecoleta)} disabled={semExameSelecionado}>
                 <FlaskConical className="h-4 w-4 mr-2 text-warning" />
                 Solicitar recoleta
               </DropdownMenuItem>
             )}
             {onCancelarAnalise && canCancelar && (
-              <DropdownMenuItem onClick={onCancelarAnalise} disabled={semExameSelecionado}>
+              <DropdownMenuItem onSelect={() => run(onCancelarAnalise)} disabled={semExameSelecionado}>
                 <XCircle className="h-4 w-4 mr-2 text-muted-foreground" />
                 Cancelar análise
               </DropdownMenuItem>
@@ -104,5 +110,6 @@ export function MaisAcoesMenu({
     </DropdownMenu>
   );
 }
+
 
 export default MaisAcoesMenu;
