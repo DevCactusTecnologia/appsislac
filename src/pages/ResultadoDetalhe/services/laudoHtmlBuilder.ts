@@ -147,8 +147,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           flex-direction: column !important;
           overflow: hidden !important;
         }
-        .laudo-a4-cabecalho { flex: 0 0 auto; }
-        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; }
+        .laudo-a4-cabecalho { flex: 0 0 auto; padding: 0 !important; margin: 0 !important; }
+        .laudo-a4-cabecalho > *:last-child, .laudo-a4-cabecalho * :last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        .laudo-cabecalho-wrap > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; padding-top: 0 !important; margin-top: 0 !important; }
         .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
         /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
            do Layout Científico (font-family inline). Aplicamos apenas um
