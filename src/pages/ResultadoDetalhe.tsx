@@ -941,8 +941,9 @@ const ResultadoDetalhe = () => {
     container.setAttribute("aria-hidden", "true");
     container.innerHTML = sanitizeHtmlForPrint(html);
     // Renderiza fora da viewport para não "piscar" o PDF na tela enquanto
-    // o html2canvas captura. Mantém dimensões reais (210mm) para que o
-    // canvas saia idêntico ao layout final.
+    // o html2canvas captura. IMPORTANTE: não usar opacity/visibility hidden;
+    // html2canvas respeita esses estilos e gera PDF visualmente em branco.
+    // Mantém dimensões reais (210mm) para que o canvas saia idêntico ao layout final.
     container.style.position = "fixed";
     container.style.left = "-10000px";
     container.style.top = "0";
@@ -954,7 +955,7 @@ const ResultadoDetalhe = () => {
     container.style.background = "#ffffff";
     container.style.color = "#000000";
     container.style.pointerEvents = "none";
-    container.style.opacity = "0";
+    container.style.opacity = "1";
     container.style.zIndex = "-1";
     document.body.appendChild(container);
     return container;
