@@ -1599,13 +1599,13 @@ const ResultadoDetalhe = () => {
                     }
                     return (
                   <div className="overflow-x-auto">
-                    <table className="w-full table-fixed">
+                    <table className="w-full table-fixed border-separate border-spacing-y-2">
                       <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 pr-4 text-sm font-semibold text-foreground w-[22%]"></th>
-                          <th className="text-left py-3 px-4 text-sm font-bold text-foreground w-[34%]">RESULTADO</th>
-                          <th className="text-left py-3 px-2 text-sm font-semibold text-foreground w-[12px]"></th>
-                          <th className="text-left py-3 pl-4 text-sm font-bold text-foreground">VALOR DE REFERÊNCIA</th>
+                        <tr>
+                          <th className="text-left pb-2 pr-4 text-xs font-semibold tracking-[0.18em] text-muted-foreground/70 w-[22%]"></th>
+                          <th className="text-left pb-2 px-2 text-xs font-bold tracking-[0.18em] text-muted-foreground w-[40%]">RESULTADO</th>
+                          <th className="w-3" />
+                          <th className="text-left pb-2 pl-2 text-xs font-bold tracking-[0.18em] text-muted-foreground">VALOR DE REFERÊNCIA</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1617,25 +1617,35 @@ const ResultadoDetalhe = () => {
                             ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2)
                             : "";
                           const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                          const inRange = isBlocked && displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
+                          // Avalia faixa para ambos os modos (digitação e consulta) quando há valor.
+                          const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
                           const isOutOfRange = inRange === false;
+                          // Direção do desvio (abaixo / acima da faixa)
+                          const v = parseFloat((displayValor || "").replace(",", "."));
+                          const lo = parseFloat((ref.refMin || "").replace(",", "."));
+                          const hi = parseFloat((ref.refMax || "").replace(",", "."));
+                          const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
+                          const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
                           const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
                           const isCriticoParam = nivelCritico !== "normal";
                           const hasRef = Boolean(ref.refMin || ref.refMax || ref.descricao);
+                          // Cor da barra lateral do card de resultado
+                          const barColorClass = inRange === true
+                            ? "bg-status-success"
+                            : isOutOfRange
+                              ? (above ? "bg-status-danger" : "bg-orange-500")
+                              : "bg-transparent";
                           return (
                             <Fragment key={idx}>
                             {param.headerAntes && (
                               <tr>
-                                <td className="pt-4 pb-1 pr-4 text-sm font-bold uppercase tracking-wide text-foreground whitespace-nowrap">
+                                <td colSpan={4} className="pt-5 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/80">
                                   {param.headerAntes}
                                 </td>
-                                <td className="pt-4 pb-1" />
-                                <td className="pt-4 pb-1" />
-                                <td className="pt-4 pb-1" />
                               </tr>
                             )}
-                            <tr>
-                              <td className="py-1.5 pr-4 text-sm font-medium text-foreground">
+                            <tr className="group">
+                              <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
                                 {param.nome}
                                 {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                                 {isCriticoParam && (
@@ -1644,73 +1654,73 @@ const ResultadoDetalhe = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="py-1.5 px-4">
-                                {isBlocked && !retificando ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className={`flex items-center gap-2 rounded-lg px-3 py-2 w-full ${isCriticoParam ? "bg-status-danger/10 border border-status-danger/40" : "bg-accent/50"}`}>
-                                      {inRange !== null && (
-                                        inRange ? (
-                                          <CheckCircle2 className="h-5 w-5 text-status-success shrink-0" />
-                                        ) : (
-                                          <AlertCircle className="h-5 w-5 text-status-danger shrink-0" />
-                                        )
-                                      )}
-                                      {displayValor ? (
+                              <td className="py-1 px-2 align-middle">
+                                {/* Card de resultado — pílula clara com ícone de status, valor e barra lateral colorida */}
+                                <div className={`relative flex items-center gap-3 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30 transition-colors ${isCriticoParam ? "ring-1 ring-status-danger/30" : ""}`}>
+                                  {/* ícone de status */}
+                                  <span className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-background shadow-sm">
+                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                                    {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                                    {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
+                                    {inRange === null && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
+                                  </span>
+                                  {/* input ou valor consolidado */}
+                                  <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+                                    {isBlocked && !retificando ? (
+                                      displayValor ? (
                                         <>
-                                          <span className={`text-sm font-bold ${(isOutOfRange || isCriticoParam) ? "text-status-danger" : "text-foreground"}`}>
+                                          <span className={`text-[15px] font-bold tabular-nums ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
                                             {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor}
                                           </span>
                                           <span className="text-sm text-muted-foreground">{param.unidade}</span>
                                         </>
                                       ) : (
                                         <span className="text-sm text-muted-foreground italic">—</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <ParamTypedInput
-                                      param={param}
-                                      isCritico={isCriticoParam}
-                                      computedValue={computedFormula}
-                                      onChange={(v) => updateParametro(selectedExame.id, idx, v)}
-                                      disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
-                                      className="w-28 sm:w-36"
-                                    />
-                                    <span className="text-sm text-muted-foreground">{param.unidade}</span>
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-1.5 px-1">
-                                {isBlocked && displayValor && inRange !== null && (
-                                  <div className={`w-1.5 h-8 rounded-full ${isOutOfRange ? "bg-status-danger" : "bg-status-success"}`} />
-                                )}
-                              </td>
-                              <td className="py-1.5 pl-4">
-                                <div className="flex items-center gap-1">
-                                  <div className="flex-1 min-w-0">
-                                    {(ref.refMin || ref.refMax) ? (
-                                      <>
-                                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-accent/50 rounded-lg text-sm text-foreground w-full">
-                                          <span className="truncate">{ref.refMin} - {ref.refMax}</span>
-                                          <span className="text-muted-foreground ml-1">{ref.refUnidade}</span>
-                                        </span>
-                                        {ref.descricao && (
-                                          <p className="text-[10px] text-muted-foreground italic mt-0.5 pl-3 whitespace-pre-line">{ref.descricao}</p>
-                                        )}
-                                      </>
-                                    ) : ref.descricao ? (
-                                      <span className="inline-flex items-center gap-2 px-3 py-2 bg-accent/50 rounded-lg text-sm text-foreground whitespace-pre-line w-full">
-                                        {ref.descricao}
-                                      </span>
+                                      )
                                     ) : (
-                                      <span className="inline-flex items-center gap-2 px-3 py-2 bg-accent/30 rounded-lg text-sm text-muted-foreground italic w-full">
-                                        Sem referência
-                                      </span>
+                                      <>
+                                        <ParamTypedInput
+                                          param={param}
+                                          isCritico={isCriticoParam}
+                                          computedValue={computedFormula}
+                                          onChange={(v) => updateParametro(selectedExame.id, idx, v)}
+                                          disabled={modoConsulta || selectedExame.status === "Cancelado" || !isEditable}
+                                          className="!border-0 !bg-transparent !ring-0 !shadow-none !px-0 !py-0 h-8 w-full text-[15px] font-bold tabular-nums focus:!ring-0"
+                                        />
+                                        <span className="text-sm text-muted-foreground shrink-0">{param.unidade}</span>
+                                      </>
                                     )}
                                   </div>
-                                  {hasRef && <div className="w-1.5 h-8 rounded-full bg-foreground/80 ml-1 shrink-0" />}
+                                  {/* barra lateral colorida */}
+                                  <span className={`absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full ${barColorClass}`} />
                                 </div>
+                              </td>
+                              <td className="w-3" />
+                              <td className="py-1 pl-2 align-middle">
+                                {(ref.refMin || ref.refMax || ref.descricao) ? (
+                                  <div className="relative flex items-center gap-2 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30">
+                                    <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                                      {(ref.refMin || ref.refMax) ? (
+                                        <>
+                                          <span className="text-[15px] font-medium text-foreground tabular-nums truncate">
+                                            {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
+                                          </span>
+                                          <span className="text-sm text-muted-foreground shrink-0">{ref.refUnidade}</span>
+                                        </>
+                                      ) : (
+                                        <span className="text-sm text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
+                                      )}
+                                    </div>
+                                    {hasRef && <span className="absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full bg-foreground/85" />}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
+                                    Sem referência
+                                  </div>
+                                )}
+                                {(ref.refMin || ref.refMax) && ref.descricao && (
+                                  <p className="text-[10px] text-muted-foreground italic mt-1 pl-4 whitespace-pre-line">{ref.descricao}</p>
+                                )}
                               </td>
                             </tr>
                             </Fragment>
@@ -1722,6 +1732,7 @@ const ResultadoDetalhe = () => {
                   </div>
                     );
                   })()}
+
 
                   </>
                   )}
