@@ -1164,16 +1164,8 @@ const ResultadoDetalhe = () => {
     const t0 = performance.now();
     try {
       const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const html = buildLaudoHtml({
-        paciente,
-        analistaAtual,
-        assinaturaLaudo,
-        getResolvedRef,
-        printable,
-        customByExame,
-        solicitanteLabel,
-        pageMargins: margins,
-      });
+      const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
+
 
       // Auto-print quando a aba terminar de carregar (fontes/imagens prontas).
       const autoPrint = `
