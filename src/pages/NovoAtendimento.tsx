@@ -683,6 +683,9 @@ const NovoAtendimento = () => {
       setSuccessOpen(true);
     } catch (e) {
       showError(e, { scope: "NovoAtendimento.finalizar", userMessage: "Não foi possível salvar o atendimento. Tente novamente." });
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
