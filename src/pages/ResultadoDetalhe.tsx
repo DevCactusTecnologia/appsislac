@@ -940,12 +940,12 @@ const ResultadoDetalhe = () => {
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
     container.innerHTML = sanitizeHtmlForPrint(html);
+    // Renderiza fora da viewport para não "piscar" o PDF na tela enquanto
+    // o html2canvas captura. Mantém dimensões reais (210mm) para que o
+    // canvas saia idêntico ao layout final.
     container.style.position = "fixed";
-    container.style.left = "0";
+    container.style.left = "-10000px";
     container.style.top = "0";
-    // Cada .laudo-a4-page é uma folha A4 completa (210x297mm) com padding
-    // interno = margens. O container é apenas o "wrapper" — sem altura
-    // forçada, sem margens próprias.
     container.style.width = `210mm`;
     container.style.maxWidth = `210mm`;
     container.style.margin = "0";
@@ -954,7 +954,8 @@ const ResultadoDetalhe = () => {
     container.style.background = "#ffffff";
     container.style.color = "#000000";
     container.style.pointerEvents = "none";
-    container.style.zIndex = "2147483647";
+    container.style.opacity = "0";
+    container.style.zIndex = "-1";
     document.body.appendChild(container);
     return container;
   };
