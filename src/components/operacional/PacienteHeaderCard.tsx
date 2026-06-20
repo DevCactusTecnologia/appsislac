@@ -55,6 +55,8 @@ interface Props {
    * onde o cabeçalho deve ser enxuto.
    */
   actionsInline?: boolean;
+  /** Slot opcional renderizado na linha de ações, à esquerda dos botões. */
+  actionsExtraLeft?: React.ReactNode;
 }
 
 function iniciais(nome: string): string {
