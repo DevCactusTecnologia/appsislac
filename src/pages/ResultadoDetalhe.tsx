@@ -1029,13 +1029,15 @@ const ResultadoDetalhe = () => {
     if (children.length === 0) return;
 
     const pxPerMm = 96 / 25.4;
-    const pageContentHeightMm = 297 - margins.top - margins.bottom - 3;
+    // Cada .laudo-a4-page é uma folha A4 inteira (297mm) com padding interno
+    // igual às margens. A altura útil do corpo = 297 − top − bottom − header − footer.
+    const pageContentHeightMm = 297 - margins.top - margins.bottom;
     const pageHeightPx = pageContentHeightMm * pxPerMm;
     const headerH = cab?.getBoundingClientRect().height ?? 0;
     const footerH = rod?.getBoundingClientRect().height ?? 0;
-    // 4mm de respiro entre cabeçalho/rodapé e o corpo, para evitar
-    // que arredondamentos coloquem 1px de conteúdo sobre o rodapé.
-    const safetyPx = 4 * pxPerMm;
+    // 2mm de respiro para evitar que arredondamentos do html2canvas
+    // empurrem 1px de conteúdo sobre o rodapé.
+    const safetyPx = 2 * pxPerMm;
     const bodyAvailPx = Math.max(100, pageHeightPx - headerH - footerH - safetyPx);
 
     // Empacota filhos em páginas. Cada filho é tratado como bloco indivisível.
