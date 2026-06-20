@@ -106,33 +106,23 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   });
   return `
       <style>
-        /* Cabeçalho/rodapé repetidos em TODA página via <thead>/<tfoot>
-           dentro de uma <table> de página inteira (padrão suportado por
-           Chrome, Firefox, Edge e Safari para impressão). */
+        /* O laudo é renderizado como um único "página A4" via flexbox:
+           o cabeçalho fica no topo, o corpo cresce e o rodapé é empurrado
+           para o limite inferior definido pelo usuário (m.bottom). */
         @page { size: A4; margin: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm; }
         .laudo-a4-page {
           width: ${pageContentWidthMm}mm !important;
+          min-height: ${pageContentHeightMm}mm !important;
           margin: 0 !important;
           padding: 0 !important;
           box-sizing: border-box !important;
           background: #ffffff !important;
+          display: flex !important;
+          flex-direction: column !important;
         }
-        .laudo-print-table {
-          width: ${pageContentWidthMm}mm !important;
-          max-width: ${pageContentWidthMm}mm !important;
-          min-height: ${pageContentHeightMm}mm !important;
-          height: ${pageContentHeightMm}mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border-collapse: collapse;
-          table-layout: fixed;
-          box-sizing: border-box !important;
-        }
-        .laudo-print-table thead { display: table-header-group; }
-        .laudo-print-table tfoot { display: table-footer-group; }
-        .laudo-print-header-cell { padding: 0 !important; }
-        .laudo-print-footer-cell { padding: 0 !important; }
-        .laudo-print-body-cell { padding: 0; vertical-align: top !important; }
+        .laudo-a4-cabecalho { flex: 0 0 auto; }
+        .laudo-a4-corpo { flex: 1 1 auto; }
+        .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
         /* Fontes do laudo: Helvetica para títulos/cabeçalhos e Courier New
            para o corpo dos resultados, sobrescrevendo fontes inline herdadas
            de layouts customizados antigos. */
@@ -147,8 +137,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         }
         /* Zera quaisquer margens/paddings/max-widths trazidos pelos templates
            configurados em /configuracoes → Documentos, garantindo que o
-           conteúdo use toda a largura útil definida por @page (4/11/9/11mm)
-           e que html2pdf (que ignora @page) também respeite essas margens. */
+           conteúdo use toda a largura útil definida por @page e que html2pdf
+           (que ignora @page) também respeite essas margens. */
         .laudo-cabecalho-wrap, .laudo-rodape-wrap,
         .laudo-cabecalho-wrap *, .laudo-rodape-wrap * {
           max-width: none !important;
@@ -161,13 +151,17 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-cabecalho-wrap > *, .laudo-rodape-wrap > * { margin-top:0 !important; margin-bottom:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
         .laudo-cabecalho-wrap > * > *:first-child, .laudo-rodape-wrap > * > *:first-child { margin-top:0 !important; padding-top:0 !important; }
         .laudo-cabecalho-wrap > * > *:last-child, .laudo-rodape-wrap > * > *:last-child { margin-bottom:0 !important; padding-bottom:0 !important; }
+        /* Esconde parágrafos vazios deixados por templates do editor para que
+           a distância entre cabeçalho e nome do exame seja de apenas 1 linha. */
+        .laudo-cabecalho-wrap p:empty,
+        .laudo-cabecalho-wrap p:has(> br:only-child),
+        .laudo-rodape-wrap p:empty,
+        .laudo-rodape-wrap p:has(> br:only-child) { display: none !important; }
         /* Garante que imagens (cabeçalho/rodapé) nunca ultrapassem a largura útil,
            evitando que o html2canvas amplie a windowWidth e desbalanceie a margem direita. */
         .laudo-cabecalho-wrap img, .laudo-rodape-wrap img { max-width: 100% !important; height: auto !important; display: block; }
-        .laudo-cabecalho-wrap, .laudo-rodape-wrap { width: 100% !important; overflow: hidden !important; }
-        .laudo-rodape-wrap {
-          text-align: center !important;
-        }
+        .laudo-cabecalho-wrap, .laudo-rodape-wrap { width: 100% !important; }
+        .laudo-rodape-wrap { text-align: center !important; }
         .laudo-rodape-wrap > *,
         .laudo-rodape-wrap img,
         .laudo-rodape-wrap table {
@@ -196,9 +190,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           box-sizing: border-box !important;
         }
         #laudo-content img { max-width: 100% !important; height: auto !important; }
-        /* Bloco de assinatura ("CONFERIDO E LIBERADO POR…") deve respeitar
-           estritamente a largura útil. A linha fica ancorada no limite interno
-           da margem direita e cresce apenas para a esquerda. */
+        /* Bloco de assinatura ("CONFERIDO E LIBERADO POR…"): respeita largura útil
+           sem clipar verticalmente o texto (overflow visível). */
         #laudo-content .assinatura-bloco,
         #laudo-content .assinatura-bloco * {
           max-width: 100% !important;
@@ -215,7 +208,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           display: block !important;
           width: 100% !important;
           max-width: 100% !important;
-          overflow: hidden !important;
+          overflow: visible !important;
         }
         #laudo-content .assinatura-liberado-linha {
           display: block !important;
@@ -225,11 +218,12 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           margin-left: auto !important;
           margin-right: ${assinaturaRightOffsetMm}mm !important;
           text-align: right !important;
-          overflow: hidden !important;
+          overflow: visible !important;
           overflow-wrap: anywhere !important;
           word-break: break-word !important;
           white-space: normal !important;
           padding-right: 0 !important;
+          line-height: 1.6 !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
@@ -244,32 +238,29 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
         }
-        /* Padrão institucional: padding 0 em todas as tabelas/células do laudo
-           (documentos, layouts e tabelas). Sobrescreve estilos inline herdados
-           de layouts customizados antigos. */
+        /* Padrão institucional: padding 0 em todas as tabelas/células do laudo. */
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
-        /* Cabeçalhos de seção (ex.: "CARACTERÍSTICAS FÍSICAS") são <th> que o
-           navegador centraliza por padrão. Força left-align em todas as células
-           do laudo para manter alinhamento perfeito com os parâmetros. */
         #laudo-content th, #laudo-content td { text-align: left !important; vertical-align: top !important; }
-        /* Espaçamento entre linhas padrão — medido no laudo de referência:
-           13pt entre linhas com fonte de 9pt → line-height ≈ 1.40. */
+        /* Espaçamento entre linhas padrão. */
         #laudo-content, #laudo-content * { line-height: 1.4 !important; }
-        /* Zera margens de blocos internos (p, div, h1-h6, ul, ol, li, pre) para
-           que o line-height seja a única fonte de espaçamento vertical, espelhando
-           o laudo de referência. */
         #laudo-content p, #laudo-content div, #laudo-content h1, #laudo-content h2,
         #laudo-content h3, #laudo-content h4, #laudo-content h5, #laudo-content h6,
         #laudo-content ul, #laudo-content ol, #laudo-content li, #laudo-content pre {
           margin: 0 !important;
         }
-        /* <br> com altura controlada pelo line-height (sem espaço extra). */
         #laudo-content br { line-height: 1.4 !important; }
+        /* O corpo do laudo começa imediatamente após o cabeçalho — sem
+           respiro extra (apenas o line-height padrão de 1 parágrafo). */
+        .laudo-a4-corpo > #laudo-content > *:first-child,
+        .laudo-a4-corpo #laudo-content .exame-bloco:first-child,
+        .laudo-a4-corpo #laudo-content .exame-bloco-custom:first-child {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+        }
         /* Evita quebra de exame e assinatura entre páginas. */
         .exame-bloco { page-break-inside: avoid; break-inside: avoid; }
         .assinatura-bloco { page-break-inside: avoid; break-inside: avoid; }
-        /* Assinatura sempre fica colada ao exame anterior (não quebra antes). */
         .exame-bloco + .assinatura-bloco { page-break-before: avoid; break-before: avoid; }
         @media print {
           .exame-bloco, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
@@ -277,31 +268,20 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
         }
       </style>
+
       <div class="laudo-a4-page">
-        <table class="laudo-print-table">
-          <thead>
-            <tr><td class="laudo-print-header-cell">
-              ${cabecalhoPadrao
-                ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
-                : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
-                    <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
-                    <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
-                    ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
-                  </div>`}
-            </td></tr>
-          </thead>
-          <tfoot>
-            <tr><td class="laudo-print-footer-cell">
-              ${rodapePadrao
-                ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
-                : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
-                    <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
-                  </div>`}
-            </td></tr>
-          </tfoot>
-          <tbody>
-            <tr><td class="laudo-print-body-cell">
-              <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
+        <div class="laudo-a4-cabecalho">
+          ${cabecalhoPadrao
+            ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadrao}</div>`
+            : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
+                <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
+                <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
+                ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
+              </div>`}
+        </div>
+        <div class="laudo-a4-corpo">
+          <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
+
         ${printable.map((exame) => {
           // Snapshot regulatório (metodologia/unidade) — exibido de forma discreta
           // abaixo do bloco do exame, respeitando flags do catálogo.
@@ -347,22 +327,27 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
             </div>
           `;
         }).join("")}
-        <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:'Courier New',Courier,monospace;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
-          <p class="assinatura-liberado-linha" style="font-size:9pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
+        <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:'Courier New',Courier,monospace;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
+          <p class="assinatura-liberado-linha" style="font-size:9pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.6;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
           <div style="height:28px;"></div>
-          <div style="text-align:center;color:#000;">
+          <div style="text-align:center;color:#000;line-height:1.6;">
             ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
               ? `<img src="${assinaturaLaudo.url}" alt="Assinatura" style="max-height:60px;max-width:240px;object-fit:contain;margin:0 auto 2px;display:block;" />`
               : ``}
-            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;">${(analistaAtual.nome || "").toUpperCase()}</p>
-            <p style="font-size:9pt;margin:0;color:#000;">Responsável Técnico</p>
-            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;">${assinaturaLaudo.conselho}</p>` : ""}
+            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;line-height:1.6;">${(analistaAtual.nome || "").toUpperCase()}</p>
+            <p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">Responsável Técnico</p>
+            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
           </div>
         </div>
-              </div>
-            </td></tr>
-          </tbody>
-        </table>
+          </div>
+        </div>
+        <div class="laudo-a4-rodape">
+          ${rodapePadrao
+            ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
+            : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
+                <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+              </div>`}
+        </div>
       </div>
     `;
 }
