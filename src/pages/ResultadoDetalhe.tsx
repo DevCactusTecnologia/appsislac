@@ -991,78 +991,77 @@ const ResultadoDetalhe = () => {
     };
   };
 
+  /**
+   * Impressão NATIVA via window.print() — espelha a abordagem do sistema
+   * Laravel de referência (.../appointments/{id}/pdf): em vez de rasterizar
+   * o DOM com html2canvas/jsPDF (que leva ~1 min), apenas escrevemos o HTML
+   * do laudo numa nova aba e disparamos window.print(). O navegador renderiza
+   * de forma vetorial e instantânea (frações de segundo), e o usuário pode
+   * salvar como PDF pelo próprio diálogo nativo. Compatível com Chrome,
+   * Edge, Firefox e Safari.
+   */
   const doImprimirHtml = async (printable: Exame[], solicitanteLabel?: string) => {
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
-    const filename = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}.pdf`;
+    const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
-    // Abre a aba imediatamente (mantém o gesto do usuário). Em seguida injetamos
-    // um <iframe> apontando para o blob do PDF — caminho mais robusto que
-    // navegar a aba inteira para o blob URL (evita falhas em alguns navegadores).
+    // Abre a aba imediatamente (mantém o gesto do usuário evitando popup-block).
     const newTab = window.open("", "_blank");
-    const writeStatus = (msg: string) => {
-      if (!newTab || newTab.closed) return;
-      try {
-        newTab.document.open();
-        newTab.document.write(
-          `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title></head>` +
-            `<body style="margin:0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;color:#444;">` +
-            msg +
-            `</body></html>`,
-        );
-        newTab.document.close();
-      } catch { /* ignore */ }
-    };
-    writeStatus("Gerando PDF…");
+    if (!newTab) {
+      toast.error("Bloqueio de pop-up. Permita pop-ups para gerar o laudo.");
+      return;
+    }
 
     try {
       const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-      const container = createLaudoPdfContainer(
-        buildLaudoHtml(printable, customByExame, solicitanteLabel, margins),
-        margins,
-      );
+      const laudoHtml = sanitizeHtml(buildLaudoHtml(printable, customByExame, solicitanteLabel, margins));
 
-      try {
-        await waitForLaudoPdfReady(container);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const html2pdf = (await import("html2pdf.js")).default as any;
-        const blob: Blob = await html2pdf()
-          .set({
-            margin: [margins.top, margins.right, margins.bottom, margins.left],
-            filename,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: getLaudoCanvasOptions(container),
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco"] },
-          })
-          .from(container)
-          .outputPdf("blob");
+      const doc = `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8" />
+<title>${title}</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #ffffff; color: #000; }
+  body { font-family: 'Courier New', Courier, monospace; }
+  @media print {
+    body { margin: 0 !important; }
+  }
+</style>
+</head><body>${laudoHtml}
+<script>
+  (function(){
+    function ready(){ return (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve(); }
+    function imgs(){
+      var list = Array.prototype.slice.call(document.images || []);
+      return Promise.all(list.map(function(img){
+        if (img.complete) return Promise.resolve();
+        return new Promise(function(res){
+          img.addEventListener('load', res, { once: true });
+          img.addEventListener('error', res, { once: true });
+          setTimeout(res, 3000);
+        });
+      }));
+    }
+    Promise.all([ready(), imgs()]).then(function(){
+      setTimeout(function(){
+        try { window.focus(); window.print(); } catch(e) {}
+      }, 50);
+    });
+    // Em alguns navegadores, o evento afterprint permite fechar a aba;
+    // mantemos a aba aberta caso o usuário queira reimprimir.
+  })();
+</script>
+</body></html>`;
 
-        const url = URL.createObjectURL(blob);
-        if (newTab && !newTab.closed) {
-          // Embute o PDF num <iframe> dentro da aba já aberta — funciona de
-          // forma consistente em Chrome/Edge/Firefox/Safari, inclusive quando
-          // o blob URL foi criado no documento opener (mesma origin).
-          try {
-            newTab.document.open();
-            newTab.document.write(
-              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>` +
-                `<style>html,body{margin:0;padding:0;height:100%;background:#525659;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
-                `</head><body><iframe src="${url}" title="${filename}"></iframe></body></html>`,
-            );
-            newTab.document.close();
-          } catch {
-            newTab.location.href = url;
-          }
-        } else {
-          window.open(url, "_blank");
-        }
-        // Libera o blob depois de tempo suficiente para o iframe carregar.
-        setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
-      } finally {
-        document.body.removeChild(container);
-      }
+      newTab.document.open();
+      newTab.document.write(doc);
+      newTab.document.close();
     } catch (err) {
-      writeStatus("Falha ao gerar o PDF. Tente novamente.");
+      try {
+        newTab.document.open();
+        newTab.document.write(
+          `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px;color:#444;">Falha ao gerar o laudo. Tente novamente.</body></html>`,
+        );
+        newTab.document.close();
+      } catch { /* ignore */ }
       throw err;
     }
   };
@@ -1111,7 +1110,7 @@ const ResultadoDetalhe = () => {
         if (action === "imprimir") await doImprimirHtml(printable);
         else await doExportPdf(printable);
         markAsImpresso(printable);
-        if (action === "imprimir") toast.success(`PDF do laudo aberto em nova aba (${printable.length} exame(s)).`);
+        if (action === "imprimir") toast.success(`Laudo aberto para impressão (${printable.length} exame(s)).`);
         else toast.success(`PDF exportado com ${printable.length} exame(s).`);
       } catch {
         toast.error("Erro ao gerar laudo.");
@@ -1136,7 +1135,7 @@ const ResultadoDetalhe = () => {
       markAsImpresso(printable);
       toast.success(
         action === "imprimir"
-          ? `${geradas} PDF(s) do laudo abertos em novas abas (um por solicitante).`
+          ? `${geradas} laudo(s) abertos para impressão (um por solicitante).`
           : `${geradas} PDF(s) exportado(s) (um por solicitante).`,
       );
     }
