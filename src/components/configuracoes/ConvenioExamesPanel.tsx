@@ -189,13 +189,8 @@ const ConvenioExamesPanel = ({ convenioNome, tabela }: ConvenioExamesPanelProps)
 
   const handleExportPDF = async () => {
     const data = exportRows();
-    const html2pdf = (await import("html2pdf.js")).default as unknown as (
-      el: HTMLElement,
-    ) => { set: (opts: unknown) => { save: () => Promise<void> } };
-    const wrapper = document.createElement("div");
-    wrapper.style.padding = "16px";
-    wrapper.style.fontFamily = "Inter, Arial, sans-serif";
-    wrapper.style.color = "#111";
+    // Vetorial nativo via window.print() — sem html2pdf/html2canvas.
+    const { printHtmlInHiddenFrame } = await import("@/lib/printHtml");
     const destinoTxt = destinoFiltro === "TODOS" ? "Todos" : destinoFiltro === "INTERNO" ? "Interno" : "Apoio";
     const esc = (v: unknown): string => {
       if (v === null || v === undefined) return "";
@@ -203,47 +198,55 @@ const ConvenioExamesPanel = ({ convenioNome, tabela }: ConvenioExamesPanelProps)
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/`/g, "&#96;");
     };
-    wrapper.innerHTML = `
-      <h2 style="margin:0 0 4px 0;font-size:16px;">Tabela ${esc(tabela)} — ${esc(convenioNome)}</h2>
-      <p style="margin:0 0 12px 0;font-size:11px;color:#555;">Destino: ${esc(destinoTxt)} · Total: ${data.length}</p>
-      <table style="width:100%;border-collapse:collapse;font-size:10px;">
-        <thead>
-          <tr style="background:#f3f4f6;">
-            <th style="text-align:left;padding:6px;border:1px solid #e5e7eb;">Código</th>
-            <th style="text-align:left;padding:6px;border:1px solid #e5e7eb;">Exame</th>
-            <th style="text-align:left;padding:6px;border:1px solid #e5e7eb;">Destino</th>
-            <th style="text-align:right;padding:6px;border:1px solid #e5e7eb;">Valor</th>
-            <th style="text-align:left;padding:6px;border:1px solid #e5e7eb;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data
-            .map(
-              r => `<tr>
-                <td style="padding:5px;border:1px solid #e5e7eb;font-family:monospace;">${esc(r.Codigo)}</td>
-                <td style="padding:5px;border:1px solid #e5e7eb;">${esc(r.Exame)}</td>
-                <td style="padding:5px;border:1px solid #e5e7eb;">${esc(r.Destino)}</td>
-                <td style="padding:5px;border:1px solid #e5e7eb;text-align:right;">${r.Valor === 0 && r.Status === "Sem preço" ? "—" : r.Valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
-                <td style="padding:5px;border:1px solid #e5e7eb;">${esc(r.Status)}</td>
-              </tr>`,
-            )
-            .join("")}
-        </tbody>
-      </table>`;
-    document.body.appendChild(wrapper);
-    try {
-      await html2pdf(wrapper)
-        .set({
-          margin: 10,
-          filename: `${fileBase}.pdf`,
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-        })
-        .save();
-      toast({ title: `Exportados ${data.length} exames` });
-    } finally {
-      wrapper.remove();
-    }
+    const rows = data
+      .map(
+        r => `<tr>
+          <td class="mono">${esc(r.Codigo)}</td>
+          <td>${esc(r.Exame)}</td>
+          <td>${esc(r.Destino)}</td>
+          <td class="right">${r.Valor === 0 && r.Status === "Sem preço" ? "—" : r.Valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
+          <td>${esc(r.Status)}</td>
+        </tr>`,
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${esc(fileBase)}</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr { page-break-inside: avoid; } }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; color: #111; }
+    h2 { margin: 0 0 4px; font-size: 16px; }
+    .meta { margin: 0 0 12px; font-size: 11px; color: #555; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    th { background: #f3f4f6; text-align: left; padding: 6px; border: 1px solid #e5e7eb; }
+    td { padding: 5px; border: 1px solid #e5e7eb; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .right { text-align: right; }
+  </style>
+</head>
+<body>
+  <h2>Tabela ${esc(tabela)} — ${esc(convenioNome)}</h2>
+  <p class="meta">Destino: ${esc(destinoTxt)} · Total: ${data.length}</p>
+  <table>
+    <thead><tr><th>Código</th><th>Exame</th><th>Destino</th><th style="text-align:right">Valor</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <script>
+    (function(){
+      function go(){ try { window.focus(); window.print(); } catch (e) {} }
+      if (document.readyState === 'complete') setTimeout(go, 50);
+      else window.addEventListener('load', function(){ setTimeout(go, 50); });
+    })();
+  </script>
+</body>
+</html>`;
+
+    printHtmlInHiddenFrame({ html, documentTitle: fileBase });
+    toast({ title: `Exportados ${data.length} exames` });
   };
 
   return (
