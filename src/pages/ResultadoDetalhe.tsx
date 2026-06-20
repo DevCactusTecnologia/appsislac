@@ -1771,55 +1771,55 @@ const ResultadoDetalhe = () => {
                               )}
                               {isObservation ? (
                                 <tr className="group">
-                                  <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
+                                  <td className="py-0.5 pr-3 text-[13px] font-medium text-foreground align-middle">
                                     {displayName}
                                     {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                                   </td>
-                                  <td colSpan={hasAnyAbs ? 4 : 3} className="py-1 px-2 align-middle">
+                                  <td colSpan={hasAnyAbs ? 4 : 3} className="py-0.5 px-1.5 align-middle">
                                     {renderResultCard(param, idx)}
                                   </td>
                                 </tr>
                               ) : (
                                 <tr className="group">
-                                  <td className="py-1 pr-4 text-[15px] font-semibold text-foreground align-middle">
+                                  <td className="py-0.5 pr-3 text-[13px] font-medium text-foreground align-middle">
                                     {displayName}
                                     {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                                     {isCriticoParam && (
                                       <span title={nivelCritico === "critico_baixo" ? "Crítico baixo (pânico)" : "Crítico alto (pânico)"}>
-                                        <AlertOctagon className="inline h-3.5 w-3.5 ml-1.5 text-status-danger animate-pulse" />
+                                        <AlertOctagon className="inline h-3 w-3 ml-1 text-status-danger animate-pulse" />
                                       </span>
                                     )}
                                   </td>
                                   {hasAnyAbs && !row.abs && !isAbsName(param.nome) ? (
-                                    <td colSpan={2} className="py-1 px-2 align-middle">
+                                    <td colSpan={2} className="py-0.5 px-1.5 align-middle">
                                       {renderResultCard(param, idx)}
                                     </td>
                                   ) : (
                                     <>
-                                      <td className="py-1 px-2 align-middle">
+                                      <td className="py-0.5 px-1.5 align-middle">
                                         {isAbsName(param.nome) && hasAnyAbs ? (
-                                          <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                          <div className="h-9 rounded-lg bg-muted/20 border border-dashed border-muted-foreground/20" />
                                         ) : (
                                           renderResultCard(param, idx)
                                         )}
                                       </td>
                                       {hasAnyAbs && (
-                                        <td className="py-1 px-2 align-middle">
+                                        <td className="py-0.5 px-1.5 align-middle">
                                           {row.abs ? (
                                             renderResultCard(row.abs, row.absIdx!)
                                           ) : isAbsName(param.nome) ? (
                                             renderResultCard(param, idx)
                                           ) : (
-                                            <div className="h-12 rounded-2xl bg-muted/20 border border-dashed border-muted-foreground/20" />
+                                            <div className="h-9 rounded-lg bg-muted/20 border border-dashed border-muted-foreground/20" />
                                           )}
                                         </td>
                                       )}
                                     </>
                                   )}
                                   <td />
-                                  <td className="py-1 pl-2 align-middle">
+                                  <td className="py-0.5 pl-1.5 align-middle">
                                     {row.abs ? (
-                                      <div className="grid grid-cols-2 gap-2">
+                                      <div className="grid grid-cols-2 gap-1.5">
                                         {renderRefCard(param)}
                                         {renderRefCard(row.abs, param)}
                                       </div>
