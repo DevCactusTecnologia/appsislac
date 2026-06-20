@@ -502,7 +502,21 @@ const ResultadoDetalhe = () => {
       toast.error("Exame não encontrado no banco.");
       return;
     }
+    // 🔒 Validação de obrigatórios — não salva enquanto algum campo
+    // marcado como obrigatório estiver vazio. Parâmetros do tipo "Formula"
+    // são derivados e ficam fora da exigência.
+    const obrigFaltando = selectedExame.parametros
+      .filter((p) => p.obrigatorio && p.tipo !== "Formula")
+      .filter((p) => !(p.valor && String(p.valor).trim().length > 0))
+      .map((p) => p.rotulo || p.nome);
+    if (obrigFaltando.length > 0) {
+      toast.error("Preencha os campos obrigatórios para salvar o resultado.", {
+        description: obrigFaltando.slice(0, 6).join(", ") + (obrigFaltando.length > 6 ? "…" : ""),
+      });
+      return;
+    }
     const dadosParams = selectedExame.parametros.map((p) => `${p.nome}: ${p.valor || "—"}`).join("\n");
+
     // LayoutScientificRuntime: jsonb canônico indexado por CHAVE do parâmetro.
     // Resultados antigos (indexados por nome) continuam legíveis via dual-read
     // em `readParametroValor`.
@@ -1263,15 +1277,17 @@ const ResultadoDetalhe = () => {
                             Salvar
                           </button>
                         )}
-                        {canLiberar && (
+                        {canLiberar && (exame.status === "Resultado salvo" || exame.status === "Em retificação") && (
                           <button
                             onClick={() => setShowConfirmarLiberar(true)}
                             className="flex-[1.6] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                            title="Disponível somente após salvar o resultado"
                           >
-                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? <ShieldCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? "Assinar e Liberar" : "Analisar e Liberar"}
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Assinar e Liberar
                           </button>
                         )}
+
                       </div>
                       )}
                     </div>
@@ -1944,15 +1960,17 @@ const ResultadoDetalhe = () => {
                       Salvar
                     </button>
                   )}
-                  {canLiberar && (
+                  {canLiberar && (selectedExame?.status === "Resultado salvo" || selectedExame?.status === "Em retificação") && (
                     <button
                       onClick={() => setShowConfirmarLiberar(true)}
                       className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                      title="Disponível somente após salvar o resultado"
                     >
-                      {isBlocked ? <ShieldCheck className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                      {isBlocked ? "Assinar e Liberar" : "Analisar e Liberar"}
+                      <ShieldCheck className="h-4 w-4" />
+                      Assinar e Liberar
                     </button>
                   )}
+
                 </div>
               )}
             </div>
