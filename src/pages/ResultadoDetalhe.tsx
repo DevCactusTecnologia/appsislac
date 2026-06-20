@@ -45,7 +45,7 @@ import RegistrarEntregaDialog from "@/components/rastreabilidade/RegistrarEntreg
 import { renderExameComLayout, preloadLayoutsParaExames } from "@/lib/laudoLayout";
 import { resolveResultadoRegulatorio, renderRegulatorioFooterHtml } from "@/lib/regulatorioResolver";
 
-import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+
 import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
