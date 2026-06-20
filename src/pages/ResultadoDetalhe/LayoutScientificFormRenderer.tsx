@@ -223,7 +223,7 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
         const idx = paramIndexByKey.get(target);
         if (idx != null) {
           const param = parametros[idx];
-          out.push(<RefText key={placeholderKey} ref={getResolvedRef(param)} />);
+          out.push(<RefText key={placeholderKey} resolved={getResolvedRef(param)} />);
         }
       } else if (upKey.startsWith("UNID_")) {
         const target = upKey.slice(5);
@@ -240,7 +240,7 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
         if (idx != null) {
           const param = parametros[idx];
           const valor = param.tipo === "Formula" ? evaluateFormulaFor(param) : param.valor;
-          out.push(<FlagSymbol key={placeholderKey} ref={getResolvedRef(param)} valor={valor} />);
+          out.push(<FlagSymbol key={placeholderKey} resolved={getResolvedRef(param)} valor={valor} />);
         }
       } else {
         const idx = paramIndexByKey.get(upKey);
