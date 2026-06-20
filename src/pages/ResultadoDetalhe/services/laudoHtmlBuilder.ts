@@ -115,12 +115,14 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-a4-page {
           width: ${pageContentWidthMm}mm !important;
           min-height: ${pageContentHeightMm}mm !important;
+          max-height: ${pageContentHeightMm}mm !important;
           margin: 0 !important;
           padding: 0 !important;
           box-sizing: border-box !important;
           background: #ffffff !important;
           display: flex !important;
           flex-direction: column !important;
+          overflow: hidden !important;
         }
         .laudo-a4-cabecalho { flex: 0 0 auto; }
         .laudo-a4-corpo { flex: 1 1 auto; }
