@@ -1001,11 +1001,13 @@ const ResultadoDetalhe = () => {
   ) => {
     if (modo === "unica") {
       try {
-        if (action === "imprimir") await doImprimirHtml(printable);
-        else await doExportPdf(printable);
+        await doImprimirLaudo(printable);
         markAsImpresso(printable);
-        if (action === "imprimir") toast.success(`Laudo aberto para impressão (${printable.length} exame(s)).`);
-        else toast.success(`PDF exportado com ${printable.length} exame(s).`);
+        toast.success(
+          action === "imprimir"
+            ? `Laudo aberto para impressão (${printable.length} exame(s)).`
+            : `Laudo aberto — use "Salvar como PDF" no diálogo de impressão (${printable.length} exame(s)).`,
+        );
       } catch {
         toast.error("Erro ao gerar laudo.");
       }
@@ -1018,8 +1020,7 @@ const ResultadoDetalhe = () => {
       const subset = printable.filter((e) => (e.solicitante || "").trim() === sol).concat(comuns);
       if (subset.length === 0) continue;
       try {
-        if (action === "imprimir") await doImprimirHtml(subset, sol);
-        else await doExportPdf(subset, sol, sol.replace(/[^a-zA-Z0-9]+/g, "_"));
+        await doImprimirLaudo(subset, sol);
         geradas += 1;
       } catch {
         toast.error(`Falha ao gerar laudo para ${sol}.`);
@@ -1030,7 +1031,7 @@ const ResultadoDetalhe = () => {
       toast.success(
         action === "imprimir"
           ? `${geradas} laudo(s) abertos para impressão (um por solicitante).`
-          : `${geradas} PDF(s) exportado(s) (um por solicitante).`,
+          : `${geradas} laudo(s) abertos — use "Salvar como PDF" no diálogo (um por solicitante).`,
       );
     }
   };
