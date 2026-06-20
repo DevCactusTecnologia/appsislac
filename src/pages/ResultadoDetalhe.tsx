@@ -1277,15 +1277,17 @@ const ResultadoDetalhe = () => {
                             Salvar
                           </button>
                         )}
-                        {canLiberar && (
+                        {canLiberar && (exame.status === "Resultado salvo" || exame.status === "Em retificação") && (
                           <button
                             onClick={() => setShowConfirmarLiberar(true)}
                             className="flex-[1.6] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                            title="Disponível somente após salvar o resultado"
                           >
-                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? <ShieldCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {exame.status === "Resultado salvo" || exame.status === "Em retificação" ? "Assinar e Liberar" : "Analisar e Liberar"}
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Assinar e Liberar
                           </button>
                         )}
+
                       </div>
                       )}
                     </div>
