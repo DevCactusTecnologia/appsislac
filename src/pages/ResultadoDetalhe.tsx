@@ -971,20 +971,6 @@ const ResultadoDetalhe = () => {
         {/* ===== STACKED VIEW (below xl: mobile + tablet + small laptops) ===== */}
         <div className="lg:hidden">
           {/* Patient header — compartilhado, à prova de overflow */}
-          <div className="mb-2 flex justify-end">
-            <MaisAcoesMenu
-              modoConsulta={modoConsulta}
-              semExameSelecionado={!selectedExame}
-              canRetificar={canLiberar}
-              canCancelar={canCancelarExame}
-              onAuditoria={() => setShowAuditoria(true)}
-              onCritico={() => setShowCriticoDialog(true)}
-              onEntrega={() => setShowEntregaDialog(true)}
-              onRetificar={() => setShowRetificarDialog(true)}
-              onRecoleta={() => setShowRecoletaDialog(true)}
-              onCancelarAnalise={handleCancelarAnalise}
-            />
-          </div>
           <div className="mb-4">
             <PacienteHeaderCard
               nome={paciente.nome}
@@ -1006,6 +992,20 @@ const ResultadoDetalhe = () => {
                   disabled: !podeImprimirTodos,
                 },
               ]) as PacienteHeaderAction[]}
+              actionsExtraLeft={
+                <MaisAcoesMenu
+                  modoConsulta={modoConsulta}
+                  semExameSelecionado={!selectedExame}
+                  canRetificar={canLiberar}
+                  canCancelar={canCancelarExame}
+                  onAuditoria={() => setShowAuditoria(true)}
+                  onCritico={() => setShowCriticoDialog(true)}
+                  onEntrega={() => setShowEntregaDialog(true)}
+                  onRetificar={() => setShowRetificarDialog(true)}
+                  onRecoleta={() => setShowRecoletaDialog(true)}
+                  onCancelarAnalise={handleCancelarAnalise}
+                />
+              }
             />
           </div>
 
