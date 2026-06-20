@@ -202,7 +202,7 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
 
   /* ----- Conversão recursiva DOM → React ----- */
 
-  const renderTextWithPlaceholders = (text: string, keyPrefix: string): React.ReactNode[] => {
+  const renderTextWithPlaceholders = (text: string, keyPrefix: string, isAlone: boolean): React.ReactNode[] => {
     const out: React.ReactNode[] = [];
     let lastIndex = 0;
     let m: RegExpExecArray | null;
@@ -248,17 +248,29 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
           const valorAtual = param.tipo === "Formula" ? computed : param.valor;
           const nivel = avaliarNivelCritico(param.nome, valorAtual);
           const isCritico = nivel !== "normal";
+          // CONT (contador da série branca): cor semântica baseada na soma.
+          const isCont = upper(param.chave) === "CONT";
+          const statusColor = isCont ? contStatus : undefined;
+          // Quando o placeholder ocupa sozinho um elemento (linha), o input
+          // expande para preencher todo o espaço disponível do layout.
+          const sizeClass = isAlone
+            ? "w-full h-9 py-1"
+            : "w-24 sm:w-28 h-9 py-1";
           out.push(
-            <span key={placeholderKey} className="inline-flex items-center align-middle gap-1">
+            <span
+              key={placeholderKey}
+              className={`${isAlone ? "flex w-full" : "inline-flex"} items-center align-middle gap-1`}
+            >
               <ParamTypedInput
                 param={param}
-                isCritico={isCritico}
+                isCritico={isCritico && !statusColor}
+                statusColor={statusColor}
                 computedValue={computed}
                 onChange={(v) => onChangeParam(idx, v)}
                 disabled={disabled}
-                className="w-24 sm:w-28 h-9 py-1"
+                className={sizeClass}
               />
-              {isCritico && (
+              {isCritico && !statusColor && (
                 <AlertOctagon
                   className="h-3.5 w-3.5 text-status-danger animate-pulse shrink-0"
                   aria-label={nivel === "critico_baixo" ? "Crítico baixo" : "Crítico alto"}
@@ -279,19 +291,24 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
     return out;
   };
 
-  const renderNode = (node: Node, keyPrefix: string): React.ReactNode => {
+  const renderNode = (node: Node, keyPrefix: string, isAlone: boolean): React.ReactNode => {
     if (node.nodeType === Node.TEXT_NODE) {
       const txt = node.textContent ?? "";
       if (!txt) return null;
       if (!txt.includes("##")) return txt;
-      return <Fragment key={keyPrefix}>{renderTextWithPlaceholders(txt, keyPrefix)}</Fragment>;
+      return <Fragment key={keyPrefix}>{renderTextWithPlaceholders(txt, keyPrefix, isAlone)}</Fragment>;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return null;
     const el = node as Element;
     const tag = el.tagName.toLowerCase();
+    // Detecta se este elemento "hospeda" um único placeholder — nesse caso,
+    // o input renderizado deve preencher 100% da largura disponível.
+    const aloneHere =
+      isAlone ||
+      (["td", "th", "p", "div", "li"].includes(tag) &&
+        ALONE_PLACEHOLDER_RE.test(el.textContent ?? ""));
     if (!SUPPORTED_TAGS.has(tag)) {
-      // tag não suportada → renderiza apenas filhos
-      return <Fragment key={keyPrefix}>{renderChildren(el, keyPrefix)}</Fragment>;
+      return <Fragment key={keyPrefix}>{renderChildren(el, keyPrefix, aloneHere)}</Fragment>;
     }
     const props = buildReactProps(el);
     props.key = keyPrefix;
@@ -300,19 +317,19 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
     if (tag === "br" || tag === "hr" || tag === "col") {
       return React.createElement(tag, props);
     }
-    return React.createElement(tag, props, renderChildren(el, keyPrefix));
+    return React.createElement(tag, props, renderChildren(el, keyPrefix, aloneHere));
   };
 
-  const renderChildren = (el: Element, keyPrefix: string): React.ReactNode[] => {
+  const renderChildren = (el: Element, keyPrefix: string, isAlone: boolean): React.ReactNode[] => {
     const out: React.ReactNode[] = [];
     el.childNodes.forEach((child, i) => {
-      const r = renderNode(child, `${keyPrefix}-${i}`);
+      const r = renderNode(child, `${keyPrefix}-${i}`, isAlone);
       if (r != null && r !== "") out.push(r);
     });
     return out;
   };
 
-  const tree = renderChildren(rootDoc, "lsr");
+  const tree = renderChildren(rootDoc, "lsr", false);
 
   return (
     <div className="layout-scientific-form text-sm text-foreground">
