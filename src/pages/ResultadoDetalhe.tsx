@@ -1166,6 +1166,11 @@ const ResultadoDetalhe = () => {
                       const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
 
 
+                      // Texto livre (observação, etc.) — não tem referência e
+                      // precisa de largura ampla para digitação confortável.
+                      const isTextoLivre = !["Select", "Formula", "Número"].includes(param.tipo ?? "");
+                      const temReferencia = !!(ref.refMin || ref.refMax || ref.descricao);
+
                       return (
                         <Fragment key={idx}>
                         {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
@@ -1179,62 +1184,88 @@ const ResultadoDetalhe = () => {
                             {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
                           </p>
                           <div className="space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-muted-foreground">Resultado</span>
-                              {isBlockedExame && !retificando ? (
-                                <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${isOutOfRange ? "bg-status-danger/10" : "bg-accent/50"}`}>
-                                  {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                                  {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                                  {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
-                                   {displayValor ? (
-                                    <span className={`text-sm font-bold ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
-                                      {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-sm text-muted-foreground italic">—</span>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5">
-                                  {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
-                                  {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
-                                  {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
+                            {isTextoLivre ? (
+                              // Layout em coluna: label em cima, input ocupando 100% da largura.
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-muted-foreground">Resultado</span>
+                                {isBlockedExame && !retificando ? (
+                                  <div className="rounded-lg px-2.5 py-1.5 bg-accent/50 min-h-[36px]">
+                                    {displayValor ? (
+                                      <span className="text-sm text-foreground whitespace-pre-line">{displayValor}</span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground italic">—</span>
+                                    )}
+                                  </div>
+                                ) : (
                                   <ParamTypedInput
                                     param={param}
                                     computedValue={computedFormula}
                                     onChange={(v) => updateParametro(exame.id, idx, v)}
                                     disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
-                                    className="w-24 text-right"
+                                    className="w-full"
                                   />
-                                  <span className="text-xs text-muted-foreground">{param.unidade}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Referência</span>
-                              <div className="text-right">
-                                {(ref.refMin || ref.refMax) ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent/50 rounded-lg text-xs text-foreground">
-                                    {ref.refMin} - {ref.refMax}
-                                    <span className="text-muted-foreground ml-0.5">{ref.refUnidade}</span>
-                                  </span>
-                                ) : ref.descricao ? (
-                                  <span className="inline-flex items-center px-2 py-1 bg-accent/50 rounded-lg text-xs text-foreground whitespace-pre-line">
-                                    {ref.descricao}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground italic">Sem referência</span>
-                                )}
-                                {(ref.refMin || ref.refMax) && ref.descricao && (
-                                  <p className="text-[10px] text-muted-foreground italic">{ref.descricao}</p>
                                 )}
                               </div>
-                            </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs text-muted-foreground">Resultado</span>
+                                {isBlockedExame && !retificando ? (
+                                  <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${isOutOfRange ? "bg-status-danger/10" : "bg-accent/50"}`}>
+                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                                    {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                                    {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
+                                     {displayValor ? (
+                                      <span className={`text-sm font-bold ${isOutOfRange ? (above ? "text-status-danger" : "text-orange-500") : "text-foreground"}`}>
+                                        {param.tipo === "Select" ? displayValor.toUpperCase() : displayValor} <span className="text-muted-foreground font-normal">{param.unidade}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground italic">—</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5">
+                                    {inRange === true && <CheckCircle2 className="h-4 w-4 text-status-success" />}
+                                    {below && <ArrowDown className="h-4 w-4 text-orange-500" />}
+                                    {above && <ArrowUp className="h-4 w-4 text-status-danger" />}
+                                    <ParamTypedInput
+                                      param={param}
+                                      computedValue={computedFormula}
+                                      onChange={(v) => updateParametro(exame.id, idx, v)}
+                                      disabled={modoConsulta || exame.status === "Cancelado" || !isEditableParam}
+                                      className="w-24 text-right"
+                                    />
+                                    <span className="text-xs text-muted-foreground">{param.unidade}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Linha de referência só aparece se existir VR para este parâmetro. */}
+                            {temReferencia && !isTextoLivre && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Referência</span>
+                                <div className="text-right">
+                                  {(ref.refMin || ref.refMax) ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent/50 rounded-lg text-xs text-foreground">
+                                      {ref.refMin} - {ref.refMax}
+                                      <span className="text-muted-foreground ml-0.5">{ref.refUnidade}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2 py-1 bg-accent/50 rounded-lg text-xs text-foreground whitespace-pre-line">
+                                      {ref.descricao}
+                                    </span>
+                                  )}
+                                  {(ref.refMin || ref.refMax) && ref.descricao && (
+                                    <p className="text-[10px] text-muted-foreground italic">{ref.descricao}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         </Fragment>
                       );
                     })}
+
 
 
                     {/* Mobile footer actions — secundárias estão em "Mais ações" no topo */}
