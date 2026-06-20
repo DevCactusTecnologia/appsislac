@@ -99,6 +99,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setOpcoesSelect(opcoesUpper);
     setNovaOpcao(opcoesUpper.join(", "));
     setCasasDecimais(typeof p.casasDecimais === "number" ? p.casasDecimais : 2);
+    setSeparadorDecimal(p.separadorDecimal === "," ? "," : ".");
+    setQtdDigitos(typeof p.qtdDigitos === "number" ? p.qtdDigitos : 0);
     setCriticoMin(p.criticoMin ?? "");
     setCriticoMax(p.criticoMax ?? "");
   };
