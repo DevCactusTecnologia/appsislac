@@ -107,6 +107,10 @@ const ResultadoDetalhe = () => {
   const canAnalisar = hasPermission("analisar_amostra") || hasPermission("editar_atendimento");
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
+  // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
+  // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
+  // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
+  const [isHydrating, setIsHydrating] = useState(true);
   const [dbRows, setDbRows] = useState<AtendimentoExameRow[]>([]);
   const [dbIdMap, setDbIdMap] = useState<DbIdMap>({});
   const [layoutHtmlByExameId, setLayoutHtmlByExameId] = useState<Record<string, string>>({});
