@@ -1046,7 +1046,7 @@ const ResultadoDetalhe = () => {
           .set({
             margin: 0,
             filename,
-            image: { type: "jpeg", quality: 0.95 },
+            image: { type: "png" },
             html2canvas: getLaudoCanvasOptions(container),
             jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
             pagebreak: { mode: ["css", "legacy"], avoid: [".exame-bloco", ".assinatura-bloco", ".laudo-a4-rodape", ".laudo-a4-cabecalho"] },
