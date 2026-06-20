@@ -105,9 +105,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   });
   return `
       <style>
-        /* Courier Prime: outline font web crisp para o corpo dos resultados,
-           evita o aspecto "embaçado" da bitmap "Courier" em alguns sistemas. */
-        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+        /* Usamos a fonte "Courier" nativa (base PDF Type 1) para o corpo dos
+           resultados — espelha o padrão do laudo de referência (Laravel) e
+           renderiza nítido no PDF, sem dependência de webfont externa que
+           pode chegar parcial no html2canvas e causar aspecto "embaçado". */
         /* Cada .laudo-a4-page representa UMA folha A4 completa (210x297mm)
            com as margens aplicadas como padding interno. Isso evita que o
            html2pdf adicione margens externas em cima do nosso cálculo de
@@ -232,12 +233,12 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-break: break-word !important;
           white-space: normal !important;
           padding-right: 0 !important;
-          line-height: 1.6 !important;
-          font-size: 10pt !important;
+          line-height: 1.5 !important;
+          font-size: 8pt !important;
         }
         #laudo-content .assinatura-liberado-prefixo,
         #laudo-content .assinatura-liberado-nome {
-          font-size: 10pt !important;
+          font-size: 8pt !important;
         }
         #laudo-content .assinatura-liberado-prefixo {
           display: inline !important;
@@ -350,7 +351,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           return `
             <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;"><div style="font-size:12pt;font-weight:700;color:#000000;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>${dataColetaHtml}</div>
-              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:'Courier Prime',Courier,'Courier New',monospace;">
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:Courier,'Courier New',monospace;">
 
                 <thead><tr>
                   <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
@@ -374,7 +375,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           `;
         }).join("")}
         <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
-          <p class="assinatura-liberado-linha" style="font-size:10pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.6;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
+          <p class="assinatura-liberado-linha" style="font-size:8pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.5;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
           <div style="height:28px;"></div>
           <div style="text-align:center;color:#000;line-height:1.6;">
             ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
