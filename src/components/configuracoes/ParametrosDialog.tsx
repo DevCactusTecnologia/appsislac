@@ -212,38 +212,27 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   }, [parametros, busca]);
 
   const headerActions = (
-    <button
-      onClick={resetForm}
-      className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
-    >
-      <Plus className="h-3.5 w-3.5" /> Novo parâmetro
-    </button>
-  );
-
-  const footer = (
-    <>
-      {selectedId && (
-        <button
-          onClick={handleRemover}
-          className="h-10 px-4 rounded-xl border border-destructive/30 text-destructive text-[13px] font-medium flex items-center gap-2 hover:bg-destructive/10 transition-all duration-200 mr-auto"
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Remover
-        </button>
-      )}
+    <div className="flex items-center gap-2">
+      <button
+        onClick={resetForm}
+        className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
+      >
+        <Plus className="h-3.5 w-3.5" /> Novo parâmetro
+      </button>
       <button
         onClick={onClose}
-        className="h-10 px-4 rounded-xl border border-border/60 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200"
+        className="h-9 px-3 rounded-xl border border-border/60 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all duration-200"
       >
         Fechar
       </button>
       <button
         onClick={handleSave}
         disabled={saving || !exameId || !!chaveJaUsada}
-        className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+        className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
       >
-        <Save className="h-4 w-4" /> {saving ? "Salvando..." : selectedId ? "Atualizar" : "Adicionar"}
+        <Save className="h-3.5 w-3.5" /> {saving ? "Salvando..." : selectedId ? "Atualizar" : "Adicionar"}
       </button>
-    </>
+    </div>
   );
 
   const totalVisiveis = parametros.filter((p) => p.visivel).length;
@@ -257,7 +246,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       title="Parâmetros do exame"
       subtitle={exameNome || "Defina os campos de resultado"}
       headerActions={headerActions}
-      footer={footer}
+      
       maxWidth="7xl"
       allowMaximize={true}
       defaultMaximized={defaultMaximized}
@@ -363,10 +352,10 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             </div>
             {selectedId && (
               <button
-                onClick={resetForm}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                onClick={handleRemover}
+                className="h-8 px-3 rounded-lg border border-destructive/30 text-destructive text-[12px] font-medium flex items-center gap-1.5 hover:bg-destructive/10 transition-all duration-200"
               >
-                <Plus className="h-3 w-3" /> novo
+                <Trash2 className="h-3.5 w-3.5" /> Remover parâmetro
               </button>
             )}
           </div>
