@@ -1691,30 +1691,30 @@ const ResultadoDetalhe = () => {
                       }
                       if (!hasRef) {
                         return (
-                          <div className="flex items-center h-12 px-4 rounded-2xl bg-muted/30 text-sm text-muted-foreground italic">
+                          <div className="flex items-center h-9 px-3 rounded-lg bg-muted/30 text-xs text-muted-foreground italic">
                             Sem referência
                           </div>
                         );
                       }
                       return (
                         <>
-                          <div className="relative flex items-center gap-2 pl-4 pr-5 h-12 rounded-2xl bg-muted/50 dark:bg-muted/30">
-                            <div className="flex-1 min-w-0 flex items-baseline gap-2">
+                          <div className="relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30">
+                            <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
                               {(ref.refMin || ref.refMax) ? (
                                 <>
-                                  <span className="text-[15px] font-medium text-foreground tabular-nums truncate">
+                                  <span className="text-[13px] font-medium text-foreground tabular-nums truncate">
                                     {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
                                   </span>
-                                  <span className="text-sm text-muted-foreground shrink-0">{ref.refUnidade}</span>
+                                  <span className="text-xs text-muted-foreground shrink-0">{ref.refUnidade}</span>
                                 </>
                               ) : (
-                                <span className="text-sm text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
+                                <span className="text-xs text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
                               )}
                             </div>
-                            <span className="absolute right-1.5 top-1.5 bottom-1.5 w-1.5 rounded-full bg-foreground/85" />
+                            <span className="absolute right-1 top-1 bottom-1 w-1 rounded-full bg-foreground/85" />
                           </div>
                           {(ref.refMin || ref.refMax) && ref.descricao && (
-                            <p className="text-[10px] text-muted-foreground italic mt-1 pl-4 whitespace-pre-line">{ref.descricao}</p>
+                            <p className="text-[10px] text-muted-foreground italic mt-0.5 pl-3 whitespace-pre-line">{ref.descricao}</p>
                           )}
                         </>
                       );
