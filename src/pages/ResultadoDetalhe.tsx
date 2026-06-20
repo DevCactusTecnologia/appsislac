@@ -1821,10 +1821,10 @@ const ResultadoDetalhe = () => {
                                     {row.abs ? (
                                       <div className="grid grid-cols-2 gap-2">
                                         {renderRefCard(param)}
-                                        {renderRefCard(row.abs)}
+                                        {renderRefCard(row.abs, param)}
                                       </div>
                                     ) : (
-                                      renderRefCard(param)
+                                      renderRefCard(param, row.main && isAbsName(param.nome) ? rows.find((r) => r.abs?.parametroId === param.parametroId)?.main : undefined)
                                     )}
                                   </td>
                                 </tr>
