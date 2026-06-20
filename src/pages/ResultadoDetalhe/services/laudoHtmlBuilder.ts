@@ -327,22 +327,27 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
             </div>
           `;
         }).join("")}
-        <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:'Courier New',Courier,monospace;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
-          <p class="assinatura-liberado-linha" style="font-size:9pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
+        <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:'Courier New',Courier,monospace;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
+          <p class="assinatura-liberado-linha" style="font-size:9pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.6;"><span class="assinatura-liberado-prefixo">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome">${(analistaAtual.nome || "").toUpperCase()}</span></p>
           <div style="height:28px;"></div>
-          <div style="text-align:center;color:#000;">
+          <div style="text-align:center;color:#000;line-height:1.6;">
             ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
               ? `<img src="${assinaturaLaudo.url}" alt="Assinatura" style="max-height:60px;max-width:240px;object-fit:contain;margin:0 auto 2px;display:block;" />`
               : ``}
-            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;">${(analistaAtual.nome || "").toUpperCase()}</p>
-            <p style="font-size:9pt;margin:0;color:#000;">Responsável Técnico</p>
-            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;">${assinaturaLaudo.conselho}</p>` : ""}
+            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;line-height:1.6;">${(analistaAtual.nome || "").toUpperCase()}</p>
+            <p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">Responsável Técnico</p>
+            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
           </div>
         </div>
-              </div>
-            </td></tr>
-          </tbody>
-        </table>
+          </div>
+        </div>
+        <div class="laudo-a4-rodape">
+          ${rodapePadrao
+            ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
+            : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
+                <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+              </div>`}
+        </div>
       </div>
     `;
 }
