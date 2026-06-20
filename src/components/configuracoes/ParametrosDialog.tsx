@@ -139,10 +139,13 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setSaving(false);
     if (ok) {
       toast({ title: selectedId ? "Parâmetro atualizado" : "Parâmetro criado" });
-      resetForm();
+      // Mantém a seleção quando é uma atualização para o usuário ver os dados persistidos.
+      // Apenas limpa o formulário ao criar um novo parâmetro.
+      if (!selectedId) resetForm();
     } else {
       toast({ title: "Erro ao salvar", description: "Verifique sua permissão ou se a chave já existe.", variant: "destructive" });
     }
+
   };
 
   const handleRemover = async () => {
