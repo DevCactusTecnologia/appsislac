@@ -937,29 +937,48 @@ const ResultadoDetalhe = () => {
     html: string,
     _margins: { top: number; right: number; bottom: number; left: number },
   ) => {
+    const host = document.createElement("div");
+    host.dataset.laudoPdfHost = "true";
+    // O host fica fora da viewport para não piscar na tela. O elemento passado
+    // ao html2pdf NÃO pode carregar left/top negativos, porque a biblioteca clona
+    // estilos inline e o html2canvas acaba capturando uma área branca.
+    host.style.position = "fixed";
+    host.style.left = "-10000px";
+    host.style.top = "0";
+    host.style.width = "210mm";
+    host.style.margin = "0";
+    host.style.padding = "0";
+    host.style.pointerEvents = "none";
+    host.style.opacity = "1";
+    host.style.visibility = "visible";
+
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
     container.innerHTML = sanitizeHtmlForPrint(html);
-    // Renderiza fora da viewport para não "piscar" o PDF na tela enquanto
-    // o html2canvas captura. IMPORTANTE: não usar opacity/visibility hidden;
-    // html2canvas respeita esses estilos e gera PDF visualmente em branco.
-    // Mantém dimensões reais (210mm) para que o canvas saia idêntico ao layout final.
-    container.style.position = "fixed";
-    container.style.left = "-10000px";
-    container.style.top = "0";
-    container.style.width = `210mm`;
-    container.style.maxWidth = `210mm`;
+    // Mantém dimensões reais (210mm) no elemento-fonte, mas sem posicionamento
+    // offscreen inline. Isso impede PDF branco por captura deslocada.
+    container.style.width = "210mm";
+    container.style.maxWidth = "210mm";
     container.style.margin = "0";
     container.style.padding = "0";
     container.style.boxSizing = "border-box";
     container.style.background = "#ffffff";
     container.style.color = "#000000";
-    container.style.pointerEvents = "none";
     container.style.opacity = "1";
     container.style.visibility = "visible";
-    container.style.zIndex = "2147483647";
-    document.body.appendChild(container);
+
+    host.appendChild(container);
+    document.body.appendChild(host);
     return container;
+  };
+
+  const removeLaudoPdfContainer = (container: HTMLElement) => {
+    const host = container.parentElement;
+    if (host?.dataset.laudoPdfHost === "true") {
+      host.remove();
+      return;
+    }
+    container.remove();
   };
 
   const waitForLaudoPdfReady = async (container: HTMLElement) => {
@@ -1088,23 +1107,13 @@ const ResultadoDetalhe = () => {
 
         const url = URL.createObjectURL(blob);
         if (newTab && !newTab.closed) {
-          try {
-            newTab.document.open();
-            newTab.document.write(
-              `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filename}</title>` +
-                `<style>html,body{margin:0;padding:0;height:100%;background:#525659;}iframe{border:0;width:100%;height:100%;display:block;}</style>` +
-                `</head><body><iframe src="${url}" title="${filename}"></iframe></body></html>`,
-            );
-            newTab.document.close();
-          } catch {
-            newTab.location.href = url;
-          }
+          newTab.location.href = url;
         } else {
           window.open(url, "_blank");
         }
         setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000);
       } finally {
-        document.body.removeChild(container);
+        removeLaudoPdfContainer(container);
       }
     } catch (err) {
       writeStatus("Falha ao gerar o PDF. Tente novamente.");
@@ -1142,8 +1151,8 @@ const ResultadoDetalhe = () => {
             .then((pdf: LaudoPdfDocument) => removeHtml2PdfTrailingBlankPages(pdf, container))
             .then(() => worker.save());
         })
-        .then(() => { document.body.removeChild(container); resolve(); })
-        .catch((err: unknown) => { document.body.removeChild(container); reject(err); });
+        .then(() => { removeLaudoPdfContainer(container); resolve(); })
+        .catch((err: unknown) => { removeLaudoPdfContainer(container); reject(err); });
     });
   };
 
