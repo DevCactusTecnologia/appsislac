@@ -941,8 +941,9 @@ const ResultadoDetalhe = () => {
     container.setAttribute("aria-hidden", "true");
     container.innerHTML = sanitizeHtmlForPrint(html);
     // Renderiza fora da viewport para não "piscar" o PDF na tela enquanto
-    // o html2canvas captura. Mantém dimensões reais (210mm) para que o
-    // canvas saia idêntico ao layout final.
+    // o html2canvas captura. IMPORTANTE: não usar opacity/visibility hidden;
+    // html2canvas respeita esses estilos e gera PDF visualmente em branco.
+    // Mantém dimensões reais (210mm) para que o canvas saia idêntico ao layout final.
     container.style.position = "fixed";
     container.style.left = "-10000px";
     container.style.top = "0";
@@ -954,13 +955,20 @@ const ResultadoDetalhe = () => {
     container.style.background = "#ffffff";
     container.style.color = "#000000";
     container.style.pointerEvents = "none";
-    container.style.opacity = "0";
-    container.style.zIndex = "-1";
+    container.style.opacity = "1";
+    container.style.visibility = "visible";
+    container.style.zIndex = "2147483647";
     document.body.appendChild(container);
     return container;
   };
 
   const waitForLaudoPdfReady = async (container: HTMLElement) => {
+    const styles = window.getComputedStyle(container);
+    const width = Math.max(container.scrollWidth, container.offsetWidth, 0);
+    const height = Math.max(container.scrollHeight, container.offsetHeight, 0);
+    if (styles.display === "none" || styles.visibility === "hidden" || Number(styles.opacity) === 0 || width === 0 || height === 0) {
+      throw new Error("LAUDO_PDF_CONTAINER_NOT_RENDERABLE");
+    }
     if (document.fonts?.ready) {
       await document.fonts.ready.catch(() => undefined);
     }
