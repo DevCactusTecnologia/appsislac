@@ -655,7 +655,11 @@ const Index = () => {
       .map(e => {
         const valor = Number(e.valor) || 0;
         const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
-        const valorOriginal = Math.max(Number(e.valorOriginal) || 0, valor, valorTabela);
+        const voRaw = Number(e.valorOriginal) || 0;
+        // Se já existe `valorOriginal` no registro (SSOT do preço cheio), respeitar — assim
+        // acréscimos (valor > valorOriginal) e descontos (valor < valorOriginal) são preservados.
+        // Sem `valorOriginal`, fallback = max(valor, tabela) para dados legados sem desconto.
+        const valorOriginal = voRaw > 0 ? voRaw : Math.max(valor, valorTabela);
         return { ...e, valor, valorOriginal };
       });
     // Subtotal = soma dos valores ORIGINAIS (preço cheio antes do desconto).
