@@ -308,12 +308,10 @@ const DocumentoTemplateDialog = ({
     const footer = cfg?.exibirRodape ? renderRodapePadrao(ctx) : "";
 
     return `
-      <div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;color:#1a1a2e;background:#fff;padding:20px;border-radius:12px;">
-        ${header}
-        <div class="documento-corpo">${corpo}</div>
-        ${rodapePadrao}
-        ${footer}
-      </div>
+      ${header}
+      <div class="documento-corpo" style="margin:0;padding:0;">${corpo}</div>
+      ${rodapePadrao}
+      ${footer}
     `;
   }, [conteudo, tipo, template?.config]);
 
