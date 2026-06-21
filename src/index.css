@@ -240,6 +240,25 @@
 .prose-mapa sub { font-size: 0.75em; vertical-align: sub; }
 .prose-mapa sup { font-size: 0.75em; vertical-align: super; }
 
+/* Alinhamento de imagens (CKEditor) sem precisar do escopo .ck-content — preview fiel ao editor */
+.prose-mapa figure.image { display: table; margin: 0.9em auto; }
+.prose-mapa figure.image img { display: block; max-width: 100%; height: auto; }
+.prose-mapa figure.image-style-align-left,
+.prose-mapa figure.image.align-left { float: left; margin-right: 1.5em; margin-left: 0; }
+.prose-mapa figure.image-style-align-right,
+.prose-mapa figure.image.align-right { float: right; margin-left: 1.5em; margin-right: 0; }
+.prose-mapa figure.image-style-align-center,
+.prose-mapa figure.image.align-center { margin-left: auto; margin-right: auto; }
+.prose-mapa figure.image-style-block-align-left { margin-left: 0; margin-right: auto; }
+.prose-mapa figure.image-style-block-align-right { margin-left: auto; margin-right: 0; }
+.prose-mapa figure.image-style-side { float: right; margin-left: 1.5em; margin-right: 0; max-width: 50%; }
+.prose-mapa img.image-style-align-left,
+.prose-mapa img.align-left { float: left; margin-right: 1.5em; }
+.prose-mapa img.image-style-align-right,
+.prose-mapa img.align-right { float: right; margin-left: 1.5em; }
+.prose-mapa img.image-style-align-center,
+.prose-mapa img.align-center { display: block; margin-left: auto; margin-right: auto; }
+
 /* ── A4 page stage (editor + preview) — visual premium unificado ── */
 .a4-stage {
   background: hsl(var(--muted) / 0.35);
