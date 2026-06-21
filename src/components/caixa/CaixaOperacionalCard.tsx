@@ -18,7 +18,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUnidades } from "@/data/unidadeStore";
-import { useEnsureStore } from "@/hooks/useEnsureStore";
+
 import {
   abrirCaixa, fecharCaixa, getCaixaAbertaPorUnidade,
   type CaixaSessao, type CaixaFechamentoResumo,
