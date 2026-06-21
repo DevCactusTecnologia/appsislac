@@ -1,91 +1,88 @@
+## Plano — Padronização Definitiva dos Documentos Operacionais
 
-# Financeiro V2 — Laboratorial Simples e Profissional
+Mapeamento concluído (read-only). Antes de executar quero alinhamento sobre escopo exato, porque algumas remoções tocam arquivos congelados por constraint.
 
-Execução em sequência única conforme escolha. Toda mudança preserva multi-tenancy, RLS e histórico. Frontend lê; backend calcula.
+---
 
-## Premissas confirmadas
+### Fase 1 — `escapeHtml` único
 
-- Estratégia: tudo em sequência (11 fases) num único ciclo de implementação.
-- Migrations: aprovadas para produção (cada fase com schema-change envia uma migration que você aprova em modal).
-- DELETE físico: bloqueado **a partir do deploy** em `atendimento_pagamentos`, `convenio_faturas`, `financeiro_saidas`. Histórico anterior intacto. Super_admin segue regra geral (sem exceção).
+Manter `@/lib/escapeHtml.ts` como SSOT. Remover cópias locais e migrar imports em:
 
-## Escopo NÃO incluído (filosofia: laboratório, não ERP)
+- `src/lib/dossieRastreabilidade.ts` (linha 21)
+- `src/lib/etiquetaAmostra.ts` (linha 27) ⚠️ memória diz "não tocar etiquetas" — vou apenas trocar a função local pelo import, sem mexer no HTML/lógica.
+- `src/lib/mapaPrint.ts` (linha 64) ⚠️ memória diz "não tocar Mapa de Trabalho" — idem, só import.
+- `src/data/auditLogsStore.ts` (linha 336)
+- `src/lib/regulatorioResolver.ts` (linha 77)
+- `src/lib/laudoTemplate.ts` (linha 89) ⚠️ laudo congelado — **não mexer**, manter local.
+- `src/lib/lgpdReport.ts` (usa `esc` inline — substituir por import)
+- `src/lib/documentoRenderer.ts` (verificar)
 
-Plano de contas contábil, centro de custo, conciliação bancária, parcelamento de despesas, sangria/suprimento, múltiplas gavetas, glosa funcional (apenas estrutura), recebimento parcial de convênio funcional (apenas estrutura).
+> Pergunta: posso trocar a *função local* por import nos arquivos congelados (etiqueta, mapa) já que comportamento é idêntico? Ou prefere preservá-los intactos e consolidar só os não-congelados?
 
-## Fases
+### Fase 2 — `formatDateBR` único
 
-### Fase 1 — SSOT do "A Receber"
-- RPC única `financeiro_a_receber_v2(tenant, filtros)` retornando `{tipo: 'paciente'|'convenio', quem, quanto, desde, status}`.
-- Remove caminho duplicado em `FinanceiroService.ts`. Feature flag antiga eliminada.
-- Documento `docs/financeiro/ssot.md`.
+Criar `src/lib/dateBR.ts` com `formatDateBR(iso)` e `formatDateNow()`. Migrar:
 
-### Fase 2 — Normalização de despesas
-- Migration: `ALTER TABLE financeiro_saidas ADD COLUMN forma_pagamento text` (enum lógico: PIX, Dinheiro, Débito, Crédito, Transferência, Boleto).
-- Backfill: parser do sufixo `[pgto:X]` na descrição → coluna nova; sufixo removido da descrição em UPDATE auditado.
-- Compatibilidade: leitura via coluna; legados sem match ficam `NULL` (UI mostra "—").
+- `src/data/financeiroStore.ts`
+- `src/data/pacienteStore.ts`
+- `src/data/orcamentoStore.ts`
+- `src/data/atendimentoStore/_internal.ts` (export atual — ajustar barril)
+- `src/lib/mapaPrint.ts` (variante sem args)
 
-### Fase 3 — Dashboard Financeiro
-- Nova primeira tela `/financeiro`: 6 cards apenas — Receita Hoje, Receita Mês, A Receber, Despesas Mês, Saldo Atual, Convênios Pendentes.
-- Remove gráficos/indicadores técnicos atuais.
+### Fase 3 — Shell A4 (`src/lib/printShell.ts`)
 
-### Fase 4 — Recebimentos
-- Aba enxuta: Data, Paciente, Protocolo, Forma, Valor, Status. Filtros: Hoje, Semana, Mês, Período. Sem mais nada.
+```ts
+wrapA4Document({ title, bodyHtml, orientation?, margin?, css? }): string
+```
 
-### Fase 5 — A Receber (split)
-- Duas sub-abas claramente separadas: **Pacientes** | **Convênios**. Mesma estrutura de coluna (Quem, Quanto, Desde, Status). Sem mistura.
+Aplicar **apenas** em:
+- `lgpdReport.ts`
+- `auditLogsStore.ts` (relatório auditoria)
+- `dossieRastreabilidade.ts`
+- relatórios admin de Tabelas/Catálogo/Produção (se inline)
 
-### Fase 6 — Despesas
-- Form simplificado: Descrição, Categoria, Forma de Pagamento (coluna nova), Vencimento, Valor, Status.
-- Status: Aberta, Paga, Cancelada. Migration adiciona `cancelada` ao domínio se ausente.
+**Não** aplicar em: comprovantes (já têm `buildEmitenteHeader`), laudo, mapa, etiqueta, orçamento.
 
-### Fase 7 — Convênios (área dedicada)
-- Aba própria: Convênio · Faturas · Valor · Status.
-- Migration prepara colunas em `convenio_faturas`: `valor_glosado numeric NULL`, `valor_recebido_parcial numeric NULL`, `motivo_glosa text NULL`. Apenas estrutura — sem UI funcional para glosa/parcial nesta entrega.
+### Fase 4 — `buildAdminReportHeader()`
 
-### Fase 8 — Caixa Operacional (opcional)
-- `app_settings`: chave `usar_caixa_operacional` (bool, default `false`). Tenants atuais ficam exatamente como hoje.
-- Migration nova tabela `caixa_sessoes` (tenant_id, unidade_id, aberta_em, fechada_em, responsavel_id, valor_abertura, valor_fechamento, observacoes, status). RLS por tenant + permissão `gestao_financeira` para abrir/fechar.
-- Regras: 1 sessão aberta por unidade; recebimentos do dia se vinculam à sessão aberta quando flag ativa; sem sangria/suprimento.
+Em `src/lib/comprovantes.ts` (ou novo `adminReportHeader.ts`) usando `getLabConfig()`. Aplicar em LGPD, Auditoria, Produção, Catálogo, Tabelas, Dossiê, Detalhe Entrada.
 
-### Fase 9 — Estorno formal
-- Migration nova tabela `financeiro_estornos` (tenant_id, origem_tipo `pagamento|fatura|saida`, origem_id, motivo, valor, criado_por, criado_em).
-- Triggers `BEFORE DELETE` em `atendimento_pagamentos`, `convenio_faturas`, `financeiro_saidas` com `RAISE EXCEPTION 'Use estorno'` — exceto registros criados antes do deploy (compatibilidade controlada por `created_at < deploy_ts` salvo em `app_settings`).
-- UI: botão "Estornar" substitui "Excluir"; modal exige motivo.
+> Pergunta: header admin deve seguir Lovable Minimalist (preto/branco) ou paleta admin atual `#1e3a8a`? Memória de identidade visual sugere o primeiro.
 
-### Fase 10 — Auditoria financeira
-- Migration `financeiro_audit` (quem, quando, ação, entidade, antes/depois jsonb). Triggers em pagamentos, saídas, faturas, estornos, sessões de caixa.
+### Fase 5 — Aliases triviais e `<script>print()</script>` redundante
 
-### Fase 11 — UX
-- Remoção de modais redundantes na navegação Financeiro.
-- Nomenclatura unificada: "Receber", "Pagar", "Conferir".
-- Texto explicativo zero — telas autoexplicativas.
+- `buildOrcamentoHtmlPublic` → 4 callers. Substituir por `buildOrcamentoHtml` direto e remover alias em `comprovantes.ts` e `comprovantesHtml.ts`.
+- Remover `<script>window.print()</script>` inline em `lgpdReport.ts`, `auditLogsStore.ts`, `ConvenioExamesPanel.tsx`, `ResultadoDetalhe.tsx`, `LaudoPrintPage.tsx` — **somente quando** já passam por `printHtmlInHiddenFrame`.
 
-## Validação ao final
-- Build + TypeScript via harness.
-- Smoke manual: criar atendimento → pagar → ver em Recebimentos → ver Dashboard atualizar; criar despesa com forma de pagamento; tentar DELETE (deve falhar); estornar (deve gerar registro + audit).
-- RLS: querys cross-tenant rejeitadas (já garantido por `current_tenant_id()`; revalidar nas novas tabelas).
+> ⚠️ `LaudoPrintPage.tsx` é a página dedicada de laudo (rota standalone). Ela usa `window.print()` direto, não iframe. **Não vou tocar** — laudo congelado.
 
-## Entregáveis
+### Fase 6 — Código morto
 
-- Código nas pastas existentes (`src/pages/Financeiro*`, `src/services/financeiro*`, `src/data/financeiroStore.ts`).
-- Migrations sequenciais (uma por fase com schema-change).
-- `docs/financeiro/ssot.md`.
-- `docs/financeiro-v2/financeiro-simples-profissional-report.md` respondendo às 7 perguntas de validação.
+Após fases 1-5, varrer com `knip`/`ts-prune` mental:
+- exports sem consumidores em `comprovantes.ts`, `comprovantesHtml.ts`
+- helpers órfãos pós-consolidação
 
-## Riscos e mitigação
+Só remover com 0 referências em `rg`.
 
-- **Backfill de `[pgto:X]`**: registros sem padrão ficam NULL e são visíveis para correção manual; descrição original preservada em `financeiro_audit` antes do UPDATE.
-- **Bloqueio de DELETE**: timestamp de corte (`deploy_ts`) em `app_settings` permite que registros antigos ainda possam ser removidos por compatibilidade enquanto novos exigem estorno.
-- **Caixa opcional**: default `false` garante que nenhum tenant atual sofre mudança de fluxo sem opt-in explícito.
-- **Reversão**: cada migration tem DOWN documentada no comentário SQL para rollback emergencial.
+### Fase 7 — Não tocar (lock list)
 
-## Detalhes técnicos
+Laudo (`buildLaudoHtml`, `laudoHtmlBuilder`, `LaudoPrintPage`, `ResultadoDetalhe` impressão), CKEditor, `documento_templates`, `html2pdf` do orçamento, Mapa (CSS próprio), Etiquetas, RLS, multi-tenancy.
 
-- RPCs novas: `financeiro_a_receber_v2`, `financeiro_dashboard_kpis`, `financeiro_estornar(tipo, id, motivo)`.
-- Permissões reaproveitam `visualizar_financeiro` (leitura) e `gestao_financeira` (mutação/estorno/caixa).
-- QueryKeys seguem padrão `["tenant", tenantId, "financeiro", ...]`.
-- Nenhuma alteração em Atendimento, Resultado, Portal, Coleta, Análise.
-- Nenhuma alteração em rotas existentes além de `/financeiro` (dashboard interno reorganizado).
+### Fase 8 — Validação
 
-Aprove para eu iniciar pela Fase 1.
+Smoke manual via build + leitura. Sem testes E2E novos.
+
+### Fase 9 — Relatório
+
+`docs/documentos/document-standardization-final-report.md` respondendo as 10 perguntas.
+
+---
+
+### Confirmações pedidas antes de começar
+
+1. **OK trocar a função `escapeHtml` local por import nos arquivos congelados (mapa, etiqueta)?** (mesmo comportamento, só DRY)
+2. **Header admin: Lovable Minimalist (P&B) ou manter `#1e3a8a` atual?**
+3. **OK manter `LaudoPrintPage.tsx` intocado** (continua com `window.print()` próprio)?
+4. **Posso executar tudo em uma rodada** ou prefere fase a fase com revisão entre elas?
+
+Confirme e eu executo. Sem confirmação, paro aqui (constraint de mudanças estruturais).
