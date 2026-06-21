@@ -55,7 +55,7 @@ export async function abrirCaixa(args: {
   const { data, error } = await supabase.rpc("caixa_abrir", {
     p_unidade_id: args.unidadeId,
     p_valor_abertura: args.valorAbertura,
-    p_observacoes: args.observacoes ?? null,
+    p_observacoes: args.observacoes ?? undefined,
   });
   if (error) {
     showError(error, { scope: "caixa.abrir" });
@@ -70,7 +70,7 @@ export async function fecharCaixa(args: {
 }): Promise<CaixaFechamentoResumo> {
   const { data, error } = await supabase.rpc("caixa_fechar", {
     p_sessao_id: args.sessaoId,
-    p_observacoes: args.observacoes ?? null,
+    p_observacoes: args.observacoes ?? undefined,
   });
   if (error) {
     showError(error, { scope: "caixa.fechar" });
