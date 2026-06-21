@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import type { MockAtendimento } from "@/data/types";
 
-export type TabType = "painel" | "entrada" | "a_receber" | "convenios" | "saida" | "caixa" | "integracoes";
+export type TabType = "painel" | "entrada" | "a_receber" | "convenios" | "saida" | "caixa" | "caixa_op" | "integracoes";
 
 export type SaidaStatusFilter = "todas" | "vencidas" | "vencendo7" | "pagas";
 
