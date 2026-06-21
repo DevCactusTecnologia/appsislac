@@ -727,6 +727,40 @@ const NovoAtendimento = () => {
   })();
   const acrescimoDataExibicao = descontoDataExibicao;
 
+  // Imprime comprovante diretamente — sem modal, sem pré-visualização.
+  // Olhou. Entendeu. Simplificou.
+  const imprimirComprovante = (tipo: "pagamento" | "atendimento" | "comparecimento") => {
+    const paciente = getPacientes().find(p => p.nome === pacienteQuery);
+    const cpf = paciente?.cpf || editAtendimentoData?.cpf || "";
+    const nascimento = paciente?.dataNascimento || editAtendimentoData?.nascimento || "";
+    const idade = paciente?.idade || editAtendimentoData?.idade || "";
+    const protocoloAtual = editProtocolo ? decodeURIComponent(editProtocolo) : "";
+    const d = new Date();
+    const dataAtual = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+    const tipoLabels = {
+      pagamento: "COMPROVANTE DE PAGAMENTO",
+      atendimento: "COMPROVANTE DE ATENDIMENTO",
+      comparecimento: "COMPROVANTE DE COMPARECIMENTO",
+    } as const;
+    const html = buildComprovanteHtml({
+      tipo,
+      protocolo: protocoloAtual,
+      data: dataAtual,
+      paciente: { nome: pacienteQuery || "Paciente", cpf, nascimento, idade },
+      convenio: convenios[0] || "Particular",
+      solicitante: solicitantes[0] || "",
+      unidade: unidadeAtiva ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado } : undefined,
+      exames: exames.map(e => ({ nome: e.nome, material: e.material, valor: e.valor })),
+      pagamentos: pagamentosRealizados,
+      totais: { subtotal, desconto, pago: valorPago, total, saldo: saldoDevedor },
+    });
+    printHtmlInHiddenFrame({
+      html,
+      frameId: "comprovante-print-frame",
+      documentTitle: `${tipoLabels[tipo]} ${protocoloAtual}`.trim(),
+    });
+  };
+
   const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
     const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
     aplicarAjusteLiquidoNosExames(-desc);
