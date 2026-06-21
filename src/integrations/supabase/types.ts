@@ -505,6 +505,7 @@ export type Database = {
           data: string
           id: number
           observacao: string
+          status_pagamento: string
           tenant_id: string
           tipo: string
           updated_at: string
@@ -516,6 +517,7 @@ export type Database = {
           data?: string
           id?: number
           observacao?: string
+          status_pagamento?: string
           tenant_id: string
           tipo: string
           updated_at?: string
@@ -527,6 +529,7 @@ export type Database = {
           data?: string
           id?: number
           observacao?: string
+          status_pagamento?: string
           tenant_id?: string
           tipo?: string
           updated_at?: string
