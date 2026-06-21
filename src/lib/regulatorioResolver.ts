@@ -74,5 +74,3 @@ export function renderRegulatorioFooterHtml(reg: ResultadoRegulatorio): string {
     </div>
   `;
 }
-
-import { escapeHtml } from "@/lib/escapeHtml";
