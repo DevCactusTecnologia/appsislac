@@ -2416,62 +2416,6 @@ const NovoAtendimento = () => {
       />
       </Suspense>
       )}
-      {comprovanteTipo && (() => {
-        const paciente = getPacientes().find(p => p.nome === pacienteQuery);
-        const cpf = paciente?.cpf || editAtendimentoData?.cpf || "";
-        const nascimento = paciente?.dataNascimento || editAtendimentoData?.nascimento || "";
-        const idade = paciente?.idade || editAtendimentoData?.idade || "";
-        const telefone = paciente?.telefone || paciente?.celular;
-        const protocoloAtual = editProtocolo ? decodeURIComponent(editProtocolo) : "";
-        const dataAtual = (() => {
-          const d = new Date();
-          return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-        })();
-        const examesData = exames.map(e => ({ nome: e.nome, material: e.material, valor: e.valor }));
-        const tipoLabels = {
-          pagamento: "COMPROVANTE DE PAGAMENTO",
-          atendimento: "COMPROVANTE DE ATENDIMENTO",
-          comparecimento: "COMPROVANTE DE COMPARECIMENTO",
-        } as const;
-        const comprovanteData = {
-          tipo: comprovanteTipo,
-          protocolo: protocoloAtual,
-          data: dataAtual,
-          paciente: { nome: pacienteQuery || "Paciente", cpf, nascimento, idade },
-          convenio: convenios[0] || "Particular",
-          solicitante: solicitantes[0] || "",
-          unidade: unidadeAtiva ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado } : undefined,
-          exames: examesData,
-          pagamentos: pagamentosRealizados,
-          totais: { subtotal, desconto, pago: valorPago, total, saldo: saldoDevedor },
-        };
-        const html = buildComprovanteHtml(comprovanteData);
-        return (
-          <Suspense fallback={null}>
-          <PdfPreviewDialog
-            open={!!comprovanteTipo}
-            onClose={() => setComprovanteTipo(null)}
-            html={html}
-            filename={`comprovante-${comprovanteTipo}-${protocoloAtual}`}
-            title={tipoLabels[comprovanteTipo]}
-            subtitle={`${protocoloAtual} · ${dataAtual}`}
-            whatsappPhone={telefone}
-            buildWhatsappMessage={(url) => {
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *${tipoLabels[comprovanteTipo]}*`,
-                `Protocolo: *${protocoloAtual}*`,
-                `Data: ${dataAtual}`,
-                "",
-                `Olá *${pacienteQuery || "Paciente"}*, segue seu comprovante.`,
-                "",
-                linkLine,
-              ].join("\n");
-            }}
-          />
-          </Suspense>
-        );
-      })()}
       {avaliacaoIAOpen && (
       <Suspense fallback={null}>
       <AvaliacaoIADialog
