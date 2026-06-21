@@ -72,7 +72,7 @@ import {
   enviarPdfWhatsappCloud,
   buildWaUrl,
 } from "@/domains/result/services/comprovantesWhatsapp";
-export { uploadPdfAndGetUrl, criarShortlinkPdf, enviarPdfWhatsappCloud };
+export { uploadPdfAndGetUrl, criarShortlinkPdf, enviarPdfWhatsappCloud, buildWaUrl };
 
 // ============================================================================
 // Orquestração — geração local (download) e envio por WhatsApp.
