@@ -1,7 +1,7 @@
 // Tipos extraídos de Financeiro.tsx (Sprint 1 — slicing estrutural).
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard, Building2,
+  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard, Building2, Wallet,
 } from "lucide-react";
 import type { MockAtendimento } from "@/data/types";
 
