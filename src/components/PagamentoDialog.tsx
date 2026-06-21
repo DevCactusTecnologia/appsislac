@@ -528,6 +528,9 @@ const PagamentoDialog = ({
               const stagingEff = adj && stagingUnidade === "PCT"
                 ? Math.round(((stagingExameIdx != null ? exames[stagingExameIdx]?.valor ?? 0 : subtotal) * stagingNum)) / 100
                 : stagingNum;
+              const isRealPag = !adj && selectedMethod !== "Cortesia";
+              const saldoRestante = Math.max(0, totalAjustado - valorPagoTotal);
+              const projectedExceeds = isRealPag && stagingNum > 0 && (valorPagoTotal + stagingNum) > totalAjustado + 0.001;
               return (
                 <div className="rounded-2xl bg-muted/20 border border-border/60 p-3 space-y-2">
                   <div className="flex items-center gap-3">
@@ -536,7 +539,7 @@ const PagamentoDialog = ({
                     </div>
                     <span className="text-[12px] font-semibold text-foreground w-16 shrink-0 truncate">{selectedMethod}</span>
 
-                    <div className="flex items-center flex-1 min-w-0 h-9 rounded-xl border border-border bg-card overflow-hidden focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 transition-all duration-200">
+                    <div className={`flex items-center flex-1 min-w-0 h-9 rounded-xl border bg-card overflow-hidden transition-all duration-200 ${projectedExceeds ? "border-destructive/60 ring-1 ring-destructive/20" : "border-border focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20"}`}>
                       <span className="px-3 text-[11px] font-semibold text-foreground select-none shrink-0">
                         {adj && stagingUnidade === "PCT" ? "%" : "R$"}
                       </span>
@@ -544,7 +547,7 @@ const PagamentoDialog = ({
                         type="text"
                         value={stagingValor}
                         onChange={e => setStagingValor(e.target.value.replace(/[^0-9,.]/g, ""))}
-                        onKeyDown={e => { if (e.key === "Enter") handleAddStaging(); }}
+                        onKeyDown={e => { if (e.key === "Enter" && !projectedExceeds) handleAddStaging(); }}
                         placeholder={adj && stagingUnidade === "PCT" ? "0" : "0,00"}
                         autoFocus
                         className="flex-1 min-w-0 w-full h-full bg-transparent text-sm font-semibold text-foreground focus:outline-none placeholder:text-muted-foreground/40"
@@ -568,13 +571,23 @@ const PagamentoDialog = ({
 
                     <button
                       onClick={handleAddStaging}
-                      disabled={stagingNum <= 0}
+                      disabled={stagingNum <= 0 || projectedExceeds}
                       className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm"
                       aria-label="Adicionar pagamento"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {projectedExceeds && (
+                    <div className="flex items-start gap-2 px-3 py-2 rounded-xl" style={{ backgroundColor: `${hsl("var(--status-danger)")}08`, border: `1px solid ${hsl("var(--status-danger)")}20` }}>
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" style={{ color: hsl("var(--status-danger)") }} />
+                      <p className="text-[11px] font-medium leading-snug" style={{ color: hsl("var(--status-danger)") }}>
+                        Valor excede o saldo restante de <strong>{fmtBRL(saldoRestante)}</strong>. Ajuste o valor antes de adicionar.
+                      </p>
+                    </div>
+                  )}
+
 
                   {/* Adjustment options */}
                   {adj && (
