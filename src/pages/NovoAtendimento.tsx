@@ -2322,7 +2322,7 @@ const NovoAtendimento = () => {
                             Comp. Atendimento
                           </button>
                           <button
-                            onClick={() => setComprovanteTipo("comparecimento")}
+                            onClick={() => imprimirComprovante("comparecimento")}
                             className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all flex items-center justify-center gap-2"
                           >
                             <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
