@@ -438,19 +438,6 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
           </div>
         </div>
       </div>
-      {previewData && (
-        <PdfPreviewDialog
-          open={!!previewTipo}
-          onClose={() => setPreviewTipo(null)}
-          html={previewHtml}
-          filename={`comprovante-${previewData.tipo}-${previewData.protocolo}`}
-          title={tipoLabels[previewData.tipo]}
-          subtitle={`${previewData.protocolo} · ${previewData.data}`}
-          whatsappPhone={telefonePaciente}
-          buildWhatsappMessage={previewWhatsappMessage}
-          comprovante={{ protocolo: previewData.protocolo, tipo: previewData.tipo }}
-        />
-      )}
     </div>
   ), document.body);
 };
