@@ -442,9 +442,4 @@ export function buildOrcamentoHtml(o: OrcamentoPDFData): string {
 </div>`;
 }
 
-/** Mantido como helper exportado para callers públicos. */
-export function buildOrcamentoHtmlPublic(o: OrcamentoPDFData): string {
-  return buildOrcamentoHtml(o);
-}
-
 export { COMPROVANTE_TO_DOCUMENTO_TIPO, tipoConfig };
