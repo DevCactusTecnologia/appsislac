@@ -1,11 +1,11 @@
 // Tipos extraídos de Financeiro.tsx (Sprint 1 — slicing estrutural).
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard, Building2,
+  ArrowDownCircle, ArrowUpCircle, BookOpen, Banknote, CreditCard, QrCode, Clock, LayoutDashboard, Building2, Wallet,
 } from "lucide-react";
 import type { MockAtendimento } from "@/data/types";
 
-export type TabType = "painel" | "entrada" | "a_receber" | "convenios" | "saida" | "caixa" | "integracoes";
+export type TabType = "painel" | "entrada" | "a_receber" | "convenios" | "saida" | "caixa" | "caixa_op" | "integracoes";
 
 export type SaidaStatusFilter = "todas" | "vencidas" | "vencendo7" | "pagas";
 
@@ -77,6 +77,7 @@ export type CaixaLinhaComSaldo = CaixaMov & { saldoAcumulado: number };
 
 export const baseTabs: { key: TabType; label: string; icon: LucideIcon }[] = [
   { key: "painel", label: "Painel", icon: LayoutDashboard },
+  { key: "caixa_op", label: "Caixa", icon: Wallet },
   { key: "entrada", label: "Recebido", icon: ArrowDownCircle },
   { key: "a_receber", label: "Receber", icon: Clock },
   { key: "convenios", label: "Convênios", icon: Building2 },

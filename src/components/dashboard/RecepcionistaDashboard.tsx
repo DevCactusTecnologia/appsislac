@@ -24,6 +24,7 @@ import { fmtBRLNumber } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
+import CaixaOperacionalCard from "@/components/caixa/CaixaOperacionalCard";
 
 /* helpers */
 const PT_DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})/;
@@ -262,6 +263,9 @@ const RecepcionistaDashboard = () => {
           <Quick label="Consultar atendimento" icon={Search} to="/atendimentos" />
           <Quick label="Pedidos do site" icon={Globe} to="/pedidos-site" />
         </section>
+
+        {/* Caixa operacional — Fase 5 */}
+        <CaixaOperacionalCard />
 
         {/* KPIs */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

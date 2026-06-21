@@ -92,6 +92,7 @@ import { validatePayment } from "./Financeiro/services/validatePayment";
 import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
 import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
+import CaixaOperacionalCard from "@/components/caixa/CaixaOperacionalCard";
 import EntradasTab from "./Financeiro/components/EntradasTab";
 import SaidasTab from "./Financeiro/components/SaidasTab";
 import AReceberTab from "./Financeiro/components/AReceberTab";
@@ -959,6 +960,11 @@ const Financeiro = () => {
 
           {/* ─── Livro-Caixa (Fase 4 — Passo 5): consome FinanceiroContext ─── */}
           {activeTab === "caixa" && <CaixaTab />}
+
+          {/* ─── Caixa Operacional (Fase 5): abrir/fechar caixa por unidade ─── */}
+          {activeTab === "caixa_op" && (
+            <div className="max-w-2xl"><CaixaOperacionalCard /></div>
+          )}
         </>
 
 
