@@ -50,7 +50,6 @@ interface AtendimentoDetalheDialogProps {
 
 const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDetalheDialogProps) => {
   useBodyScrollLock(open && !!atendimento);
-  const [previewTipo, setPreviewTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
   // Tick para forçar re-render quando os templates de documento forem
