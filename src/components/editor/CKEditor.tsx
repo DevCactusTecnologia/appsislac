@@ -492,9 +492,15 @@ const CKEditorComponent = ({
               return;
             }
             isRepositioning.add(panel);
+            // CKEditor usa `position: absolute` por padrão, ancorando a balloon
+            // ao body e somando o scroll do documento. Em diálogos com scroll
+            // próprio (StandardDialog), isso joga a barra para fora da área
+            // visível. Forçamos `fixed` para casar com clientX/clientY do clique.
+            panel.style.setProperty("position", "fixed", "important");
             panel.style.setProperty("left", `${left}px`, "important");
             panel.style.setProperty("top", `${top}px`, "important");
             panel.style.setProperty("transform", "none", "important");
+            panel.style.setProperty("z-index", "10000", "important");
             // Libera após o frame para permitir novas reposições legítimas
             // (ex.: clique em outra célula).
             requestAnimationFrame(() => {
