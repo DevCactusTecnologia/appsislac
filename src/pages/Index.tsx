@@ -647,7 +647,7 @@ const Index = () => {
   };
 
   const pagamentoData = useMemo(() => {
-    if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"], exames: [] as { nome: string; valor: number }[] };
+    if (!selectedAtendimento) return { itens: 0, subtotal: 0, desconto: 0, acrescimo: 0, total: 0, valorPago: 0, saldoDevedor: 0, pagamentosRealizados: [] as MockAtendimento["pagamentosRealizados"], exames: [] as { nome: string; valor: number }[] };
     // Apenas exames cobrados do PACIENTE entram no cálculo do modal de pagamento.
     const convenioNome = selectedAtendimento.convenio ?? "Particular";
     const examesPaciente = (selectedAtendimento.examesCobranca ?? selectedAtendimento.exames.map(nome => ({ nome, cobrancaDestino: "paciente" as const, valor: 0, valorOriginal: 0 })))
@@ -659,15 +659,18 @@ const Index = () => {
         return { ...e, valor, valorOriginal };
       });
     // Subtotal = soma dos valores ORIGINAIS (preço cheio antes do desconto).
-    // O desconto histórico aparece destacado como linha separada.
+    // O desconto/acréscimo histórico aparece destacado como linha separada.
     const subtotal = examesPaciente.reduce((sum, e) => sum + e.valorOriginal, 0);
     const totalEfetivo = examesPaciente.reduce((sum, e) => sum + e.valor, 0);
-    const descontoHistorico = Math.max(0, Math.round((subtotal - totalEfetivo) * 100) / 100);
+    const ajusteCents = Math.round((totalEfetivo - subtotal) * 100);
+    const descontoHistorico = ajusteCents < 0 ? Math.abs(ajusteCents) / 100 : 0;
+    const acrescimoHistorico = ajusteCents > 0 ? ajusteCents / 100 : 0;
     const totalPago = (localPagamentos ?? []).reduce((sum, p) => sum + p.valor, 0);
     return {
       itens: examesPaciente.length,
       subtotal,
       desconto: descontoHistorico,
+      acrescimo: acrescimoHistorico,
       total: totalEfetivo,
       valorPago: totalPago,
       saldoDevedor: Math.max(0, totalEfetivo - totalPago),
@@ -676,6 +679,7 @@ const Index = () => {
       exames: examesPaciente.map(e => ({ nome: e.nome, valor: e.valorOriginal })),
     };
   }, [selectedAtendimento, localPagamentos]);
+
 
   const handlePagamentoConfirm = async (resultado: { valorPago: number; desconto: number; acrescimo: number; novosPagamentos: MockAtendimento["pagamentosRealizados"] }) => {
     if (!selectedAtendimento) return;
@@ -1181,6 +1185,7 @@ const Index = () => {
         itens={pagamentoData.itens}
         subtotal={pagamentoData.subtotal}
         desconto={pagamentoData.desconto}
+        acrescimo={pagamentoData.acrescimo}
         total={pagamentoData.total}
         valorPago={pagamentoData.valorPago}
         saldoDevedor={pagamentoData.saldoDevedor}
@@ -1189,6 +1194,7 @@ const Index = () => {
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}
         descontoData={selectedAtendimento?.data}
+        acrescimoData={selectedAtendimento?.data}
         isEditing={true}
       />
       <AtendimentoDetalheDialog

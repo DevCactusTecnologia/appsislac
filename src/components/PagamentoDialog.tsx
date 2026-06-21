@@ -40,6 +40,7 @@ interface PagamentoDialogProps {
   itens?: number;
   subtotal?: number;
   desconto?: number;
+  acrescimo?: number;
   total?: number;
   valorPago?: number;
   saldoDevedor?: number;
@@ -52,6 +53,8 @@ interface PagamentoDialogProps {
   /** Data em que o desconto foi aplicado (formato BR dd/MM/yyyy ...). Usado para exibir
    *  uma linha do desconto histórico na seção "Pagamentos realizados". */
   descontoData?: string;
+  /** Data do acréscimo histórico (formato BR). */
+  acrescimoData?: string;
 }
 
 /* ── Constants ── */
@@ -80,9 +83,10 @@ const effectiveValor = (p: Pagamento, subtotal: number, exames: ExameInfoPagamen
 /* ── Component ── */
 const PagamentoDialog = ({
   open, onClose, itens = 0, subtotal = 0, desconto: descontoProp = 0,
+  acrescimo: acrescimoProp = 0,
   valorPago: valorPagoProp = 0, exames = [], onConfirm,
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
-  descontoData,
+  descontoData, acrescimoData,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -91,12 +95,14 @@ const PagamentoDialog = ({
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
-  // Confirmação de remoção: 'desc' para o card de desconto, 'real-N' para realizado, 'staging-N' para staging
+  const [acrescimoHistRemovido, setAcrescimoHistRemovido] = useState(false);
+  // Confirmação de remoção: 'desc' / 'acre' para cards históricos, 'real-N' para realizado, 'staging-N' para staging
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   useBodyScrollLock(open);
 
-  // Desconto histórico efetivo (zera quando o usuário remove o card).
+  // Históricos efetivos (zeram quando o usuário remove o card).
   const descontoHistorico = descontoHistRemovido ? 0 : descontoProp;
+  const acrescimoHistorico = acrescimoHistRemovido ? 0 : acrescimoProp;
 
   const resetStaging = () => {
     setStagingValor("");
@@ -119,7 +125,7 @@ const PagamentoDialog = ({
       const pagoAtual = pagamentos
         .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia")
         .reduce((s, p) => s + parse(p.valor), 0);
-      const totalAjust = subtotalLocal - descontoHistorico - descAtual + acreAtual;
+      const totalAjust = subtotalLocal - descontoHistorico - descAtual + acrescimoHistorico + acreAtual;
       const saldoAtual = Math.max(0, totalAjust - valorPagoProp - pagoAtual);
       if (saldoAtual <= 0) return;
       setPagamentos(p => [...p, {
@@ -166,7 +172,8 @@ const PagamentoDialog = ({
   }, [pagamentos, subtotal, exames]);
 
   const descontoTotal = descontoHistorico + totalDesc;
-  const totalAjustado = subtotal - descontoTotal + totalAcre;
+  const acrescimoTotal = acrescimoHistorico + totalAcre;
+  const totalAjustado = subtotal - descontoTotal + acrescimoTotal;
   const valorPagoTotal = valorPagoProp + totalPag;
   const saldo = totalAjustado - valorPagoTotal;
   const excedente = valorPagoTotal > totalAjustado && totalAjustado > 0;
@@ -179,10 +186,11 @@ const PagamentoDialog = ({
     const novosPagamentos: PagamentoRealizado[] = pagamentos
       .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
       .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") }));
-    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: totalAcre, novosPagamentos });
+    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: acrescimoTotal, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);
+    setAcrescimoHistRemovido(false);
     setConfirmingRemove(null);
     onClose();
   };
@@ -294,7 +302,7 @@ const PagamentoDialog = ({
           <div className="px-5 sm:px-6 py-4 space-y-5">
 
             {/* Realized payments */}
-            {(pagamentosRealizados.length > 0 || descontoHistorico > 0) && (
+            {(pagamentosRealizados.length > 0 || descontoHistorico > 0 || acrescimoHistorico > 0) && (
               <section>
                 <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pagamentos realizados</h3>
                 <div className="space-y-1.5">
@@ -339,6 +347,54 @@ const PagamentoDialog = ({
                             onClick={() => setConfirmingRemove("desc")}
                             className="p-1 rounded-md hover:bg-destructive/10 transition-colors"
                             aria-label="Remover desconto"
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Linha de acréscimo histórico — espelho do desconto. */}
+                  {acrescimoHistorico > 0 && (
+                    <div className="group flex items-center justify-between px-3 py-2 rounded-xl bg-card border border-border hover:border-primary/40 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${hsl("var(--status-danger)")}10` }}
+                        >
+                          <TrendingUp className="h-3.5 w-3.5" style={{ color: hsl("var(--status-danger)") }} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-[12px] font-medium text-foreground block leading-tight">Acréscimo</span>
+                          {acrescimoData && (
+                            <p className="text-[10px] text-muted-foreground leading-tight">{acrescimoData}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[13px] font-semibold tabular-nums" style={{ color: hsl("var(--status-danger)") }}>
+                          + {fmtBRL(acrescimoHistorico)}
+                        </span>
+                        {confirmingRemove === "acre" ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => { setAcrescimoHistRemovido(true); setConfirmingRemove(null); }}
+                              className="px-2 h-6 rounded-md text-[10px] font-semibold bg-destructive text-destructive-foreground hover:opacity-90 transition"
+                            >
+                              Remover
+                            </button>
+                            <button
+                              onClick={() => setConfirmingRemove(null)}
+                              className="px-2 h-6 rounded-md text-[10px] font-semibold border border-border text-muted-foreground hover:text-foreground transition"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmingRemove("acre")}
+                            className="p-1 rounded-md hover:bg-destructive/10 transition-colors"
+                            aria-label="Remover acréscimo"
                           >
                             <Trash2 className="h-3 w-3 text-destructive" />
                           </button>
