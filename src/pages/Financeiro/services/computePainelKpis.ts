@@ -36,11 +36,19 @@ function isSameMonth(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
+export interface AReceberTotaisInput {
+  /** Total geral (pacientes + convênios) — vem da RPC SSOT. */
+  totalGeral: number;
+  /** Quantidade de pacientes com saldo > 0 — vem da RPC SSOT. */
+  qtdPacientes: number;
+  /** Quantidade de convênios com saldo aberto — vem da RPC SSOT. */
+  qtdConvenios: number;
+}
+
 export function computePainelKpis(
   entradas: FinanceiroEntry[],
   saidas: FinanceiroEntry[],
-  aReceberPacientes: AReceberRow[],
-  aReceberConvenios: AReceberConvenioRow[],
+  aReceberTotais: AReceberTotaisInput,
   hoje: Date = new Date(),
 ): PainelKpis {
   let receitaHoje = 0, qtdEntradasHoje = 0;
@@ -61,22 +69,21 @@ export function computePainelKpis(
     if (isSameMonth(d, hoje)) { despesasMes += s.valorTotal; qtdDespesasMes += 1; }
   }
 
-  const aReceberPacientesTotal = aReceberPacientes.reduce((sum, r) => sum + r.saldo, 0);
-  const aReceberConveniosTotal = aReceberConvenios.reduce((sum, r) => sum + r.saldo, 0);
-  const aReceberTotal = aReceberPacientesTotal + aReceberConveniosTotal;
-
+  // Fase 7 — SSOT: o "A Receber" SEMPRE vem da RPC `financeiro_a_receber_totais`.
+  // Não há mais soma local de `aReceberPacientes.reduce(...)` (que era enganosa
+  // porque o array é paginado em 50 linhas).
   const saldoAtual = receitaMes - despesasMes;
 
   return {
     receitaHoje:           Math.round(receitaHoje  * 100) / 100,
     receitaMes:            Math.round(receitaMes   * 100) / 100,
-    aReceberTotal:         Math.round(aReceberTotal * 100) / 100,
+    aReceberTotal:         Math.round(aReceberTotais.totalGeral * 100) / 100,
     despesasMes:           Math.round(despesasMes  * 100) / 100,
     saldoAtual:            Math.round(saldoAtual   * 100) / 100,
-    conveniosPendentes:    aReceberConvenios.length,
+    conveniosPendentes:    aReceberTotais.qtdConvenios,
     qtdEntradasHoje,
     qtdEntradasMes,
-    qtdAReceberPacientes:  aReceberPacientes.length,
+    qtdAReceberPacientes:  aReceberTotais.qtdPacientes,
     qtdDespesasMes,
   };
 }
