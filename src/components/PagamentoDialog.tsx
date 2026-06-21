@@ -40,6 +40,7 @@ interface PagamentoDialogProps {
   itens?: number;
   subtotal?: number;
   desconto?: number;
+  acrescimo?: number;
   total?: number;
   valorPago?: number;
   saldoDevedor?: number;
@@ -52,6 +53,8 @@ interface PagamentoDialogProps {
   /** Data em que o desconto foi aplicado (formato BR dd/MM/yyyy ...). Usado para exibir
    *  uma linha do desconto histórico na seção "Pagamentos realizados". */
   descontoData?: string;
+  /** Data do acréscimo histórico (formato BR). */
+  acrescimoData?: string;
 }
 
 /* ── Constants ── */
