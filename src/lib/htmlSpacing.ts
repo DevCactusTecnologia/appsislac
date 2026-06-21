@@ -59,7 +59,11 @@ function shouldPreservePureSpacing(text: string, prevTag: string, nextTag: strin
   return prevInline || nextInline || insideCellEdge;
 }
 
-function normalizeVisibleSpaces(text: string, preservePureSpacing: boolean): string {
+function normalizeVisibleSpaces(
+  text: string,
+  preservePureSpacing: boolean,
+  options?: { preserveLeading?: boolean; preserveTrailing?: boolean },
+): string {
   const normalizedEntities = text.replace(HTML_SPACE_ENTITY_RE, "\u00a0");
   if (preservePureSpacing) return normalizedEntities.replace(/ /g, "\u00a0");
 
@@ -71,12 +75,29 @@ function normalizeVisibleSpaces(text: string, preservePureSpacing: boolean): str
     return singleNbsp && betweenText ? " " : match;
   });
 
-  return textWithBreakableWordSpaces
+  let out = textWithBreakableWordSpaces
     .replace(/ {2,}/g, (spaces) => "\u00a0".repeat(spaces.length))
     .replace(/ +(?=\u00a0)/g, (spaces) => "\u00a0".repeat(spaces.length))
-    .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length))
-    .replace(/^ +/g, (spaces) => "\u00a0".repeat(spaces.length))
-    .replace(/ +$/g, (spaces) => "\u00a0".repeat(spaces.length));
+    .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length));
+
+  // Whitespace de indentação estrutural (texto encostado em abertura/fechamento
+  // de bloco — ex.: `<p>\n    Resultado:</p>`) NÃO deve virar NBSP, porque é
+  // formatação do HTML salvo pelo editor, não espaço digitado pelo usuário.
+  // Preservava-se antes só visualmente porque html2canvas colapsava NBSPs;
+  // o motor vetorial nativo respeita NBSP literalmente, criando recuo indesejado.
+  if (!options?.preserveLeading) {
+    out = out.replace(/^[\u00a0\s]*[\u00a0]+/, (spaces) => spaces.replace(/[\u00a0]/g, " "));
+    out = out.replace(/^ +/, "");
+  } else {
+    out = out.replace(/^ +/g, (spaces) => "\u00a0".repeat(spaces.length));
+  }
+  if (!options?.preserveTrailing) {
+    out = out.replace(/[\u00a0]+[\u00a0\s]*$/, (spaces) => spaces.replace(/[\u00a0]/g, " "));
+    out = out.replace(/ +$/, "");
+  } else {
+    out = out.replace(/ +$/g, (spaces) => "\u00a0".repeat(spaces.length));
+  }
+  return out;
 }
 
 export function splitPlaceholderSpacing(raw: string): { leading: string; key: string; trailing: string } {
@@ -102,6 +123,18 @@ export function preserveVisibleTextSpacing(html: string): string {
     const preservePureSpacing = shouldPreservePureSpacing(part, prevTag, nextTag);
     if (!hasExplicitNbsp && !preservePureSpacing && !/[^\s]/.test(part)) return part;
 
-    return normalizeVisibleSpaces(part, preservePureSpacing);
+    // Quando o texto está encostado em abertura/fechamento de um BLOCK tag
+    // (<p>, <div>, <li>, <td>...), o whitespace nas extremidades é indentação
+    // estrutural do HTML salvo pelo editor, não espaço digitado pelo usuário.
+    // Não convertemos esse whitespace em NBSP para evitar recuos artificiais
+    // no laudo impresso (modo vetorial respeita NBSP literalmente).
+    const prevInfo = getTagInfo(prevTag);
+    const nextInfo = getTagInfo(nextTag);
+    const prevIsBlockBoundary = !!prevInfo && BLOCK_TAGS.has(prevInfo.name);
+    const nextIsBlockBoundary = !!nextInfo && BLOCK_TAGS.has(nextInfo.name);
+    const preserveLeading = !prevIsBlockBoundary;
+    const preserveTrailing = !nextIsBlockBoundary;
+
+    return normalizeVisibleSpaces(part, preservePureSpacing, { preserveLeading, preserveTrailing });
   }).join("");
 }
