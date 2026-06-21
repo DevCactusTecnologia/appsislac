@@ -37,7 +37,7 @@ function notify() {
 function buildFromRows(orcRow: any, examesRows: any[]): Orcamento {
   return {
     id: orcRow.codigo,
-    data: formatDateBR(orcRow.created_at || orcRow.data),
+    data: formatDateTimeBR(orcRow.created_at || orcRow.data),
     nome: orcRow.paciente_nome,
     cpf: orcRow.paciente_cpf || "",
     telefone: orcRow.paciente_telefone || "",
