@@ -10,6 +10,7 @@ import {
   uploadPdfAndGetUrl,
   criarShortlinkPdf,
   enviarPdfWhatsappCloud,
+  buildWaUrl,
   type ComprovanteTipo,
 } from "@/lib/comprovantes";
 
