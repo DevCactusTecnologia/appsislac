@@ -102,18 +102,6 @@ export function preserveVisibleTextSpacing(html: string): string {
     const preservePureSpacing = shouldPreservePureSpacing(part, prevTag, nextTag);
     if (!hasExplicitNbsp && !preservePureSpacing && !/[^\s]/.test(part)) return part;
 
-    // Quando o texto está encostado em abertura/fechamento de um BLOCK tag
-    // (<p>, <div>, <li>, <td>...), o whitespace nas extremidades é indentação
-    // estrutural do HTML salvo pelo editor, não espaço digitado pelo usuário.
-    // Não convertemos esse whitespace em NBSP para evitar recuos artificiais
-    // no laudo impresso (modo vetorial respeita NBSP literalmente).
-    const prevInfo = getTagInfo(prevTag);
-    const nextInfo = getTagInfo(nextTag);
-    const prevIsBlockBoundary = !!prevInfo && BLOCK_TAGS.has(prevInfo.name);
-    const nextIsBlockBoundary = !!nextInfo && BLOCK_TAGS.has(nextInfo.name);
-    const preserveLeading = !prevIsBlockBoundary;
-    const preserveTrailing = !nextIsBlockBoundary;
-
-    return normalizeVisibleSpaces(part, preservePureSpacing, { preserveLeading, preserveTrailing });
+    return normalizeVisibleSpaces(part, preservePureSpacing);
   }).join("");
 }
