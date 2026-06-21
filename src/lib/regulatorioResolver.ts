@@ -17,6 +17,7 @@
 // ============================================================
 
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export interface ResultadoRegulatorio {
   metodologia: string;
