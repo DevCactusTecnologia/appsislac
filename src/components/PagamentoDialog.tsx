@@ -45,7 +45,7 @@ interface PagamentoDialogProps {
   saldoDevedor?: number;
   /** Lista de exames cobrados do paciente — usada para desconto por exame. */
   exames?: ExameInfoPagamento[];
-  onConfirm?: (resultado: { valorPago: number; desconto: number; novosPagamentos: PagamentoRealizado[] }) => void;
+  onConfirm?: (resultado: { valorPago: number; desconto: number; acrescimo: number; novosPagamentos: PagamentoRealizado[] }) => void;
   pagamentosRealizados?: PagamentoRealizado[];
   onRemovePagamentoRealizado?: (index: number) => void;
   isEditing?: boolean;
