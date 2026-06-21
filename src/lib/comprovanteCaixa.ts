@@ -4,12 +4,12 @@ import { escapeHtml } from "@/lib/escapeHtml";
 import { formatDateBR } from "@/lib/dateBR";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { fmtBRL } from "@/lib/utils";
-import { adminReportHeaderHtml } from "@/lib/adminReportHeader";
+import { buildAdminReportHeader } from "@/lib/adminReportHeader";
 import type { CaixaFechamentoResumo } from "@/data/caixaSessoesStore";
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
-  return `${formatDateBR(d)} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+  return `${formatDateBR(iso)} ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 interface ComprovanteArgs {
