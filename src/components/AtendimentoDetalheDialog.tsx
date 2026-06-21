@@ -204,7 +204,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 </button>
               )}
               <button
-                onClick={() => setPreviewTipo("atendimento")}
+                onClick={() => imprimirComprovante("atendimento")}
                 className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <FileText className="h-3.5 w-3.5 text-primary" />
