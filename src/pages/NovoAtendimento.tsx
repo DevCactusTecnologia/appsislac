@@ -2341,15 +2341,18 @@ const NovoAtendimento = () => {
       <PagamentoDialog
         open={pagamentoOpen}
         onClose={() => setPagamentoOpen(false)}
-        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
+        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} acrescimo={acrescimoHistorico} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
         exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
         descontoData={descontoDataExibicao}
+        acrescimoData={acrescimoDataExibicao}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
           if (isEditing) {
-            aplicarDescontoTotalNosExames(res.desconto);
+            // Aplica desconto/acréscimo líquido sobre os valores cheios.
+            const ajusteLiquido = (res.acrescimo || 0) - (res.desconto || 0);
+            aplicarAjusteLiquidoNosExames(ajusteLiquido);
             setDesconto(0);
           } else {
             setDesconto(res.desconto);
