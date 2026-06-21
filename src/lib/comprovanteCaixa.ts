@@ -45,7 +45,7 @@ export function imprimirComprovanteFechamento(args: ComprovanteArgs): void {
     .sign { margin-top: 14mm; display:flex; gap: 10mm; }
     .sign div { flex:1; border-top:1px solid #111; padding-top: 2mm; font-size: 10px; text-align:center; color:#444; }
   </style></head><body>
-  ${adminReportHeaderHtml({ titulo: "Fechamento de Caixa", subtitulo: escapeHtml(unidadeNome) })}
+  ${buildAdminReportHeader({ titulo: "Fechamento de Caixa", subtitulo: unidadeNome })}
   <section class="grid">
     <div><b>Unidade</b>${escapeHtml(unidadeNome)}</div>
     <div><b>Abertura</b>${fmtDateTime(resumo.aberta_em)}</div>
