@@ -92,7 +92,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [previewOrientation, setPreviewOrientation] = useState<MapaOrientation>("portrait");
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
-    top: "15", right: "12", bottom: "15", left: "12",
+    top: "5", right: "10", bottom: "5", left: "10",
   });
   const editorApiRef = useRef<CKEditorApi | null>(null);
 
