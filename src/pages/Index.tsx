@@ -1185,6 +1185,7 @@ const Index = () => {
         itens={pagamentoData.itens}
         subtotal={pagamentoData.subtotal}
         desconto={pagamentoData.desconto}
+        acrescimo={pagamentoData.acrescimo}
         total={pagamentoData.total}
         valorPago={pagamentoData.valorPago}
         saldoDevedor={pagamentoData.saldoDevedor}
@@ -1193,6 +1194,7 @@ const Index = () => {
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}
         descontoData={selectedAtendimento?.data}
+        acrescimoData={selectedAtendimento?.data}
         isEditing={true}
       />
       <AtendimentoDetalheDialog
