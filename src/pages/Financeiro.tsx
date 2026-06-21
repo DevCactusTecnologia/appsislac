@@ -448,7 +448,10 @@ const Financeiro = () => {
       .map(e => {
         const valor = Number(e.valor) || 0;
         const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
-        const valorOriginal = Math.max(Number(e.valorOriginal) || 0, valor, valorTabela);
+        const voRaw = Number(e.valorOriginal) || 0;
+        // Respeitar `valorOriginal` quando já gravado (SSOT do preço cheio).
+        // Sem ele, fallback = max(valor, tabela) — preserva compatibilidade com dados legados.
+        const valorOriginal = voRaw > 0 ? voRaw : Math.max(valor, valorTabela);
         return { ...e, valor, valorOriginal };
       });
     const subtotal = examesPaciente.reduce((s, e) => s + e.valorOriginal, 0);
