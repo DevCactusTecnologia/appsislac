@@ -148,6 +148,17 @@ const PagamentoDialog = ({
     const num = parse(stagingValor);
     if (num <= 0) return;
     const adj = isAdjustment(selectedMethod);
+    const isRealPag = !adj && selectedMethod !== "Cortesia";
+    if (isRealPag) {
+      // Bloqueia adição de pagamento que ultrapasse o total ajustado.
+      const subtotalLocal = subtotal;
+      const descAtual = pagamentos.filter(p => p.tipo === "Desconto" || p.tipo === "Cortesia").reduce((s, p) => s + effectiveValor(p, subtotalLocal, exames), 0);
+      const acreAtual = pagamentos.filter(p => p.tipo === "Acréscimo").reduce((s, p) => s + effectiveValor(p, subtotalLocal, exames), 0);
+      const pagoAtual = pagamentos.filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia").reduce((s, p) => s + parse(p.valor), 0);
+      const totalAjust = subtotalLocal - (descontoHistorico + descAtual) + (acrescimoHistorico + acreAtual);
+      const pagoTotal = valorPagoProp + pagoAtual + num;
+      if (pagoTotal > totalAjust + 0.001) return;
+    }
     setPagamentos(p => [...p, {
       tipo: selectedMethod,
       valor: stagingValor,
@@ -156,6 +167,7 @@ const PagamentoDialog = ({
     }]);
     resetStaging();
   };
+
 
   const remove = (i: number) => setPagamentos(p => p.filter((_, idx) => idx !== i));
 
