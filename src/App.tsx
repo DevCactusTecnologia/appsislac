@@ -21,6 +21,7 @@ const RegistrarColeta = lazy(() => import("./pages/RegistrarColeta"));
 const AnalisarAmostra = lazy(() => import("./pages/AnalisarAmostra"));
 const Resultados = lazy(() => import("./pages/Resultados"));
 const ResultadoDetalhe = lazy(() => import("./pages/ResultadoDetalhe"));
+const LaudoPrintPage = lazy(() => import("./pages/LaudoPrintPage"));
 const ConsultarResultados = lazy(() => import("./pages/ConsultarResultados"));
 const LabApoio = lazy(() => import("./pages/LabApoio"));
 const Pacientes = lazy(() => import("./pages/Pacientes"));
@@ -353,6 +354,10 @@ function AppRoutes() {
             <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><AnalisarAmostra /></ProtectedRoute>} />
             <Route path="/resultados" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><Resultados /></ProtectedRoute>} />
             <Route path="/resultado/:id" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><ResultadoDetalhe /></ProtectedRoute>} />
+            {/* Página dedicada de impressão — abre em nova aba via ResultadoDetalhe.
+                O HTML do laudo chega via sessionStorage (PrintContext SSOT). */}
+            <Route path="/resultado/:id/print" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><LaudoPrintPage /></ProtectedRoute>} />
+
             {/* Domain Driven Routes — Fase A (canônicas) */}
             <Route path="/resultados/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ConsultarResultados /></ProtectedRoute>} />
             <Route path="/resultados/:id/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ResultadoDetalhe /></ProtectedRoute>} />

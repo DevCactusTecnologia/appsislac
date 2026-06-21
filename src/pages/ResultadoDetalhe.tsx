@@ -21,6 +21,7 @@ import { resolverReferencia, getValoresReferencia, subscribeValoresReferencia, _
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+import { savePrintContext } from "@/domains/print/printContext";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
@@ -955,13 +956,20 @@ const ResultadoDetalhe = () => {
   /**
    * Impressão vetorial nativa do laudo.
    *
-   * Reusa EXATAMENTE o HTML produzido por `buildLaudoHtml` (com `@page` e
-   * `@media print` embutidos) e aciona `window.print()` num iframe oculto.
-   * Não passa por html2canvas/html2pdf — o navegador renderiza vetorial
-   * (texto selecionável, qualquer zoom, paginação respeita @page). O usuário
-   * escolhe "Imprimir" ou "Salvar como PDF" no diálogo nativo do browser.
+   * Padrão Worklab/SISLAC: grava o HTML pronto em sessionStorage
+   * (PrintContext SSOT) e abre `/resultado/:id/print` em NOVA ABA. A
+   * página dedicada renderiza o laudo num iframe e dispara `window.print()`
+   * automaticamente — texto vetorial, cópia/seleção, paginação @page
+   * preservada. Sem html2canvas / html2pdf / PNG intermediário.
+   *
+   * O modo "por solicitante" (multi-laudo) continua usando o iframe oculto
+   * para evitar bloqueio de popup ao abrir N abas em sequência.
    */
-  const doImprimirLaudo = async (printable: Exame[], solicitanteLabel?: string) => {
+  const doImprimirLaudo = async (
+    printable: Exame[],
+    solicitanteLabel?: string,
+    opts?: { useNewTab?: boolean },
+  ) => {
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
@@ -969,7 +977,9 @@ const ResultadoDetalhe = () => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
 
-    // Injeta título + auto-print sem tocar no HTML do laudo.
+    // Injeta título + auto-print sem tocar no HTML do laudo. (Necessário
+    // somente para o caminho do iframe oculto — na rota dedicada o
+    // window.print() é disparado pela LaudoPrintPage no load do iframe.)
     const autoPrint = `
 <script>
   (function(){
@@ -978,10 +988,37 @@ const ResultadoDetalhe = () => {
     else window.addEventListener('load', function(){ setTimeout(go, 50); });
   })();
 </script>`;
+
+    if (opts?.useNewTab && id) {
+      // Caminho Worklab: grava contexto e abre página dedicada.
+      const sanitized = sanitizeHtmlForPrint(html).replace(
+        /<title>[^<]*<\/title>/i,
+        `<title>${title}</title>`,
+      );
+      savePrintContext({
+        atendimentoId: id,
+        exameIds: printable.map((e) => String(e.id)),
+        solicitanteId: solicitanteLabel,
+        modo: "selecionados",
+        html: sanitized,
+        title,
+        createdAt: Date.now(),
+      });
+      // `_blank` herda uma cópia do sessionStorage no momento do open.
+      window.open(`/resultado/${id}/print`, "_blank", "noopener=no");
+      const t1 = performance.now();
+      // eslint-disable-next-line no-console
+      console.info(
+        `[PDF Vetorial] HTML pronto em ${(t1 - t0).toFixed(0)}ms — exames=${printable.length} (nova aba)`,
+      );
+      return;
+    }
+
+    // Caminho legado preservado para o modo "por solicitante" (múltiplos
+    // laudos sequenciais): iframe oculto, sem popup blocker.
     const injected = sanitizeHtmlForPrint(html)
       .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
       .replace(/<\/body>/i, `${autoPrint}</body>`);
-
     printHtmlInHiddenFrame({ html: injected, documentTitle: title });
     const t1 = performance.now();
     // eslint-disable-next-line no-console
@@ -989,6 +1026,7 @@ const ResultadoDetalhe = () => {
       `[PDF Vetorial] HTML renderizado em ${(t1 - t0).toFixed(0)}ms — exames=${printable.length}`,
     );
   };
+
 
   /**
    * Executa a impressão/exportação de fato. Quando `modo === 'porSolicitante'`,
@@ -1002,7 +1040,7 @@ const ResultadoDetalhe = () => {
   ) => {
     if (modo === "unica") {
       try {
-        await doImprimirLaudo(printable);
+        await doImprimirLaudo(printable, undefined, { useNewTab: true });
         markAsImpresso(printable);
         toast.success(
           action === "imprimir"
