@@ -59,7 +59,7 @@ const DocumentoTemplateDialog = ({
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
-    top: "18", right: "18", bottom: "22", left: "18",
+    top: "5", right: "10", bottom: "5", left: "10",
   });
   const editorApiRef = useRef<CKEditorApi | null>(null);
 
@@ -74,10 +74,10 @@ const DocumentoTemplateDialog = ({
       setPadrao(template.padrao);
       const m = (template.config as Record<string, unknown>)?.margins as Record<string, number> | undefined;
       setMargins({
-        top: String(m?.top ?? 18),
-        right: String(m?.right ?? 18),
-        bottom: String(m?.bottom ?? 22),
-        left: String(m?.left ?? 18),
+        top: String(m?.top ?? 5),
+        right: String(m?.right ?? 10),
+        bottom: String(m?.bottom ?? 5),
+        left: String(m?.left ?? 10),
       });
     } else {
       const t = tipoInicial ?? "comprovante_pagamento";
@@ -86,7 +86,7 @@ const DocumentoTemplateDialog = ({
       setConteudo(removerLinhasHorizontaisDocumento(getTemplatePadraoHtml(t)));
       setAtivo(true);
       setPadrao(false);
-      setMargins({ top: "18", right: "18", bottom: "22", left: "18" });
+      setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
     }
   }, [open, template, tipoInicial]);
 
@@ -117,10 +117,10 @@ const DocumentoTemplateDialog = ({
       return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
     };
     const marginsConfig = {
-      top: sanitize(margins.top, 18),
-      right: sanitize(margins.right, 18),
-      bottom: sanitize(margins.bottom, 22),
-      left: sanitize(margins.left, 18),
+      top: sanitize(margins.top, 5),
+      right: sanitize(margins.right, 10),
+      bottom: sanitize(margins.bottom, 5),
+      left: sanitize(margins.left, 10),
     };
     try {
       if (template) {

@@ -92,7 +92,7 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [previewOrientation, setPreviewOrientation] = useState<MapaOrientation>("portrait");
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
-    top: "15", right: "12", bottom: "15", left: "12",
+    top: "5", right: "10", bottom: "5", left: "10",
   });
   const editorApiRef = useRef<CKEditorApi | null>(null);
 
@@ -113,10 +113,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
         | Record<string, number>
         | undefined;
       setMargins({
-        top: String(m?.top ?? 15),
-        right: String(m?.right ?? 12),
-        bottom: String(m?.bottom ?? 15),
-        left: String(m?.left ?? 12),
+        top: String(m?.top ?? 5),
+        right: String(m?.right ?? 10),
+        bottom: String(m?.bottom ?? 5),
+        left: String(m?.left ?? 10),
       });
     }
   }, [open, mapa]);
@@ -180,10 +180,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
     };
     const marginsConfig = {
-      top: sanitize(margins.top, 15),
-      right: sanitize(margins.right, 12),
-      bottom: sanitize(margins.bottom, 15),
-      left: sanitize(margins.left, 12),
+      top: sanitize(margins.top, 5),
+      right: sanitize(margins.right, 10),
+      bottom: sanitize(margins.bottom, 5),
+      left: sanitize(margins.left, 10),
     };
     if (mapa) {
       const prevConfig = (mapa.config as Record<string, unknown>) ?? {};
