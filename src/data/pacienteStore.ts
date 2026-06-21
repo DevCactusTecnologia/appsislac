@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
 import { persistOneOrThrow, PersistError } from "@/lib/persist";
 import { showError } from "@/lib/showError";
+import { formatDateBR } from "@/lib/dateBR";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 type PacienteRow = Tables<"pacientes">;
@@ -52,11 +53,6 @@ const formatCPF = (digits: string): string => {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 };
 
-const formatDateBR = (iso: string | null): string => {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("T")[0].split("-");
-  return `${d}/${m}/${y}`;
-};
 
 const dateBRtoISO = (br: string | undefined): string | null => {
   if (!br) return null;

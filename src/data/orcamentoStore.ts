@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
+import { formatDateTimeBR } from "@/lib/dateBR";
 
 export interface Orcamento {
   id: string;            // = codigo (ORC-2026-XXXX)
@@ -32,13 +33,6 @@ function notify() {
   _listeners.forEach((fn) => fn());
 }
 
-function formatDateBR(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const date = d.toLocaleDateString("pt-BR");
-  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-  return `${date} ${time}`;
-}
 
 function buildFromRows(orcRow: any, examesRows: any[]): Orcamento {
   return {
