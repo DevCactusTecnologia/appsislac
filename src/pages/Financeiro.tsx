@@ -1041,6 +1041,7 @@ const Financeiro = () => {
         itens={pagamentoData.itens}
         subtotal={pagamentoData.subtotal}
         desconto={pagamentoData.desconto}
+        acrescimo={pagamentoData.acrescimo}
         total={pagamentoData.total}
         valorPago={pagamentoData.valorPago}
         saldoDevedor={pagamentoData.saldoDevedor}
@@ -1049,6 +1050,7 @@ const Financeiro = () => {
         onRemovePagamentoRealizado={handleRemovePagamentoRealizado}
         onConfirm={handlePagamentoConfirm}
         descontoData={pagAtendimento?.data}
+        acrescimoData={pagAtendimento?.data}
         isEditing={true}
       />
 
