@@ -38,7 +38,7 @@ export function getDocumentoMarginsMm(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let html2pdfPromise: Promise<any> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function loadHtml2Pdf(): Promise<any> {
+function loadHtml2Pdf(): Promise<any> {
   if (!html2pdfPromise) {
     html2pdfPromise = import("html2pdf.js").then((m) => (m as { default: unknown }).default ?? m);
   }
