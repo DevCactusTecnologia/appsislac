@@ -367,6 +367,17 @@ const Financeiro = () => {
     [aReceberConvenioRowsV2],
   );
 
+  // Fase 7 — SSOT: totais oficiais de A Receber (pacientes + convênios)
+  // vêm da RPC `financeiro_a_receber_totais`. Toda tela do SISLAC que
+  // exibe o número total de "A Receber" deve consumir este hook.
+  const { totais: aReceberTotaisSsot, refresh: refreshTotais } = useAReceberTotais(
+    activeTab === "painel" || activeTab === "a_receber" || activeTab === "convenios",
+  );
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { refreshTotais(); });
+    return unsub;
+  }, [refreshTotais]);
+
 
   const allEntries = useMemo(() => {
     if (activeTab === "entrada") return entradas;
