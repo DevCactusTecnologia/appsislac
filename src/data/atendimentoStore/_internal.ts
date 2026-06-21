@@ -10,6 +10,7 @@
 import type { Tables } from "@/integrations/supabase/types";
 import type { MockAtendimento, PagamentoRealizado } from "../types";
 import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
+import { formatDateBR as _formatDateBR, formatDateTimeBR as _formatDateTimeBR } from "@/lib/dateBR";
 
 export type AtendimentoRow = Tables<"atendimentos">;
 export type AtendimentoExameDbRow = Tables<"atendimento_exames">;
@@ -49,17 +50,11 @@ export function formatCPF(digits: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
-export function formatDateTimeBR(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
+// Re-exports — preservam a API pública que outros módulos importam daqui.
+// SSOT real em `@/lib/dateBR.ts`.
+export const formatDateTimeBR = (iso: string): string => _formatDateTimeBR(iso);
+export const formatDateBR = (iso: string | null): string => _formatDateBR(iso);
 
-export function formatDateBR(iso: string | null): string {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("T")[0].split("-");
-  return `${d}/${m}/${y}`;
-}
 
 export function calcIdade(nascimentoIso: string | null): string {
   if (!nascimentoIso) return "";

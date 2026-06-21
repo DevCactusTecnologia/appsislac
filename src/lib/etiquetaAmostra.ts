@@ -4,6 +4,7 @@
 
 import { printHtmlInHiddenFrame } from "./printHtml";
 import { resolveDestino, type TipoProcesso } from "./labApoio";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export interface EtiquetaAmostraData {
   codigoBarra: string;          // Ex.: A-20260423-000001-7
@@ -22,14 +23,6 @@ export interface EtiquetaAmostraData {
   laboratorioPropriaNome?: string | null;
   /** Protocolo externo do laboratório de apoio (quando houver). */
   protocoloExterno?: string | null;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 function fmtData(d: string | undefined): string {

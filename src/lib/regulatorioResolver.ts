@@ -17,6 +17,7 @@
 // ============================================================
 
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export interface ResultadoRegulatorio {
   metodologia: string;
@@ -73,10 +74,3 @@ export function renderRegulatorioFooterHtml(reg: ResultadoRegulatorio): string {
     </div>
   `;
 }
-
-const escapeHtml = (s: string): string =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");

@@ -55,8 +55,8 @@ import {
 } from "@/domains/result/services/comprovantesHtml";
 export {
   buildComprovanteHtml,
+  buildOrcamentoHtml,
   buildDocumentoFooterHtml,
-  buildOrcamentoHtmlPublic,
   valorPorExtenso,
   type ComprovanteTipo,
   type ComprovanteData,

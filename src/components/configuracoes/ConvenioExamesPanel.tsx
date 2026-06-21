@@ -235,13 +235,7 @@ const ConvenioExamesPanel = ({ convenioNome, tabela }: ConvenioExamesPanelProps)
     <thead><tr><th>Código</th><th>Exame</th><th>Destino</th><th style="text-align:right">Valor</th><th>Status</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  <script>
-    (function(){
-      function go(){ try { window.focus(); window.print(); } catch (e) {} }
-      if (document.readyState === 'complete') setTimeout(go, 50);
-      else window.addEventListener('load', function(){ setTimeout(go, 50); });
-    })();
-  </script>
+  <!-- print é disparado pelo printHtmlInHiddenFrame -->
 </body>
 </html>`;
 

@@ -10,16 +10,13 @@ import {
   listarConfirmacoesPorAtendimento,
   listarOrientacoesPorAtendimento,
 } from "@/data/rastreabilidadeStore";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 function fmt(iso?: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleString("pt-BR");
-}
-
-function escapeHtml(s: string): string {
-  return (s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
 export async function gerarDossieRastreabilidade(protocolo: string): Promise<void> {

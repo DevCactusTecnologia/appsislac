@@ -26,6 +26,8 @@ import {
   colgroupHasUsableWidths as _colgroupHasUsableWidths,
   prepareMapaHtml,
 } from "@/lib/mapaSharedStyles";
+import { escapeHtml } from "@/lib/escapeHtml";
+import { formatNowBR } from "@/lib/dateBR";
 
 // Re-export para preservar API pública (testes em mapaPrint.test.ts importam daqui).
 export const colgroupHasUsableWidths = _colgroupHasUsableWidths;
@@ -58,17 +60,9 @@ export interface MapaExameTicket {
   amostraId?: string | null;
 }
 
-const formatDateBR = (d = new Date()) =>
-  `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-
-function escapeHtml(s: string): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+// Mantido como alias local — chamadas internas usam `formatDateBR()` sem args
+// para imprimir o "agora". A SSOT real está em `@/lib/dateBR.ts`.
+const formatDateBR = formatNowBR;
 
 /** Substitui placeholders e adiciona o sistema (data/usuário) automaticamente. */
 function renderTicket(template: string, ticket: MapaExameTicket, usuario: string, ordem?: number): string {

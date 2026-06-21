@@ -15,6 +15,7 @@ import {
 } from "@/data/documentoTemplatesStore";
 import { getLabConfig } from "@/data/labConfigStore";
 import { fmtBRL } from "@/lib/utils";
+import { escapeHtml as escape } from "@/lib/escapeHtml";
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";
 import type { PlaceholderData } from "@/types/domain";
@@ -151,12 +152,6 @@ function renderListaPagamentos(ctx: DocumentoRenderContext): string {
   </table>`;
 }
 
-function escape(s: string): string {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 /**
  * Renderiza um documento usando o template configurado. Retorna `null`

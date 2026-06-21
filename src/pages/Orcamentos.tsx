@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StandardDialog from "@/components/ui/standard-dialog";
 import PdfPreviewDialog from "@/components/PdfPreviewDialog";
-import { buildOrcamentoHtmlPublic } from "@/lib/comprovantes";
+import { buildOrcamentoHtml } from "@/lib/comprovantes";
 import { useAuth } from "@/contexts/AuthContext";
 import { showError } from "@/lib/showError";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
@@ -827,7 +827,7 @@ const Orcamentos = () => {
           <PdfPreviewDialog
             open={!!previewOrc}
             onClose={() => setPreviewOrc(null)}
-            html={buildOrcamentoHtmlPublic(orcData)}
+            html={buildOrcamentoHtml(orcData)}
             filename={`orcamento-${orcData.id}`}
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}

@@ -9,6 +9,9 @@ import {
   fetchOperationalAuditLogs,
   fetchOperationalAuditTabelas,
 } from "@/domains/tenant/services/operationalAuditReader";
+import { escapeHtml } from "@/lib/escapeHtml";
+import { wrapA4Document } from "@/lib/printShell";
+import { buildAdminReportHeader } from "@/lib/adminReportHeader";
 
 export type AuditAcao = "INSERT" | "UPDATE" | "DELETE";
 
@@ -279,44 +282,32 @@ export async function exportAuditLogsPdf(
   }
 
   const title = filename.replace(/\.pdf$/i, "");
-  const html = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <title>${escapeHtml(title)}</title>
-  <style>
-    @page { size: A4 landscape; margin: 10mm; }
-    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } thead { display: table-header-group; } tr { page-break-inside: avoid; } }
-    body { margin: 0; font-family: Inter, system-ui, sans-serif; color: #0f172a; }
-    h1 { font-size: 16px; margin: 0 0 4px; }
-    .meta { font-size: 11px; color: #64748b; margin: 0 0 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
-    th { background: #f1f5f9; text-align: left; padding: 6px; border: 1px solid #e2e8f0; }
-    td { padding: 6px; border: 1px solid #e2e8f0; word-break: break-word; vertical-align: top; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
-    col.c1 { width: 14%; } col.c2 { width: 18%; } col.c3 { width: 8%; }
-    col.c4 { width: 14%; } col.c5 { width: 14%; } col.c6 { width: 32%; }
-  </style>
-</head>
-<body>
-  <h1>Auditoria técnica</h1>
-  <p class="meta">Exportado em ${escapeHtml(generatedAt)} — ${escapeHtml(String(total))} registro(s)</p>
+  const bodyHtml = `
+  ${buildAdminReportHeader({
+    titulo: "Auditoria técnica",
+    subtitulo: `${total} registro(s) · exportado em ${generatedAt}`,
+  })}
   <table>
     <colgroup><col class="c1"/><col class="c2"/><col class="c3"/><col class="c4"/><col class="c5"/><col class="c6"/></colgroup>
     <thead>
       <tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Tabela</th><th>Registro</th><th>Resumo</th></tr>
     </thead>
     <tbody>${rowsParts.join("")}</tbody>
-  </table>
-  <script>
-    (function(){
-      function go(){ try { window.focus(); window.print(); } catch (e) {} }
-      if (document.readyState === 'complete') setTimeout(go, 50);
-      else window.addEventListener('load', function(){ setTimeout(go, 50); });
-    })();
-  </script>
-</body>
-</html>`;
+  </table>`;
+  const html = wrapA4Document({
+    title,
+    bodyHtml,
+    orientation: "landscape",
+    margin: "10mm",
+    css: `
+      table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+      th { background: #f1f5f9; text-align: left; padding: 6px; border: 1px solid #e2e8f0; }
+      td { padding: 6px; border: 1px solid #e2e8f0; word-break: break-word; vertical-align: top; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+      col.c1 { width: 14%; } col.c2 { width: 18%; } col.c3 { width: 8%; }
+      col.c4 { width: 14%; } col.c5 { width: 14%; } col.c6 { width: 32%; }
+    `,
+  });
 
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   printHtmlInHiddenFrame({ html, documentTitle: title });
@@ -326,21 +317,4 @@ export async function exportAuditLogsPdf(
       window.dispatchEvent(new CustomEvent("auditExport:partialFailure", { detail: { kind: "pdf", failed } }));
     } catch { /* noop */ }
   }
-}
-
-/**
- * Escapa qualquer valor para inclusão segura em HTML.
- * Cobre &, <, >, ", ', / e remove caracteres de controle invisíveis
- * (exceto \t, \n, \r) que poderiam corromper o layout do PDF.
- */
-function escapeHtml(s: unknown): string {
-  return String(s ?? "")
-    // remove control chars que quebram parsing/render
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
-    .replace(/\//g, "&#x2F;");
 }
