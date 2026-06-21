@@ -33,7 +33,6 @@ interface Props {
 }
 
 export default function CaixaOperacionalCard({ compact = false }: Props) {
-  useEnsureStore(["unidades"]);
   const { user, hasPermission } = useAuth();
   const podeOperar = hasPermission("gestao_financeira");
   const unidadeId = user?.unidadeAtiva ?? "";
