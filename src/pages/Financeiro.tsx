@@ -92,6 +92,7 @@ import { validatePayment } from "./Financeiro/services/validatePayment";
 import { computeDetailTotals } from "./Financeiro/services/computeDetailTotals";
 import { todayBR } from "./Financeiro/services/todayBR";
 import CaixaTab from "./Financeiro/components/CaixaTab";
+import CaixaOperacionalCard from "@/components/caixa/CaixaOperacionalCard";
 import EntradasTab from "./Financeiro/components/EntradasTab";
 import SaidasTab from "./Financeiro/components/SaidasTab";
 import AReceberTab from "./Financeiro/components/AReceberTab";
