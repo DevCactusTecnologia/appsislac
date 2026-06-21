@@ -82,34 +82,20 @@ function ddmmyyyyToISODateTime(s: string): string {
 
 // (Função legada `buildSaidaFromRow` removida — Fase 2 Financeiro V2.)
 
-// Fase 2 — Financeiro V2: a forma de pagamento agora vive em coluna própria
-// `financeiro_saidas.forma_pagamento`. O antigo sufixo `[pgto:X]` em descricao
-// foi normalizado pelo backfill da migration; este código:
-//  - sempre ESCREVE em `forma_pagamento` (sem injetar sufixo na descricao);
-//  - LÊ preferindo a coluna; se NULL, faz fallback ao decodificador legado para
-//    cobrir hipotéticos registros antigos não migrados.
-
-function decodePagamentoLegacy(descricao: string | null | undefined): { descricao: string; pagamento: string; cliente: string } {
-  const raw = descricao || "";
-  const m = /\s*\[pgto:([^\]]+)\]\s*$/i.exec(raw);
-  const pagamento = m ? m[1] : "";
-  const clean = raw.replace(/\s*\[pgto:[^\]]+\]\s*$/i, "").trim();
-  const parts = clean.split(" — ");
-  const cliente = parts[0] || clean;
-  return { descricao: clean, pagamento, cliente };
-}
+// Fase 2 — Financeiro V2: forma de pagamento vive em coluna própria
+// `financeiro_saidas.forma_pagamento`. O backfill da migration já normalizou
+// 100% dos registros (0 linhas com [pgto:X] no banco). O parser legado foi
+// removido — a coluna é a fonte exclusiva. As limpezas ainda preservadas em
+// addSaida/updateSaida usam regex apenas como cinto de segurança contra entrada
+// manual residual.
 
 function buildSaidaFromRowDecoded(row: SaidaRow): FinanceiroSaida {
-  // forma_pagamento é a fonte oficial (Fase 2). Fallback: decodifica [pgto:X] legado.
-  const formaCol = (row as SaidaRow & { forma_pagamento?: string | null }).forma_pagamento ?? null;
-  const legacy = decodePagamentoLegacy(row.descricao);
-  const pagamento = (formaCol && formaCol.trim()) || legacy.pagamento || "—";
-  // Se a coluna já existe, a descricao já está limpa; senão, usa a versão decodificada.
-  const descricaoLimpa = formaCol ? (row.descricao || "") : legacy.descricao;
+  const pagamento = (row.forma_pagamento && row.forma_pagamento.trim()) || "—";
+  const descricaoLimpa = row.descricao || "";
   const parts = descricaoLimpa.split(" — ");
   const cliente = parts[0] || descricaoLimpa;
   // Fase 6 V2 — `status` é a fonte oficial; fallback para foi_pago em registros legados.
-  const rawStatus = ((row as SaidaRow & { status?: string | null }).status || "").toLowerCase();
+  const rawStatus = (row.status || "").toLowerCase();
   const status: SaidaStatus =
     rawStatus === "paga" || rawStatus === "cancelada" || rawStatus === "aberta"
       ? (rawStatus as SaidaStatus)

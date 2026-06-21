@@ -561,11 +561,13 @@ export type Database = {
       }
       atendimentos: {
         Row: {
+          acrescimo_total: number
           assinatura_protocolo: string | null
           convenio_id: number
           convenio_nome: string
           created_at: string
           data: string
+          desconto_total: number
           guia_data: string | null
           guia_numero: string | null
           id: number
@@ -579,17 +581,21 @@ export type Database = {
           solicitante: string
           status_atendimento: string
           status_pagamento: string
+          subtotal: number
           tem_retificacao: boolean
           tenant_id: string
+          total: number
           unidade_id: string
           updated_at: string
         }
         Insert: {
+          acrescimo_total?: number
           assinatura_protocolo?: string | null
           convenio_id?: number
           convenio_nome?: string
           created_at?: string
           data?: string
+          desconto_total?: number
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
@@ -603,17 +609,21 @@ export type Database = {
           solicitante?: string
           status_atendimento?: string
           status_pagamento?: string
+          subtotal?: number
           tem_retificacao?: boolean
           tenant_id: string
+          total?: number
           unidade_id?: string
           updated_at?: string
         }
         Update: {
+          acrescimo_total?: number
           assinatura_protocolo?: string | null
           convenio_id?: number
           convenio_nome?: string
           created_at?: string
           data?: string
+          desconto_total?: number
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
@@ -627,8 +637,10 @@ export type Database = {
           solicitante?: string
           status_atendimento?: string
           status_pagamento?: string
+          subtotal?: number
           tem_retificacao?: boolean
           tenant_id?: string
+          total?: number
           unidade_id?: string
           updated_at?: string
         }
@@ -6731,6 +6743,10 @@ export type Database = {
         Returns: string
       }
       recompute_atendimento_status: {
+        Args: { _atendimento_id: number }
+        Returns: undefined
+      }
+      recompute_atendimento_totais: {
         Args: { _atendimento_id: number }
         Returns: undefined
       }
