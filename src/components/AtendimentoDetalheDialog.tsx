@@ -196,7 +196,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {atendimento.statusPagamento.label === "Pagamento efetuado" && (
                 <button
-                  onClick={() => setPreviewTipo("pagamento")}
+                  onClick={() => imprimirComprovante("pagamento")}
                   className="h-10 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all duration-200 shadow-sm"
                 >
                   <Receipt className="h-3.5 w-3.5" />
