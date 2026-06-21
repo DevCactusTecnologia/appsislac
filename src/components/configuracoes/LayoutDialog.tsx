@@ -52,7 +52,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   const [parametros, setParametros] = useState<ExameParametro[]>([]);
   const [tab, setTab] = useState<"editor" | "preview">("editor");
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
-    top: "5", right: "5", bottom: "5", left: "5",
+    top: "5", right: "10", bottom: "5", left: "10",
   });
 
   // [DIAG-AUTOCLOSE] Investigação de fechamento espontâneo. Remover após resolver.
