@@ -496,7 +496,10 @@ const Dashboard = () => {
 
   // ── Seleção final: RPC tem prioridade quando ativo ──
   const operacional = useRpc ? rpcKpis.operacional : operacionalLegacy;
-  const financeiro  = useRpc ? rpcKpis.financeiro  : financeiroLegacy;
+  // Fase 7 — SSOT: "A Receber" SEMPRE vem da RPC dedicada (mesmo no caminho RPC),
+  // garantindo um único número entre Dashboard, Recepção, Painel e Financeiro.
+  const financeiroBase = useRpc ? rpcKpis.financeiro : financeiroLegacy;
+  const financeiro = { ...financeiroBase, aReceber: aReceberSsot.totalGeral };
   const produtividade = useRpc
     ? { ...rpcKpis.produtividade, topUnidade: null as [string, number] | null,
         topSolicitante: rpcKpis.produtividade.topSolicitante
