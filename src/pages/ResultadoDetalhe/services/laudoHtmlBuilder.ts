@@ -309,6 +309,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content .exame-bloco-custom p > br:only-child { display: none !important; }
         #laudo-content .exame-bloco-custom > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         #laudo-content .exame-bloco-custom > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        /* CKEditor envolve tabelas em <figure class="table">. O navegador
+           aplica `margin: 1em 40px` por padrão a <figure>, o que empurra todo
+           o corpo do exame ~40px à direita e desalinha do título. html2canvas
+           ignorava esse padrão; o motor vetorial respeita. Zeramos margens de
+           figure/figcaption no laudo para preservar o alinhamento original. */
+        #laudo-content figure, #laudo-content figcaption { margin: 0 !important; padding: 0 !important; }
+        #laudo-content figure.table { display: block !important; width: 100% !important; max-width: 100% !important; }
         .assinatura-bloco { page-break-inside: avoid; break-inside: avoid; }
         .exame-bloco + .assinatura-bloco { page-break-before: avoid; break-before: avoid; }
         @media print {
