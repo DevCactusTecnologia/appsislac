@@ -180,10 +180,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
       return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
     };
     const marginsConfig = {
-      top: sanitize(margins.top, 15),
-      right: sanitize(margins.right, 12),
-      bottom: sanitize(margins.bottom, 15),
-      left: sanitize(margins.left, 12),
+      top: sanitize(margins.top, 5),
+      right: sanitize(margins.right, 10),
+      bottom: sanitize(margins.bottom, 5),
+      left: sanitize(margins.left, 10),
     };
     if (mapa) {
       const prevConfig = (mapa.config as Record<string, unknown>) ?? {};
