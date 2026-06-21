@@ -242,6 +242,26 @@ const DocumentoTemplateDialog = ({
       );
       html = html.replace(re, "$1");
     }
+    // Navegadores modernos ignoram width="N%" no atributo HTML de <img>
+    // (apenas pixels são válidos). O CKEditor usa esse valor internamente
+    // para dimensionar a imagem na área de edição, mas no preview a imagem
+    // renderiza no tamanho natural — preenchendo toda a célula e
+    // anulando o `text-align:right` do <td>. Convertemos o atributo
+    // percentual para `style="width:N%"` para que a pré-visualização seja
+    // fiel ao editor.
+    html = html.replace(
+      /<img\b([^>]*?)\bwidth\s*=\s*"(\d+(?:\.\d+)?%)"([^>]*)>/gi,
+      (_m, before, pct, after) => {
+        const styleMatch = (before + after).match(/style\s*=\s*"([^"]*)"/i);
+        if (styleMatch) {
+          const newStyle = `width:${pct};${styleMatch[1]}`;
+          const beforeClean = before.replace(/style\s*=\s*"[^"]*"/i, "");
+          const afterClean = after.replace(/style\s*=\s*"[^"]*"/i, "");
+          return `<img${beforeClean} style="${newStyle}"${afterClean}>`;
+        }
+        return `<img${before} style="width:${pct}"${after}>`;
+      },
+    );
     const corpo = renderPlaceholders(html, sample);
 
     const tipoToComprovante: Partial<Record<DocumentoTipo, ComprovanteTipo>> = {
