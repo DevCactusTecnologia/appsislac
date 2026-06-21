@@ -713,6 +713,8 @@ const NovoAtendimento = () => {
   }, 0);
   // Desconto embutido nos exames (distribuído ao salvar). Não altera lógica de save.
   const descontoHistorico = Math.max(0, Math.round((subtotalOriginal - subtotal) * 100) / 100);
+  // Acréscimo embutido nos exames (espelho do desconto: subtotal > subtotalOriginal).
+  const acrescimoHistorico = Math.max(0, Math.round((subtotal - subtotalOriginal) * 100) / 100);
   // Desconto exibido no resumo = histórico (já embutido no valor) + manual (state).
   const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
@@ -723,9 +725,17 @@ const NovoAtendimento = () => {
     const [yyyy, mm, dd] = d.split("-");
     return yyyy && mm && dd ? `${dd}/${mm}/${yyyy}` : undefined;
   })();
+  const acrescimoDataExibicao = descontoDataExibicao;
 
   const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
     const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
+    aplicarAjusteLiquidoNosExames(-desc);
+  };
+
+  // Aplica ajuste líquido (positivo = acréscimo, negativo = desconto) distribuído
+  // proporcionalmente sobre `valorOriginal`. Atualiza `valor` resultante.
+  const aplicarAjusteLiquidoNosExames = (ajusteLiquido: number) => {
+    const ajuste = Math.round((ajusteLiquido || 0) * 100) / 100;
     setExames(prev => {
       const pacienteIdxs = prev
         .map((e, i) => ({ e, i }))
@@ -734,17 +744,20 @@ const NovoAtendimento = () => {
       pacienteIdxs.forEach(({ e, i }) => bases.set(i, e.valorOriginal ?? e.valor));
       const baseTotal = Array.from(bases.values()).reduce((sum, v) => sum + v, 0);
       if (baseTotal <= 0) return prev;
-      const totalDesc = Math.min(desc, baseTotal);
-      let restante = Math.round(totalDesc * 100);
+      // Desconto não pode ultrapassar o subtotal; acréscimo não tem teto superior.
+      const ajusteCents = ajuste < 0
+        ? Math.max(Math.round(ajuste * 100), -Math.round(baseTotal * 100))
+        : Math.round(ajuste * 100);
+      let restante = ajusteCents;
       const novosValores = new Map<number, number>();
       pacienteIdxs.forEach(({ i }, idx) => {
         const base = bases.get(i) ?? 0;
-        const share = idx === pacienteIdxs.length - 1
-          ? restante
-          : Math.round((base / baseTotal) * totalDesc * 100);
-        const safeShare = Math.max(0, Math.min(share, Math.round(base * 100)));
-        restante -= safeShare;
-        novosValores.set(i, Math.max(0, Math.round(base * 100) - safeShare) / 100);
+        const baseCents = Math.round(base * 100);
+        const isLast = idx === pacienteIdxs.length - 1;
+        const share = isLast ? restante : Math.round((baseCents / Math.round(baseTotal * 100)) * ajusteCents);
+        restante -= share;
+        const novoCents = Math.max(0, baseCents + share);
+        novosValores.set(i, novoCents / 100);
       });
       return prev.map((e, i) => {
         const base = bases.get(i);
@@ -2338,15 +2351,18 @@ const NovoAtendimento = () => {
       <PagamentoDialog
         open={pagamentoOpen}
         onClose={() => setPagamentoOpen(false)}
-        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} total={total}
+        itens={exames.length} subtotal={subtotalOriginal} desconto={descontoExibido} acrescimo={acrescimoHistorico} total={total}
         valorPago={valorPago} saldoDevedor={saldoDevedor}
         exames={exames.filter(e => e.cobrancaDestino !== "convenio").map(e => ({ nome: e.nome, valor: e.valorOriginal ?? e.valor }))}
         descontoData={descontoDataExibicao}
+        acrescimoData={acrescimoDataExibicao}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
         onConfirm={res => {
           setValorPago(res.valorPago);
           if (isEditing) {
-            aplicarDescontoTotalNosExames(res.desconto);
+            // Aplica desconto/acréscimo líquido sobre os valores cheios.
+            const ajusteLiquido = (res.acrescimo || 0) - (res.desconto || 0);
+            aplicarAjusteLiquidoNosExames(ajusteLiquido);
             setDesconto(0);
           } else {
             setDesconto(res.desconto);
