@@ -104,7 +104,7 @@ export default function CaixaOperacionalCard({ compact = false }: Props) {
         onClose={() => setOpenFechar(false)}
         sessao={sessao}
         unidadeNome={unidadeNome}
-        userName={user?.name ?? ""}
+        userName={user?.nome ?? ""}
         onFechado={() => { setOpenFechar(false); refresh(); }}
       />
     </div>
