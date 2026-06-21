@@ -340,6 +340,11 @@ const Dashboard = () => {
   // Caminho RPC: dados agregados pelo banco (consistentes com o dataset completo).
   const { data: rpcKpis } = useDashboardKpis(useRpc);
 
+  // Fase 7 — SSOT: "A Receber" sempre vem da RPC `financeiro_a_receber_totais`,
+  // independentemente da feature flag. Garante um único número entre Dashboard,
+  // Recepção, Painel e Financeiro.
+  const { totais: aReceberSsot } = useAReceberTotais(true);
+
   /* ── Operacional do dia ───────────────────────────────── */
   const operacionalLegacy = useMemo(() => {
     const hoje = atendimentos.filter((a) => isToday(parsePtDate(a.data)));
