@@ -117,10 +117,10 @@ const DocumentoTemplateDialog = ({
       return Number.isFinite(n) && n >= 0 ? Math.min(50, Math.round(n * 10) / 10) : fb;
     };
     const marginsConfig = {
-      top: sanitize(margins.top, 18),
-      right: sanitize(margins.right, 18),
-      bottom: sanitize(margins.bottom, 22),
-      left: sanitize(margins.left, 18),
+      top: sanitize(margins.top, 5),
+      right: sanitize(margins.right, 10),
+      bottom: sanitize(margins.bottom, 5),
+      left: sanitize(margins.left, 10),
     };
     try {
       if (template) {
