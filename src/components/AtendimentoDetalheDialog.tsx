@@ -145,39 +145,18 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     comparecimento: "COMPROVANTE DE COMPARECIMENTO",
   };
 
-  // Só monta dados/HTML quando há tipo selecionado — gerar o QR é caro
-  // (loop sobre matriz de módulos + concat). Memoizamos por (protocolo, tipo)
-  // para não regerar a cada re-render do diálogo (scroll, hover, etc.).
-  const previewData = useMemo(
-    () => (previewTipo ? buildComprovanteData(previewTipo) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [previewTipo, atendimento?.protocolo, subtotalPaciente, totalPacienteEfetivo, descontoPaciente, totalPago, saldoDevedor],
-  );
-  const previewHtml = useMemo(
-    () => (previewData ? buildComprovanteHtml(previewData) : ""),
-    [previewData],
-  );
-  const previewWhatsappMessage = useMemo(() => {
-    if (!previewData) return undefined;
-    return (url: string) => {
-      const totalLine = previewData.totais
-        ? `\n💰 *Total: R$ ${fmtBRLNumber(previewData.totais.total)}*`
-        : "";
-      const linkLine = url
-        ? `📎 *PDF:* ${url}`
-        : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-      return [
-        `📋 *${tipoLabels[previewData.tipo]}*`,
-        `Protocolo: *${previewData.protocolo}*`,
-        `Data: ${previewData.data}`,
-        "",
-        `Olá *${previewData.paciente.nome}*, segue seu comprovante.${totalLine}`,
-        "",
-        linkLine,
-      ].join("\n");
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewData]);
+  // Imprime comprovante diretamente — sem modal, sem pré-visualização.
+  // Olhou. Entendeu. Simplificou.
+  const imprimirComprovante = (tipo: "pagamento" | "atendimento" | "comparecimento") => {
+    const data = buildComprovanteData(tipo);
+    if (!data) return;
+    const html = buildComprovanteHtml(data);
+    printHtmlInHiddenFrame({
+      html,
+      frameId: "comprovante-print-frame",
+      documentTitle: `${tipoLabels[tipo]} ${data.protocolo}`.trim(),
+    });
+  };
 
   if (!open || !atendimento) return null;
 
