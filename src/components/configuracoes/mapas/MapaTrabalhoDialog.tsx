@@ -113,10 +113,10 @@ const MapaTrabalhoDialog = ({ open, onOpenChange, mapa, criadoPor, onSaved }: Pr
         | Record<string, number>
         | undefined;
       setMargins({
-        top: String(m?.top ?? 15),
-        right: String(m?.right ?? 12),
-        bottom: String(m?.bottom ?? 15),
-        left: String(m?.left ?? 12),
+        top: String(m?.top ?? 5),
+        right: String(m?.right ?? 10),
+        bottom: String(m?.bottom ?? 5),
+        left: String(m?.left ?? 10),
       });
     }
   }, [open, mapa]);
