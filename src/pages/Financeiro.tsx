@@ -33,7 +33,7 @@ const FaturaDetalheDialog = lazy(() => import("@/components/financeiro/FaturaDet
 import { useEnsureStore } from "@/hooks/useEnsureStore";
 // fetchSaldoEmAbertoPorConvenio removido (Fase 1 V2 — substituído por useAReceberConvenios)
 import { useFeatureFlag } from "@/lib/featureFlags";
-import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios } from "@/hooks/useAReceberPacientes";
+import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios, useAReceberTotais } from "@/hooks/useAReceberPacientes";
 import { toast } from "@/hooks/use-toast";
 import type { NovaEntradaSaidaData } from "@/components/NovaEntradaSaidaDialog";
 const NovaEntradaSaidaDialog = lazy(() => import("@/components/NovaEntradaSaidaDialog"));
