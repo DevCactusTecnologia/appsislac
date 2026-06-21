@@ -83,9 +83,10 @@ const effectiveValor = (p: Pagamento, subtotal: number, exames: ExameInfoPagamen
 /* ── Component ── */
 const PagamentoDialog = ({
   open, onClose, itens = 0, subtotal = 0, desconto: descontoProp = 0,
+  acrescimo: acrescimoProp = 0,
   valorPago: valorPagoProp = 0, exames = [], onConfirm,
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
-  descontoData,
+  descontoData, acrescimoData,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -94,12 +95,14 @@ const PagamentoDialog = ({
   const [stagingUnidade, setStagingUnidade] = useState<Unidade>("BRL");
   const [stagingExameIdx, setStagingExameIdx] = useState<number | null>(null);
   const [descontoHistRemovido, setDescontoHistRemovido] = useState(false);
-  // Confirmação de remoção: 'desc' para o card de desconto, 'real-N' para realizado, 'staging-N' para staging
+  const [acrescimoHistRemovido, setAcrescimoHistRemovido] = useState(false);
+  // Confirmação de remoção: 'desc' / 'acre' para cards históricos, 'real-N' para realizado, 'staging-N' para staging
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   useBodyScrollLock(open);
 
-  // Desconto histórico efetivo (zera quando o usuário remove o card).
+  // Históricos efetivos (zeram quando o usuário remove o card).
   const descontoHistorico = descontoHistRemovido ? 0 : descontoProp;
+  const acrescimoHistorico = acrescimoHistRemovido ? 0 : acrescimoProp;
 
   const resetStaging = () => {
     setStagingValor("");
