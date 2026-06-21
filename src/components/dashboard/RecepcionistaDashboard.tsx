@@ -24,6 +24,7 @@ import { fmtBRLNumber } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
+import { useAReceberTotais } from "@/hooks/useAReceberPacientes";
 import CaixaOperacionalCard from "@/components/caixa/CaixaOperacionalCard";
 
 /* helpers */
