@@ -713,6 +713,8 @@ const NovoAtendimento = () => {
   }, 0);
   // Desconto embutido nos exames (distribuído ao salvar). Não altera lógica de save.
   const descontoHistorico = Math.max(0, Math.round((subtotalOriginal - subtotal) * 100) / 100);
+  // Acréscimo embutido nos exames (espelho do desconto: subtotal > subtotalOriginal).
+  const acrescimoHistorico = Math.max(0, Math.round((subtotal - subtotalOriginal) * 100) / 100);
   // Desconto exibido no resumo = histórico (já embutido no valor) + manual (state).
   const descontoExibido = Math.round((descontoHistorico + desconto) * 100) / 100;
   const total = subtotal - desconto;
@@ -723,6 +725,7 @@ const NovoAtendimento = () => {
     const [yyyy, mm, dd] = d.split("-");
     return yyyy && mm && dd ? `${dd}/${mm}/${yyyy}` : undefined;
   })();
+  const acrescimoDataExibicao = descontoDataExibicao;
 
   const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
     const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
