@@ -45,7 +45,7 @@ interface PagamentoDialogProps {
   saldoDevedor?: number;
   /** Lista de exames cobrados do paciente — usada para desconto por exame. */
   exames?: ExameInfoPagamento[];
-  onConfirm?: (resultado: { valorPago: number; desconto: number; novosPagamentos: PagamentoRealizado[] }) => void;
+  onConfirm?: (resultado: { valorPago: number; desconto: number; acrescimo: number; novosPagamentos: PagamentoRealizado[] }) => void;
   pagamentosRealizados?: PagamentoRealizado[];
   onRemovePagamentoRealizado?: (index: number) => void;
   isEditing?: boolean;
@@ -179,7 +179,7 @@ const PagamentoDialog = ({
     const novosPagamentos: PagamentoRealizado[] = pagamentos
       .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
       .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") }));
-    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, novosPagamentos });
+    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: totalAcre, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);

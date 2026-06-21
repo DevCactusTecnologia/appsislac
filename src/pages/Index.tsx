@@ -677,28 +677,34 @@ const Index = () => {
     };
   }, [selectedAtendimento, localPagamentos]);
 
-  const handlePagamentoConfirm = async (resultado: { valorPago: number; desconto: number; novosPagamentos: MockAtendimento["pagamentosRealizados"] }) => {
+  const handlePagamentoConfirm = async (resultado: { valorPago: number; desconto: number; acrescimo: number; novosPagamentos: MockAtendimento["pagamentosRealizados"] }) => {
     if (!selectedAtendimento) return;
-    const pagamentosFinais = [...(localPagamentos ?? []), ...(resultado.novosPagamentos ?? [])];
-    const totalComDesconto = pagamentoData.subtotal - resultado.desconto;
+    const novos = resultado.novosPagamentos ?? [];
+    const pagamentosFinais = [...(localPagamentos ?? []), ...novos];
+    const acrescimo = Math.max(0, Math.round((resultado.acrescimo || 0) * 100) / 100);
+    const desconto = Math.max(0, Math.round((resultado.desconto || 0) * 100) / 100);
+    const totalAjustado = pagamentoData.subtotal - desconto + acrescimo;
     const totalPagoFinal = pagamentosFinais.reduce((sum, p) => sum + p.valor, 0);
-    const statusPag = totalPagoFinal >= totalComDesconto && totalComDesconto > 0
+    const statusPag = totalPagoFinal >= totalAjustado && totalAjustado > 0
       ? { label: "Pagamento efetuado", type: "success" as const }
       : totalPagoFinal > 0
         ? { label: "Pagamento parcial", type: "info" as const }
         : { label: "Pagamento pendente", type: "warning" as const };
 
-    // Redistribui o desconto TOTAL (histórico + novo) proporcionalmente
-    // sobre o `valorOriginal` (preço cheio) de cada exame cobrado do
-    // paciente. `valorOriginal` é preservado como SSOT do preço cheio;
-    // `valor` passa a ser o efetivo após desconto.
+    // Redistribui o ajuste líquido (acrescimo − desconto) proporcionalmente sobre
+    // o `valorOriginal` (preço cheio) de cada exame cobrado do paciente.
+    // `valorOriginal` é preservado como SSOT do preço cheio; `valor` reflete o efetivo.
+    // IMPORTANTE: quando NÃO há novo desconto/acréscimo neste ciclo, NÃO redistribuímos
+    // — preservamos o `valor` corrente (que já carrega ajustes históricos).
     const updates: Partial<MockAtendimento> = {
-      pagamentosRealizados: pagamentosFinais,
+      // Apenas os NOVOS pagamentos vão para o backend (modo aditivo da RPC).
+      // Para a UI/cache local, manteremos a lista completa após o sucesso.
+      pagamentosRealizados: novos,
       statusPagamento: statusPag,
     };
-    const desc = Math.max(0, Math.round((resultado.desconto || 0) * 100) / 100);
+    const ajusteLiquidoCents = Math.round((acrescimo - desconto) * 100); // pode ser negativo
     const examesCobrancaAtuais = selectedAtendimento.examesCobranca;
-    if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+    if (ajusteLiquidoCents !== 0 && examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
       const pacienteIdxs = examesCobrancaAtuais
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.cobrancaDestino !== "convenio");
@@ -707,20 +713,23 @@ const Index = () => {
         const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0);
         baseOriginalPorIdx.set(i, orig);
       });
-      const subtotalOriginal = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + v, 0);
-      if (subtotalOriginal > 0) {
-        const totalDesc = Math.min(desc, subtotalOriginal);
-        let restante = Math.round(totalDesc * 100);
+      const subtotalOriginalCents = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + Math.round(v * 100), 0);
+      if (subtotalOriginalCents > 0) {
+        // Clamp do desconto para nunca passar do subtotal (acréscimo não tem teto).
+        const ajusteCentsClamped = ajusteLiquidoCents < 0
+          ? Math.max(ajusteLiquidoCents, -subtotalOriginalCents)
+          : ajusteLiquidoCents;
+        let restante = ajusteCentsClamped;
         const novosValores = new Map<number, number>();
         pacienteIdxs.forEach(({ i }, idx) => {
-          const orig = baseOriginalPorIdx.get(i) ?? 0;
+          const origCents = Math.round((baseOriginalPorIdx.get(i) ?? 0) * 100);
           const isLast = idx === pacienteIdxs.length - 1;
           const share = isLast
             ? restante
-            : Math.round((orig / subtotalOriginal) * totalDesc * 100);
-          const safeShare = Math.max(0, Math.min(share, Math.round(orig * 100)));
-          restante -= safeShare;
-          novosValores.set(i, Math.max(0, Math.round(orig * 100) - safeShare) / 100);
+            : Math.round((origCents / subtotalOriginalCents) * ajusteCentsClamped);
+          restante -= share;
+          const novoCents = Math.max(0, origCents + share);
+          novosValores.set(i, novoCents / 100);
         });
         const novaCobranca = examesCobrancaAtuais.map((e, i) => {
           const orig = baseOriginalPorIdx.get(i);
@@ -749,6 +758,7 @@ const Index = () => {
       showError(e, { scope: "Index.handlePagamentoConfirm", userMessage: "Não foi possível atualizar o pagamento." });
     }
   };
+
 
 
   const handleRemovePagamentoRealizado = (index: number) => {
