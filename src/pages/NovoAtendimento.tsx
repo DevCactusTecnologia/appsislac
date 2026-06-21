@@ -474,118 +474,122 @@ const NovoAtendimento = () => {
   useEffect(() => {
     if (!editProtocolo) return;
     const decoded = decodeURIComponent(editProtocolo);
-    let atendimento = getAtendimentos().find(a => a.protocolo === decoded);
-    if (!atendimento) {
-      // Fallback server-side quando o atendimento não está no cache (modo paginado).
-      // `editAtendimentoData` NÃO é gatilho de render: é o dado real (cpf/nascimento/idade)
-      // consumido em `updateAtendimento(...)` mais abaixo quando o paciente não está
-      // resolvido via `getPacientes()`. Hidratação do restante (convenios/exames/etc)
-      // exigiria refetch + re-execução; este fallback é intencionalmente mínimo.
-      void fetchAtendimentoByProtocolo(decoded).then((a) => {
-        if (a) {
-          setEditAtendimentoData({ cpf: a.cpf, nascimento: a.nascimento, idade: a.idade });
-        }
+
+    const hydrate = (atendimento: MockAtendimento) => {
+      // Política de edição: bloqueia carregamento se atendimento finalizado/cancelado
+      if (isEdicaoClinicaBloqueada(atendimento.statusAtendimento)) {
+        toast({
+          title: "Edição bloqueada",
+          description: mensagemBloqueioClinico(atendimento.statusAtendimento),
+          variant: "destructive",
+        });
+        navigate("/atendimentos", { replace: true });
+        return;
+      }
+      setPacienteQuery(atendimento.nome);
+      setOriginalPaciente(atendimento.nome);
+      const convs = atendimento.convenio ? [atendimento.convenio] : [];
+      const sols = atendimento.solicitante ? [atendimento.solicitante] : [];
+      setConvenios(convs);
+      setOriginalConvenios(convs);
+      setSolicitantes(sols);
+      setOriginalSolicitantes(sols);
+      setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
+      setShowPacienteSearch(false);
+      setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
+      const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
+      const [dd, mm, yyyy] = dataBR.split("/");
+      if (dd && mm && yyyy) setDataAtendimento(`${yyyy}-${mm}-${dd}T${horaBR.slice(0, 5)}`);
+      // Considera apenas exames cobrados do paciente (Fase 2: faturamento híbrido).
+      const totalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
+        const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
+        if (meta?.cobrancaDestino === "convenio") return sum;
+        // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
+        return sum + calculateExamPrice({
+          nomeExame,
+          convenioNome: atendimento.convenio,
+          metaValor: meta?.valor,
+        });
+      }, 0);
+      const totalOriginalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
+        const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
+        if (meta?.cobrancaDestino === "convenio") return sum;
+        const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
+        const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
+        return sum + Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela);
+      }, 0);
+      const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
+      const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
+      const descontoInferido = descontoPersistido <= 0
+        && atendimento.statusPagamento.label === "Pagamento efetuado"
+        && totalPagamentosRealizados > 0
+        && totalPagamentosRealizados < totalOriginalFromExames
+          ? Math.round((totalOriginalFromExames - totalPagamentosRealizados) * 100) / 100
+          : 0;
+      setDesconto(descontoInferido);
+      if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
+      else if (atendimento.statusPagamento.label === "Pagamento efetuado") setValorPago(totalFromExames);
+      else if (atendimento.statusPagamento.label === "Pagamento parcial") setValorPago(Math.round(totalFromExames * 0.5 * 100) / 100);
+      else setValorPago(0);
+      const mappedExames: Exame[] = atendimento.exames.map((nomeExame, i) => {
+        const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
+        const cobr = meta
+          ? { cobrancaDestino: meta.cobrancaDestino, convenioCobrancaId: meta.convenioCobrancaId ?? null }
+          : resolveCobrancaDefault(atendimento.convenio ? [atendimento.convenio] : []);
+        const cat = getExamesCatalogo().find(c => c.nome.toLowerCase() === nomeExame.toLowerCase());
+        const valorAtual = calculateExamPrice({
+          nomeExame,
+          convenioNome: atendimento.convenio,
+          metaValor: meta?.valor,
+        });
+        const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
+        const tipoProcesso = ((meta?.tipoProcesso as string) || cat?.tipoProcesso || "INTERNO") as "INTERNO" | "TERCEIRIZADO";
+        const labApoioIdPadrao = cat?.labApoioId ?? null;
+        // Se o meta gravado difere do padrão do catálogo, é um override.
+        const labGravado = meta?.labApoioId ?? null;
+        const labApoioIdOverride = (tipoProcesso === "TERCEIRIZADO" && labGravado && labGravado !== labApoioIdPadrao)
+          ? labGravado
+          : null;
+        return {
+          id: i + 1,
+          nome: nomeExame,
+          convenio: atendimento.convenio,
+          material: meta?.material ?? cat?.material ?? "Sangue",
+          // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
+          valor: valorAtual,
+          // valorOriginal = preço cheio antes do desconto distribuído.
+          // Fallback defensivo: se o valor_original foi sobrescrito por edição anterior,
+          // recupera o preço cheio pela tabela quando ele for maior que o valor cobrado.
+          valorOriginal: Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela),
+          cobrancaDestino: cobr.cobrancaDestino,
+          convenioCobrancaId: cobr.convenioCobrancaId,
+          tipoProcesso,
+          labApoioIdPadrao,
+          labApoioIdOverride,
+          // Hidratação: se não houver solicitante salvo e o atendimento tem >1 solicitante,
+          // marca como "__ambos" (consistente com o comportamento anterior em que vazio = ambos).
+          solicitanteExame: meta?.solicitante && meta.solicitante.trim() ? meta.solicitante : "__ambos",
+        };
       });
+      setExames(mappedExames);
+      setOriginalExameNames(atendimento.exames);
+    };
+
+    const fromCache = getAtendimentos().find(a => a.protocolo === decoded);
+    if (fromCache) {
+      hydrate(fromCache);
       return;
     }
-    // Política de edição: bloqueia carregamento se atendimento finalizado/cancelado
-    if (isEdicaoClinicaBloqueada(atendimento.statusAtendimento)) {
-      toast({
-        title: "Edição bloqueada",
-        description: mensagemBloqueioClinico(atendimento.statusAtendimento),
-        variant: "destructive",
-      });
-      navigate("/atendimentos", { replace: true });
-      return;
-    }
-    setPacienteQuery(atendimento.nome);
-    setOriginalPaciente(atendimento.nome);
-    const convs = atendimento.convenio ? [atendimento.convenio] : [];
-    const sols = atendimento.solicitante ? [atendimento.solicitante] : [];
-    setConvenios(convs);
-    setOriginalConvenios(convs);
-    setSolicitantes(sols);
-    setOriginalSolicitantes(sols);
-    setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
-    setShowPacienteSearch(false);
-    setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
-    const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
-    const [dd, mm, yyyy] = dataBR.split("/");
-    if (dd && mm && yyyy) setDataAtendimento(`${yyyy}-${mm}-${dd}T${horaBR.slice(0, 5)}`);
-    // Considera apenas exames cobrados do paciente (Fase 2: faturamento híbrido).
-    const totalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
-      const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
-      if (meta?.cobrancaDestino === "convenio") return sum;
-      // Fonte de verdade: valor persistido em examesCobranca. Nunca inventar preço.
-      return sum + calculateExamPrice({
-        nomeExame,
-        convenioNome: atendimento.convenio,
-        metaValor: meta?.valor,
-      });
-    }, 0);
-    const totalOriginalFromExames = atendimento.exames.reduce((sum, nomeExame) => {
-      const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
-      if (meta?.cobrancaDestino === "convenio") return sum;
-      const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
-      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
-      return sum + Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela);
-    }, 0);
-    const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
-    const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
-    const descontoInferido = descontoPersistido <= 0
-      && atendimento.statusPagamento.label === "Pagamento efetuado"
-      && totalPagamentosRealizados > 0
-      && totalPagamentosRealizados < totalOriginalFromExames
-        ? Math.round((totalOriginalFromExames - totalPagamentosRealizados) * 100) / 100
-        : 0;
-    setDesconto(descontoInferido);
-    if (totalPagamentosRealizados > 0) setValorPago(Math.round(totalPagamentosRealizados * 100) / 100);
-    else if (atendimento.statusPagamento.label === "Pagamento efetuado") setValorPago(totalFromExames);
-    else if (atendimento.statusPagamento.label === "Pagamento parcial") setValorPago(Math.round(totalFromExames * 0.5 * 100) / 100);
-    else setValorPago(0);
-    const mappedExames: Exame[] = atendimento.exames.map((nomeExame, i) => {
-      const meta = atendimento.examesCobranca?.find(c => c.nome === nomeExame);
-      const cobr = meta
-        ? { cobrancaDestino: meta.cobrancaDestino, convenioCobrancaId: meta.convenioCobrancaId ?? null }
-        : resolveCobrancaDefault(atendimento.convenio ? [atendimento.convenio] : []);
-      const cat = getExamesCatalogo().find(c => c.nome.toLowerCase() === nomeExame.toLowerCase());
-      const valorAtual = calculateExamPrice({
-        nomeExame,
-        convenioNome: atendimento.convenio,
-        metaValor: meta?.valor,
-      });
-      const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
-      const tipoProcesso = ((meta?.tipoProcesso as string) || cat?.tipoProcesso || "INTERNO") as "INTERNO" | "TERCEIRIZADO";
-      const labApoioIdPadrao = cat?.labApoioId ?? null;
-      // Se o meta gravado difere do padrão do catálogo, é um override.
-      const labGravado = meta?.labApoioId ?? null;
-      const labApoioIdOverride = (tipoProcesso === "TERCEIRIZADO" && labGravado && labGravado !== labApoioIdPadrao)
-        ? labGravado
-        : null;
-      return {
-        id: i + 1,
-        nome: nomeExame,
-        convenio: atendimento.convenio,
-        material: meta?.material ?? cat?.material ?? "Sangue",
-        // Preço exibido = valor persistido (fonte de verdade). Fallback: catálogo. Nunca chute.
-        valor: valorAtual,
-        // valorOriginal = preço cheio antes do desconto distribuído.
-        // Fallback defensivo: se o valor_original foi sobrescrito por edição anterior,
-        // recupera o preço cheio pela tabela quando ele for maior que o valor cobrado.
-        valorOriginal: Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela),
-        cobrancaDestino: cobr.cobrancaDestino,
-        convenioCobrancaId: cobr.convenioCobrancaId,
-        tipoProcesso,
-        labApoioIdPadrao,
-        labApoioIdOverride,
-        // Hidratação: se não houver solicitante salvo e o atendimento tem >1 solicitante,
-        // marca como "__ambos" (consistente com o comportamento anterior em que vazio = ambos).
-        solicitanteExame: meta?.solicitante && meta.solicitante.trim() ? meta.solicitante : "__ambos",
-      };
+    // Fallback server-side quando o atendimento não está no cache (modo paginado).
+    // Hidratação completa a partir do retorno do fetch (cpf, exames, convênio, pagamentos…).
+    let cancelled = false;
+    void fetchAtendimentoByProtocolo(decoded).then((a) => {
+      if (cancelled || !a) return;
+      hydrate(a);
     });
-    setExames(mappedExames);
-    setOriginalExameNames(atendimento.exames);
+    return () => { cancelled = true; };
   }, [editProtocolo]);
+
 
   const pacienteChanged = isEditing && pacienteQuery !== originalPaciente;
   const conveniosChanged = isEditing && JSON.stringify(convenios) !== JSON.stringify(originalConvenios);
