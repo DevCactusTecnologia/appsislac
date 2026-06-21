@@ -461,7 +461,7 @@ const NovoAtendimento = () => {
   // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
   const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
+  
 
   // Edit mode
   const [showPacienteSearch, setShowPacienteSearch] = useState(!isEditing);
