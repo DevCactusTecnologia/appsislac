@@ -501,6 +501,7 @@ export type Database = {
       atendimento_pagamentos: {
         Row: {
           atendimento_id: number
+          caixa_sessao_id: number | null
           created_at: string
           data: string
           id: number
@@ -513,6 +514,7 @@ export type Database = {
         }
         Insert: {
           atendimento_id: number
+          caixa_sessao_id?: number | null
           created_at?: string
           data?: string
           id?: number
@@ -525,6 +527,7 @@ export type Database = {
         }
         Update: {
           atendimento_id?: number
+          caixa_sessao_id?: number | null
           created_at?: string
           data?: string
           id?: number
@@ -541,6 +544,13 @@ export type Database = {
             columns: ["atendimento_id"]
             isOneToOne: false
             referencedRelation: "atendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_pagamentos_caixa_sessao_id_fkey"
+            columns: ["caixa_sessao_id"]
+            isOneToOne: false
+            referencedRelation: "caixa_sessoes"
             referencedColumns: ["id"]
           },
           {
@@ -705,6 +715,7 @@ export type Database = {
           aberta_em: string
           created_at: string
           fechada_em: string | null
+          fechado_por: string | null
           id: number
           observacoes: string | null
           responsavel_id: string | null
@@ -719,6 +730,7 @@ export type Database = {
           aberta_em?: string
           created_at?: string
           fechada_em?: string | null
+          fechado_por?: string | null
           id?: number
           observacoes?: string | null
           responsavel_id?: string | null
@@ -733,6 +745,7 @@ export type Database = {
           aberta_em?: string
           created_at?: string
           fechada_em?: string | null
+          fechado_por?: string | null
           id?: number
           observacoes?: string | null
           responsavel_id?: string | null
@@ -2287,6 +2300,7 @@ export type Database = {
       financeiro_saidas: {
         Row: {
           assinatura_protocolo: string | null
+          caixa_sessao_id: number | null
           created_at: string
           data: string
           data_pagamento: string | null
@@ -2305,6 +2319,7 @@ export type Database = {
         }
         Insert: {
           assinatura_protocolo?: string | null
+          caixa_sessao_id?: number | null
           created_at?: string
           data?: string
           data_pagamento?: string | null
@@ -2323,6 +2338,7 @@ export type Database = {
         }
         Update: {
           assinatura_protocolo?: string | null
+          caixa_sessao_id?: number | null
           created_at?: string
           data?: string
           data_pagamento?: string | null
@@ -2340,6 +2356,13 @@ export type Database = {
           valor?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "financeiro_saidas_caixa_sessao_id_fkey"
+            columns: ["caixa_sessao_id"]
+            isOneToOne: false
+            referencedRelation: "caixa_sessoes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "financeiro_saidas_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -6448,6 +6471,38 @@ export type Database = {
         }[]
       }
       bootstrap_set_cron_secret: { Args: { p_value: string }; Returns: string }
+      caixa_abrir: {
+        Args: {
+          p_observacoes?: string
+          p_unidade_id: string
+          p_valor_abertura?: number
+        }
+        Returns: {
+          aberta_em: string
+          created_at: string
+          fechada_em: string | null
+          fechado_por: string | null
+          id: number
+          observacoes: string | null
+          responsavel_id: string | null
+          status: string
+          tenant_id: string
+          unidade_id: string
+          updated_at: string
+          valor_abertura: number
+          valor_fechamento: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "caixa_sessoes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      caixa_fechar: {
+        Args: { p_observacoes?: string; p_sessao_id: number }
+        Returns: Json
+      }
       circuit_record_failure: {
         Args: { p_kind?: string; p_provider: string; p_tenant: string }
         Returns: undefined
