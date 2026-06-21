@@ -172,7 +172,8 @@ const PagamentoDialog = ({
   }, [pagamentos, subtotal, exames]);
 
   const descontoTotal = descontoHistorico + totalDesc;
-  const totalAjustado = subtotal - descontoTotal + totalAcre;
+  const acrescimoTotal = acrescimoHistorico + totalAcre;
+  const totalAjustado = subtotal - descontoTotal + acrescimoTotal;
   const valorPagoTotal = valorPagoProp + totalPag;
   const saldo = totalAjustado - valorPagoTotal;
   const excedente = valorPagoTotal > totalAjustado && totalAjustado > 0;
@@ -185,10 +186,11 @@ const PagamentoDialog = ({
     const novosPagamentos: PagamentoRealizado[] = pagamentos
       .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
       .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") }));
-    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: totalAcre, novosPagamentos });
+    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: acrescimoTotal, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);
+    setAcrescimoHistRemovido(false);
     setConfirmingRemove(null);
     onClose();
   };
