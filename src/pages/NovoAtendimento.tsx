@@ -461,7 +461,7 @@ const NovoAtendimento = () => {
   // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
   const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [comprovanteTipo, setComprovanteTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
+  
 
   // Edit mode
   const [showPacienteSearch, setShowPacienteSearch] = useState(!isEditing);
@@ -726,6 +726,40 @@ const NovoAtendimento = () => {
     return yyyy && mm && dd ? `${dd}/${mm}/${yyyy}` : undefined;
   })();
   const acrescimoDataExibicao = descontoDataExibicao;
+
+  // Imprime comprovante diretamente — sem modal, sem pré-visualização.
+  // Olhou. Entendeu. Simplificou.
+  const imprimirComprovante = (tipo: "pagamento" | "atendimento" | "comparecimento") => {
+    const paciente = getPacientes().find(p => p.nome === pacienteQuery);
+    const cpf = paciente?.cpf || editAtendimentoData?.cpf || "";
+    const nascimento = paciente?.dataNascimento || editAtendimentoData?.nascimento || "";
+    const idade = paciente?.idade || editAtendimentoData?.idade || "";
+    const protocoloAtual = editProtocolo ? decodeURIComponent(editProtocolo) : "";
+    const d = new Date();
+    const dataAtual = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+    const tipoLabels = {
+      pagamento: "COMPROVANTE DE PAGAMENTO",
+      atendimento: "COMPROVANTE DE ATENDIMENTO",
+      comparecimento: "COMPROVANTE DE COMPARECIMENTO",
+    } as const;
+    const html = buildComprovanteHtml({
+      tipo,
+      protocolo: protocoloAtual,
+      data: dataAtual,
+      paciente: { nome: pacienteQuery || "Paciente", cpf, nascimento, idade },
+      convenio: convenios[0] || "Particular",
+      solicitante: solicitantes[0] || "",
+      unidade: unidadeAtiva ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado } : undefined,
+      exames: exames.map(e => ({ nome: e.nome, material: e.material, valor: e.valor })),
+      pagamentos: pagamentosRealizados,
+      totais: { subtotal, desconto, pago: valorPago, total, saldo: saldoDevedor },
+    });
+    printHtmlInHiddenFrame({
+      html,
+      frameId: "comprovante-print-frame",
+      documentTitle: `${tipoLabels[tipo]} ${protocoloAtual}`.trim(),
+    });
+  };
 
   const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
     const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
@@ -2273,7 +2307,7 @@ const NovoAtendimento = () => {
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Comprovantes</p>
                           {valorPago > 0 && (
                             <button
-                              onClick={() => setComprovanteTipo("pagamento")}
+                              onClick={() => imprimirComprovante("pagamento")}
                               className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all flex items-center justify-center gap-2"
                             >
                               <Receipt className="h-3.5 w-3.5 text-primary" />
@@ -2281,14 +2315,14 @@ const NovoAtendimento = () => {
                             </button>
                           )}
                           <button
-                            onClick={() => setComprovanteTipo("atendimento")}
+                            onClick={() => imprimirComprovante("atendimento")}
                             className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all flex items-center justify-center gap-2"
                           >
                             <FileText className="h-3.5 w-3.5 text-primary" />
                             Comp. Atendimento
                           </button>
                           <button
-                            onClick={() => setComprovanteTipo("comparecimento")}
+                            onClick={() => imprimirComprovante("comparecimento")}
                             className="w-full h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all flex items-center justify-center gap-2"
                           >
                             <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
@@ -2382,62 +2416,6 @@ const NovoAtendimento = () => {
       />
       </Suspense>
       )}
-      {comprovanteTipo && (() => {
-        const paciente = getPacientes().find(p => p.nome === pacienteQuery);
-        const cpf = paciente?.cpf || editAtendimentoData?.cpf || "";
-        const nascimento = paciente?.dataNascimento || editAtendimentoData?.nascimento || "";
-        const idade = paciente?.idade || editAtendimentoData?.idade || "";
-        const telefone = paciente?.telefone || paciente?.celular;
-        const protocoloAtual = editProtocolo ? decodeURIComponent(editProtocolo) : "";
-        const dataAtual = (() => {
-          const d = new Date();
-          return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-        })();
-        const examesData = exames.map(e => ({ nome: e.nome, material: e.material, valor: e.valor }));
-        const tipoLabels = {
-          pagamento: "COMPROVANTE DE PAGAMENTO",
-          atendimento: "COMPROVANTE DE ATENDIMENTO",
-          comparecimento: "COMPROVANTE DE COMPARECIMENTO",
-        } as const;
-        const comprovanteData = {
-          tipo: comprovanteTipo,
-          protocolo: protocoloAtual,
-          data: dataAtual,
-          paciente: { nome: pacienteQuery || "Paciente", cpf, nascimento, idade },
-          convenio: convenios[0] || "Particular",
-          solicitante: solicitantes[0] || "",
-          unidade: unidadeAtiva ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado } : undefined,
-          exames: examesData,
-          pagamentos: pagamentosRealizados,
-          totais: { subtotal, desconto, pago: valorPago, total, saldo: saldoDevedor },
-        };
-        const html = buildComprovanteHtml(comprovanteData);
-        return (
-          <Suspense fallback={null}>
-          <PdfPreviewDialog
-            open={!!comprovanteTipo}
-            onClose={() => setComprovanteTipo(null)}
-            html={html}
-            filename={`comprovante-${comprovanteTipo}-${protocoloAtual}`}
-            title={tipoLabels[comprovanteTipo]}
-            subtitle={`${protocoloAtual} · ${dataAtual}`}
-            whatsappPhone={telefone}
-            buildWhatsappMessage={(url) => {
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *${tipoLabels[comprovanteTipo]}*`,
-                `Protocolo: *${protocoloAtual}*`,
-                `Data: ${dataAtual}`,
-                "",
-                `Olá *${pacienteQuery || "Paciente"}*, segue seu comprovante.`,
-                "",
-                linkLine,
-              ].join("\n");
-            }}
-          />
-          </Suspense>
-        );
-      })()}
       {avaliacaoIAOpen && (
       <Suspense fallback={null}>
       <AvaliacaoIADialog

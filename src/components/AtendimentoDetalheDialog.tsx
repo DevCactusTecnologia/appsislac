@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode } from "lucide-react";
 // ----------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import IntegrationStatusBadge from "./IntegrationStatusBadge";
 import IntegrationWarningsList from "./IntegrationWarningsList";
 import { resolveIntegrationWarnings } from "@/lib/integration/integrationStatus";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
-import PdfPreviewDialog from "./PdfPreviewDialog";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import PacienteTelefoneInline from "./PacienteTelefoneInline";
 import type { MockAtendimento } from "@/data/types";
 import { getUnidadeById } from "@/data/unidadeStore";
@@ -50,7 +50,6 @@ interface AtendimentoDetalheDialogProps {
 
 const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDetalheDialogProps) => {
   useBodyScrollLock(open && !!atendimento);
-  const [previewTipo, setPreviewTipo] = useState<"pagamento" | "atendimento" | "comparecimento" | null>(null);
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
   // Tick para forçar re-render quando os templates de documento forem
@@ -146,39 +145,18 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     comparecimento: "COMPROVANTE DE COMPARECIMENTO",
   };
 
-  // Só monta dados/HTML quando há tipo selecionado — gerar o QR é caro
-  // (loop sobre matriz de módulos + concat). Memoizamos por (protocolo, tipo)
-  // para não regerar a cada re-render do diálogo (scroll, hover, etc.).
-  const previewData = useMemo(
-    () => (previewTipo ? buildComprovanteData(previewTipo) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [previewTipo, atendimento?.protocolo, subtotalPaciente, totalPacienteEfetivo, descontoPaciente, totalPago, saldoDevedor],
-  );
-  const previewHtml = useMemo(
-    () => (previewData ? buildComprovanteHtml(previewData) : ""),
-    [previewData],
-  );
-  const previewWhatsappMessage = useMemo(() => {
-    if (!previewData) return undefined;
-    return (url: string) => {
-      const totalLine = previewData.totais
-        ? `\n💰 *Total: R$ ${fmtBRLNumber(previewData.totais.total)}*`
-        : "";
-      const linkLine = url
-        ? `📎 *PDF:* ${url}`
-        : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-      return [
-        `📋 *${tipoLabels[previewData.tipo]}*`,
-        `Protocolo: *${previewData.protocolo}*`,
-        `Data: ${previewData.data}`,
-        "",
-        `Olá *${previewData.paciente.nome}*, segue seu comprovante.${totalLine}`,
-        "",
-        linkLine,
-      ].join("\n");
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewData]);
+  // Imprime comprovante diretamente — sem modal, sem pré-visualização.
+  // Olhou. Entendeu. Simplificou.
+  const imprimirComprovante = (tipo: "pagamento" | "atendimento" | "comparecimento") => {
+    const data = buildComprovanteData(tipo);
+    if (!data) return;
+    const html = buildComprovanteHtml(data);
+    printHtmlInHiddenFrame({
+      html,
+      frameId: "comprovante-print-frame",
+      documentTitle: `${tipoLabels[tipo]} ${data.protocolo}`.trim(),
+    });
+  };
 
   if (!open || !atendimento) return null;
 
@@ -218,7 +196,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {atendimento.statusPagamento.label === "Pagamento efetuado" && (
                 <button
-                  onClick={() => setPreviewTipo("pagamento")}
+                  onClick={() => imprimirComprovante("pagamento")}
                   className="h-10 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all duration-200 shadow-sm"
                 >
                   <Receipt className="h-3.5 w-3.5" />
@@ -226,14 +204,14 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 </button>
               )}
               <button
-                onClick={() => setPreviewTipo("atendimento")}
+                onClick={() => imprimirComprovante("atendimento")}
                 className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <FileText className="h-3.5 w-3.5 text-primary" />
                 <span className="truncate">Comp. Atendimento</span>
               </button>
               <button
-                onClick={() => setPreviewTipo("comparecimento")}
+                onClick={() => imprimirComprovante("comparecimento")}
                 className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
@@ -460,19 +438,6 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
           </div>
         </div>
       </div>
-      {previewData && (
-        <PdfPreviewDialog
-          open={!!previewTipo}
-          onClose={() => setPreviewTipo(null)}
-          html={previewHtml}
-          filename={`comprovante-${previewData.tipo}-${previewData.protocolo}`}
-          title={tipoLabels[previewData.tipo]}
-          subtitle={`${previewData.protocolo} · ${previewData.data}`}
-          whatsappPhone={telefonePaciente}
-          buildWhatsappMessage={previewWhatsappMessage}
-          comprovante={{ protocolo: previewData.protocolo, tipo: previewData.tipo }}
-        />
-      )}
     </div>
   ), document.body);
 };
