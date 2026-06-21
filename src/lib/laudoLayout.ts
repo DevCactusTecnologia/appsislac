@@ -27,7 +27,7 @@ import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { resolverReferencia } from "@/data/valoresReferenciaStore";
 import { preserveVisibleTextSpacing, splitPlaceholderSpacing } from "@/lib/htmlSpacing";
 
-const DEFAULT_MARGINS: LayoutMargins = { top: 4, right: 11, bottom: 4, left: 11 };
+const DEFAULT_MARGINS: LayoutMargins = { top: 5, right: 10, bottom: 5, left: 10 };
 
 const norm = (s: string): string =>
   s
