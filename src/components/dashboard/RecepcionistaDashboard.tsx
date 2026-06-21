@@ -147,6 +147,8 @@ const RecepcionistaDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { count: solicitacoesNovas } = useSolicitacoesNaoLidas();
+  // Fase 7 — SSOT: "A Receber" da Recepção vem da RPC oficial.
+  const { totais: aReceberSsot } = useAReceberTotais(true);
 
   const [atendimentos, setAtendimentos] = useState<MockAtendimento[]>(() => getAtendimentos());
   const [pacientes, setPacientes] = useState(() => getPacientes());
