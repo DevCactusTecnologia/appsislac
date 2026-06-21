@@ -264,6 +264,9 @@ const RecepcionistaDashboard = () => {
           <Quick label="Pedidos do site" icon={Globe} to="/pedidos-site" />
         </section>
 
+        {/* Caixa operacional — Fase 5 */}
+        <CaixaOperacionalCard />
+
         {/* KPIs */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Kpi
