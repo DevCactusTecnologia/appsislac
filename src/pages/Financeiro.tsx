@@ -960,6 +960,11 @@ const Financeiro = () => {
 
           {/* ─── Livro-Caixa (Fase 4 — Passo 5): consome FinanceiroContext ─── */}
           {activeTab === "caixa" && <CaixaTab />}
+
+          {/* ─── Caixa Operacional (Fase 5): abrir/fechar caixa por unidade ─── */}
+          {activeTab === "caixa_op" && (
+            <div className="max-w-2xl"><CaixaOperacionalCard /></div>
+          )}
         </>
 
 
