@@ -10,7 +10,7 @@
 //
 // 100% derivação pura. Nenhum hook, nenhum efeito.
 import { parseDate } from "../helpers";
-import type { FinanceiroEntry, AReceberRow, AReceberConvenioRow } from "../types";
+import type { FinanceiroEntry } from "../types";
 
 export interface PainelKpis {
   receitaHoje: number;
