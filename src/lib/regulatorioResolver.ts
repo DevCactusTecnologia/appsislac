@@ -74,9 +74,4 @@ export function renderRegulatorioFooterHtml(reg: ResultadoRegulatorio): string {
   `;
 }
 
-const escapeHtml = (s: string): string =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+import { escapeHtml } from "@/lib/escapeHtml";
