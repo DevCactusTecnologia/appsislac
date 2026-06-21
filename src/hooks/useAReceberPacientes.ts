@@ -250,3 +250,65 @@ export function useAReceberConvenios(
 
   return { rows, loading, refresh: () => { void fetchIt(); } };
 }
+
+// ────────────────────────────────────────────────────────────
+// A Receber — TOTAIS (Financeiro V2 — Fase 7, SSOT definitivo)
+// ------------------------------------------------------------
+// Hook único que consome a RPC `financeiro_a_receber_totais`,
+// fonte oficial dos cards/KPIs de "A Receber" em qualquer tela
+// (Dashboard, Recepção, Painel Financeiro, relatórios).
+// Frontend lê. Banco calcula. Uma verdade.
+// ────────────────────────────────────────────────────────────
+
+export interface AReceberTotais {
+  totalPacientes: number;
+  qtdPacientes: number;
+  totalConvenios: number;
+  qtdConvenios: number;
+  totalGeral: number;
+}
+
+const TOTAIS_EMPTY: AReceberTotais = {
+  totalPacientes: 0,
+  qtdPacientes: 0,
+  totalConvenios: 0,
+  qtdConvenios: 0,
+  totalGeral: 0,
+};
+
+export function useAReceberTotais(
+  enabled: boolean,
+): { totais: AReceberTotais; loading: boolean; refresh: () => void } {
+  const [totais, setTotais] = useState<AReceberTotais>(TOTAIS_EMPTY);
+  const [loading, setLoading] = useState(false);
+  const reqIdRef = useRef(0);
+
+  const fetchIt = useCallback(async () => {
+    if (!enabled) { setTotais(TOTAIS_EMPTY); return; }
+    const myReq = ++reqIdRef.current;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("financeiro_a_receber_totais");
+      if (myReq !== reqIdRef.current) return;
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      setTotais(row ? {
+        totalPacientes: Number(row.total_pacientes) || 0,
+        qtdPacientes:   Number(row.qtd_pacientes)   || 0,
+        totalConvenios: Number(row.total_convenios) || 0,
+        qtdConvenios:   Number(row.qtd_convenios)   || 0,
+        totalGeral:     Number(row.total_geral)     || 0,
+      } : TOTAIS_EMPTY);
+    } catch (e: unknown) {
+      if (myReq !== reqIdRef.current) return;
+      logger.warn("useAReceberTotais", (e as Error)?.message);
+      setTotais(TOTAIS_EMPTY);
+    } finally {
+      if (myReq === reqIdRef.current) setLoading(false);
+    }
+  }, [enabled]);
+
+  useEffect(() => { void fetchIt(); }, [fetchIt]);
+
+  return { totais, loading, refresh: () => { void fetchIt(); } };
+}
