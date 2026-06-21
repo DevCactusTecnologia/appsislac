@@ -516,7 +516,10 @@ const NovoAtendimento = () => {
         if (meta?.cobrancaDestino === "convenio") return sum;
         const valorAtual = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio, metaValor: meta?.valor });
         const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento.convenio });
-        return sum + Math.max(Number(meta?.valorOriginal) || 0, valorAtual, valorTabela);
+        const voRaw = Number(meta?.valorOriginal) || 0;
+        // Respeita `valorOriginal` quando já gravado (SSOT do preço cheio).
+        // Sem ele, fallback = max(valor, tabela) para dados legados sem desconto.
+        return sum + (voRaw > 0 ? voRaw : Math.max(valorAtual, valorTabela));
       }, 0);
       const totalPagamentosRealizados = (atendimento.pagamentosRealizados ?? []).reduce((sum, p) => sum + p.valor, 0);
       const descontoPersistido = Math.max(0, Math.round((totalOriginalFromExames - totalFromExames) * 100) / 100);
