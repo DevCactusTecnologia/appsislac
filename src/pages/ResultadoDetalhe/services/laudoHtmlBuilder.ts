@@ -164,17 +164,23 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           font-family: Helvetica, Arial, sans-serif !important;
           font-size: 9pt !important;
         }
-        /* Zera quaisquer margens/paddings/max-widths trazidos pelos templates
-           configurados em /configuracoes → Documentos, garantindo que o
-           conteúdo use toda a largura útil definida por @page e que html2pdf
-           (que ignora @page) também respeite essas margens. */
-        .laudo-cabecalho-wrap, .laudo-rodape-wrap,
-        .laudo-cabecalho-wrap *, .laudo-rodape-wrap * {
+        /* Zera margens/paddings/max-widths trazidos pelos templates configurados
+           em /configuracoes → Documentos no WRAPPER do cabeçalho/rodapé, garantindo
+           que o conteúdo use toda a largura útil definida por @page. NÃO zeramos
+           margens de elementos internos (td, th, figure, img, table) para preservar
+           alinhamentos definidos no editor (ex.: imagem alinhada à direita em uma
+           célula da tabela do cabeçalho). */
+        .laudo-cabecalho-wrap, .laudo-rodape-wrap {
           max-width: none !important;
           margin-left: 0 !important;
           margin-right: 0 !important;
           padding-left: 0 !important;
           padding-right: 0 !important;
+          box-sizing: border-box !important;
+          width: 100% !important;
+        }
+        .laudo-cabecalho-wrap *, .laudo-rodape-wrap * {
+          max-width: 100% !important;
           box-sizing: border-box !important;
         }
         .laudo-cabecalho-wrap > *, .laudo-rodape-wrap > * { margin-top:0 !important; margin-bottom:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
@@ -186,10 +192,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-rodape-wrap p:empty { display: none !important; }
         .laudo-cabecalho-wrap p > br:only-child,
         .laudo-rodape-wrap p > br:only-child { display: none !important; }
-        /* Garante que imagens (cabeçalho/rodapé) nunca ultrapassem a largura útil,
-           evitando que o html2canvas amplie a windowWidth e desbalanceie a margem direita. */
-        .laudo-cabecalho-wrap img, .laudo-rodape-wrap img { max-width: 100% !important; height: auto !important; display: block; }
-        .laudo-cabecalho-wrap, .laudo-rodape-wrap { width: 100% !important; }
+        /* Imagens do cabeçalho/rodapé: limitamos a largura mas NÃO forçamos
+           display:block (que ignoraria text-align do td/p) nem zeramos margens
+           (que cancelaria float:right ou margin:auto do CKEditor). */
+        .laudo-cabecalho-wrap img, .laudo-rodape-wrap img { max-width: 100% !important; height: auto !important; }
         .laudo-rodape-wrap { text-align: center !important; }
         .laudo-rodape-wrap > *,
         .laudo-rodape-wrap img,
