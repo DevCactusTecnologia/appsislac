@@ -6592,6 +6592,16 @@ export type Database = {
       }
       ensure_tenant_hmac_key: { Args: { _tenant_id: string }; Returns: string }
       estoque_marcar_lotes_vencidos: { Args: never; Returns: number }
+      financeiro_a_receber_totais: {
+        Args: never
+        Returns: {
+          qtd_convenios: number
+          qtd_pacientes: number
+          total_convenios: number
+          total_geral: number
+          total_pacientes: number
+        }[]
+      }
       financeiro_a_receber_v2: {
         Args: {
           p_cursor_data?: string
