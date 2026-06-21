@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
+import { useAReceberTotais } from "@/hooks/useAReceberPacientes";
 import { supabase } from "@/integrations/supabase/client";
 import RecepcionistaDashboard from "@/components/dashboard/RecepcionistaDashboard";
 import AnalistaDashboard from "@/components/dashboard/AnalistaDashboard";
@@ -339,6 +340,11 @@ const Dashboard = () => {
   // Caminho RPC: dados agregados pelo banco (consistentes com o dataset completo).
   const { data: rpcKpis } = useDashboardKpis(useRpc);
 
+  // Fase 7 — SSOT: "A Receber" sempre vem da RPC `financeiro_a_receber_totais`,
+  // independentemente da feature flag. Garante um único número entre Dashboard,
+  // Recepção, Painel e Financeiro.
+  const { totais: aReceberSsot } = useAReceberTotais(true);
+
   /* ── Operacional do dia ───────────────────────────────── */
   const operacionalLegacy = useMemo(() => {
     const hoje = atendimentos.filter((a) => isToday(parsePtDate(a.data)));
@@ -490,7 +496,10 @@ const Dashboard = () => {
 
   // ── Seleção final: RPC tem prioridade quando ativo ──
   const operacional = useRpc ? rpcKpis.operacional : operacionalLegacy;
-  const financeiro  = useRpc ? rpcKpis.financeiro  : financeiroLegacy;
+  // Fase 7 — SSOT: "A Receber" SEMPRE vem da RPC dedicada (mesmo no caminho RPC),
+  // garantindo um único número entre Dashboard, Recepção, Painel e Financeiro.
+  const financeiroBase = useRpc ? rpcKpis.financeiro : financeiroLegacy;
+  const financeiro = { ...financeiroBase, aReceber: aReceberSsot.totalGeral };
   const produtividade = useRpc
     ? { ...rpcKpis.produtividade, topUnidade: null as [string, number] | null,
         topSolicitante: rpcKpis.produtividade.topSolicitante

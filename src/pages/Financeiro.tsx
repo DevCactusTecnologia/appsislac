@@ -33,7 +33,7 @@ const FaturaDetalheDialog = lazy(() => import("@/components/financeiro/FaturaDet
 import { useEnsureStore } from "@/hooks/useEnsureStore";
 // fetchSaldoEmAbertoPorConvenio removido (Fase 1 V2 — substituído por useAReceberConvenios)
 import { useFeatureFlag } from "@/lib/featureFlags";
-import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios } from "@/hooks/useAReceberPacientes";
+import { useAReceberPacientes, useFinanceiroResumo, useAReceberConvenios, useAReceberTotais } from "@/hooks/useAReceberPacientes";
 import { toast } from "@/hooks/use-toast";
 import type { NovaEntradaSaidaData } from "@/components/NovaEntradaSaidaDialog";
 const NovaEntradaSaidaDialog = lazy(() => import("@/components/NovaEntradaSaidaDialog"));
@@ -367,6 +367,17 @@ const Financeiro = () => {
     [aReceberConvenioRowsV2],
   );
 
+  // Fase 7 — SSOT: totais oficiais de A Receber (pacientes + convênios)
+  // vêm da RPC `financeiro_a_receber_totais`. Toda tela do SISLAC que
+  // exibe o número total de "A Receber" deve consumir este hook.
+  const { totais: aReceberTotaisSsot, refresh: refreshTotais } = useAReceberTotais(
+    activeTab === "painel" || activeTab === "a_receber" || activeTab === "convenios",
+  );
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { refreshTotais(); });
+    return unsub;
+  }, [refreshTotais]);
+
 
   const allEntries = useMemo(() => {
     if (activeTab === "entrada") return entradas;
@@ -552,10 +563,14 @@ const Financeiro = () => {
     [filtered, entradas, activeTab],
   );
 
-  // Painel (Fase 3 V2) — 6 KPIs derivados de entradas/saídas/A Receber.
+  // Painel (Fase 7) — A Receber vem da RPC SSOT, não somado client-side.
   const painelKpis = useMemo(
-    () => computePainelKpis(entradas, saidas, aReceberSource, aReceberConvenioRows),
-    [entradas, saidas, aReceberSource, aReceberConvenioRows],
+    () => computePainelKpis(entradas, saidas, {
+      totalGeral:    aReceberTotaisSsot.totalGeral,
+      qtdPacientes:  aReceberTotaisSsot.qtdPacientes,
+      qtdConvenios:  aReceberTotaisSsot.qtdConvenios,
+    }),
+    [entradas, saidas, aReceberTotaisSsot],
   );
 
   // ─── Livro-Caixa: lançamentos cronológicos unificados (entradas + saídas pagas) ───

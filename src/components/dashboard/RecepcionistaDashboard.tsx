@@ -24,6 +24,7 @@ import { fmtBRLNumber } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
+import { useAReceberTotais } from "@/hooks/useAReceberPacientes";
 import CaixaOperacionalCard from "@/components/caixa/CaixaOperacionalCard";
 
 /* helpers */
@@ -146,6 +147,8 @@ const RecepcionistaDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { count: solicitacoesNovas } = useSolicitacoesNaoLidas();
+  // Fase 7 — SSOT: "A Receber" da Recepção vem da RPC oficial.
+  const { totais: aReceberSsot } = useAReceberTotais(true);
 
   const [atendimentos, setAtendimentos] = useState<MockAtendimento[]>(() => getAtendimentos());
   const [pacientes, setPacientes] = useState(() => getPacientes());
@@ -163,7 +166,6 @@ const RecepcionistaDashboard = () => {
     let atendimentosHoje = 0;
     let aguardandoPagamento = 0;
     let receitaHoje = 0;
-    let aReceber = 0;
     const ult30 = daysAgo(30);
     const cpfsAtendidos30d = new Set<string>();
     const novosCpfs30d = new Set<string>();
@@ -183,9 +185,6 @@ const RecepcionistaDashboard = () => {
         aguardandoPagamento++;
       }
 
-      const totalAtd = (a.examesCobranca ?? []).reduce((acc, e) => acc + (e.valor ?? 0), 0);
-      const pago = (a.pagamentosRealizados ?? []).reduce((acc, p) => acc + (p.valor ?? 0), 0);
-      if (!statusPg.includes("cancel")) aReceber += Math.max(totalAtd - pago, 0);
       for (const p of a.pagamentosRealizados ?? []) {
         if (isToday(parsePtDate(p.data))) receitaHoje += p.valor ?? 0;
       }
@@ -207,14 +206,15 @@ const RecepcionistaDashboard = () => {
       atendimentosHoje,
       aguardandoPagamento,
       receitaHoje,
-      aReceber,
+      // Fase 7 — SSOT: A Receber sempre vem da RPC oficial.
+      aReceber: aReceberSsot.totalGeral,
       pacientesAtivos: ativos,
       pacientesTotal: pacientes.length,
       atendidos30d: cpfsAtendidos30d.size,
       novos30d: novosCpfs30d.size,
       orcamentosPendentes,
     };
-  }, [atendimentos, pacientes, orcamentos]);
+  }, [atendimentos, pacientes, orcamentos, aReceberSsot.totalGeral]);
 
   /* Últimos atendimentos do dia (até 6) */
   const atendimentosDoDia = useMemo(() => {
