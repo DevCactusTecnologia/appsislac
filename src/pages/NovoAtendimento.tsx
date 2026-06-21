@@ -23,7 +23,7 @@ import { addAtendimento, getAtendimentos, getNextProtocolo, updateAtendimento, f
 import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { isValidCPF, looksLikeCPF, sanitizeCPF } from "@/lib/cpf";
-import { gerarOrcamentoPDF, enviarOrcamentoPorWhatsapp, buildOrcamentoHtmlPublic, buildComprovanteHtml } from "@/lib/comprovantes";
+import { gerarOrcamentoPDF, enviarOrcamentoPorWhatsapp, buildOrcamentoHtml, buildComprovanteHtml } from "@/lib/comprovantes";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import PacienteTelefoneInline from "@/components/PacienteTelefoneInline";
 import { isEdicaoClinicaBloqueada, mensagemBloqueioClinico } from "@/lib/atendimentoPolicy";
@@ -1001,7 +1001,7 @@ const NovoAtendimento = () => {
       };
       setTimeout(() => {
         printHtmlInHiddenFrame({
-          html: buildOrcamentoHtmlPublic(orcData),
+          html: buildOrcamentoHtml(orcData),
           documentTitle: `orcamento-${id}`,
         });
       }, 200);
@@ -2767,7 +2767,7 @@ const NovoAtendimento = () => {
           <PdfPreviewDialog
             open={orcamentoPreviewOpen}
             onClose={() => setOrcamentoPreviewOpen(false)}
-            html={buildOrcamentoHtmlPublic(orcData)}
+            html={buildOrcamentoHtml(orcData)}
             filename={`orcamento-${orcData.id}`}
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}

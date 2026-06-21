@@ -17,7 +17,7 @@ import {
 interface PdfPreviewDialogProps {
   open: boolean;
   onClose: () => void;
-  /** HTML markup to render as PDF (use buildComprovanteHtml / buildOrcamentoHtmlPublic). */
+  /** HTML markup to render as PDF (use buildComprovanteHtml / buildOrcamentoHtml). */
   html: string;
   /** Filename used for download and upload (without forcing .pdf — added if missing). */
   filename: string;
