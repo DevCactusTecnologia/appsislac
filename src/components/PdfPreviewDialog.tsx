@@ -40,13 +40,6 @@ interface PdfPreviewDialogProps {
   comprovante?: { protocolo: string; tipo: ComprovanteTipo };
 }
 
-const buildWaUrl = (phone: string | undefined, msg: string): string => {
-  const digits = (phone ?? "").replace(/\D/g, "");
-  const fp = digits ? (digits.startsWith("55") ? digits : `55${digits}`) : "";
-  return fp
-    ? `https://wa.me/${fp}?text=${encodeURIComponent(msg)}`
-    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-};
 
 const PdfPreviewDialog = ({
   open,
