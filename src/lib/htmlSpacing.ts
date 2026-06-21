@@ -59,11 +59,7 @@ function shouldPreservePureSpacing(text: string, prevTag: string, nextTag: strin
   return prevInline || nextInline || insideCellEdge;
 }
 
-function normalizeVisibleSpaces(
-  text: string,
-  preservePureSpacing: boolean,
-  options?: { preserveLeading?: boolean; preserveTrailing?: boolean },
-): string {
+function normalizeVisibleSpaces(text: string, preservePureSpacing: boolean): string {
   const normalizedEntities = text.replace(HTML_SPACE_ENTITY_RE, "\u00a0");
   if (preservePureSpacing) return normalizedEntities.replace(/ /g, "\u00a0");
 
@@ -75,29 +71,12 @@ function normalizeVisibleSpaces(
     return singleNbsp && betweenText ? " " : match;
   });
 
-  let out = textWithBreakableWordSpaces
+  return textWithBreakableWordSpaces
     .replace(/ {2,}/g, (spaces) => "\u00a0".repeat(spaces.length))
     .replace(/ +(?=\u00a0)/g, (spaces) => "\u00a0".repeat(spaces.length))
-    .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length));
-
-  // Whitespace de indentação estrutural (texto encostado em abertura/fechamento
-  // de bloco — ex.: `<p>\n    Resultado:</p>`) NÃO deve virar NBSP, porque é
-  // formatação do HTML salvo pelo editor, não espaço digitado pelo usuário.
-  // Preservava-se antes só visualmente porque html2canvas colapsava NBSPs;
-  // o motor vetorial nativo respeita NBSP literalmente, criando recuo indesejado.
-  if (!options?.preserveLeading) {
-    out = out.replace(/^[\u00a0\s]*[\u00a0]+/, (spaces) => spaces.replace(/[\u00a0]/g, " "));
-    out = out.replace(/^ +/, "");
-  } else {
-    out = out.replace(/^ +/g, (spaces) => "\u00a0".repeat(spaces.length));
-  }
-  if (!options?.preserveTrailing) {
-    out = out.replace(/[\u00a0]+[\u00a0\s]*$/, (spaces) => spaces.replace(/[\u00a0]/g, " "));
-    out = out.replace(/ +$/, "");
-  } else {
-    out = out.replace(/ +$/g, (spaces) => "\u00a0".repeat(spaces.length));
-  }
-  return out;
+    .replace(/\u00a0 +/g, (spaces) => "\u00a0".repeat(spaces.length))
+    .replace(/^ +/g, (spaces) => "\u00a0".repeat(spaces.length))
+    .replace(/ +$/g, (spaces) => "\u00a0".repeat(spaces.length));
 }
 
 export function splitPlaceholderSpacing(raw: string): { leading: string; key: string; trailing: string } {
