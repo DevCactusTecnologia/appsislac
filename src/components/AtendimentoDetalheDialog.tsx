@@ -17,7 +17,7 @@ import IntegrationStatusBadge from "./IntegrationStatusBadge";
 import IntegrationWarningsList from "./IntegrationWarningsList";
 import { resolveIntegrationWarnings } from "@/lib/integration/integrationStatus";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
-import PdfPreviewDialog from "./PdfPreviewDialog";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import PacienteTelefoneInline from "./PacienteTelefoneInline";
 import type { MockAtendimento } from "@/data/types";
 import { getUnidadeById } from "@/data/unidadeStore";
