@@ -310,7 +310,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content .exame-bloco-custom > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         #laudo-content .exame-bloco-custom > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         /* CKEditor envolve tabelas em <figure class="table">. O navegador
-           aplica `margin: 1em 40px` por padrão a <figure>, o que empurra todo
+           aplica margin 1em 40px por padrão a &lt;figure&gt;, o que empurra todo
            o corpo do exame ~40px à direita e desalinha do título. html2canvas
            ignorava esse padrão; o motor vetorial respeita. Zeramos margens de
            figure/figcaption no laudo para preservar o alinhamento original. */
