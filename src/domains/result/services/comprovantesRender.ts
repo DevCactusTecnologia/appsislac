@@ -6,7 +6,7 @@ import { getTemplatePadrao, type DocumentoTipo } from "@/data/documentoTemplates
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 /** Margens default (mm) — usadas quando o template não define margens próprias. */
-const DEFAULT_MARGINS_MM: [number, number, number, number] = [18, 18, 22, 18];
+const DEFAULT_MARGINS_MM: [number, number, number, number] = [5, 10, 5, 10];
 
 /**
  * Resolve as margens de impressão (em mm) configuradas no template padrão
