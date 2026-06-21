@@ -729,6 +729,13 @@ const NovoAtendimento = () => {
 
   const aplicarDescontoTotalNosExames = (descontoTotal: number) => {
     const desc = Math.max(0, Math.round((descontoTotal || 0) * 100) / 100);
+    aplicarAjusteLiquidoNosExames(-desc);
+  };
+
+  // Aplica ajuste líquido (positivo = acréscimo, negativo = desconto) distribuído
+  // proporcionalmente sobre `valorOriginal`. Atualiza `valor` resultante.
+  const aplicarAjusteLiquidoNosExames = (ajusteLiquido: number) => {
+    const ajuste = Math.round((ajusteLiquido || 0) * 100) / 100;
     setExames(prev => {
       const pacienteIdxs = prev
         .map((e, i) => ({ e, i }))
@@ -737,17 +744,20 @@ const NovoAtendimento = () => {
       pacienteIdxs.forEach(({ e, i }) => bases.set(i, e.valorOriginal ?? e.valor));
       const baseTotal = Array.from(bases.values()).reduce((sum, v) => sum + v, 0);
       if (baseTotal <= 0) return prev;
-      const totalDesc = Math.min(desc, baseTotal);
-      let restante = Math.round(totalDesc * 100);
+      // Desconto não pode ultrapassar o subtotal; acréscimo não tem teto superior.
+      const ajusteCents = ajuste < 0
+        ? Math.max(Math.round(ajuste * 100), -Math.round(baseTotal * 100))
+        : Math.round(ajuste * 100);
+      let restante = ajusteCents;
       const novosValores = new Map<number, number>();
       pacienteIdxs.forEach(({ i }, idx) => {
         const base = bases.get(i) ?? 0;
-        const share = idx === pacienteIdxs.length - 1
-          ? restante
-          : Math.round((base / baseTotal) * totalDesc * 100);
-        const safeShare = Math.max(0, Math.min(share, Math.round(base * 100)));
-        restante -= safeShare;
-        novosValores.set(i, Math.max(0, Math.round(base * 100) - safeShare) / 100);
+        const baseCents = Math.round(base * 100);
+        const isLast = idx === pacienteIdxs.length - 1;
+        const share = isLast ? restante : Math.round((baseCents / Math.round(baseTotal * 100)) * ajusteCents);
+        restante -= share;
+        const novoCents = Math.max(0, baseCents + share);
+        novosValores.set(i, novoCents / 100);
       });
       return prev.map((e, i) => {
         const base = bases.get(i);
