@@ -453,12 +453,15 @@ const Financeiro = () => {
       });
     const subtotal = examesPaciente.reduce((s, e) => s + e.valorOriginal, 0);
     const totalEfetivo = examesPaciente.reduce((s, e) => s + e.valor, 0);
-    const descontoHistorico = Math.max(0, Math.round((subtotal - totalEfetivo) * 100) / 100);
+    const ajusteCents = Math.round((totalEfetivo - subtotal) * 100);
+    const descontoHistorico = ajusteCents < 0 ? Math.abs(ajusteCents) / 100 : 0;
+    const acrescimoHistorico = ajusteCents > 0 ? ajusteCents / 100 : 0;
     const totalPago = (pagLocalPagamentos ?? []).reduce((s, p) => s + p.valor, 0);
     return {
       itens: examesPaciente.length,
       subtotal,
       desconto: descontoHistorico,
+      acrescimo: acrescimoHistorico,
       total: totalEfetivo,
       valorPago: totalPago,
       saldoDevedor: Math.max(0, totalEfetivo - totalPago),
