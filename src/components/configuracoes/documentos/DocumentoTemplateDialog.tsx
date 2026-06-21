@@ -460,7 +460,7 @@ const DocumentoTemplateDialog = ({
                 <div className="a4-stage">
                   {conteudo.trim() ? (
                     <div
-                      className="prose-mapa prose-mapa-document a4-sheet text-[13px] leading-snug"
+                      className="prose-mapa prose-mapa-document a4-sheet ck-content text-[13px] leading-snug"
                       style={{
                         fontFamily: "'Inter','Segoe UI',system-ui,sans-serif",
                         padding: `${mm.top}mm ${mm.right}mm ${mm.bottom}mm ${mm.left}mm`,
