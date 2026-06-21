@@ -1040,7 +1040,7 @@ const ResultadoDetalhe = () => {
   ) => {
     if (modo === "unica") {
       try {
-        await doImprimirLaudo(printable);
+        await doImprimirLaudo(printable, undefined, { useNewTab: true });
         markAsImpresso(printable);
         toast.success(
           action === "imprimir"
