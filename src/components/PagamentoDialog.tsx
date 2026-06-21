@@ -125,7 +125,7 @@ const PagamentoDialog = ({
       const pagoAtual = pagamentos
         .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia")
         .reduce((s, p) => s + parse(p.valor), 0);
-      const totalAjust = subtotalLocal - descontoHistorico - descAtual + acreAtual;
+      const totalAjust = subtotalLocal - descontoHistorico - descAtual + acrescimoHistorico + acreAtual;
       const saldoAtual = Math.max(0, totalAjust - valorPagoProp - pagoAtual);
       if (saldoAtual <= 0) return;
       setPagamentos(p => [...p, {
