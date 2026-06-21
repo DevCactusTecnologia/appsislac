@@ -179,7 +179,7 @@ const PagamentoDialog = ({
     const novosPagamentos: PagamentoRealizado[] = pagamentos
       .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
       .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") }));
-    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, novosPagamentos });
+    onConfirm?.({ valorPago: valorPagoTotal, desconto: descontoTotal, acrescimo: totalAcre, novosPagamentos });
     if (quitado && totalAjustado > 0) fireSuccessConfetti();
     setPagamentos([]);
     setDescontoHistRemovido(false);
