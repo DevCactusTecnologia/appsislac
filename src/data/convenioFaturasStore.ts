@@ -237,14 +237,16 @@ export interface CriarFaturaInput {
   itens: ItemFaturavel[];
 }
 
-/** Cria uma fatura "aberta" e vincula os itens. O código é gerado pelo banco (FAT-AAAA-NNNNNNN). */
+/**
+ * Cria uma fatura "aberta" e vincula os itens.
+ * O código é gerado pelo banco (FAT-AAAA-NNNNNNN) e os totais são
+ * recalculados server-side por trigger (Fase 2.4 — frontend não é fonte de verdade).
+ */
 export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolean; faturaId?: number; codigo?: string; error?: string }> {
   if (input.itens.length === 0) {
     return { ok: false, error: "Selecione ao menos um item" };
   }
   const tenantId = await getCurrentTenantId();
-  const subtotal = input.itens.reduce((s, i) => s + i.valor, 0);
-  const total = Math.max(0, subtotal - (input.desconto || 0));
 
   let fatRow: { id: number; codigo: string } | null = null;
   try {
@@ -255,9 +257,10 @@ export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolea
         convenio_id: input.convenioId,
         periodo_inicio: input.periodoInicio,
         periodo_fim: input.periodoFim,
-        subtotal,
+        // subtotal/total: zero inicial — recalculados por trigger ao inserir os itens
+        subtotal: 0,
         desconto: input.desconto || 0,
-        total,
+        total: 0,
         status: "aberta",
         observacao: input.observacao || "",
       }),
@@ -283,8 +286,11 @@ export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolea
     );
   } catch (e) {
     showError(e, { scope: "convenioFaturasStore.criar.itens", silent: true });
-    // rollback do cabeçalho
-    await supabase.from("convenio_faturas").delete().eq("id", fatRow!.id);
+    // rollback auditável via cancelamento (não DELETE)
+    await supabase.rpc("convenio_fatura_cancelar", {
+      p_fatura_id: fatRow!.id,
+      p_motivo: "Rollback automático — falha ao inserir itens",
+    });
     return { ok: false, error: (e as Error).message };
   }
   return { ok: true, faturaId: Number(fatRow!.id), codigo: fatRow!.codigo };
@@ -312,18 +318,23 @@ export async function marcarFaturaPaga(
   }
 }
 
-/** Cancela uma fatura (libera os exames para uma nova fatura). */
-export async function cancelarFatura(faturaId: number): Promise<{ ok: boolean; error?: string }> {
+/**
+ * Cancela uma fatura SEM apagar histórico (Fase 2.1).
+ * - NÃO faz DELETE em convenio_fatura_itens — os itens permanecem para auditoria.
+ * - O SSOT (Fase 2.3) ignora itens de faturas canceladas, então os exames voltam a ser elegíveis.
+ * - O motivo é OBRIGATÓRIO e a operação é registrada em financeiro_audit.
+ */
+export async function cancelarFatura(faturaId: number, motivo: string): Promise<{ ok: boolean; error?: string }> {
+  const motivoTrim = (motivo || "").trim();
+  if (!motivoTrim) {
+    return { ok: false, error: "Informe o motivo do cancelamento" };
+  }
   try {
-    await persistOrThrow(
-      supabase.from("convenio_fatura_itens").delete().eq("fatura_id", faturaId),
-      "convenioFaturas.cancelar.itens",
-      { expectAtLeast: 0 },
-    );
-    await persistOrThrow(
-      supabase.from("convenio_faturas").update({ status: "cancelada" }).eq("id", faturaId),
-      "convenioFaturas.cancelar.cabecalho",
-    );
+    const { error } = await supabase.rpc("convenio_fatura_cancelar", {
+      p_fatura_id: faturaId,
+      p_motivo: motivoTrim,
+    });
+    if (error) throw error;
     return { ok: true };
   } catch (e) {
     showError(e, { scope: "convenioFaturasStore.cancelar", silent: true });
