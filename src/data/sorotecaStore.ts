@@ -359,6 +359,184 @@ export async function listarAmostras(filtros?: {
   return (data ?? []) as Amostra[];
 }
 
+// ============================================================================
+// Fase 5 — Pesquisa Avançada (server-side, paginada, com filtros estruturados)
+// ============================================================================
+
+export interface AmostraAvancadoFiltros {
+  status?: AmostraStatus[];
+  material_ids?: string[];
+  local_id?: string | null;
+  galeria_id?: string | null;
+  paciente_search?: string;
+  protocolo?: string;
+  codigo_barra?: string;
+  coleta_inicio?: string | null;
+  coleta_fim?: string | null;
+  validade_inicio?: string | null;
+  validade_fim?: string | null;
+  /** true = somente amostras SEM alocação ativa (pendentes de armazenamento). */
+  sem_armazenamento?: boolean;
+  /** true = somente amostras COM alocação ativa. */
+  armazenadas?: boolean;
+}
+
+export interface AmostraAvancadoResultado {
+  items: Amostra[];
+  total: number;
+}
+
+const PRE_FILTER_CAP = 5000;
+
+async function idsAmostrasPorAlocacao(opts: {
+  ativas: boolean;
+  posicaoIds?: string[];
+}): Promise<string[]> {
+  let q = supabase
+    .from("amostra_alocacoes")
+    .select("amostra_id")
+    .is("retirada_em", null)
+    .limit(PRE_FILTER_CAP);
+  if (opts.posicaoIds && opts.posicaoIds.length > 0) {
+    q = q.in("posicao_id", opts.posicaoIds);
+  }
+  const { data, error } = await q;
+  if (error) return [];
+  return Array.from(new Set((data ?? []).map((r) => r.amostra_id as string)));
+}
+
+export async function buscarAmostrasAvancado(
+  filtros: AmostraAvancadoFiltros,
+  paginacao: { page?: number; pageSize?: number } = {},
+): Promise<AmostraAvancadoResultado> {
+  const page = Math.max(1, paginacao.page ?? 1);
+  const pageSize = Math.min(200, Math.max(10, paginacao.pageSize ?? 30));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  // --- Pré-filtros que exigem joins ---
+  let restringirIds: string[] | null = null;
+
+  const intersectar = (ids: string[]) => {
+    restringirIds = restringirIds
+      ? restringirIds.filter((id) => ids.includes(id))
+      : ids;
+  };
+
+  // Local / Galeria → via posições + alocações ativas
+  if (filtros.local_id || filtros.galeria_id) {
+    let posQ = supabase.from("posicoes_galeria").select("id, galeria_id").limit(PRE_FILTER_CAP);
+    if (filtros.galeria_id) {
+      posQ = posQ.eq("galeria_id", filtros.galeria_id);
+    } else if (filtros.local_id) {
+      const { data: gals } = await supabase
+        .from("galerias")
+        .select("id")
+        .eq("local_id", filtros.local_id);
+      const galeriaIds = (gals ?? []).map((g) => g.id as string);
+      if (galeriaIds.length === 0) return { items: [], total: 0 };
+      posQ = posQ.in("galeria_id", galeriaIds);
+    }
+    const { data: posicoes } = await posQ;
+    const posicaoIds = (posicoes ?? []).map((p) => p.id as string);
+    if (posicaoIds.length === 0) return { items: [], total: 0 };
+    const ids = await idsAmostrasPorAlocacao({ ativas: true, posicaoIds });
+    if (ids.length === 0) return { items: [], total: 0 };
+    intersectar(ids);
+  }
+
+  // Armazenadas / sem armazenamento
+  if (filtros.armazenadas) {
+    const ids = await idsAmostrasPorAlocacao({ ativas: true });
+    if (ids.length === 0) return { items: [], total: 0 };
+    intersectar(ids);
+  }
+
+  // Paciente search
+  if (filtros.paciente_search && filtros.paciente_search.trim()) {
+    const s = filtros.paciente_search.trim().replace(/[%]/g, "");
+    const { data: pacs } = await supabase
+      .from("pacientes")
+      .select("id")
+      .or(`nome.ilike.%${s}%,cpf.ilike.%${s}%`)
+      .limit(PRE_FILTER_CAP);
+    const pacIds = (pacs ?? []).map((p) => p.id as number);
+    if (pacIds.length === 0) return { items: [], total: 0 };
+    // amostras.paciente_id é number — filtramos depois via .in
+    let q = supabase
+      .from("amostras")
+      .select("id")
+      .in("paciente_id", pacIds)
+      .limit(PRE_FILTER_CAP);
+    const { data: ams } = await q;
+    const ids = (ams ?? []).map((a) => a.id as string);
+    if (ids.length === 0) return { items: [], total: 0 };
+    intersectar(ids);
+  }
+
+  // Protocolo
+  if (filtros.protocolo && filtros.protocolo.trim()) {
+    const s = filtros.protocolo.trim().replace(/[%]/g, "");
+    const { data: ats } = await supabase
+      .from("atendimentos")
+      .select("id")
+      .ilike("protocolo", `%${s}%`)
+      .limit(PRE_FILTER_CAP);
+    const atIds = (ats ?? []).map((a) => a.id as number);
+    if (atIds.length === 0) return { items: [], total: 0 };
+    const { data: ams } = await supabase
+      .from("amostras")
+      .select("id")
+      .in("atendimento_id", atIds)
+      .limit(PRE_FILTER_CAP);
+    const ids = (ams ?? []).map((a) => a.id as string);
+    if (ids.length === 0) return { items: [], total: 0 };
+    intersectar(ids);
+  }
+
+  // --- Query principal ---
+  let q = supabase
+    .from("amostras")
+    .select("*", { count: "exact" })
+    .order("data_coleta", { ascending: false })
+    .range(from, to);
+
+  if (filtros.status && filtros.status.length > 0) {
+    q = q.in("status", filtros.status);
+  }
+  if (filtros.material_ids && filtros.material_ids.length > 0) {
+    q = q.in("material_id", filtros.material_ids);
+  }
+  if (filtros.codigo_barra && filtros.codigo_barra.trim()) {
+    q = q.ilike("codigo_barra", `%${filtros.codigo_barra.trim()}%`);
+  }
+  if (filtros.coleta_inicio) q = q.gte("data_coleta", filtros.coleta_inicio);
+  if (filtros.coleta_fim) q = q.lte("data_coleta", filtros.coleta_fim);
+  if (filtros.validade_inicio) q = q.gte("data_validade", filtros.validade_inicio);
+  if (filtros.validade_fim) q = q.lte("data_validade", filtros.validade_fim);
+
+  if (restringirIds !== null) {
+    if ((restringirIds as string[]).length === 0) return { items: [], total: 0 };
+    q = q.in("id", restringirIds as string[]);
+  }
+
+  // "sem armazenamento" — pós-filtro (requer NOT IN). Fazemos via subquery client-side:
+  // buscamos ids armazenados (cap) e excluímos. Em escala grande, mover para RPC.
+  if (filtros.sem_armazenamento && !filtros.armazenadas) {
+    const armazenadasIds = await idsAmostrasPorAlocacao({ ativas: true });
+    if (armazenadasIds.length > 0) {
+      q = q.not("id", "in", `(${armazenadasIds.map((id) => `"${id}"`).join(",")})`);
+    }
+  }
+
+  const { data, count, error } = await q;
+  if (error) {
+    showError(error, { scope: "soroteca.buscarAvancado", silent: true });
+    return { items: [], total: 0 };
+  }
+  return { items: (data ?? []) as Amostra[], total: count ?? 0 };
+}
+
 /** Atualiza localização ou descarta. */
 export async function atualizarAmostra(
   id: string,

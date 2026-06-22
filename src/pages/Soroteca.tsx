@@ -27,16 +27,31 @@ import {
   Layers,
   Timer,
   ScanLine,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   type Amostra,
   type AmostraStatus,
+  type AmostraAvancadoFiltros,
   listarAmostras,
+  buscarAmostrasAvancado,
   atualizarAmostra,
   marcarVencidas,
   statusVisual,
 } from "@/data/sorotecaStore";
+import {
+  listarLocais,
+  listarGalerias,
+  type LocalArmazenamento,
+  type Galeria,
+} from "@/data/sorotecaEstruturaStore";
+import {
+  listarMateriaisAmostra,
+  type MaterialAmostra,
+} from "@/data/materiaisAmostraStore";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn, searchNormalize } from "@/lib/utils";
@@ -142,13 +157,40 @@ export default function Soroteca() {
   const linhasRef = useRef<Map<string, HTMLLIElement>>(new Map());
   const hidBufferRef = useRef<{ value: string; lastAt: number }>({ value: "", lastAt: 0 });
 
+  // ---- Fase 5: Pesquisa avançada (server-side) ----
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [materiais, setMateriais] = useState<MaterialAmostra[]>([]);
+  const [locais, setLocais] = useState<LocalArmazenamento[]>([]);
+  const [galerias, setGalerias] = useState<Galeria[]>([]);
+  const [advMaterialIds, setAdvMaterialIds] = useState<string[]>([]);
+  const [advLocalId, setAdvLocalId] = useState<string>("");
+  const [advGaleriaId, setAdvGaleriaId] = useState<string>("");
+  const [advPaciente, setAdvPaciente] = useState("");
+  const [advProtocolo, setAdvProtocolo] = useState("");
+  const [advColetaInicio, setAdvColetaInicio] = useState("");
+  const [advColetaFim, setAdvColetaFim] = useState("");
+  const [advValidadeInicio, setAdvValidadeInicio] = useState("");
+  const [advValidadeFim, setAdvValidadeFim] = useState("");
+  const [advArmazenamento, setAdvArmazenamento] = useState<"todas" | "armazenadas" | "pendentes">("todas");
+  const [advPage, setAdvPage] = useState(1);
+  const [advPageSize] = useState(30);
+  const [advItems, setAdvItems] = useState<Amostra[]>([]);
+  const [advTotal, setAdvTotal] = useState(0);
+  const [advLoading, setAdvLoading] = useState(false);
+
+  const debPaciente = useDebouncedValue(advPaciente, 350);
+  const debProtocolo = useDebouncedValue(advProtocolo, 350);
+  const debCodigo = useDebouncedValue(search, 350);
+
+  // O modo avançado é ativado quando o painel de filtros está aberto.
+  const advancadoAtivo = filtrosAbertos;
+
   // Localiza uma amostra pelo código de barra (case-insensitive, trim).
-  // Quando achada: aplica filtro para garantir que esteja visível,
-  // abre o detalhe e dá scroll + highlight.
   const handleCodigoLido = (codigoBruto: string) => {
     const codigo = codigoBruto.trim();
     if (!codigo) return;
-    const alvo = amostras.find(
+    const lista = advancadoAtivo ? advItems : amostras;
+    const alvo = lista.find(
       (a) => a.codigo_barra.toLowerCase() === codigo.toLowerCase(),
     );
     if (!alvo) {
@@ -215,6 +257,129 @@ export default function Soroteca() {
     carregar();
   }, []);
 
+  // Carrega catálogos auxiliares uma única vez (para o painel de filtros).
+  useEffect(() => {
+    (async () => {
+      const [mats, locs] = await Promise.all([
+        listarMateriaisAmostra({ ativosOnly: true, pageSize: 100 }),
+        listarLocais(),
+      ]);
+      setMateriais(mats.rows);
+      setLocais(locs);
+    })();
+  }, []);
+
+  // Galerias dependentes do local selecionado.
+  useEffect(() => {
+    (async () => {
+      if (!advLocalId) {
+        setGalerias([]);
+        return;
+      }
+      setGalerias(await listarGalerias(advLocalId));
+      // Se a galeria atual não pertence ao novo local, limpa.
+      setAdvGaleriaId((g) => (g ? "" : g));
+    })();
+  }, [advLocalId]);
+
+  // Fetch server-side quando o modo avançado está ativo.
+  useEffect(() => {
+    if (!advancadoAtivo) return;
+    let cancel = false;
+    (async () => {
+      setAdvLoading(true);
+      const statusList: AmostraStatus[] | undefined =
+        statusFiltro === "TODAS" ? undefined : [statusFiltro as AmostraStatus];
+      const filtros: AmostraAvancadoFiltros = {
+        status: statusList,
+        material_ids: advMaterialIds.length > 0 ? advMaterialIds : undefined,
+        local_id: advLocalId || undefined,
+        galeria_id: advGaleriaId || undefined,
+        paciente_search: debPaciente || undefined,
+        protocolo: debProtocolo || undefined,
+        codigo_barra: debCodigo || undefined,
+        coleta_inicio: advColetaInicio ? new Date(advColetaInicio).toISOString() : undefined,
+        coleta_fim: advColetaFim
+          ? new Date(advColetaFim + "T23:59:59").toISOString()
+          : undefined,
+        validade_inicio: advValidadeInicio
+          ? new Date(advValidadeInicio).toISOString()
+          : undefined,
+        validade_fim: advValidadeFim
+          ? new Date(advValidadeFim + "T23:59:59").toISOString()
+          : undefined,
+        sem_armazenamento: advArmazenamento === "pendentes" || undefined,
+        armazenadas: advArmazenamento === "armazenadas" || undefined,
+      };
+      const r = await buscarAmostrasAvancado(filtros, { page: advPage, pageSize: advPageSize });
+      if (cancel) return;
+      setAdvItems(r.items);
+      setAdvTotal(r.total);
+      setAdvLoading(false);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [
+    advancadoAtivo,
+    statusFiltro,
+    advMaterialIds,
+    advLocalId,
+    advGaleriaId,
+    debPaciente,
+    debProtocolo,
+    debCodigo,
+    advColetaInicio,
+    advColetaFim,
+    advValidadeInicio,
+    advValidadeFim,
+    advArmazenamento,
+    advPage,
+    advPageSize,
+  ]);
+
+  // Reset página ao alterar filtros avançados.
+  useEffect(() => {
+    setAdvPage(1);
+  }, [
+    statusFiltro,
+    advMaterialIds,
+    advLocalId,
+    advGaleriaId,
+    debPaciente,
+    debProtocolo,
+    debCodigo,
+    advColetaInicio,
+    advColetaFim,
+    advValidadeInicio,
+    advValidadeFim,
+    advArmazenamento,
+  ]);
+
+  const limparFiltrosAvancados = () => {
+    setAdvMaterialIds([]);
+    setAdvLocalId("");
+    setAdvGaleriaId("");
+    setAdvPaciente("");
+    setAdvProtocolo("");
+    setAdvColetaInicio("");
+    setAdvColetaFim("");
+    setAdvValidadeInicio("");
+    setAdvValidadeFim("");
+    setAdvArmazenamento("todas");
+  };
+
+  const filtrosAtivosCount =
+    (advMaterialIds.length > 0 ? 1 : 0) +
+    (advLocalId ? 1 : 0) +
+    (advGaleriaId ? 1 : 0) +
+    (advPaciente ? 1 : 0) +
+    (advProtocolo ? 1 : 0) +
+    (advColetaInicio || advColetaFim ? 1 : 0) +
+    (advValidadeInicio || advValidadeFim ? 1 : 0) +
+    (advArmazenamento !== "todas" ? 1 : 0);
+
+
   const handleSincronizarVencidas = async () => {
     const n = await marcarVencidas();
     toast.success(n > 0 ? `${n} amostra(s) marcada(s) como vencida(s).` : "Nenhuma amostra vencida.");
@@ -252,8 +417,15 @@ export default function Soroteca() {
     setVisibleCount(PAGE_SIZE);
   }, [statusFiltro, search]);
 
-  const visiveis = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
-  const restantes = filtradas.length - visiveis.length;
+  const visiveisLegacy = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
+  const restantesLegacy = filtradas.length - visiveisLegacy.length;
+
+  // Lista final que vai para a UI (server-side avançado OU legado client-side).
+  const visiveis = advancadoAtivo ? advItems : visiveisLegacy;
+  const totalListagem = advancadoAtivo ? advTotal : filtradas.length;
+  const restantes = advancadoAtivo ? 0 : restantesLegacy;
+  const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
+  const carregando = advancadoAtivo ? advLoading : loading;
 
   const counts = useMemo(() => {
     const c: Record<AmostraStatus, number> = {
@@ -509,7 +681,7 @@ export default function Soroteca() {
         ))}
       </div>
 
-      {/* Tabs + busca */}
+      {/* Tabs + busca + toggle de filtros avançados */}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border">
           {STATUS_TABS.map((t) => (
@@ -532,7 +704,11 @@ export default function Soroteca() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por código de barra, material ou localização…"
+            placeholder={
+              advancadoAtivo
+                ? "Filtrar por código de barra…"
+                : "Buscar por código de barra, material ou localização…"
+            }
             className="pl-9 pr-10"
           />
           <button
@@ -545,13 +721,205 @@ export default function Soroteca() {
             <ScanLine className="w-4 h-4" />
           </button>
         </div>
+        <Button
+          variant={advancadoAtivo ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFiltrosAbertos((v) => !v)}
+          className="gap-2"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filtros avançados
+          {filtrosAtivosCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1">
+              {filtrosAtivosCount}
+            </span>
+          )}
+        </Button>
       </div>
+
+      {/* Painel de filtros avançados */}
+      {filtrosAbertos && (
+        <section className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              Pesquisa avançada
+            </h3>
+            <div className="flex items-center gap-2">
+              {filtrosAtivosCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={limparFiltrosAvancados} className="h-8">
+                  <X className="w-3.5 h-3.5 mr-1" />
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Paciente */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Paciente (nome ou CPF)
+              </label>
+              <Input
+                value={advPaciente}
+                onChange={(e) => setAdvPaciente(e.target.value)}
+                placeholder="Ex.: Maria Silva ou 123.456…"
+                className="h-9"
+              />
+            </div>
+
+            {/* Protocolo */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Protocolo do atendimento
+              </label>
+              <Input
+                value={advProtocolo}
+                onChange={(e) => setAdvProtocolo(e.target.value)}
+                placeholder="Ex.: 2026000123"
+                className="h-9"
+              />
+            </div>
+
+            {/* Material */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Material
+              </label>
+              <select
+                multiple={false}
+                value={advMaterialIds[0] ?? ""}
+                onChange={(e) =>
+                  setAdvMaterialIds(e.target.value ? [e.target.value] : [])
+                }
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos os materiais</option>
+                {materiais.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome}
+                    {m.sigla ? ` (${m.sigla})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Local */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Local de armazenamento
+              </label>
+              <select
+                value={advLocalId}
+                onChange={(e) => setAdvLocalId(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos os locais</option>
+                {locais.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Galeria */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Galeria
+              </label>
+              <select
+                value={advGaleriaId}
+                onChange={(e) => setAdvGaleriaId(e.target.value)}
+                disabled={!advLocalId}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+              >
+                <option value="">{advLocalId ? "Todas as galerias" : "Selecione um local"}</option>
+                {galerias.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status de armazenamento */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Armazenamento
+              </label>
+              <select
+                value={advArmazenamento}
+                onChange={(e) =>
+                  setAdvArmazenamento(e.target.value as typeof advArmazenamento)
+                }
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="todas">Todas</option>
+                <option value="armazenadas">Apenas armazenadas</option>
+                <option value="pendentes">Pendentes de armazenamento</option>
+              </select>
+            </div>
+
+            {/* Coleta — período */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Coleta — período
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={advColetaInicio}
+                  onChange={(e) => setAdvColetaInicio(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-xs text-muted-foreground">até</span>
+                <Input
+                  type="date"
+                  value={advColetaFim}
+                  onChange={(e) => setAdvColetaFim(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            {/* Validade — período */}
+            <div className="space-y-1 md:col-span-2">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Validade — período
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={advValidadeInicio}
+                  onChange={(e) => setAdvValidadeInicio(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-xs text-muted-foreground">até</span>
+                <Input
+                  type="date"
+                  value={advValidadeFim}
+                  onChange={(e) => setAdvValidadeFim(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-muted-foreground border-t border-border pt-3">
+            Resultados consultados <span className="font-medium text-foreground">no servidor</span> com paginação —
+            os filtros se combinam (AND). A aba de status acima também é aplicada.
+          </div>
+        </section>
+      )}
 
       {/* Lista */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        {loading ? (
+        {carregando ? (
           <div className="p-12 text-center text-sm text-muted-foreground">Carregando…</div>
-        ) : filtradas.length === 0 ? (
+        ) : listaVazia ? (
+
           <div className="p-12 text-center">
             <FlaskConical className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">Nenhuma amostra encontrada</p>
@@ -686,21 +1054,52 @@ export default function Soroteca() {
               );
             })}
           </ul>
-          {restantes > 0 && (
-            <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
-                <span className="font-semibold text-foreground">{filtradas.length}</span> amostras
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              >
-                Carregar mais ({Math.min(PAGE_SIZE, restantes)})
-              </Button>
-            </div>
+          {advancadoAtivo ? (
+            advTotal > advPageSize && (
+              <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Página <span className="font-semibold text-foreground">{advPage}</span> de{" "}
+                  <span className="font-semibold text-foreground">{Math.max(1, Math.ceil(advTotal / advPageSize))}</span>{" "}
+                  · <span className="font-semibold text-foreground">{advTotal}</span> amostra(s)
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={advPage <= 1 || advLoading}
+                    onClick={() => setAdvPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={advPage * advPageSize >= advTotal || advLoading}
+                    onClick={() => setAdvPage((p) => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )
+          ) : (
+            restantes > 0 && (
+              <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
+                  <span className="font-semibold text-foreground">{totalListagem}</span> amostras
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                >
+                  Carregar mais ({Math.min(PAGE_SIZE, restantes)})
+                </Button>
+              </div>
+            )
           )}
+
           </>
         )}
       </div>
