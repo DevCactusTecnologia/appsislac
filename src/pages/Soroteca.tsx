@@ -469,31 +469,29 @@ export default function Soroteca() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <PageHeader
-        eyebrow="Operacional"
-        title="Soroteca"
-        description="Amostras armazenadas, validade e rastreabilidade."
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAjudaAberta((v) => !v)}
-              className={cn(ajudaAberta && "bg-primary/5 border-primary/30")}
-            >
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Como funciona
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSincronizarVencidas}>
-              <RefreshCcw className="w-4 h-4 mr-2" />
-              Atualizar vencidas
-            </Button>
-          </>
-        }
-      />
+    <SorotecaShell
+      title="Soroteca"
+      description="Amostras armazenadas, validade e rastreabilidade."
+      actions={
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAjudaAberta((v) => !v)}
+            className={cn(ajudaAberta && "bg-primary/5 border-primary/30")}
+          >
+            <HelpCircle className="w-4 h-4 mr-2" />
+            Como funciona
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleSincronizarVencidas}>
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Atualizar vencidas
+          </Button>
+        </>
+      }
+    >
 
-      <SorotecaNav />
+
 
       {/* Seção de ajuda */}
 
