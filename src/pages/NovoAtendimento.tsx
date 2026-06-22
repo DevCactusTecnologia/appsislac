@@ -2753,25 +2753,10 @@ const NovoAtendimento = () => {
             filename={`orcamento-${orcData.id}`}
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}
-            buildWhatsappMessage={(url) => {
-              const examesList = orcData.exames.map((e, i) => `  ${i + 1}. ${e}`).join("\n");
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *ORÇAMENTO ${orcData.id}*`,
-                "",
-                `Olá *${orcData.paciente}*, segue o orçamento solicitado:`,
-                "",
-                `🏥 Convênio: ${orcData.convenio}`,
-                orcData.solicitante ? `👨‍⚕️ Solicitante: ${orcData.solicitante}` : "",
-                "",
-                `🔬 *Exames (${orcData.exames.length}):*`,
-                examesList,
-                "",
-                `💰 *Total: R$ ${fmtBRLNumber(orcData.total)}*`,
-                "",
-                linkLine,
-              ].filter(Boolean).join("\n");
-            }}
+          />
+          </Suspense>
+        );
+      })()}
           />
           </Suspense>
         );
