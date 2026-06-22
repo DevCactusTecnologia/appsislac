@@ -175,7 +175,7 @@ export async function criarLote(input: {
 
     return lote as ExpurgoLote;
   } catch (err) {
-    showError(err, "Erro ao criar lote de expurgo");
+    showError(err, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao criar lote de expurgo" });
     throw err;
   }
 }
@@ -217,7 +217,7 @@ export async function iniciarExecucao(loteId: string) {
     .eq("id", loteId)
     .eq("status", "PROGRAMADO");
   if (error) {
-    showError(error, "Erro ao iniciar execução");
+    showError(error, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao iniciar execução" });
     throw error;
   }
 }
@@ -238,7 +238,7 @@ export async function executarItem(itemId: string, observacao?: string) {
       .eq("status", "PENDENTE");
     if (error) throw error;
   } catch (err) {
-    showError(err, "Erro ao executar expurgo");
+    showError(err, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao executar expurgo" });
     throw err;
   }
 }
@@ -259,7 +259,7 @@ export async function pularItem(itemId: string, motivo: string) {
       .eq("status", "PENDENTE");
     if (error) throw error;
   } catch (err) {
-    showError(err, "Erro ao pular item");
+    showError(err, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao pular item" });
     throw err;
   }
 }
@@ -271,7 +271,7 @@ export async function concluirLote(loteId: string) {
     .eq("id", loteId)
     .in("status", ["PROGRAMADO", "EM_EXECUCAO"]);
   if (error) {
-    showError(error, "Erro ao concluir lote");
+    showError(error, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao concluir lote" });
     throw error;
   }
 }
@@ -287,7 +287,7 @@ export async function cancelarLote(loteId: string, motivo: string) {
     .eq("id", loteId)
     .in("status", ["PROGRAMADO", "EM_EXECUCAO"]);
   if (error) {
-    showError(error, "Erro ao cancelar lote");
+    showError(error, { scope: "sorotecaExpurgoStore", userMessage: "Erro ao cancelar lote" });
     throw error;
   }
 }
