@@ -5,7 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import WhatsappTimeline from "@/components/whatsapp/WhatsappTimeline";
-import { getBestWhatsappAction } from "@/lib/whatsapp/getBestWhatsappAction";
+// getBestWhatsappAction permanece em uso por outras telas (ResultadoDetalhe).
+// Neste diálogo o envio é contextual à aba — não usamos o decisor automático.
+
 import {
   DOCUMENT_ACTIONS,
   sendDocumentWhatsapp,
