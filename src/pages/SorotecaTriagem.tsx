@@ -398,8 +398,9 @@ export default function SorotecaTriagem() {
           setTrocaAberta(false);
         }}
       />
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 /** Diálogo simples para escolha manual de posição (exceção, não fluxo padrão). */
