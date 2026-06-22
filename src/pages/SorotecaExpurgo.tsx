@@ -23,8 +23,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -137,21 +136,18 @@ export default function SorotecaExpurgo() {
   }, [tab]);
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <PageHeader
-        title="Expurgo Programado"
-        description="Agende e execute o descarte de amostras com auditoria completa."
-        actions={
-          <Button onClick={() => setOpenNovo(true)} className="h-9">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo lote
-          </Button>
-        }
-      />
+    <SorotecaShell
+      title="Expurgo Programado"
+      description="Agende e execute o descarte de amostras com auditoria completa."
+      actions={
+        <Button onClick={() => setOpenNovo(true)} className="h-9">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo lote
+        </Button>
+      }
+    >
+      <div className="flex flex-wrap gap-2">
 
-      <SorotecaNav />
-
-      <div className="flex flex-wrap gap-2 my-4">
 
         {TABS.map((t) => (
           <button
@@ -201,8 +197,9 @@ export default function SorotecaExpurgo() {
           onChanged={recarregar}
         />
       )}
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 // ---------------------------------------------------------------------------

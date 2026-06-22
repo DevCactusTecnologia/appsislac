@@ -32,7 +32,7 @@ import {
   type MaterialAmostra,
 } from "@/data/materiaisAmostraStore";
 import { toast } from "@/hooks/use-toast";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 
 interface FormState {
   nome: string;
@@ -144,28 +144,22 @@ export default function SorotecaMateriais() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-6">
+    <SorotecaShell
+      title="Materiais"
+      description="Catálogo único usado por Coleta, Atendimento, Produção e Resultados."
+      actions={
+        <Button onClick={openCreate} className="gap-2">
+          <Plus className="h-4 w-4" /> Novo material
+        </Button>
+      }
+    >
       <Helmet>
         <title>Materiais — Soroteca | SISLAC</title>
         <meta name="description" content="Catálogo canônico de materiais laboratoriais da Soroteca." />
       </Helmet>
 
-      <SorotecaNav />
-
-      <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Materiais</h1>
-          <p className="text-sm text-muted-foreground">
-            Catálogo único usado por Coleta, Atendimento, Produção e Resultados.
-          </p>
-        </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Novo material
-        </Button>
-      </header>
-
-      <div className="mb-4 relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -173,6 +167,7 @@ export default function SorotecaMateriais() {
           className="pl-9"
         />
       </div>
+
 
       <div className="rounded-lg border bg-card">
         <div className="overflow-x-auto">
@@ -310,6 +305,7 @@ export default function SorotecaMateriais() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SorotecaShell>
   );
+
 }

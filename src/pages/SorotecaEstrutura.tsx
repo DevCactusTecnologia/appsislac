@@ -9,8 +9,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -149,27 +148,23 @@ export default function SorotecaEstrutura() {
   const galeriaAtual = galerias.find((g) => g.id === galeriaSel);
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-6 space-y-4">
-      <PageHeader
-        eyebrow="Soroteca 2.0"
-        title="Estrutura Física"
-        description="Hierarquia de armazenamento — Local → Galeria → Posição."
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => refreshLocais()}>
-              <RefreshCw className="h-4 w-4 mr-1.5" />
-              Atualizar
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate("/soroteca")}>
-              Voltar para Soroteca
-            </Button>
-          </div>
-        }
-      />
-
-      <SorotecaNav />
-
+    <SorotecaShell
+      title="Estrutura Física"
+      description="Hierarquia de armazenamento — Local → Galeria → Posição."
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refreshLocais()}>
+            <RefreshCw className="h-4 w-4 mr-1.5" />
+            Atualizar
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/soroteca")}>
+            Voltar
+          </Button>
+        </div>
+      }
+    >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
 
         {/* ------------- LOCAIS ------------- */}
         <section className="rounded-lg border bg-card">
@@ -372,8 +367,9 @@ export default function SorotecaEstrutura() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 // =================================================================

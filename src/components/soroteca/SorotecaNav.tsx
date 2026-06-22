@@ -1,8 +1,8 @@
 /**
- * Soroteca — navegação compartilhada entre módulos (Fase 9).
+ * Soroteca — navegação compartilhada entre módulos.
  *
- * Renderiza uma barra horizontal de links que dá visibilidade a TODOS os
- * módulos da Soroteca em qualquer página interna. Sem dropdown, sem mistério.
+ * Direção "Cloud Clinical": tabs com underline (border-b-2 primary),
+ * tipografia Space Grotesk, scroll horizontal em telas pequenas.
  */
 
 import { NavLink } from "react-router-dom";
@@ -25,12 +25,11 @@ const ITEMS: { to: string; label: string; icon: typeof FlaskConical; end?: boole
   { to: "/soroteca/expurgo", label: "Expurgo", icon: Trash2 },
 ];
 
-
 export function SorotecaNav() {
   return (
     <nav
       aria-label="Módulos da Soroteca"
-      className="flex flex-wrap gap-1.5 border-b border-border pb-3 mb-4"
+      className="flex items-center gap-1 border-b border-[#e8ecf1] overflow-x-auto whitespace-nowrap no-scrollbar -mx-1 px-1"
     >
       {ITEMS.map(({ to, label, icon: Icon, end }) => (
         <NavLink
@@ -39,10 +38,11 @@ export function SorotecaNav() {
           end={end}
           className={({ isActive }) =>
             cn(
-              "inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm border transition-colors",
+              "inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium font-soroteca-display",
+              "border-b-2 -mb-px transition-colors",
               isActive
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border hover:bg-muted text-foreground",
+                ? "border-[#3b82f6] text-[#3b82f6]"
+                : "border-transparent text-[#94a3b8] hover:text-[#1e293b]",
             )
           }
         >
