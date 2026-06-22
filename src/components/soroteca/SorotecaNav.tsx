@@ -1,8 +1,8 @@
 /**
  * Soroteca — navegação compartilhada entre módulos.
  *
- * Direção "Cloud Clinical": tabs com underline (border-b-2 primary),
- * tipografia Space Grotesk, scroll horizontal em telas pequenas.
+ * Padronizado com o Super Admin: tabs com underline usando tokens
+ * semânticos (primary / muted-foreground / border) e fonte global Inter.
  */
 
 import { NavLink } from "react-router-dom";
@@ -29,7 +29,7 @@ export function SorotecaNav() {
   return (
     <nav
       aria-label="Módulos da Soroteca"
-      className="flex items-center gap-1 border-b border-[#e8ecf1] overflow-x-auto whitespace-nowrap no-scrollbar -mx-1 px-1"
+      className="flex items-center gap-1 border-b border-border overflow-x-auto whitespace-nowrap no-scrollbar -mx-1 px-1"
     >
       {ITEMS.map(({ to, label, icon: Icon, end }) => (
         <NavLink
@@ -38,11 +38,11 @@ export function SorotecaNav() {
           end={end}
           className={({ isActive }) =>
             cn(
-              "inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium font-soroteca-display",
+              "inline-flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium",
               "border-b-2 -mb-px transition-colors",
               isActive
-                ? "border-[#3b82f6] text-[#3b82f6]"
-                : "border-transparent text-[#94a3b8] hover:text-[#1e293b]",
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )
           }
         >
