@@ -22,9 +22,13 @@ import {
   buildIdempotencyKey,
   enqueueNotification,
 } from "@/lib/whatsapp/enqueueNotification";
+import { getNotificationMode } from "@/lib/whatsapp/notificationPolicy";
 
 export type NotifyResultadoProntoInput = {
   protocolo: string;
+  /** Quando true, ignora a política (modo manual) e força o envio.
+   *  Usado pelo botão "Enviar WhatsApp" da tela de Resultado. */
+  force?: boolean;
 };
 
 export type NotifyResultadoProntoResult =
