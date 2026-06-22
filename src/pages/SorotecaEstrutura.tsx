@@ -150,9 +150,9 @@ export default function SorotecaEstrutura() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 space-y-4">
       <PageHeader
-        icon={<Boxes className="h-5 w-5" />}
+        eyebrow="Soroteca 2.0"
         title="Estrutura Física"
-        subtitle="Hierarquia de armazenamento da Soroteca — Local → Galeria → Posição."
+        description="Hierarquia de armazenamento — Local → Galeria → Posição."
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => refreshLocais()}>
