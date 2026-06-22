@@ -367,8 +367,9 @@ export default function SorotecaEstrutura() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 // =================================================================
