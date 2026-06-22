@@ -70,6 +70,8 @@ import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
 import { distribuirDescontoEntreExames } from "./NovoAtendimento/services/distribuirDesconto";
 import { contarEtiquetas } from "./NovoAtendimento/services/contarEtiquetas";
 import { resyncCobrancaConvenios } from "./NovoAtendimento/services/resyncCobrancaConvenios";
+import { aplicarAjusteLiquidoNosExames as aplicarAjusteLiquidoExamesPure } from "./NovoAtendimento/services/aplicarAjusteLiquido";
+import { imprimirComprovante as imprimirComprovantePure } from "./NovoAtendimento/services/imprimirComprovante";
 
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 
@@ -728,36 +730,23 @@ const NovoAtendimento = () => {
   const acrescimoDataExibicao = descontoDataExibicao;
 
   // Imprime comprovante diretamente — sem modal, sem pré-visualização.
-  // Olhou. Entendeu. Simplificou.
+  // Lógica extraída para ./NovoAtendimento/services/imprimirComprovante.ts
+  // (Fase 2A — slicing arquitetural). Wrapper local mantém a assinatura
+  // de call-site usada pelo JSX (mesmas closures, comportamento idêntico).
   const imprimirComprovante = (tipo: "pagamento" | "atendimento" | "comparecimento") => {
-    const paciente = getPacientes().find(p => p.nome === pacienteQuery);
-    const cpf = paciente?.cpf || editAtendimentoData?.cpf || "";
-    const nascimento = paciente?.dataNascimento || editAtendimentoData?.nascimento || "";
-    const idade = paciente?.idade || editAtendimentoData?.idade || "";
-    const protocoloAtual = editProtocolo ? decodeURIComponent(editProtocolo) : "";
-    const d = new Date();
-    const dataAtual = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-    const tipoLabels = {
-      pagamento: "COMPROVANTE DE PAGAMENTO",
-      atendimento: "COMPROVANTE DE ATENDIMENTO",
-      comparecimento: "COMPROVANTE DE COMPARECIMENTO",
-    } as const;
-    const html = buildComprovanteHtml({
+    imprimirComprovantePure({
       tipo,
-      protocolo: protocoloAtual,
-      data: dataAtual,
-      paciente: { nome: pacienteQuery || "Paciente", cpf, nascimento, idade },
-      convenio: convenios[0] || "Particular",
-      solicitante: solicitantes[0] || "",
-      unidade: unidadeAtiva ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado } : undefined,
-      exames: exames.map(e => ({ nome: e.nome, material: e.material, valor: e.valor })),
-      pagamentos: pagamentosRealizados,
-      totais: { subtotal, desconto, pago: valorPago, total, saldo: saldoDevedor },
-    });
-    printHtmlInHiddenFrame({
-      html,
-      frameId: "comprovante-print-frame",
-      documentTitle: `${tipoLabels[tipo]} ${protocoloAtual}`.trim(),
+      pacienteQuery,
+      editAtendimentoData,
+      editProtocolo,
+      convenios,
+      solicitantes,
+      unidadeAtiva: unidadeAtiva
+        ? { nome: unidadeAtiva.nome, endereco: unidadeAtiva.endereco, cidade: unidadeAtiva.cidade, estado: unidadeAtiva.estado }
+        : undefined,
+      exames,
+      pagamentosRealizados,
+      totais: { subtotal, desconto, valorPago, total, saldoDevedor },
     });
   };
 
@@ -766,40 +755,12 @@ const NovoAtendimento = () => {
     aplicarAjusteLiquidoNosExames(-desc);
   };
 
-  // Aplica ajuste líquido (positivo = acréscimo, negativo = desconto) distribuído
-  // proporcionalmente sobre `valorOriginal`. Atualiza `valor` resultante.
+  // Aplica ajuste líquido (positivo = acréscimo, negativo = desconto).
+  // Lógica pura extraída para ./NovoAtendimento/services/aplicarAjusteLiquido.ts.
   const aplicarAjusteLiquidoNosExames = (ajusteLiquido: number) => {
-    const ajuste = Math.round((ajusteLiquido || 0) * 100) / 100;
-    setExames(prev => {
-      const pacienteIdxs = prev
-        .map((e, i) => ({ e, i }))
-        .filter(({ e }) => e.cobrancaDestino !== "convenio");
-      const bases = new Map<number, number>();
-      pacienteIdxs.forEach(({ e, i }) => bases.set(i, e.valorOriginal ?? e.valor));
-      const baseTotal = Array.from(bases.values()).reduce((sum, v) => sum + v, 0);
-      if (baseTotal <= 0) return prev;
-      // Desconto não pode ultrapassar o subtotal; acréscimo não tem teto superior.
-      const ajusteCents = ajuste < 0
-        ? Math.max(Math.round(ajuste * 100), -Math.round(baseTotal * 100))
-        : Math.round(ajuste * 100);
-      let restante = ajusteCents;
-      const novosValores = new Map<number, number>();
-      pacienteIdxs.forEach(({ i }, idx) => {
-        const base = bases.get(i) ?? 0;
-        const baseCents = Math.round(base * 100);
-        const isLast = idx === pacienteIdxs.length - 1;
-        const share = isLast ? restante : Math.round((baseCents / Math.round(baseTotal * 100)) * ajusteCents);
-        restante -= share;
-        const novoCents = Math.max(0, baseCents + share);
-        novosValores.set(i, novoCents / 100);
-      });
-      return prev.map((e, i) => {
-        const base = bases.get(i);
-        if (base == null) return e;
-        return { ...e, valorOriginal: base, valor: novosValores.get(i) ?? base };
-      });
-    });
+    setExames(prev => aplicarAjusteLiquidoExamesPure(prev, ajusteLiquido));
   };
+
 
   // Fase 2 — re-sincroniza cobrança ao mudar a lista de convênios.
   // Se um exame estava cobrado de um convênio que foi removido, volta para Paciente.
