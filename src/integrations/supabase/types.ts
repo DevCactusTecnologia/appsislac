@@ -847,6 +847,57 @@ export type Database = {
         }
         Relationships: []
       }
+      convenio_competencias: {
+        Row: {
+          aberta_em: string
+          aberta_por: string | null
+          competencia: string
+          created_at: string
+          fechada_em: string | null
+          fechada_por: string | null
+          id: number
+          motivo_reabertura: string | null
+          observacao: string
+          reaberta_em: string | null
+          reaberta_por: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          aberta_em?: string
+          aberta_por?: string | null
+          competencia: string
+          created_at?: string
+          fechada_em?: string | null
+          fechada_por?: string | null
+          id?: number
+          motivo_reabertura?: string | null
+          observacao?: string
+          reaberta_em?: string | null
+          reaberta_por?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          aberta_em?: string
+          aberta_por?: string | null
+          competencia?: string
+          created_at?: string
+          fechada_em?: string | null
+          fechada_por?: string | null
+          id?: number
+          motivo_reabertura?: string | null
+          observacao?: string
+          reaberta_em?: string | null
+          reaberta_por?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       convenio_fatura_itens: {
         Row: {
           atendimento_exame_id: number
@@ -916,6 +967,7 @@ export type Database = {
           cancelada_em: string | null
           cancelada_por: string | null
           codigo: string
+          competencia: string
           convenio_id: number
           created_at: string
           data_pagamento: string | null
@@ -939,6 +991,7 @@ export type Database = {
           cancelada_em?: string | null
           cancelada_por?: string | null
           codigo: string
+          competencia: string
           convenio_id: number
           created_at?: string
           data_pagamento?: string | null
@@ -962,6 +1015,7 @@ export type Database = {
           cancelada_em?: string | null
           cancelada_por?: string | null
           codigo?: string
+          competencia?: string
           convenio_id?: number
           created_at?: string
           data_pagamento?: string | null
@@ -6315,6 +6369,26 @@ export type Database = {
       }
     }
     Views: {
+      convenio_competencia_resumo: {
+        Row: {
+          aberta_em: string | null
+          aberta_por: string | null
+          competencia: string | null
+          fechada_em: string | null
+          fechada_por: string | null
+          qtd_faturas: number | null
+          saldo_pendente: number | null
+          status: string | null
+          tenant_id: string | null
+          total_cancelado: number | null
+          total_faturado: number | null
+          total_glosado: number | null
+          total_glosado_aberto: number | null
+          total_reapresentado: number | null
+          total_recebido: number | null
+        }
+        Relationships: []
+      }
       convenio_fatura_resumo: {
         Row: {
           codigo: string | null
@@ -6736,6 +6810,19 @@ export type Database = {
         }
       }
       cnpj_digits: { Args: { _cnpj: string }; Returns: string }
+      competencia_abrir: { Args: { p_competencia: string }; Returns: number }
+      competencia_esta_fechada: {
+        Args: { _competencia: string; _tenant: string }
+        Returns: boolean
+      }
+      competencia_fechar: {
+        Args: { p_competencia: string; p_observacao?: string }
+        Returns: number
+      }
+      competencia_reabrir: {
+        Args: { p_competencia: string; p_motivo: string }
+        Returns: number
+      }
       convenio_fatura_cancelar: {
         Args: { p_fatura_id: number; p_motivo: string }
         Returns: Json
