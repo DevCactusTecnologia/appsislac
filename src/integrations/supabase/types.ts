@@ -906,6 +906,8 @@ export type Database = {
       convenio_faturas: {
         Row: {
           assinatura_protocolo: string | null
+          cancelada_em: string | null
+          cancelada_por: string | null
           codigo: string
           convenio_id: number
           created_at: string
@@ -913,6 +915,7 @@ export type Database = {
           desconto: number
           forma_pagamento: string
           id: number
+          motivo_cancelamento: string | null
           observacao: string
           periodo_fim: string
           periodo_inicio: string
@@ -924,6 +927,8 @@ export type Database = {
         }
         Insert: {
           assinatura_protocolo?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           codigo: string
           convenio_id: number
           created_at?: string
@@ -931,6 +936,7 @@ export type Database = {
           desconto?: number
           forma_pagamento?: string
           id?: number
+          motivo_cancelamento?: string | null
           observacao?: string
           periodo_fim: string
           periodo_inicio: string
@@ -942,6 +948,8 @@ export type Database = {
         }
         Update: {
           assinatura_protocolo?: string | null
+          cancelada_em?: string | null
+          cancelada_por?: string | null
           codigo?: string
           convenio_id?: number
           created_at?: string
@@ -949,6 +957,7 @@ export type Database = {
           desconto?: number
           forma_pagamento?: string
           id?: number
+          motivo_cancelamento?: string | null
           observacao?: string
           periodo_fim?: string
           periodo_inicio?: string
@@ -6547,6 +6556,14 @@ export type Database = {
         }
       }
       cnpj_digits: { Args: { _cnpj: string }; Returns: string }
+      convenio_fatura_cancelar: {
+        Args: { p_fatura_id: number; p_motivo: string }
+        Returns: Json
+      }
+      convenio_fatura_recalc: {
+        Args: { p_fatura_id: number }
+        Returns: undefined
+      }
       create_atendimento_tx: {
         Args: { _atendimento: Json; _exames: Json; _pagamentos: Json }
         Returns: Json
