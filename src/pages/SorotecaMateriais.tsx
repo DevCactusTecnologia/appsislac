@@ -305,6 +305,7 @@ export default function SorotecaMateriais() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </SorotecaShell>
   );
+
 }
