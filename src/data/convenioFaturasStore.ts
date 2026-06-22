@@ -177,12 +177,14 @@ export async function fetchItensFaturaveis(
   }
   if (!exames || exames.length === 0) return [];
 
-  // 2) Filtra IDs já vinculados a alguma fatura (aberta ou paga)
+  // 2) Filtra IDs já vinculados a alguma fatura NÃO cancelada
+  //    (itens de faturas canceladas voltam a ser elegíveis — SSOT Fase 2.3)
   const exameIds = exames.map((e) => Number(e.id));
   const { data: jaVinc } = await supabase
     .from("convenio_fatura_itens")
-    .select("atendimento_exame_id")
-    .in("atendimento_exame_id", exameIds);
+    .select("atendimento_exame_id, convenio_faturas!inner(status)")
+    .in("atendimento_exame_id", exameIds)
+    .neq("convenio_faturas.status", "cancelada");
   const jaSet = new Set<number>((jaVinc ?? []).map((j) => Number(j.atendimento_exame_id)));
 
   // 3) Busca atendimentos para filtro por período + dados de exibição
@@ -215,53 +217,8 @@ export async function fetchItensFaturaveis(
     .sort((a, b) => (a.data > b.data ? -1 : 1));
 }
 
-/**
- * Lista TODOS os exames pendentes (não finalizados ainda ou ainda não faturados)
- * de um convênio — útil para a view "Saldo do convênio em aberto" na aba A Receber.
- * Inclui pendente/coletado/em_analise/finalizado, exclui cancelado e já-faturados.
- */
-export async function fetchSaldoEmAbertoPorConvenio(): Promise<Map<number, { saldo: number; exames: number; pacientes: Set<string> }>> {
-  const tenantId = await getCurrentTenantId();
-  const { data: exames, error } = await supabase
-    .from("atendimento_exames")
-    .select("id, atendimento_id, valor, convenio_cobranca_id")
-    .eq("tenant_id", tenantId)
-    .eq("cobranca_destino", "convenio")
-    .neq("status", "cancelado");
-  if (error) {
-    showError(error, { scope: "convenioFaturasStore.fetchSaldoEmAberto", silent: true });
-    return new Map();
-  }
-  if (!exames || exames.length === 0) return new Map();
-  const exameIds = exames.map((e) => Number(e.id));
-  const { data: jaVinc } = await supabase
-    .from("convenio_fatura_itens")
-    .select("atendimento_exame_id")
-    .in("atendimento_exame_id", exameIds);
-  const jaSet = new Set<number>((jaVinc ?? []).map((j) => Number(j.atendimento_exame_id)));
-
-  const atIds = Array.from(new Set(exames.map((e) => Number(e.atendimento_id))));
-  const { data: atRows } = await supabase
-    .from("atendimentos")
-    .select("id, paciente_nome")
-    .in("id", atIds);
-  const atMap = new Map<number, string>();
-  (atRows ?? []).forEach((a) => atMap.set(Number(a.id), a.paciente_nome));
-
-  const result = new Map<number, { saldo: number; exames: number; pacientes: Set<string> }>();
-  (exames ?? []).forEach((e) => {
-    if (jaSet.has(Number(e.id))) return;
-    const cid = Number(e.convenio_cobranca_id);
-    if (!cid) return;
-    const cur = result.get(cid) ?? { saldo: 0, exames: 0, pacientes: new Set<string>() };
-    cur.saldo += Number(e.valor) || 0;
-    cur.exames += 1;
-    const pn = atMap.get(Number(e.atendimento_id));
-    if (pn) cur.pacientes.add(pn);
-    result.set(cid, cur);
-  });
-  return result;
-}
+// fetchSaldoEmAbertoPorConvenio removido (Convênios 2.0 — Fase 2.5).
+// Substituído oficialmente por `useAReceberConvenios` (RPC financeiro_a_receber_v2).
 
 /**
  * @deprecated O código oficial é gerado server-side por trigger.
@@ -280,14 +237,16 @@ export interface CriarFaturaInput {
   itens: ItemFaturavel[];
 }
 
-/** Cria uma fatura "aberta" e vincula os itens. O código é gerado pelo banco (FAT-AAAA-NNNNNNN). */
+/**
+ * Cria uma fatura "aberta" e vincula os itens.
+ * O código é gerado pelo banco (FAT-AAAA-NNNNNNN) e os totais são
+ * recalculados server-side por trigger (Fase 2.4 — frontend não é fonte de verdade).
+ */
 export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolean; faturaId?: number; codigo?: string; error?: string }> {
   if (input.itens.length === 0) {
     return { ok: false, error: "Selecione ao menos um item" };
   }
   const tenantId = await getCurrentTenantId();
-  const subtotal = input.itens.reduce((s, i) => s + i.valor, 0);
-  const total = Math.max(0, subtotal - (input.desconto || 0));
 
   let fatRow: { id: number; codigo: string } | null = null;
   try {
@@ -298,9 +257,10 @@ export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolea
         convenio_id: input.convenioId,
         periodo_inicio: input.periodoInicio,
         periodo_fim: input.periodoFim,
-        subtotal,
+        // subtotal/total: zero inicial — recalculados por trigger ao inserir os itens
+        subtotal: 0,
         desconto: input.desconto || 0,
-        total,
+        total: 0,
         status: "aberta",
         observacao: input.observacao || "",
       }),
@@ -326,8 +286,11 @@ export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolea
     );
   } catch (e) {
     showError(e, { scope: "convenioFaturasStore.criar.itens", silent: true });
-    // rollback do cabeçalho
-    await supabase.from("convenio_faturas").delete().eq("id", fatRow!.id);
+    // rollback auditável via cancelamento (não DELETE)
+    await supabase.rpc("convenio_fatura_cancelar", {
+      p_fatura_id: fatRow!.id,
+      p_motivo: "Rollback automático — falha ao inserir itens",
+    });
     return { ok: false, error: (e as Error).message };
   }
   return { ok: true, faturaId: Number(fatRow!.id), codigo: fatRow!.codigo };
@@ -355,18 +318,23 @@ export async function marcarFaturaPaga(
   }
 }
 
-/** Cancela uma fatura (libera os exames para uma nova fatura). */
-export async function cancelarFatura(faturaId: number): Promise<{ ok: boolean; error?: string }> {
+/**
+ * Cancela uma fatura SEM apagar histórico (Fase 2.1).
+ * - NÃO faz DELETE em convenio_fatura_itens — os itens permanecem para auditoria.
+ * - O SSOT (Fase 2.3) ignora itens de faturas canceladas, então os exames voltam a ser elegíveis.
+ * - O motivo é OBRIGATÓRIO e a operação é registrada em financeiro_audit.
+ */
+export async function cancelarFatura(faturaId: number, motivo: string): Promise<{ ok: boolean; error?: string }> {
+  const motivoTrim = (motivo || "").trim();
+  if (!motivoTrim) {
+    return { ok: false, error: "Informe o motivo do cancelamento" };
+  }
   try {
-    await persistOrThrow(
-      supabase.from("convenio_fatura_itens").delete().eq("fatura_id", faturaId),
-      "convenioFaturas.cancelar.itens",
-      { expectAtLeast: 0 },
-    );
-    await persistOrThrow(
-      supabase.from("convenio_faturas").update({ status: "cancelada" }).eq("id", faturaId),
-      "convenioFaturas.cancelar.cabecalho",
-    );
+    const { error } = await supabase.rpc("convenio_fatura_cancelar", {
+      p_fatura_id: faturaId,
+      p_motivo: motivoTrim,
+    });
+    if (error) throw error;
     return { ok: true };
   } catch (e) {
     showError(e, { scope: "convenioFaturasStore.cancelar", silent: true });
