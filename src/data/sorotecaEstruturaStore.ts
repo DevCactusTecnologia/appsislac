@@ -357,3 +357,93 @@ export async function retirarAmostra(input: {
     return { ok: false, error: (e as Error).message };
   }
 }
+
+// ---------- helpers para a Triagem (Fase 3) ----------
+
+export interface AmostraTriagem {
+  id: string;
+  codigo_barra: string;
+  tipo_material: string;
+  data_coleta: string;
+  status: string;
+  paciente_id: number | null;
+  atendimento_id: number | null;
+}
+
+/** Busca uma única amostra por código de barras / etiqueta. */
+export async function buscarAmostraPorCodigo(
+  codigo: string,
+): Promise<AmostraTriagem | null> {
+  const v = codigo.trim();
+  if (!v) return null;
+  const { data, error } = await supabase
+    .from("amostras")
+    .select("id, codigo_barra, tipo_material, data_coleta, status, paciente_id, atendimento_id")
+    .eq("codigo_barra", v)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as AmostraTriagem;
+}
+
+/** Alocação ativa atual da amostra (null se está pendente). */
+export async function getAlocacaoAtiva(
+  amostra_id: string,
+): Promise<AmostraAlocacao | null> {
+  const { data } = await supabase
+    .from("amostra_alocacoes")
+    .select("*")
+    .eq("amostra_id", amostra_id)
+    .is("retirada_em", null)
+    .maybeSingle();
+  return (data as AmostraAlocacao) ?? null;
+}
+
+export interface PosicaoCaminho {
+  posicao_id: string;
+  posicao_codigo: string;
+  galeria_id: string;
+  galeria_nome: string;
+  local_id: string;
+  local_nome: string;
+}
+
+/** Caminho legível "Local > Galeria > Posição". */
+export async function getPosicaoCaminho(
+  posicao_id: string,
+): Promise<PosicaoCaminho | null> {
+  const { data } = await supabase
+    .from("posicoes_galeria")
+    .select("id, codigo, galeria_id, galerias!inner(id, nome, local_id, locais_armazenamento!inner(id, nome))")
+    .eq("id", posicao_id)
+    .maybeSingle();
+  if (!data) return null;
+  const g = (data as unknown as {
+    galerias: { id: string; nome: string; local_id: string; locais_armazenamento: { id: string; nome: string } };
+  }).galerias;
+  return {
+    posicao_id: data.id,
+    posicao_codigo: data.codigo,
+    galeria_id: g.id,
+    galeria_nome: g.nome,
+    local_id: g.local_id,
+    local_nome: g.locais_armazenamento.nome,
+  };
+}
+
+/**
+ * Conta amostras DISPONÍVEIS sem alocação ativa (pendentes de armazenamento).
+ * Implementação simples: subtrai contagem alocadas do total disponível.
+ */
+export async function contarPendentesArmazenamento(): Promise<number> {
+  const { count: totalDisp } = await supabase
+    .from("amostras")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "DISPONIVEL");
+  const { data: ativas } = await supabase
+    .from("amostra_alocacoes")
+    .select("amostra_id, amostras!inner(status)")
+    .is("retirada_em", null)
+    .eq("amostras.status", "DISPONIVEL");
+  const alocadas = new Set((ativas ?? []).map((a) => a.amostra_id)).size;
+  return Math.max(0, (totalDisp ?? 0) - alocadas);
+}
