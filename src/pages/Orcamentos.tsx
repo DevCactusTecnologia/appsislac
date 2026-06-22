@@ -260,8 +260,8 @@ const Orcamentos = () => {
     return "Lead aquecido — desconto não recomendado";
   };
 
-  // Estado para o popover de templates por linha
-  const [templateMenuOrc, setTemplateMenuOrc] = useState<{ orc: Orcamento; dias: number } | null>(null);
+
+
 
   const tempTabs: { key: "todos" | Temperatura; label: string; count: number; Icon: typeof Flame; tone: string }[] = [
     { key: "todos",      label: "Todos",      count: tempCounts.todos,      Icon: Receipt,        tone: "text-foreground" },
