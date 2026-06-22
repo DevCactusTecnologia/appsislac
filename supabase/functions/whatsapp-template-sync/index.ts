@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       corpo: body,
       botoes: buttons,
       variaveis_count: varCount,
+      meta_template_id: t.id,
       meta_payload: t as unknown as Record<string, unknown>,
       sincronizado_em: new Date().toISOString(),
     }, { onConflict: "nome,idioma" });

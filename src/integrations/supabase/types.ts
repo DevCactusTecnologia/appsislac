@@ -6598,6 +6598,7 @@ export type Database = {
           id: string
           idioma: string
           meta_payload: Json | null
+          meta_template_id: string | null
           nome: string
           sincronizado_em: string
           status: string
@@ -6611,6 +6612,7 @@ export type Database = {
           id?: string
           idioma?: string
           meta_payload?: Json | null
+          meta_template_id?: string | null
           nome: string
           sincronizado_em?: string
           status?: string
@@ -6624,6 +6626,7 @@ export type Database = {
           id?: string
           idioma?: string
           meta_payload?: Json | null
+          meta_template_id?: string | null
           nome?: string
           sincronizado_em?: string
           status?: string

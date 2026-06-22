@@ -1,0 +1,2 @@
+ALTER TABLE public.whatsapp_templates_cache ADD COLUMN IF NOT EXISTS meta_template_id text;
+CREATE INDEX IF NOT EXISTS whatsapp_templates_cache_meta_template_id_idx ON public.whatsapp_templates_cache(meta_template_id);
