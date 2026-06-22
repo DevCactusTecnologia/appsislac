@@ -46,15 +46,23 @@ export interface WhatsappActionButtonProps {
   disabled?: boolean;
   /** Tooltip customizado — default: "Enviar mensagem pelo WhatsApp". */
   title?: string;
+  /**
+   * Rótulo customizado para o estado `idle` (ex.: "Enviar Comprovante
+   * de Pagamento"). Mantém o padrão visual canônico, alterando apenas
+   * o texto contextual conforme a aba/documento ativo. Estados
+   * loading/success/error permanecem padronizados.
+   */
+  idleLabel?: string;
   className?: string;
 }
 
-const LABEL: Record<WhatsappActionState, string> = {
+const DEFAULT_LABEL: Record<WhatsappActionState, string> = {
   idle: "Enviar WhatsApp",
   loading: "Enviando...",
   success: "WhatsApp enviado",
   error: "Falha no envio",
 };
+
 
 export function WhatsappActionButton({
   onSendAsync,
