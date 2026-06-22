@@ -6,7 +6,7 @@
 
 Isso significa que, fora da janela de 24h de conversa iniciada pelo cliente, **as mensagens não chegam** quando enviadas pela Cloud API oficial. Hoje o sistema funciona graças a:
 
-- Modo `simples` (`wa.me`) — sem restrição da Meta, mas exige usuário clicar em "Enviar" no WhatsApp Web.
+- Modo `simples` (`wa.me`) — sem restrição da Meta, mas exige usuário clicar em "Send" no WhatsApp Web.
 - Modo `zapi` — alguns laboratórios usam Z-API que contorna a restrição de templates (não oficial).
 - Modo `cloud_api` — só funciona em sandbox/24h ou para contas em teste.
 
@@ -15,6 +15,7 @@ Isso significa que, fora da janela de 24h de conversa iniciada pelo cliente, **a
 ## Mensagens em código (a serem convertidas em templates Meta)
 
 ### T1 — Comprovante de Atendimento / Pagamento
+
 Origem: `src/lib/comprovantes.ts → enviarComprovantePorWhatsapp()`
 
 ```
@@ -32,6 +33,7 @@ Variáveis: `tipoLabel`, `protocolo`, `data`, `nome`, `total`, `shortlink`.
 Anexo: documento PDF (header `document`).
 
 ### T2 — Orçamento
+
 Origem: `src/lib/comprovantes.ts → enviarOrcamentoPorWhatsapp()`
 
 ```
@@ -55,27 +57,29 @@ Variáveis: `id`, `paciente`, `convenio`, `solicitante`, `exames[]`, `total`, `s
 **Problema p/ Meta**: lista variável de exames não cabe em template estático — precisa ser resumida ou ir no PDF.
 
 ### T3 — OTP de inscrição
+
 Origem: `supabase/functions/leads-manager/index.ts`
 
 ```
 Seu código de confirmação SISLAC é: {code}
 ```
+
 Variáveis: `code`. **Categoria Meta: AUTHENTICATION**.
 
 ---
 
 ## Templates PREVISTOS na visão 2.0 (a criar na Meta Business)
 
-| ID sugerido | Categoria Meta | Variáveis | Header | Botões |
-|---|---|---|---|---|
-| `sislac_comprovante_atendimento` | UTILITY | `{lab}`, `{paciente}`, `{protocolo}`, `{previsao}`, `{link}` | DOCUMENT (PDF) | URL "Ver comprovante" |
-| `sislac_comprovante_agendamento` | UTILITY | `{lab}`, `{paciente}`, `{data}`, `{hora}`, `{orientacoes}`, `{link}` | TEXT | URL "Ver agendamento" |
-| `sislac_resultados_prontos` | UTILITY | `{lab}`, `{paciente}`, `{link_portal}` | TEXT | URL "Acessar portal" |
-| `sislac_orcamento` | UTILITY | `{lab}`, `{paciente}`, `{total}`, `{link}` | DOCUMENT (PDF) | URL "Ver orçamento" |
-| `sislac_recoleta` | UTILITY | `{lab}`, `{paciente}`, `{motivo}`, `{telefone_lab}`, `{instrucoes}` | TEXT | QUICK_REPLY "Confirmar" |
-| `sislac_orcamento_clinica` | UTILITY | `{clinica}`, `{profissional}`, `{paciente}`, `{link}` | DOCUMENT | URL |
-| `sislac_confirmacao_consulta` | UTILITY | `{profissional}`, `{convenio}`, `{data}`, `{endereco}`, `{servicos}` | TEXT | QUICK_REPLY × 3 (Confirmar / Cancelar / Remarcar) |
-| `sislac_otp_inscricao` | AUTHENTICATION | `{code}` | TEXT | COPY_CODE |
+| ID sugerido                      | Categoria Meta | Variáveis                                                            | Header         | Botões                                            |
+| -------------------------------- | -------------- | -------------------------------------------------------------------- | -------------- | ------------------------------------------------- |
+| `sislac_comprovante_atendimento` | UTILITY        | `{lab}`, `{paciente}`, `{protocolo}`, `{previsao}`, `{link}`         | DOCUMENT (PDF) | URL "Ver comprovante"                             |
+| `sislac_comprovante_agendamento` | UTILITY        | `{lab}`, `{paciente}`, `{data}`, `{hora}`, `{orientacoes}`, `{link}` | TEXT           | URL "Ver agendamento"                             |
+| `sislac_resultados_prontos`      | UTILITY        | `{lab}`, `{paciente}`, `{link_portal}`                               | TEXT           | URL "Acessar portal"                              |
+| `sislac_orcamento`               | UTILITY        | `{lab}`, `{paciente}`, `{total}`, `{link}`                           | DOCUMENT (PDF) | URL "Ver orçamento"                               |
+| `sislac_recoleta`                | UTILITY        | `{lab}`, `{paciente}`, `{motivo}`, `{telefone_lab}`, `{instrucoes}`  | TEXT           | QUICK_REPLY "Confirmar"                           |
+| `sislac_orcamento_clinica`       | UTILITY        | `{clinica}`, `{profissional}`, `{paciente}`, `{link}`                | DOCUMENT       | URL                                               |
+| `sislac_confirmacao_consulta`    | UTILITY        | `{profissional}`, `{convenio}`, `{data}`, `{endereco}`, `{servicos}` | TEXT           | QUICK_REPLY × 3 (Confirmar / Cancelar / Remarcar) |
+| `sislac_otp_inscricao`           | AUTHENTICATION | `{code}`                                                             | TEXT           | COPY_CODE                                         |
 
 ---
 

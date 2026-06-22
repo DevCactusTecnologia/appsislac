@@ -9,11 +9,12 @@
 
 Cada laboratório configura individualmente um dos 3 modos em `Configurações → Notificações`:
 
-- **`simples`** — abre `wa.me` no browser; recepcionista clica "Enviar". Sem log, sem custo Meta, sem template.
+- **`simples`** — abre `wa.me` no browser; recepcionista clica "Send". Sem log, sem custo Meta, sem template.
 - **`cloud_api`** — credenciais Meta próprias (`phone_number_id`, `access_token`) por tenant. Edge `whatsapp-send` posta em `graph.facebook.com/v21.0/...`. Sem templates cadastrados — só funciona em sandbox/24h.
 - **`zapi`** — credenciais Z-API (provedor não-oficial). Mesma edge function, branch separado.
 
 **Disparos hoje são todos manuais**:
+
 1. Comprovante (atendimento/pagamento) — botão em `PdfPreviewDialog`.
 2. Orçamento — botão em `Orcamentos.tsx` / `NovoAtendimento.tsx`.
 3. Botões "Falar com paciente/especialista" — apenas abrem `wa.me` vazio.
