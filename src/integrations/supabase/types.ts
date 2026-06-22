@@ -6072,60 +6072,6 @@ export type Database = {
           },
         ]
       }
-      tenant_whatsapp_config: {
-        Row: {
-          access_token: string | null
-          ativo: boolean
-          created_at: string
-          display_phone: string | null
-          id: string
-          modo: Database["public"]["Enums"]["whatsapp_modo"]
-          numero_simples: string | null
-          phone_number_id: string | null
-          tenant_id: string
-          updated_at: string
-          waba_id: string | null
-          webhook_verify_token: string | null
-          zapi_client_token: string | null
-          zapi_instance_id: string | null
-          zapi_token: string | null
-        }
-        Insert: {
-          access_token?: string | null
-          ativo?: boolean
-          created_at?: string
-          display_phone?: string | null
-          id?: string
-          modo?: Database["public"]["Enums"]["whatsapp_modo"]
-          numero_simples?: string | null
-          phone_number_id?: string | null
-          tenant_id: string
-          updated_at?: string
-          waba_id?: string | null
-          webhook_verify_token?: string | null
-          zapi_client_token?: string | null
-          zapi_instance_id?: string | null
-          zapi_token?: string | null
-        }
-        Update: {
-          access_token?: string | null
-          ativo?: boolean
-          created_at?: string
-          display_phone?: string | null
-          id?: string
-          modo?: Database["public"]["Enums"]["whatsapp_modo"]
-          numero_simples?: string | null
-          phone_number_id?: string | null
-          tenant_id?: string
-          updated_at?: string
-          waba_id?: string | null
-          webhook_verify_token?: string | null
-          zapi_client_token?: string | null
-          zapi_instance_id?: string | null
-          zapi_token?: string | null
-        }
-        Relationships: []
-      }
       tenants: {
         Row: {
           cidade: string | null
@@ -7890,7 +7836,6 @@ export type Database = {
         | "CUSTOM"
       payment_provider: "mercado_pago" | "infinitepay"
       subscription_status: "pendente" | "aprovado" | "reprovado"
-      whatsapp_modo: "simples" | "cloud_api" | "zapi" | "centralized"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -8063,7 +8008,6 @@ export const Constants = {
       ],
       payment_provider: ["mercado_pago", "infinitepay"],
       subscription_status: ["pendente", "aprovado", "reprovado"],
-      whatsapp_modo: ["simples", "cloud_api", "zapi", "centralized"],
     },
   },
 } as const
