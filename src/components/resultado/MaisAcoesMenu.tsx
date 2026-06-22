@@ -9,6 +9,7 @@
  * em um único menu para reduzir carga cognitiva no cabeçalho.
  */
 import { MoreHorizontal, ClipboardList, Edit, AlertTriangle, Send, FlaskConical, XCircle } from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
