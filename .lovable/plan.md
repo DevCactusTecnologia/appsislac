@@ -1,126 +1,76 @@
+## Fase 2A — Split Arquitetural de NovoAtendimento.tsx
 
-# Atendimento 2.0 — Fase 2 — Plano de Execução
+### Diagnóstico atual
 
-> Esta fase mexe em estrutura (split de páginas grandes, novas views no banco, remoção de código morto). Pela regra do projeto, **preciso de "sim" explícito antes de executar**. Abaixo está o plano detalhado, fatiado em sub-fases independentes — você pode aprovar tudo ou só parte.
+`src/pages/NovoAtendimento.tsx` — **2.801 linhas**, **1 componente**, ~**80 useState**, ~**15 useEffect**, função `finalizarAtendimento` de ~200 linhas, mais ~1.700 linhas de JSX no return final (wizard de 3+ passos com painéis colapsáveis).
 
-## Princípios (não-negociáveis)
+Já existem em `src/pages/NovoAtendimento/`:
+- `types.ts`, `helpers.ts`, `pricing.ts`, `buildExamesCobranca.ts`
+- `services/distribuirDesconto.ts`, `services/contarEtiquetas.ts`, `services/resyncCobrancaConvenios.ts`
+- `DropdownStatus.tsx`, `highlightMatch.tsx`
+- testes verdes: `pricing.test.ts`, `buildExamesCobranca.test.ts`
 
-- Zero mudança de comportamento clínico, fluxo, protocolo, RLS, auditoria, financeiro, convênios.
-- Zero alteração de UX visível (mesmas rotas, mesmos cliques, mesmos resultados).
-- Split é **mecânico**: extrair seções inteiras para arquivos menores, sem reescrever lógica.
-- Cada sub-fase termina com build verde + smoke test manual antes de avançar.
-
----
-
-## Fase 2.1 — Split `NovoAtendimento.tsx` (2801 linhas)
-
-Estrutura alvo (`src/pages/NovoAtendimento/`):
-
-```text
-NovoAtendimento.tsx                 (orquestrador, ~300 linhas: estado raiz + composição)
-sections/
-  PacienteSection.tsx               (busca/seleção/cadastro rápido de paciente)
-  SolicitanteSection.tsx            (solicitante(s), unidade, data)
-  ConveniosSection.tsx              (convênios + resync de cobrança)
-  ExamesSection.tsx                 (catálogo, busca, IA, lista de exames)
-  FinanceiroSection.tsx             (cobrança, desconto, pagamentos)
-  ResumoSection.tsx                 (resumo + finalizar/imprimir)
-hooks/
-  useAtendimentoForm.ts             (estado central + setters + dirty)
-  useExamesSelecionados.ts          (add/remove/atualizar exames + cobrança)
-  useFinalizarAtendimento.ts        (orquestra submit/edge function)
-services/
-  buildExamesCobranca.ts            (já existe)
-  contarEtiquetas.ts                (já existe)
-  distribuirDesconto.ts             (já existe)
-  resyncCobrancaConvenios.ts        (já existe)
-  pricing.ts                        (já existe)
-  helpers.ts                        (já existe)
-```
-
-Regras: cada `Section` recebe props do `useAtendimentoForm`; nada de novo store global; mesmos imports externos; testes existentes (`buildExamesCobranca.test.ts`, `pricing.test.ts`) devem continuar passando sem alteração.
-
-## Fase 2.2 — Split `ResultadoDetalhe.tsx` (2648 linhas)
-
-Estrutura alvo (`src/pages/ResultadoDetalhe/`):
-
-```text
-index.tsx                           (orquestrador + tabs, ~300 linhas)
-panels/
-  ParametrosPanel.tsx               (form científico + valores)
-  CriticosPanel.tsx                 (RDC 786, comunicações)
-  LiberacaoPanel.tsx                (validação clínica, assinatura, liberar)
-  ImpressaoPanel.tsx                (laudo, PDF, override)
-  HistoricoPanel.tsx                (auditoria + retificações + entregas)
-hooks/
-  useResultadoExame.ts              (carga + patch via update_atendimento_exame_tx)
-  useLiberacaoFlow.ts
-services/                           (já existe — preservar)
-  auditLogBuilder.ts
-  criticoPipeline.ts
-  laudoHtmlBuilder.ts
-```
-
-**Trava explícita**: `LayoutScientificFormRenderer`, `formula.ts`, `helpers.ts`, `statusHelpers.ts`, layout de impressão e CSS de laudo permanecem **byte-a-byte iguais** (memory: layout-impressao-travado).
-
-## Fase 2.3 — SSOT Coleta (view `vw_coletas_operacionais`)
-
-Migration somente-leitura sobre `atendimento_exames` + `amostras`:
-
-```sql
-CREATE VIEW public.vw_coletas_operacionais AS
-SELECT
-  ae.tenant_id, ae.atendimento_id, ae.id AS atendimento_exame_id,
-  ae.exame_nome, ae.status, ae.coletado_por, ae.data_coleta,
-  a.id AS amostra_id, a.codigo AS amostra_codigo, a.tipo_material,
-  at.unidade_id, at.protocolo
-FROM public.atendimento_exames ae
-LEFT JOIN public.amostras a ON a.atendimento_exame_id = ae.id
-JOIN public.atendimentos at ON at.id = ae.atendimento_id
-WHERE ae.data_coleta IS NOT NULL OR ae.status IN ('coletado','em_bancada','em_analise','analisado','finalizado');
--- + GRANT SELECT TO authenticated; + security_invoker=on (herda RLS das tabelas-base)
-```
-
-Sem alterar telas. Apenas habilita consumo futuro.
-
-## Fase 2.4 — SSOT Produção (`vw_producao_operacional`)
-
-Análoga, focada em status `em_bancada | em_analise | analisado` com analista, setor (via `setor_id` no catálogo), data prevista x realizada.
-
-## Fase 2.5 — KPIs materializados
-
-Três views agregadas por dia/tenant:
-
-- `vw_coleta_diaria` — total coletas, por unidade, tempo médio recepção→coleta.
-- `vw_producao_diaria` — total em bancada/análise, por setor.
-- `vw_liberacao_diaria` — total liberados, tempo médio coleta→liberação.
-
-Padrão: **views regulares** (não materialized) com `security_invoker=on` para preservar RLS por tenant. Se houver pressão de performance real medida, promovemos a `MATERIALIZED VIEW` em fase futura. `useDashboardKpis` passa a poder consumir essas views (ajuste opcional, não obrigatório nesta fase).
-
-## Fase 2.6 — Limpeza cirúrgica
-
-Critério estrito: **0 imports + 0 referências** (verificado via `rg`). Candidatos serão listados no relatório antes de remover. Sem tocar em componentes, RPCs, triggers, tabelas.
-
-## Fase 2.7 — Auditoria `lab-apoio-*` / `integration-*`
-
-Apenas documental: gerar `docs/atendimento-2.0/terceirizacao-convergencia.md` mapeando sobreposições e plano futuro. **Nenhuma migração ou remoção.**
-
-## Validação por sub-fase
-
-1. `bun run build` verde.
-2. `bunx vitest run` verde (testes de pricing/buildExamesCobranca obrigatórios).
-3. Smoke manual: criar atendimento → coletar → analisar → liberar → imprimir laudo → pagar → estornar. Compare protocolo/laudo/auditoria com baseline.
-
-## Relatório final
-
-`docs/atendimento-2.0/atendimento-phase2-report.md` respondendo às 10 perguntas da missão, com diff de linhas por arquivo, lista de views criadas, lista de remoções e evidências de regressão zero.
+Ou seja, a camada de **services** já está extraída. O que resta é o **split de UI + hooks**.
 
 ---
 
-## Como você quer prosseguir?
+### Por que estou pedindo confirmação antes de executar
 
-1. **Aprovar tudo** — executo 2.1 → 2.7 sequencialmente, parando entre sub-fases para você validar.
-2. **Aprovar só uma sub-fase** — diga qual (ex.: "só 2.3 e 2.4 agora"). As views SSOT são as mais seguras e independentes.
-3. **Ajustar plano** — peça mudanças (ex.: split diferente, materialized view em vez de view, etc.).
+A memória do projeto exige:
+> *Mudanças estruturais (rotas, remoção/renomeação de páginas, boot, deps, contextos globais) SÓ com confirmação explícita do usuário.*
 
-Recomendo começar por **2.3 + 2.4 + 2.5** (views SSOT — risco baixíssimo, ganho imediato de observabilidade) e só depois encarar os splits 2.1/2.2, que são mais invasivos.
+Refatorar um arquivo de 2.801 linhas com ~80 estados intertravados em 6 sections + 3 hooks é uma das mudanças estruturais mais sensíveis do sistema. Um único `useState` movido errado quebra finalização, edição, complementação, cancelamento ou estorno. **A missão exige "0 diferença perceptível" — isso só é validável com o usuário rodando smoke test real.**
+
+Por isso quero alinhar a estratégia antes de tocar 2.800 linhas.
+
+---
+
+### Estratégia proposta — split em 4 sub-turnos sequenciais
+
+Cada sub-turno é independente, com build verde e smoke test antes do próximo. Total ~ mesmo escopo da missão, porém com pontos de validação intermediários.
+
+```text
+Turno A.1 — Hooks (sem tocar JSX)
+  hooks/useAtendimentoForm.ts        (estado de paciente/convênio/solicitante/unidade/data/observações)
+  hooks/useExamesSelecionados.ts     (exames + cobrança + desconto/acréscimo + pagamentos)
+  hooks/useFinalizarAtendimento.ts   (finalizarAtendimento + finalizarComValidacao + edge function)
+  NovoAtendimento.tsx consome os hooks; JSX inalterado.
+  → ~600 linhas saem para hooks.
+
+Turno A.2 — Sections "leves" (header do wizard)
+  sections/PacienteSection.tsx       (busca, dropdown, dialog cadastro, débitos)
+  sections/SolicitanteSection.tsx    (solicitante, unidade, datas, info clínica)
+  sections/ConveniosSection.tsx      (convênios + sincronização cobrança)
+  → ~600 linhas saem.
+
+Turno A.3 — Sections "pesadas"
+  sections/ExamesSection.tsx         (catálogo, busca, inclusão, agrupamento, IA)
+  sections/FinanceiroSection.tsx     (cobrança, desconto, acréscimo, pagamentos)
+  sections/ResumoSection.tsx         (revisão, impressão, sucesso, orçamento)
+  → ~1.300 linhas saem.
+
+Turno A.4 — Limpeza + relatório
+  Remover imports/consts/tipos mortos.
+  docs/atendimento-2.0/atendimento-phase2a-report.md
+```
+
+Resultado final esperado: `NovoAtendimento.tsx` ≈ **300–500 linhas**, atuando apenas como orquestrador.
+
+---
+
+### Garantias mantidas em todos os turnos
+
+- **0 alteração** de: rota, RPC, edge function, store global, RLS, trigger, banco, contrato visual, contrato de teclado, IDs de elementos.
+- **Props drilling explícito** entre sections e hooks — proibido criar contexto novo, store novo ou padrão novo (como pede a missão).
+- Testes obrigatórios verdes a cada turno: `bun run build` + `bunx vitest run pricing.test.ts buildExamesCobranca.test.ts`.
+- Após cada turno, paro e peço smoke test (Particular, Convênio, Desconto, Acréscimo, Pagamento, Impressão, Complementação, Cancelamento, Estorno).
+
+---
+
+### O que preciso confirmar antes de começar
+
+1. **Aprovo executar Turno A.1 (hooks) agora?** Esse é o turno de menor risco e já entrega ~600 linhas movidas.
+2. **Concorda com fatiar em 4 sub-turnos?** Alternativa é tentar tudo num só turno, mas aceito o risco de regressão silenciosa em fluxos clínicos.
+3. **Smoke test será feito por você** após cada turno, ou devo prosseguir entre turnos sem aguardar resposta?
+
+Sem essas respostas não toco no arquivo, conforme a regra de confirmação explícita para mudanças estruturais.
