@@ -381,6 +381,8 @@ function AppRoutes() {
             <Route path="/financeiro" element={<ProtectedRoute permissao="visualizar_financeiro"><Financeiro /></ProtectedRoute>} />
             <Route path="/soroteca" element={<ProtectedRoute permissao="registrar_coleta"><Soroteca /></ProtectedRoute>} />
             <Route path="/soroteca/estrutura" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEstrutura /></ProtectedRoute>} />
+            <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
+
             <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute permissao="configuracoes_sistema"><Configuracoes /></ProtectedRoute>} />
             {/* Domain Driven Routes — Fase B (entidades de domínio promovidas) */}
