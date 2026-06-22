@@ -83,7 +83,7 @@ export default function SuperAdminNotificacoes() {
   const outboxFiltered = filterStatus ? outbox.filter((o) => o.status === filterStatus) : outbox;
 
   async function reprocessar(id: string) {
-    await supabase.from("whatsapp_outbox" as never).update({ status: "pending", proxima_tentativa_em: new Date().toISOString(), erro: null }).eq("id", id);
+    await (supabase.from("whatsapp_outbox" as never) as never as { update: (v: unknown) => { eq: (c: string, v: string) => Promise<unknown> } }).update({ status: "pending", proxima_tentativa_em: new Date().toISOString(), erro: null }).eq("id", id);
     await supabase.functions.invoke("whatsapp-dispatcher", { body: { outbox_id: id } }).catch(() => null);
     toast({ title: "Reenfileirado", description: "Item enviado ao dispatcher." });
     void load();
