@@ -707,7 +707,7 @@ export default function SuperAdminConfiguracoes() {
                 </div>
 
                 <InfoNote>
-                  As credenciais são geradas no painel do provedor escolhido (Meta for Developers, Twilio Console ou Z-API).
+                  As credenciais são geradas em Meta for Developers (única conta corporativa do SISLAC).
                 </InfoNote>
 
                 <ActionsBar
