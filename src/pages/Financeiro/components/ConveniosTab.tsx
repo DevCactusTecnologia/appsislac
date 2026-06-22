@@ -87,6 +87,7 @@ export default function ConveniosTab() {
 
   return (
     <div className="space-y-3">
+      <CompetenciaAtualCard />
       <div className="inline-flex items-center gap-0.5 p-1 bg-muted/40 rounded-lg border border-border/40">
         {([
           { key: "aberto",  label: `Em aberto (${aReceberConvenioRows.length})` },
