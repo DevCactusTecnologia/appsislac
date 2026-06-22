@@ -16,7 +16,7 @@ import {
   Globe,
   Search,
   X,
-  Bell,
+  
   Plug,
 } from "lucide-react";
 import AdminTab from "@/components/configuracoes/AdminTab";
