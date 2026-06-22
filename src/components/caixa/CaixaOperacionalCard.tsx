@@ -129,15 +129,29 @@ export function AbrirCaixaDialog({ open, onClose, unidadeId, unidadeNome, onAber
 
   useEffect(() => { if (open) { setValor("0,00"); setObs(""); } }, [open]);
 
+  const valorNumerico = useMemo(() => {
+    const n = Number(valor.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  }, [valor]);
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Aceita apenas dígitos; formata como moeda à medida que digita.
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    if (!digits) { setValor("0,00"); return; }
+    const num = Number(digits) / 100;
+    setValor(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
+  const sugestoes = [100, 200, 500, 1000];
+
   const submit = async () => {
-    const num = Number(valor.replace(/\./g, "").replace(",", "."));
-    if (!Number.isFinite(num) || num < 0) {
+    if (valorNumerico < 0) {
       toast({ title: "Valor inválido", variant: "destructive" }); return;
     }
     setBusy(true);
     try {
-      await abrirCaixa({ unidadeId, valorAbertura: num, observacoes: obs.trim() || null });
-      toast({ title: "Caixa aberto", description: `${unidadeNome} · saldo inicial ${valor}` });
+      await abrirCaixa({ unidadeId, valorAbertura: valorNumerico, observacoes: obs.trim() || null });
+      toast({ title: "Caixa aberto", description: `${unidadeNome} · saldo inicial ${fmtBRL(valorNumerico)}` });
       onAberto();
     } catch { /* showError no store */ }
     finally { setBusy(false); }
@@ -145,32 +159,94 @@ export function AbrirCaixaDialog({ open, onClose, unidadeId, unidadeNome, onAber
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Abrir caixa — {unidadeNome}</DialogTitle>
-          <DialogDescription>Informe o saldo inicial em dinheiro presente no caixa.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="valor-abertura">Saldo inicial (R$)</Label>
-            <Input id="valor-abertura" inputMode="decimal" value={valor}
-              onChange={(e) => setValor(e.target.value)} placeholder="0,00" />
-          </div>
-          <div>
-            <Label htmlFor="obs-abertura">Observações (opcional)</Label>
-            <Textarea id="obs-abertura" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+        {/* Cabeçalho minimalista */}
+        <div className="px-6 pt-6 pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <DialogHeader className="space-y-0.5 text-left">
+                <DialogTitle className="text-base font-semibold leading-tight">Abrir caixa</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {unidadeNome}
+                </DialogDescription>
+              </DialogHeader>
+            </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={busy}>
-            {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Abrir caixa
+
+        {/* Corpo */}
+        <div className="px-6 py-5 space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="valor-abertura" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Saldo inicial
+            </Label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
+                R$
+              </span>
+              <input
+                id="valor-abertura"
+                inputMode="numeric"
+                autoComplete="off"
+                value={valor}
+                onChange={handleValorChange}
+                onFocus={(e) => e.target.select()}
+                className="w-full h-16 rounded-lg border border-input bg-background pl-12 pr-4 text-right text-2xl font-semibold tabular-nums tracking-tight text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="0,00"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setValor("0,00")}
+                className="text-xs px-2.5 py-1 rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+              >
+                Zerar
+              </button>
+              {sugestoes.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setValor(s.toLocaleString("pt-BR", { minimumFractionDigits: 2 }))}
+                  className="text-xs px-2.5 py-1 rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors tabular-nums"
+                >
+                  +{fmtBRL(s).replace("R$ ", "")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="obs-abertura" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Observações <span className="normal-case text-muted-foreground/70">(opcional)</span>
+            </Label>
+            <Textarea
+              id="obs-abertura"
+              rows={2}
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              placeholder="Ex.: troco recebido do turno anterior"
+              className="resize-none text-sm"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 gap-2 sm:gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+          <Button onClick={submit} disabled={busy} className="gap-2 min-w-[140px]">
+            {busy
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Abrindo…</>
+              : <><Unlock className="h-4 w-4" /> Abrir caixa</>}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 /* ───────── Fechar ───────── */
 function FecharCaixaDialog({ open, onClose, sessao, unidadeNome, userName, onFechado }: {
