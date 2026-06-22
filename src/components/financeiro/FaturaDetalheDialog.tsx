@@ -175,7 +175,7 @@ const FaturaDetalheDialog = ({ open, onClose, faturaId, faturaCodigo, convenioNo
       icon={<Receipt className="h-5 w-5 text-primary" />}
       title={`Fatura ${faturaCodigo}`}
       subtitle={`${convenioNome} • ${itens.length} ite${itens.length === 1 ? "m" : "ns"} • ${fmtBRL(total)}`}
-      maxWidth="4xl"
+      maxWidth="5xl"
       footer={<Button variant="outline" className="rounded-2xl" onClick={onClose}>Fechar</Button>}
     >
       <div className="px-6 py-5 space-y-4">
