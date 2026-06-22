@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, Download, Printer, Send, Loader2, Link2, Check, X } from "lucide-react";
+import { FileText, Download, Printer, Loader2, Link2, Check, X } from "lucide-react";
+import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -373,14 +374,13 @@ const PdfPreviewDialog = ({
             {activeAction === "copy" ? (generating ? "Gerando..." : copying ? "Enviando..." : "Enviando...") : copiedUrl ? "Link copiado" : "Copiar link"}
           </button>
           {showWhatsappButton && (
-            <button
+            <WhatsappActionButton
               onClick={handleNotify}
+              state={activeAction === "whatsapp" ? "loading" : "idle"}
               disabled={generating || (activeAction !== null && activeAction !== "whatsapp")}
-              className="h-10 px-4 rounded-xl bg-[hsl(var(--status-success))] text-white text-xs font-semibold hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {activeAction === "whatsapp" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              {activeAction === "whatsapp" ? (generating ? "Gerando..." : "Enfileirando...") : "Enviar WhatsApp"}
-            </button>
+              responsive={false}
+              size="md"
+            />
           )}
         </div>
       }

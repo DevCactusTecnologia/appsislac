@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode } from "lucide-react";
+import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode, MessageCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
+import WhatsappTimeline from "@/components/whatsapp/WhatsappTimeline";
+import { getBestWhatsappAction } from "@/lib/whatsapp/getBestWhatsappAction";
 // ----------------------------------------------------------------------------
 // SISLAC Document Ownership (IA-first semantics)
 //   Lab Data  = institutional identity         (labConfigStore — SINGLE SOURCE)
@@ -50,11 +55,18 @@ interface AtendimentoDetalheDialogProps {
 
 const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDetalheDialogProps) => {
   useBodyScrollLock(open && !!atendimento);
+  const { user } = useAuth();
+  const [whatsappRefresh, setWhatsappRefresh] = useState(0);
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
   // Tick para forçar re-render quando os templates de documento forem
   // recarregados ou editados.
   const [, setTemplatesTick] = useState(0);
+  // Verifica se todos os exames foram liberados (decide template do WhatsApp).
+  const todosLiberadosExames = atendimento
+    ? (atendimento.exames ?? []).length > 0 &&
+      (atendimento.exames ?? []).every((nome) => exameStatusMap[nome] === "finalizado")
+    : false;
 
   useEffect(() => {
     if (!open) return;
@@ -158,6 +170,29 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     });
   };
 
+  // Send WhatsApp — escolha automática do template (resultado | pagamento | atendimento).
+  const handleSendWhatsapp = async () => {
+    if (!atendimento) return;
+    const best = getBestWhatsappAction(atendimento, {
+      tenantId: user?.tenantId,
+      todosLiberados: todosLiberadosExames,
+    });
+    const r = await best.execute();
+    if (r.ok) {
+      toast({ title: "WhatsApp enfileirado", description: best.hint });
+      setWhatsappRefresh((n) => n + 1);
+      return;
+    }
+    if (r.reason === "telefone_invalido") {
+      toast({ title: "Sem telefone válido", description: "Cadastre o telefone do paciente.", variant: "destructive" });
+    } else if (r.reason === "paciente_sem_cadastro") {
+      toast({ title: "Paciente sem cadastro", description: "Conclua o cadastro antes de enviar.", variant: "destructive" });
+    } else {
+      toast({ title: "Não foi possível enviar", description: r.reason ?? "Erro desconhecido", variant: "destructive" });
+    }
+    throw new Error(r.reason ?? "erro");
+  };
+
   if (!open || !atendimento) return null;
 
   return createPortal((
@@ -217,6 +252,10 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
                 <span className="truncate">Comparecimento</span>
               </button>
+            </div>
+            {/* Ação canônica WhatsApp — sempre visível, decisão automática de template. */}
+            <div className="mt-2 flex items-center justify-end">
+              <WhatsappActionButton onSendAsync={handleSendWhatsapp} responsive={false} />
             </div>
           </div>
 
@@ -433,6 +472,17 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               {atendimento.motivoCancelamento && (
                 <p className="text-[11px] mt-2" style={{ color: "hsl(var(--status-danger))" }}>Motivo: {atendimento.motivoCancelamento}</p>
               )}
+            </div>
+          </section>
+
+          {/* WhatsApp — histórico de comunicação (Fase 3F.2) */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</h3>
+            </div>
+            <div className="rounded-2xl bg-card border border-border p-4">
+              <WhatsappTimeline protocolo={atendimento.protocolo} refreshKey={whatsappRefresh} />
             </div>
           </section>
           </div>

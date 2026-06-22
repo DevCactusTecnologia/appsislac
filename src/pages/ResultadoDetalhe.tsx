@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, Fragment } from "react";
 import { searchNormalize } from "@/lib/utils";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, Send, ArrowDown, ArrowUp, Save, ShieldCheck } from "lucide-react";
+import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
@@ -52,6 +52,7 @@ import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRender
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { notifyResultadoPronto } from "@/lib/whatsapp/notifyResultadoPronto";
+import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import { validarCredenciaisAnalista } from "@/lib/validarCredenciaisAnalista";
 import { useDicionario } from "@/hooks/useDicionario";
 
@@ -1158,15 +1159,10 @@ const ResultadoDetalhe = () => {
               actionsExtraLeft={
                 <>
                   {!modoConsulta && todosLiberados && (
-                    <button
-                      type="button"
+                    <WhatsappActionButton
                       onClick={handleEnviarResultadoWhatsapp}
-                      title="Enviar aviso de resultado pronto ao paciente"
-                      className="inline-flex items-center justify-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity shrink-0"
-                    >
-                      <Send className="h-4 w-4" />
-                      <span className="hidden sm:inline">Enviar WhatsApp</span>
-                    </button>
+                      title="Send mensagem pelo WhatsApp"
+                    />
                   )}
                   <MaisAcoesMenu
                     modoConsulta={modoConsulta}
@@ -1645,15 +1641,10 @@ const ResultadoDetalhe = () => {
                 actionsExtraLeft={
                   <>
                     {!modoConsulta && todosLiberados && (
-                      <button
-                        type="button"
+                      <WhatsappActionButton
                         onClick={handleEnviarResultadoWhatsapp}
-                        title="Enviar aviso de resultado pronto ao paciente"
-                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity shrink-0"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span className="hidden sm:inline">Enviar WhatsApp</span>
-                      </button>
+                        title="Send mensagem pelo WhatsApp"
+                      />
                     )}
                     <MaisAcoesMenu
                       modoConsulta={modoConsulta}
