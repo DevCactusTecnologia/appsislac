@@ -41,8 +41,6 @@ export function MaisAcoesMenu({
   onRecoleta,
   onCritico,
   onEntrega,
-  onEnviarWhatsapp,
-  podeEnviarWhatsapp = false,
   modoConsulta = false,
   semExameSelecionado = false,
   canRetificar = true,
