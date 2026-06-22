@@ -3,11 +3,11 @@
 //   2) Mensagens recebidas — usadas para capturar opt-out (STOP/SAIR/CANCELAR)
 //
 // - GET ?hub.mode=subscribe&hub.verify_token=...&hub.challenge=...
-//   Handshake. Aceita se o token bater com WHATSAPP_META_VERIFY_TOKEN (centralizado)
-//   OU com algum webhook_verify_token de tenant (legado, durante migração).
+//   Handshake. Aceita apenas se o token bater com WHATSAPP_META_VERIFY_TOKEN
+//   (arquitetura centralizada Meta — Fase 3B).
 //
-// - POST body assinado por x-hub-signature-256 (HMAC SHA256 com WHATSAPP_META_APP_SECRET
-//   ou WHATSAPP_APP_SECRET legado).
+// - POST body assinado por x-hub-signature-256 (HMAC SHA256 com
+//   WHATSAPP_META_APP_SECRET).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
 
