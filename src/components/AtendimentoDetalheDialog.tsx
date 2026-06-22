@@ -170,7 +170,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     });
   };
 
-  // Send WhatsApp — escolha automática do template (resultado | pagamento | atendimento).
+  // Enviar WhatsApp — escolha automática do template (resultado | pagamento | atendimento).
   const handleSendWhatsapp = async () => {
     if (!atendimento) return;
     const best = getBestWhatsappAction(atendimento, {

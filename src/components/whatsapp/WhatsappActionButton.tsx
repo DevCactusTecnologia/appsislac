@@ -7,13 +7,13 @@
 // UI operacional deve reutilizar este componente.
 //
 // Padrão oficial:
-//   Label   : "Send WhatsApp"
-//   Tooltip : "Send mensagem pelo WhatsApp"
+//   Label   : "Enviar WhatsApp"
+//   Tooltip : "Enviar mensagem pelo WhatsApp"
 //   Cor     : Verde WhatsApp — hsl(142, 70%, 45%)
 //   Ícone   : Send (lucide)
 //
 // Estados:
-//   idle    → "Send WhatsApp"
+//   idle    → "Enviar WhatsApp"
 //   loading → "Enviando..."
 //   success → "WhatsApp enviado"
 //   error   → "Falha no envio"
@@ -44,13 +44,13 @@ export interface WhatsappActionButtonProps {
   size?: "md" | "lg";
   /** Desabilita o botão. */
   disabled?: boolean;
-  /** Tooltip customizado — default: "Send mensagem pelo WhatsApp". */
+  /** Tooltip customizado — default: "Enviar mensagem pelo WhatsApp". */
   title?: string;
   className?: string;
 }
 
 const LABEL: Record<WhatsappActionState, string> = {
-  idle: "Send WhatsApp",
+  idle: "Enviar WhatsApp",
   loading: "Enviando...",
   success: "WhatsApp enviado",
   error: "Falha no envio",
@@ -65,7 +65,7 @@ export function WhatsappActionButton({
   variant = "full",
   size = "md",
   disabled = false,
-  title = "Send mensagem pelo WhatsApp",
+  title = "Enviar mensagem pelo WhatsApp",
   className = "",
 }: WhatsappActionButtonProps) {
   const [internalState, setInternalState] = useState<WhatsappActionState>("idle");

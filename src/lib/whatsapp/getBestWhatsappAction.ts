@@ -1,7 +1,7 @@
 // WhatsApp 2.0 — Fase 3F.2 — Decisor único de ação manual
 // ------------------------------------------------------------------
 // Centraliza a lógica de "qual mensagem o sistema deve enviar quando
-// o operador clica em [Send WhatsApp]?". Evita `if resultado / if
+// o operador clica em [Enviar WhatsApp]?". Evita `if resultado / if
 // recoleta / if comprovante` espalhados pela UI.
 //
 // Entrada: o atendimento em memória (MockAtendimento) + um sinal

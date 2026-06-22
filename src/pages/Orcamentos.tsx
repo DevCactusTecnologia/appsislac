@@ -703,8 +703,8 @@ const Orcamentos = () => {
                   showError(e, { scope: "Orcamentos.convertWhatsapp" });
                 }
                 setShowWhatsappAfterConvert(false); setConvertSuccess(true);
-              }} className="w-full py-2.5 rounded-2xl text-sm font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity flex items-center justify-center gap-2" title="Send mensagem pelo WhatsApp" aria-label="Send mensagem pelo WhatsApp">
-                <Send className="h-4 w-4" /> Send WhatsApp
+              }} className="w-full py-2.5 rounded-2xl text-sm font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity flex items-center justify-center gap-2" title="Enviar mensagem pelo WhatsApp" aria-label="Enviar mensagem pelo WhatsApp">
+                <Send className="h-4 w-4" /> Enviar WhatsApp
               </button>
             ) : <p className="text-sm text-muted-foreground text-center">Telefone não cadastrado.</p>}
             <button onClick={() => { setShowWhatsappAfterConvert(false); setConvertSuccess(true); }} className="w-full py-2.5 rounded-2xl border border-border/60 text-sm font-medium hover:bg-muted transition-colors">Pular</button>
