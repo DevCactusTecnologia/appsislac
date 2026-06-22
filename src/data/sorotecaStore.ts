@@ -301,7 +301,18 @@ export async function buscarAmostrasReutilizaveis(params: {
     showError(error, { scope: "soroteca.buscarReutilizaveis", silent: true });
     return [];
   }
-  return (data ?? []) as Amostra[];
+  const candidatas = (data ?? []) as Amostra[];
+  if (candidatas.length === 0) return [];
+
+  // Fase 6: amostras em empréstimo ATIVO não podem ser reutilizadas.
+  const ids = candidatas.map((a) => a.id);
+  const { data: emprestadas } = await supabase
+    .from("amostra_emprestimos")
+    .select("amostra_id")
+    .in("amostra_id", ids)
+    .in("status", ["PENDENTE", "APROVADO", "RETIRADO"]);
+  const bloqueadas = new Set((emprestadas ?? []).map((e) => e.amostra_id as string));
+  return candidatas.filter((a) => !bloqueadas.has(a.id));
 }
 
 /**
