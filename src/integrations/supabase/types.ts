@@ -78,6 +78,122 @@ export type Database = {
           },
         ]
       }
+      amostra_emprestimos: {
+        Row: {
+          amostra_id: string
+          aprovador_nome: string | null
+          aprovador_user_id: string | null
+          cancelado_em: string | null
+          created_at: string
+          decidido_em: string | null
+          destinatario_nome: string
+          devolvido_em: string | null
+          devolvido_por_nome: string | null
+          devolvido_por_user_id: string | null
+          id: string
+          motivo: string
+          motivo_cancelamento: string | null
+          motivo_rejeicao: string | null
+          observacao_devolucao: string | null
+          observacao_solicitacao: string | null
+          prazo_devolucao: string | null
+          retirado_em: string | null
+          retirado_por_nome: string | null
+          retirado_por_user_id: string | null
+          solicitado_em: string
+          solicitante_nome: string
+          solicitante_user_id: string | null
+          status: Database["public"]["Enums"]["emprestimo_amostra_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amostra_id: string
+          aprovador_nome?: string | null
+          aprovador_user_id?: string | null
+          cancelado_em?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          destinatario_nome: string
+          devolvido_em?: string | null
+          devolvido_por_nome?: string | null
+          devolvido_por_user_id?: string | null
+          id?: string
+          motivo: string
+          motivo_cancelamento?: string | null
+          motivo_rejeicao?: string | null
+          observacao_devolucao?: string | null
+          observacao_solicitacao?: string | null
+          prazo_devolucao?: string | null
+          retirado_em?: string | null
+          retirado_por_nome?: string | null
+          retirado_por_user_id?: string | null
+          solicitado_em?: string
+          solicitante_nome: string
+          solicitante_user_id?: string | null
+          status?: Database["public"]["Enums"]["emprestimo_amostra_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amostra_id?: string
+          aprovador_nome?: string | null
+          aprovador_user_id?: string | null
+          cancelado_em?: string | null
+          created_at?: string
+          decidido_em?: string | null
+          destinatario_nome?: string
+          devolvido_em?: string | null
+          devolvido_por_nome?: string | null
+          devolvido_por_user_id?: string | null
+          id?: string
+          motivo?: string
+          motivo_cancelamento?: string | null
+          motivo_rejeicao?: string | null
+          observacao_devolucao?: string | null
+          observacao_solicitacao?: string | null
+          prazo_devolucao?: string | null
+          retirado_em?: string | null
+          retirado_por_nome?: string | null
+          retirado_por_user_id?: string | null
+          solicitado_em?: string
+          solicitante_nome?: string
+          solicitante_user_id?: string | null
+          status?: Database["public"]["Enums"]["emprestimo_amostra_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amostra_emprestimos_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "amostras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amostra_emprestimos_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["amostra_id"]
+          },
+          {
+            foreignKeyName: "amostra_emprestimos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amostra_emprestimos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amostra_sequence: {
         Row: {
           dia: string
@@ -7457,6 +7573,10 @@ export type Database = {
           valor_total: number
         }[]
       }
+      amostra_em_emprestimo_ativo: {
+        Args: { _amostra_id: string }
+        Returns: boolean
+      }
       aplicar_enriquecimento_exame: {
         Args: { p_fields: Json; p_id: string }
         Returns: boolean
@@ -8088,6 +8208,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "manager" | "user" | "super_admin"
       blocklist_tipo: "cnpj" | "email" | "whatsapp"
+      emprestimo_amostra_status:
+        | "PENDENTE"
+        | "APROVADO"
+        | "REJEITADO"
+        | "RETIRADO"
+        | "DEVOLVIDO"
+        | "CANCELADO"
       gateway_environment: "sandbox" | "producao"
       inscricao_status:
         | "Nova"
@@ -8257,6 +8384,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "manager", "user", "super_admin"],
       blocklist_tipo: ["cnpj", "email", "whatsapp"],
+      emprestimo_amostra_status: [
+        "PENDENTE",
+        "APROVADO",
+        "REJEITADO",
+        "RETIRADO",
+        "DEVOLVIDO",
+        "CANCELADO",
+      ],
       gateway_environment: ["sandbox", "producao"],
       inscricao_status: [
         "Nova",
