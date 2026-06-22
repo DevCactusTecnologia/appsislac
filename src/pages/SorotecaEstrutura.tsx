@@ -10,6 +10,7 @@ import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw } from "lucide-
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
