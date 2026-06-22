@@ -242,38 +242,63 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
             e a área cresce para o tamanho do conteúdo, estourando o
             max-h do diálogo (header e rodapé saem do viewport). */}
         <div className="flex-1 min-h-0 overflow-y-auto bg-muted/30">
-          {/* Quick actions */}
+          {/* Documento contextual — a aba ativa define exatamente o que será
+              exibido (Imprimir) e enviado (WhatsApp). Fonte única da verdade. */}
           <div className="bg-card px-5 sm:px-6 py-3 border-b border-border/50">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {atendimento.statusPagamento.label === "Pagamento efetuado" && (
-                <button
-                  onClick={() => imprimirComprovante("pagamento")}
-                  className="h-10 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-all duration-200 shadow-sm"
-                >
-                  <Receipt className="h-3.5 w-3.5" />
-                  <span className="truncate">Comp. Pagamento</span>
-                </button>
-              )}
+            <div role="tablist" aria-label="Documento" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(["pagamento", "atendimento", "comparecimento"] as const).map((doc) => {
+                const meta = DOCUMENT_ACTIONS[doc];
+                const Icon = doc === "pagamento" ? Receipt : doc === "atendimento" ? FileText : ClipboardCheck;
+                const active = docTab === doc;
+                const disabled = doc === "pagamento" && !pagouAlgo;
+                return (
+                  <button
+                    key={doc}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    disabled={disabled}
+                    onClick={() => setDocTab(doc)}
+                    className={
+                      "h-10 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 " +
+                      (active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "border border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/40") +
+                      " disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:bg-card"
+                    }
+                  >
+                    <Icon className={"h-3.5 w-3.5 " + (active ? "" : "text-primary")} />
+                    <span className="truncate">{meta.tabLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Subtítulo de contexto — o operador entende imediatamente o documento ativo. */}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Documento selecionado:{" "}
+              <span className="font-semibold text-foreground">
+                {DOCUMENT_ACTIONS[docTab].title}
+              </span>
+            </p>
+            {/* Ações da aba ativa — Imprimir + Enviar contextual. */}
+            <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
               <button
-                onClick={() => imprimirComprovante("atendimento")}
-                className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 flex items-center justify-center gap-2"
+                type="button"
+                onClick={() => imprimirComprovante(docTab)}
+                className="h-9 px-3 rounded-lg border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 inline-flex items-center gap-1.5"
               >
                 <FileText className="h-3.5 w-3.5 text-primary" />
-                <span className="truncate">Comp. Atendimento</span>
+                Imprimir
               </button>
-              <button
-                onClick={() => imprimirComprovante("comparecimento")}
-                className="h-10 px-3 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
-                <span className="truncate">Comparecimento</span>
-              </button>
-            </div>
-            {/* Ação canônica WhatsApp — sempre visível, decisão automática de template. */}
-            <div className="mt-2 flex items-center justify-end">
-              <WhatsappActionButton onSendAsync={handleSendWhatsapp} responsive={false} />
+              <WhatsappActionButton
+                onSendAsync={handleSendWhatsapp}
+                responsive={false}
+                idleLabel={DOCUMENT_ACTIONS[docTab].buttonLabel}
+                title={`Enviar ${DOCUMENT_ACTIONS[docTab].title} pelo WhatsApp`}
+              />
             </div>
           </div>
+
 
           {/* Body */}
           <div className="px-5 sm:px-6 py-5 space-y-5">
