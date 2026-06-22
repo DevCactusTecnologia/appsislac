@@ -1156,15 +1156,26 @@ const ResultadoDetalhe = () => {
                 },
               ]) as PacienteHeaderAction[]}
               actionsExtraLeft={
-                <MaisAcoesMenu
-                  modoConsulta={modoConsulta}
-                  semExameSelecionado={!selectedExame}
-                  onAuditoria={() => setShowAuditoria(true)}
-                  onCritico={() => setShowCriticoDialog(true)}
-                  onEntrega={() => setShowEntregaDialog(true)}
-                  onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
-                  podeEnviarWhatsapp={todosLiberados}
-                />
+                <>
+                  {!modoConsulta && todosLiberados && (
+                    <button
+                      type="button"
+                      onClick={handleEnviarResultadoWhatsapp}
+                      title="Enviar aviso de resultado pronto ao paciente"
+                      className="inline-flex items-center justify-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity shrink-0"
+                    >
+                      <Send className="h-4 w-4" />
+                      <span className="hidden sm:inline">Enviar WhatsApp</span>
+                    </button>
+                  )}
+                  <MaisAcoesMenu
+                    modoConsulta={modoConsulta}
+                    semExameSelecionado={!selectedExame}
+                    onAuditoria={() => setShowAuditoria(true)}
+                    onCritico={() => setShowCriticoDialog(true)}
+                    onEntrega={() => setShowEntregaDialog(true)}
+                  />
+                </>
               }
 
             />
@@ -1632,15 +1643,26 @@ const ResultadoDetalhe = () => {
                   
                 ]) as PacienteHeaderAction[]}
                 actionsExtraLeft={
-                  <MaisAcoesMenu
-                    modoConsulta={modoConsulta}
-                    semExameSelecionado={!selectedExame}
-                    onAuditoria={() => setShowAuditoria(true)}
-                    onCritico={() => setShowCriticoDialog(true)}
-                    onEntrega={() => setShowEntregaDialog(true)}
-                    onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
-                    podeEnviarWhatsapp={todosLiberados}
-                  />
+                  <>
+                    {!modoConsulta && todosLiberados && (
+                      <button
+                        type="button"
+                        onClick={handleEnviarResultadoWhatsapp}
+                        title="Enviar aviso de resultado pronto ao paciente"
+                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3 sm:px-4 rounded-lg text-xs font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity shrink-0"
+                      >
+                        <Send className="h-4 w-4" />
+                        <span className="hidden sm:inline">Enviar WhatsApp</span>
+                      </button>
+                    )}
+                    <MaisAcoesMenu
+                      modoConsulta={modoConsulta}
+                      semExameSelecionado={!selectedExame}
+                      onAuditoria={() => setShowAuditoria(true)}
+                      onCritico={() => setShowCriticoDialog(true)}
+                      onEntrega={() => setShowEntregaDialog(true)}
+                    />
+                  </>
                 }
 
               />
