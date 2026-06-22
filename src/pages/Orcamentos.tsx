@@ -833,25 +833,18 @@ const Orcamentos = () => {
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}
             whatsappPhone={previewOrc.telefone}
-            buildWhatsappMessage={(url) => {
-              const examesList = orcData.exames.map((e, i) => `  ${i + 1}. ${e}`).join("\n");
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *ORÇAMENTO ${orcData.id}*`,
-                "",
-                `Olá *${orcData.paciente}*, segue o orçamento solicitado:`,
-                "",
-                `🏥 Convênio: ${orcData.convenio}`,
-                orcData.solicitante ? `👨‍⚕️ Solicitante: ${orcData.solicitante}` : "",
-                "",
-                `🔬 *Exames (${orcData.exames.length}):*`,
-                examesList,
-                "",
-                `💰 *Total: R$ ${fmtBRLNumber(orcData.total)}*`,
-                "",
-                linkLine,
-              ].filter(Boolean).join("\n");
-            }}
+            notify={user?.tenantId ? {
+              tenantId: user.tenantId,
+              template: "orcamento",
+              tipo: "orcamento",
+              idempotencyParts: [orcData.id, previewOrc.telefone],
+              variaveis: (url: string) => ({
+                1: orcData.paciente,
+                2: orcData.id,
+                3: `R$ ${fmtBRLNumber(orcData.total)}`,
+                4: url,
+              }),
+            } : undefined}
           />
         );
       })()}
