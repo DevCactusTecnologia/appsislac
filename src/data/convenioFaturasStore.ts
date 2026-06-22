@@ -217,53 +217,8 @@ export async function fetchItensFaturaveis(
     .sort((a, b) => (a.data > b.data ? -1 : 1));
 }
 
-/**
- * Lista TODOS os exames pendentes (não finalizados ainda ou ainda não faturados)
- * de um convênio — útil para a view "Saldo do convênio em aberto" na aba A Receber.
- * Inclui pendente/coletado/em_analise/finalizado, exclui cancelado e já-faturados.
- */
-export async function fetchSaldoEmAbertoPorConvenio(): Promise<Map<number, { saldo: number; exames: number; pacientes: Set<string> }>> {
-  const tenantId = await getCurrentTenantId();
-  const { data: exames, error } = await supabase
-    .from("atendimento_exames")
-    .select("id, atendimento_id, valor, convenio_cobranca_id")
-    .eq("tenant_id", tenantId)
-    .eq("cobranca_destino", "convenio")
-    .neq("status", "cancelado");
-  if (error) {
-    showError(error, { scope: "convenioFaturasStore.fetchSaldoEmAberto", silent: true });
-    return new Map();
-  }
-  if (!exames || exames.length === 0) return new Map();
-  const exameIds = exames.map((e) => Number(e.id));
-  const { data: jaVinc } = await supabase
-    .from("convenio_fatura_itens")
-    .select("atendimento_exame_id")
-    .in("atendimento_exame_id", exameIds);
-  const jaSet = new Set<number>((jaVinc ?? []).map((j) => Number(j.atendimento_exame_id)));
-
-  const atIds = Array.from(new Set(exames.map((e) => Number(e.atendimento_id))));
-  const { data: atRows } = await supabase
-    .from("atendimentos")
-    .select("id, paciente_nome")
-    .in("id", atIds);
-  const atMap = new Map<number, string>();
-  (atRows ?? []).forEach((a) => atMap.set(Number(a.id), a.paciente_nome));
-
-  const result = new Map<number, { saldo: number; exames: number; pacientes: Set<string> }>();
-  (exames ?? []).forEach((e) => {
-    if (jaSet.has(Number(e.id))) return;
-    const cid = Number(e.convenio_cobranca_id);
-    if (!cid) return;
-    const cur = result.get(cid) ?? { saldo: 0, exames: 0, pacientes: new Set<string>() };
-    cur.saldo += Number(e.valor) || 0;
-    cur.exames += 1;
-    const pn = atMap.get(Number(e.atendimento_id));
-    if (pn) cur.pacientes.add(pn);
-    result.set(cid, cur);
-  });
-  return result;
-}
+// fetchSaldoEmAbertoPorConvenio removido (Convênios 2.0 — Fase 2.5).
+// Substituído oficialmente por `useAReceberConvenios` (RPC financeiro_a_receber_v2).
 
 /**
  * @deprecated O código oficial é gerado server-side por trigger.
