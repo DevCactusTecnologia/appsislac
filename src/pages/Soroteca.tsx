@@ -417,8 +417,15 @@ export default function Soroteca() {
     setVisibleCount(PAGE_SIZE);
   }, [statusFiltro, search]);
 
-  const visiveis = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
-  const restantes = filtradas.length - visiveis.length;
+  const visiveisLegacy = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
+  const restantesLegacy = filtradas.length - visiveisLegacy.length;
+
+  // Lista final que vai para a UI (server-side avançado OU legado client-side).
+  const visiveis = advancadoAtivo ? advItems : visiveisLegacy;
+  const totalListagem = advancadoAtivo ? advTotal : filtradas.length;
+  const restantes = advancadoAtivo ? 0 : restantesLegacy;
+  const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
+  const carregando = advancadoAtivo ? advLoading : loading;
 
   const counts = useMemo(() => {
     const c: Record<AmostraStatus, number> = {
