@@ -78,11 +78,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   // Tick para forçar re-render quando os templates de documento forem
   // recarregados ou editados.
   const [, setTemplatesTick] = useState(0);
-  // Verifica se todos os exames foram liberados (decide template do WhatsApp).
-  const todosLiberadosExames = atendimento
-    ? (atendimento.exames ?? []).length > 0 &&
-      (atendimento.exames ?? []).every((nome) => exameStatusMap[nome] === "finalizado")
-    : false;
+
+
 
   useEffect(() => {
     if (!open) return;
