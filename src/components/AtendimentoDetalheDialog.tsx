@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import WhatsappTimeline from "@/components/whatsapp/WhatsappTimeline";
 import { getBestWhatsappAction } from "@/lib/whatsapp/getBestWhatsappAction";
@@ -179,16 +179,16 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     });
     const r = await best.execute();
     if (r.ok) {
-      toast({ title: "WhatsApp enfileirado", description: best.hint });
+      toast.success("WhatsApp enfileirado", { description: best.hint });
       setWhatsappRefresh((n) => n + 1);
       return;
     }
     if (r.reason === "telefone_invalido") {
-      toast({ title: "Sem telefone válido", description: "Cadastre o telefone do paciente.", variant: "destructive" });
+      toast.error("Sem telefone válido", { description: "Cadastre o telefone do paciente." });
     } else if (r.reason === "paciente_sem_cadastro") {
-      toast({ title: "Paciente sem cadastro", description: "Conclua o cadastro antes de enviar.", variant: "destructive" });
+      toast.error("Paciente sem cadastro", { description: "Conclua o cadastro antes de enviar." });
     } else {
-      toast({ title: "Não foi possível enviar", description: r.reason ?? "Erro desconhecido", variant: "destructive" });
+      toast.error("Não foi possível enviar", { description: r.reason ?? "Erro desconhecido" });
     }
     throw new Error(r.reason ?? "erro");
   };
