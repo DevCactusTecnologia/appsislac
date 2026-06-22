@@ -2757,10 +2757,6 @@ const NovoAtendimento = () => {
           </Suspense>
         );
       })()}
-          />
-          </Suspense>
-        );
-      })()}
     </div>
   );
 };
