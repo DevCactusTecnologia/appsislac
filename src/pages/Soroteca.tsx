@@ -257,6 +257,129 @@ export default function Soroteca() {
     carregar();
   }, []);
 
+  // Carrega catálogos auxiliares uma única vez (para o painel de filtros).
+  useEffect(() => {
+    (async () => {
+      const [mats, locs] = await Promise.all([
+        listarMateriaisAmostra({ ativosOnly: true, pageSize: 100 }),
+        listarLocais(),
+      ]);
+      setMateriais(mats.rows);
+      setLocais(locs);
+    })();
+  }, []);
+
+  // Galerias dependentes do local selecionado.
+  useEffect(() => {
+    (async () => {
+      if (!advLocalId) {
+        setGalerias([]);
+        return;
+      }
+      setGalerias(await listarGalerias(advLocalId));
+      // Se a galeria atual não pertence ao novo local, limpa.
+      setAdvGaleriaId((g) => (g ? "" : g));
+    })();
+  }, [advLocalId]);
+
+  // Fetch server-side quando o modo avançado está ativo.
+  useEffect(() => {
+    if (!advancadoAtivo) return;
+    let cancel = false;
+    (async () => {
+      setAdvLoading(true);
+      const statusList: AmostraStatus[] | undefined =
+        statusFiltro === "TODAS" ? undefined : [statusFiltro as AmostraStatus];
+      const filtros: AmostraAvancadoFiltros = {
+        status: statusList,
+        material_ids: advMaterialIds.length > 0 ? advMaterialIds : undefined,
+        local_id: advLocalId || undefined,
+        galeria_id: advGaleriaId || undefined,
+        paciente_search: debPaciente || undefined,
+        protocolo: debProtocolo || undefined,
+        codigo_barra: debCodigo || undefined,
+        coleta_inicio: advColetaInicio ? new Date(advColetaInicio).toISOString() : undefined,
+        coleta_fim: advColetaFim
+          ? new Date(advColetaFim + "T23:59:59").toISOString()
+          : undefined,
+        validade_inicio: advValidadeInicio
+          ? new Date(advValidadeInicio).toISOString()
+          : undefined,
+        validade_fim: advValidadeFim
+          ? new Date(advValidadeFim + "T23:59:59").toISOString()
+          : undefined,
+        sem_armazenamento: advArmazenamento === "pendentes" || undefined,
+        armazenadas: advArmazenamento === "armazenadas" || undefined,
+      };
+      const r = await buscarAmostrasAvancado(filtros, { page: advPage, pageSize: advPageSize });
+      if (cancel) return;
+      setAdvItems(r.items);
+      setAdvTotal(r.total);
+      setAdvLoading(false);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [
+    advancadoAtivo,
+    statusFiltro,
+    advMaterialIds,
+    advLocalId,
+    advGaleriaId,
+    debPaciente,
+    debProtocolo,
+    debCodigo,
+    advColetaInicio,
+    advColetaFim,
+    advValidadeInicio,
+    advValidadeFim,
+    advArmazenamento,
+    advPage,
+    advPageSize,
+  ]);
+
+  // Reset página ao alterar filtros avançados.
+  useEffect(() => {
+    setAdvPage(1);
+  }, [
+    statusFiltro,
+    advMaterialIds,
+    advLocalId,
+    advGaleriaId,
+    debPaciente,
+    debProtocolo,
+    debCodigo,
+    advColetaInicio,
+    advColetaFim,
+    advValidadeInicio,
+    advValidadeFim,
+    advArmazenamento,
+  ]);
+
+  const limparFiltrosAvancados = () => {
+    setAdvMaterialIds([]);
+    setAdvLocalId("");
+    setAdvGaleriaId("");
+    setAdvPaciente("");
+    setAdvProtocolo("");
+    setAdvColetaInicio("");
+    setAdvColetaFim("");
+    setAdvValidadeInicio("");
+    setAdvValidadeFim("");
+    setAdvArmazenamento("todas");
+  };
+
+  const filtrosAtivosCount =
+    (advMaterialIds.length > 0 ? 1 : 0) +
+    (advLocalId ? 1 : 0) +
+    (advGaleriaId ? 1 : 0) +
+    (advPaciente ? 1 : 0) +
+    (advProtocolo ? 1 : 0) +
+    (advColetaInicio || advColetaFim ? 1 : 0) +
+    (advValidadeInicio || advValidadeFim ? 1 : 0) +
+    (advArmazenamento !== "todas" ? 1 : 0);
+
+
   const handleSincronizarVencidas = async () => {
     const n = await marcarVencidas();
     toast.success(n > 0 ? `${n} amostra(s) marcada(s) como vencida(s).` : "Nenhuma amostra vencida.");
