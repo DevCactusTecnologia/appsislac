@@ -110,6 +110,7 @@ export type Database = {
           exame_id: string | null
           id: string
           localizacao: string
+          material_id: string | null
           observacao: string
           paciente_id: number | null
           status: string
@@ -127,6 +128,7 @@ export type Database = {
           exame_id?: string | null
           id?: string
           localizacao?: string
+          material_id?: string | null
           observacao?: string
           paciente_id?: number | null
           status?: string
@@ -144,6 +146,7 @@ export type Database = {
           exame_id?: string | null
           id?: string
           localizacao?: string
+          material_id?: string | null
           observacao?: string
           paciente_id?: number | null
           status?: string
@@ -192,6 +195,13 @@ export type Database = {
             columns: ["exame_id"]
             isOneToOne: false
             referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amostras_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -3984,6 +3994,63 @@ export type Database = {
           },
           {
             foreignKeyName: "mapas_trabalho_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais_amostra: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dias_retencao: number
+          horas_validade: number
+          id: string
+          nome: string
+          reutilizavel: boolean
+          sigla: string
+          temperatura_recomendada: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dias_retencao?: number
+          horas_validade?: number
+          id?: string
+          nome: string
+          reutilizavel?: boolean
+          sigla?: string
+          temperatura_recomendada?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dias_retencao?: number
+          horas_validade?: number
+          id?: string
+          nome?: string
+          reutilizavel?: boolean
+          sigla?: string
+          temperatura_recomendada?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_amostra_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_amostra_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
