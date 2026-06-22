@@ -102,7 +102,7 @@ export default function SolicitarRecoletaDialog({
           toast("Envio manual de recoleta", {
             description: "Política do laboratório exige envio manual.",
             action: {
-              label: "Send WhatsApp",
+              label: "Enviar WhatsApp",
               onClick: async () => {
                 const m = await notifyRecoleta({
                   protocolo,

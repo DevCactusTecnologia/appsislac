@@ -1161,7 +1161,7 @@ const ResultadoDetalhe = () => {
                   {!modoConsulta && todosLiberados && (
                     <WhatsappActionButton
                       onClick={handleEnviarResultadoWhatsapp}
-                      title="Send mensagem pelo WhatsApp"
+                      title="Enviar mensagem pelo WhatsApp"
                     />
                   )}
                   <MaisAcoesMenu
@@ -1643,7 +1643,7 @@ const ResultadoDetalhe = () => {
                     {!modoConsulta && todosLiberados && (
                       <WhatsappActionButton
                         onClick={handleEnviarResultadoWhatsapp}
-                        title="Send mensagem pelo WhatsApp"
+                        title="Enviar mensagem pelo WhatsApp"
                       />
                     )}
                     <MaisAcoesMenu
