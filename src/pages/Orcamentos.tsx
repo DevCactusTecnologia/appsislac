@@ -229,74 +229,11 @@ const Orcamentos = () => {
     return { idade: formatIdadeDetalhada(p.dataNascimento), aniversario: isAniversarioHoje(p.dataNascimento) };
   };
 
-  // ===== Fase 2: Templates de WhatsApp por estágio =====
-  type TemplateKey = "lembrete" | "reforco" | "ultima";
+  // WhatsApp 2.0 (Fase 3D.2): templates comerciais de marketing
+  // (lembrete/reforço/última chance) foram REMOVIDOS. O SISLAC não
+  // possui módulo de marketing — apenas notificações operacionais via
+  // enqueueNotification() / Outbox / Meta.
 
-  const templates: Record<TemplateKey, { label: string; short: string; emoji: string; tone: string; build: (orc: Orcamento) => string }> = {
-    lembrete: {
-      label: "Lembrete (D+2)",
-      short: "Lembrete",
-      emoji: "👋",
-      tone: "text-[hsl(var(--status-success))]",
-      build: (orc) => [
-        `👋 Olá *${orc.nome}*, tudo bem?`,
-        "",
-        `Passando para lembrar do seu orçamento *${orc.id}* feito recentemente em nosso laboratório.`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Posso te ajudar a agendar a coleta? Estamos à disposição. 😊`,
-      ].join("\n"),
-    },
-    reforco: {
-      label: "Reforço (D+5)",
-      short: "Reforço",
-      emoji: "💬",
-      tone: "text-[hsl(var(--status-warning))]",
-      build: (orc) => [
-        `💬 Olá *${orc.nome}*, tudo bem?`,
-        "",
-        `Notamos que o orçamento *${orc.id}* ainda está em aberto.`,
-        "",
-        `Se houver qualquer dúvida sobre os exames, preparo ou valores, é só nos chamar — nosso time está pronto pra ajudar.`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Quer que a gente agende sua coleta esta semana?`,
-      ].join("\n"),
-    },
-    ultima: {
-      label: "Última chance (D+15)",
-      short: "Última",
-      emoji: "⏰",
-      tone: "text-[hsl(var(--status-error))]",
-      build: (orc) => [
-        `⏰ Olá *${orc.nome}*!`,
-        "",
-        `Seu orçamento *${orc.id}* está próximo do vencimento (validade de ${VALIDADE_DIAS} dias).`,
-        "",
-        `Para garantir os mesmos valores e condições, podemos agendar sua coleta agora — e ainda temos uma *condição especial* para fechar nesta semana. 💚`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Posso reservar um horário pra você?`,
-      ].join("\n"),
-    },
-  };
-
-  const sugerirTemplate = (dias: number): TemplateKey => {
-    if (dias >= 12) return "ultima";
-    if (dias >= 4) return "reforco";
-    return "lembrete";
-  };
-
-  const sendWhatsappTemplate = (orc: Orcamento, key: TemplateKey) => {
-    const phone = (orc.telefone || "").replace(/\D/g, "");
-    if (!phone) return;
-    const fp = phone.startsWith("55") ? phone : `55${phone}`;
-    const msg = templates[key].build(orc);
-    window.open(`https://wa.me/${fp}?text=${encodeURIComponent(msg)}`, "_blank");
-  };
 
   // ===== Fase 3: Desconto inteligente sugerido =====
   // Heurística: cruza temperatura + score + dias para sugerir um % de desconto
@@ -323,8 +260,8 @@ const Orcamentos = () => {
     return "Lead aquecido — desconto não recomendado";
   };
 
-  // Estado para o popover de templates por linha
-  const [templateMenuOrc, setTemplateMenuOrc] = useState<{ orc: Orcamento; dias: number } | null>(null);
+
+
 
   const tempTabs: { key: "todos" | Temperatura; label: string; count: number; Icon: typeof Flame; tone: string }[] = [
     { key: "todos",      label: "Todos",      count: tempCounts.todos,      Icon: Receipt,        tone: "text-foreground" },
@@ -401,9 +338,7 @@ const Orcamentos = () => {
           <>
             {/* Mobile cards */}
             <div className="space-y-3 xl:hidden">
-              {filtered.map(({ orc, score, temperatura, diasRestantes, dias }) => {
-                const sugestao = sugerirTemplate(dias);
-                const tpl = templates[sugestao];
+              {filtered.map(({ orc, score, temperatura, diasRestantes }) => {
                 return (
                 <div key={orc.id} className="bg-card border border-border/60 rounded-3xl p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -432,12 +367,6 @@ const Orcamentos = () => {
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    {!orc.convertido && orc.telefone && (
-                      <button onClick={() => setTemplateMenuOrc({ orc, dias })}
-                        className="flex-1 min-w-0 py-2 px-3 rounded-2xl bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,35%)] text-xs font-semibold hover:bg-[hsl(142,70%,45%)]/15 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap">
-                        <MessageCircle className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{tpl.emoji} {tpl.short} via WhatsApp</span>
-                      </button>
-                    )}
                     <button onClick={() => setDetailOrc(orc)} className="flex-1 min-w-0 py-2 px-3 rounded-2xl border border-border/60 text-sm font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap">
                       <Eye className="h-4 w-4 text-muted-foreground shrink-0" /> Detalhes
                     </button>
@@ -445,6 +374,7 @@ const Orcamentos = () => {
                 </div>
                 );
               })}
+
             </div>
 
             {/* Desktop table */}
@@ -463,11 +393,9 @@ const Orcamentos = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(({ orc, score, temperatura, diasRestantes, dias }) => {
+                    {filtered.map(({ orc, score, temperatura, diasRestantes }) => {
                       const scoreCls = score >= 70 ? "text-[hsl(var(--status-success))]" : score >= 40 ? "text-[hsl(var(--status-warning))]" : "text-[hsl(var(--status-error))]";
-                      const sugestao = sugerirTemplate(dias);
-                      const tpl = templates[sugestao];
-                      const hasPhone = !!(orc.telefone || "").replace(/\D/g, "");
+
                       return (
                         <tr key={orc.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setDetailOrc(orc)}>
                           <td className="px-4 py-3.5 whitespace-nowrap">
@@ -510,16 +438,9 @@ const Orcamentos = () => {
                           </td>
                           <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                              {!orc.convertido && hasPhone && (
-                                <button
-                                  onClick={() => setTemplateMenuOrc({ orc, dias })}
-                                  title="Escolher template de WhatsApp"
-                                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,35%)] text-xs font-semibold hover:bg-[hsl(142,70%,45%)]/20 transition-all border border-[hsl(142,70%,45%)]/20 whitespace-nowrap shrink-0">
-                                  <MessageCircle className="h-3.5 w-3.5 shrink-0" /> {tpl.short}
-                                </button>
-                              )}
                               <button onClick={() => setDetailOrc(orc)} className="p-2 rounded-xl border border-border/60 hover:bg-muted transition-colors shrink-0"><Eye className="h-4 w-4 text-muted-foreground" /></button>
                             </div>
+
                           </td>
                         </tr>
                       );
@@ -557,40 +478,13 @@ const Orcamentos = () => {
               ))}
             </div>
 
-            {detailOrc.telefone && !detailOrc.convertido && (
-              <div className="rounded-2xl bg-muted/40 border border-border/30 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Templates de WhatsApp</p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{detailOrc.telefone}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Sugestão: <span className="font-semibold text-foreground">{templates[sugerirTemplate(diasDesde(detailOrc.data))].label}</span> · {diasDesde(detailOrc.data)}d desde a criação
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {(["lembrete", "reforco", "ultima"] as const).map((k) => {
-                    const t = templates[k];
-                    const isSugestao = sugerirTemplate(diasDesde(detailOrc.data)) === k;
-                    return (
-                      <button key={k} onClick={() => sendWhatsappTemplate(detailOrc, k)}
-                        className={`relative px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border ${isSugestao ? "bg-[hsl(142,70%,45%)] text-white border-[hsl(142,70%,45%)] hover:opacity-90" : "bg-card text-foreground border-border/60 hover:bg-muted"}`}>
-                        <span>{t.emoji}</span> {t.short}
-                        {isSugestao && <span className="absolute -top-1 -right-1 text-[8px] bg-[hsl(var(--status-success))] text-white px-1 py-0.5 rounded-md font-bold">★</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {detailOrc.telefone && detailOrc.convertido && (
+            {detailOrc.telefone && (
               <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40 border border-border/30">
                 <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm text-foreground flex-1">{detailOrc.telefone}</span>
               </div>
             )}
+
 
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Exames ({detailOrc.exames.length})</p>
@@ -870,43 +764,8 @@ const Orcamentos = () => {
         );
       })()}
 
-      {/* Template picker dialog (acionado pela seta ▾ na linha) */}
-      <StandardDialog
-        open={!!templateMenuOrc}
-        onClose={() => setTemplateMenuOrc(null)}
-        icon={<MessageCircle className="h-5 w-5 text-[hsl(142,70%,45%)]" />}
-        title="Escolher template"
-        subtitle={templateMenuOrc ? `${templateMenuOrc.orc.id} — ${templateMenuOrc.orc.nome}` : undefined}
-        maxWidth="md"
-      >
-        {templateMenuOrc && (
-          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Há <span className="font-semibold text-foreground">{templateMenuOrc.dias}d</span> desde a criação · Sugestão: <span className="font-semibold text-foreground">{templates[sugerirTemplate(templateMenuOrc.dias)].label}</span>
-            </p>
-            <div className="space-y-2">
-              {(["lembrete", "reforco", "ultima"] as const).map((k) => {
-                const t = templates[k];
-                const isSugestao = sugerirTemplate(templateMenuOrc.dias) === k;
-                return (
-                  <button key={k} onClick={() => { sendWhatsappTemplate(templateMenuOrc.orc, k); setTemplateMenuOrc(null); }}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all ${isSugestao ? "border-[hsl(142,70%,45%)]/40 bg-[hsl(142,70%,45%)]/5" : "border-border/60 hover:bg-muted"}`}>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className={`text-sm font-semibold flex items-center gap-2 ${t.tone}`}>
-                        <span className="text-base">{t.emoji}</span> {t.label}
-                      </span>
-                      {isSugestao && <span className="text-[10px] bg-[hsl(var(--status-success))] text-white px-2 py-0.5 rounded-md font-bold">SUGERIDO</span>}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-line">
-                      {t.build(templateMenuOrc.orc).split("\n").slice(0, 3).join(" ")}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </StandardDialog>
+
+
     </div>
   );
 };
