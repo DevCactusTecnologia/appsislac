@@ -678,6 +678,9 @@ const ResultadoDetalhe = () => {
     if (naoLiberadosRestantes === 0) {
       fireSuccessConfetti();
       setShowCelebracao(true);
+      // WhatsApp 2.0 — Fase 3E: avisa o paciente que o resultado está pronto.
+      // Server-side aplica opt-out, rate limit, isolamento por tenant e auditoria.
+      void notifyResultadoPronto({ protocolo: paciente.protocolo });
     } else {
       setShowLiberadoPopup(true);
     }
