@@ -150,6 +150,8 @@ export default function SorotecaMateriais() {
         <meta name="description" content="Catálogo canônico de materiais laboratoriais da Soroteca." />
       </Helmet>
 
+      <SorotecaNav />
+
       <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Materiais</h1>
