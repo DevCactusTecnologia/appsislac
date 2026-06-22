@@ -6,10 +6,9 @@
 //   • Caixa Aberto  → resumo + botão "Fechar caixa"
 //
 // Nada além disso. Sem dropdown de operador, sem múltiplos turnos.
-import { useEffect, useState, useCallback } from "react";
-import { Lock, Unlock, Loader2, Printer } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Lock, Unlock, Loader2, Printer, Wallet, CheckCircle2, ArrowUpRight, ArrowDownRight, Banknote, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,6 +17,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUnidades } from "@/data/unidadeStore";
+
 
 import {
   abrirCaixa, fecharCaixa, getCaixaAbertaPorUnidade,
