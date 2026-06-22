@@ -10,6 +10,7 @@ import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw } from "lucide-
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -166,7 +167,10 @@ export default function SorotecaEstrutura() {
         }
       />
 
+      <SorotecaNav />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
         {/* ------------- LOCAIS ------------- */}
         <section className="rounded-lg border bg-card">
           <header className="flex items-center justify-between px-3 py-2 border-b">

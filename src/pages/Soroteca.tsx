@@ -1,4 +1,6 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+
 /**
  * IA-FIRST OWNERSHIP HEADER
  * ─────────────────────────
@@ -491,7 +493,10 @@ export default function Soroteca() {
         }
       />
 
+      <SorotecaNav />
+
       {/* Seção de ajuda */}
+
       {ajudaAberta && (
         <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">

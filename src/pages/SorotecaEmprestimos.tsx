@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -180,7 +181,10 @@ export default function SorotecaEmprestimos() {
         }
       />
 
+      <SorotecaNav />
+
       {/* Tabs + busca */}
+
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border">
           {TABS.map((t) => {

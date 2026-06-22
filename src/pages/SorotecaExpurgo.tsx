@@ -24,6 +24,7 @@ import {
 
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +149,10 @@ export default function SorotecaExpurgo() {
         }
       />
 
+      <SorotecaNav />
+
       <div className="flex flex-wrap gap-2 my-4">
+
         {TABS.map((t) => (
           <button
             key={t.id}

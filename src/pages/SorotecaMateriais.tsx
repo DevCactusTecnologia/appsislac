@@ -32,6 +32,7 @@ import {
   type MaterialAmostra,
 } from "@/data/materiaisAmostraStore";
 import { toast } from "@/hooks/use-toast";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 
 interface FormState {
   nome: string;
@@ -148,6 +149,8 @@ export default function SorotecaMateriais() {
         <title>Materiais — Soroteca | SISLAC</title>
         <meta name="description" content="Catálogo canônico de materiais laboratoriais da Soroteca." />
       </Helmet>
+
+      <SorotecaNav />
 
       <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>

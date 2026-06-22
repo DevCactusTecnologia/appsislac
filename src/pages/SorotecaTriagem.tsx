@@ -30,6 +30,7 @@ import {
   ListChecks,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -254,7 +255,10 @@ export default function SorotecaTriagem() {
         }
       />
 
+      <SorotecaNav />
+
       {/* Scanner */}
+
       <section className="rounded-lg border bg-card p-4 space-y-2">
         <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <ScanLine className="h-4 w-4" />
