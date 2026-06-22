@@ -91,6 +91,22 @@ function formatDate(s: string | null) {
   }
 }
 
+function formatDateTime(s: string | null) {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return s;
+  }
+}
+
+
 export default function SorotecaExpurgo() {
   const [tab, setTab] = useState<Tab>("ATIVOS");
   const [lotes, setLotes] = useState<ExpurgoLote[]>([]);
