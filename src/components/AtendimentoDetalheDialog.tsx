@@ -55,6 +55,13 @@ interface AtendimentoDetalheDialogProps {
 
 const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDetalheDialogProps) => {
   useBodyScrollLock(open && !!atendimento);
+  const { user } = useAuth();
+  const [whatsappRefresh, setWhatsappRefresh] = useState(0);
+  // Verifica se todos os exames foram liberados (para escolher template).
+  const todosLiberadosExames = atendimento
+    ? (atendimento.exames ?? []).length > 0 &&
+      (atendimento.exames ?? []).every((nome) => exameStatusMap[nome] === "finalizado")
+    : false;
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
   // Tick para forçar re-render quando os templates de documento forem
