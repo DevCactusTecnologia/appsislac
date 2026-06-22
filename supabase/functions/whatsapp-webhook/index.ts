@@ -1,14 +1,13 @@
-// Webhook publico chamado pela Meta (Facebook) para entregar status de
-// mensagens enviadas via WhatsApp Cloud API.
+// Webhook publico chamado pela Meta (Facebook) para entregar:
+//   1) Status de mensagens enviadas (sent / delivered / read / failed)
+//   2) Mensagens recebidas — usadas para capturar opt-out (STOP/SAIR/CANCELAR)
 //
 // - GET ?hub.mode=subscribe&hub.verify_token=...&hub.challenge=...
-//   Faz o handshake. Aceita se algum tenant tiver esse webhook_verify_token
-//   cadastrado em tenant_whatsapp_config.
+//   Handshake. Aceita se o token bater com WHATSAPP_META_VERIFY_TOKEN (centralizado)
+//   OU com algum webhook_verify_token de tenant (legado, durante migração).
 //
-// - POST { entry: [{ changes: [{ value: { statuses: [...] } }] }] }
-//   Atualiza whatsapp_mensagens.status conforme status.id.
-//
-// Não exige JWT (chamado pela Meta).
+// - POST body assinado por x-hub-signature-256 (HMAC SHA256 com WHATSAPP_META_APP_SECRET
+//   ou WHATSAPP_APP_SECRET legado).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
 
@@ -18,12 +17,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// =====================================================================
-// Validação HMAC-SHA256 do header `x-hub-signature-256` enviado pela Meta.
-// Modo soft: se WHATSAPP_APP_SECRET não estiver configurado, apenas loga
-// um warning e processa normalmente (compatibilidade). Quando o secret for
-// configurado, qualquer payload com assinatura inválida é rejeitado (401).
-// =====================================================================
 async function verifyMetaSignature(
   rawBody: string,
   signatureHeader: string | null,
@@ -43,7 +36,6 @@ async function verifyMetaSignature(
   const expected = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  // timing-safe compare
   if (provided.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < expected.length; i++) {
@@ -51,6 +43,8 @@ async function verifyMetaSignature(
   }
   return diff === 0;
 }
+
+const OPT_OUT_KEYWORDS = ["STOP", "SAIR", "CANCELAR", "PARAR", "UNSUBSCRIBE"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -66,7 +60,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // ===== Handshake da Meta =====
+  // ===== Handshake =====
   if (req.method === "GET") {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
@@ -75,12 +69,16 @@ Deno.serve(async (req) => {
     if (mode !== "subscribe" || !tokenSent) {
       return new Response("forbidden", { status: 403, headers: corsHeaders });
     }
-    const { data, error } = await admin
+    const centralToken = Deno.env.get("WHATSAPP_META_VERIFY_TOKEN") ?? "";
+    if (centralToken && tokenSent === centralToken) {
+      return new Response(challenge, { status: 200, headers: { ...corsHeaders, "Content-Type": "text/plain" } });
+    }
+    const { data } = await admin
       .from("tenant_whatsapp_config")
       .select("id")
       .eq("webhook_verify_token", tokenSent)
       .limit(1);
-    if (error || !data || data.length === 0) {
+    if (!data || data.length === 0) {
       return new Response("forbidden", { status: 403, headers: corsHeaders });
     }
     return new Response(challenge, {
@@ -93,13 +91,11 @@ Deno.serve(async (req) => {
     return new Response("method not allowed", { status: 405, headers: corsHeaders });
   }
 
-  // ===== Validação HMAC do payload (Meta) =====
   const rawBody = await req.text();
-  const appSecret = Deno.env.get("WHATSAPP_APP_SECRET");
+  const appSecret = Deno.env.get("WHATSAPP_META_APP_SECRET") ?? Deno.env.get("WHATSAPP_APP_SECRET");
   const signatureHeader = req.headers.get("x-hub-signature-256");
-  // Fail-closed: sem WHATSAPP_APP_SECRET configurado, recusamos o payload.
   if (!appSecret) {
-    console.error("whatsapp-webhook: WHATSAPP_APP_SECRET not configured — rejecting payload (fail-closed).");
+    console.error("whatsapp-webhook: app secret not configured");
     return new Response("webhook not configured", { status: 503, headers: corsHeaders });
   }
   const valid = await verifyMetaSignature(rawBody, signatureHeader, appSecret);
@@ -109,37 +105,70 @@ Deno.serve(async (req) => {
   }
 
   let body: unknown;
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
+  try { body = JSON.parse(rawBody); } catch {
     return new Response("invalid json", { status: 400, headers: corsHeaders });
   }
 
-  type StatusItem = { id: string; status: string; timestamp?: string; errors?: unknown };
-  type WhatsappEntry = {
-    changes?: Array<{ value?: { statuses?: StatusItem[] } }>;
-  };
+  type StatusItem = { id: string; status: string; timestamp?: string; errors?: unknown; recipient_id?: string };
+  type IncomingMsg = { from: string; type: string; text?: { body?: string } };
+  type WhatsappEntry = { changes?: Array<{ value?: { statuses?: StatusItem[]; messages?: IncomingMsg[] } }> };
+
   const entries = (body as { entry?: WhatsappEntry[] })?.entry ?? [];
-  const all: StatusItem[] = [];
+  const statuses: StatusItem[] = [];
+  const messages: IncomingMsg[] = [];
   for (const e of entries) {
     for (const c of e.changes ?? []) {
-      for (const s of c.value?.statuses ?? []) all.push(s);
+      for (const s of c.value?.statuses ?? []) statuses.push(s);
+      for (const m of c.value?.messages ?? []) messages.push(m);
     }
   }
 
-  for (const s of all) {
+  // ----- Status updates -----
+  for (const s of statuses) {
     if (!s?.id) continue;
-    const validStatus = ["sent", "delivered", "read", "failed"].includes(s.status)
-      ? s.status
-      : "sent";
+    const validStatus = ["sent", "delivered", "read", "failed"].includes(s.status) ? s.status : "sent";
     const errMsg = (s.errors && JSON.stringify(s.errors).slice(0, 500)) || null;
-    await admin
-      .from("whatsapp_mensagens")
-      .update({
-        status: validStatus,
-        erro: errMsg,
-      })
-      .eq("message_id", s.id);
+
+    // 1) whatsapp_mensagens (legado + centralizado)
+    await admin.from("whatsapp_mensagens").update({ status: validStatus, erro: errMsg }).eq("message_id", s.id);
+
+    // 2) outbox (centralizado) — atualiza status final + métricas incrementais
+    const { data: outboxRow } = await admin
+      .from("whatsapp_outbox")
+      .select("id, tenant_id, status")
+      .eq("message_id", s.id)
+      .maybeSingle();
+    if (outboxRow) {
+      if (validStatus !== "sent") {
+        await admin.from("whatsapp_outbox").update({ status: validStatus === "failed" ? "failed_permanent" : "sent", erro: errMsg }).eq("id", outboxRow.id);
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const patch: Record<string, number> = { enviados: 0, entregues: 0, lidos: 0, falhas: 0, opt_outs: 0 };
+      if (validStatus === "delivered") patch.entregues = 1;
+      else if (validStatus === "read") patch.lidos = 1;
+      else if (validStatus === "failed") patch.falhas = 1;
+      if (patch.entregues || patch.lidos || patch.falhas) {
+        await admin.from("whatsapp_metrics_tenant").upsert({
+          tenant_id: outboxRow.tenant_id, dia: today, ...patch,
+        }, { onConflict: "tenant_id,dia", ignoreDuplicates: false });
+      }
+    }
+  }
+
+  // ----- Incoming messages — opt-out capture -----
+  for (const m of messages) {
+    if (m.type !== "text") continue;
+    const txt = (m.text?.body ?? "").trim().toUpperCase();
+    if (!OPT_OUT_KEYWORDS.some((k) => txt === k || txt.startsWith(k + " "))) continue;
+    const phone = (m.from || "").replace(/\D/g, "");
+    if (!phone) continue;
+    // opt-out GLOBAL
+    await admin.from("whatsapp_opt_out").upsert({
+      tenant_id: null,
+      telefone: phone,
+      motivo: `keyword:${txt.slice(0, 32)}`,
+      origem: "webhook",
+    }, { onConflict: "telefone", ignoreDuplicates: true });
   }
 
   return new Response(JSON.stringify({ ok: true }), {
