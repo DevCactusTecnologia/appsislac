@@ -2570,6 +2570,157 @@ export type Database = {
           },
         ]
       }
+      expurgo_itens: {
+        Row: {
+          amostra_id: string
+          created_at: string
+          executado_em: string | null
+          executado_por_nome: string | null
+          executado_por_user_id: string | null
+          id: string
+          lote_id: string
+          motivo_pulo: string | null
+          observacao: string | null
+          snapshot_codigo_barra: string | null
+          snapshot_data_coleta: string | null
+          snapshot_data_validade: string | null
+          snapshot_localizacao: string | null
+          snapshot_material: string | null
+          status: Database["public"]["Enums"]["expurgo_item_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amostra_id: string
+          created_at?: string
+          executado_em?: string | null
+          executado_por_nome?: string | null
+          executado_por_user_id?: string | null
+          id?: string
+          lote_id: string
+          motivo_pulo?: string | null
+          observacao?: string | null
+          snapshot_codigo_barra?: string | null
+          snapshot_data_coleta?: string | null
+          snapshot_data_validade?: string | null
+          snapshot_localizacao?: string | null
+          snapshot_material?: string | null
+          status?: Database["public"]["Enums"]["expurgo_item_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amostra_id?: string
+          created_at?: string
+          executado_em?: string | null
+          executado_por_nome?: string | null
+          executado_por_user_id?: string | null
+          id?: string
+          lote_id?: string
+          motivo_pulo?: string | null
+          observacao?: string | null
+          snapshot_codigo_barra?: string | null
+          snapshot_data_coleta?: string | null
+          snapshot_data_validade?: string | null
+          snapshot_localizacao?: string | null
+          snapshot_material?: string | null
+          status?: Database["public"]["Enums"]["expurgo_item_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expurgo_itens_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "amostras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expurgo_itens_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["amostra_id"]
+          },
+          {
+            foreignKeyName: "expurgo_itens_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "expurgo_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expurgo_lotes: {
+        Row: {
+          cancelado_em: string | null
+          concluido_em: string | null
+          created_at: string
+          criado_por_nome: string | null
+          criado_por_user_id: string | null
+          criterio_coleta_ate: string | null
+          criterio_material_ids: string[] | null
+          criterio_observacao: string | null
+          criterio_validade_ate: string | null
+          data_programada: string
+          descricao: string | null
+          id: string
+          motivo_cancelamento: string | null
+          status: Database["public"]["Enums"]["expurgo_lote_status"]
+          tenant_id: string
+          titulo: string
+          total_executados: number
+          total_itens: number
+          total_pulados: number
+          updated_at: string
+        }
+        Insert: {
+          cancelado_em?: string | null
+          concluido_em?: string | null
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_user_id?: string | null
+          criterio_coleta_ate?: string | null
+          criterio_material_ids?: string[] | null
+          criterio_observacao?: string | null
+          criterio_validade_ate?: string | null
+          data_programada: string
+          descricao?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          status?: Database["public"]["Enums"]["expurgo_lote_status"]
+          tenant_id: string
+          titulo: string
+          total_executados?: number
+          total_itens?: number
+          total_pulados?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelado_em?: string | null
+          concluido_em?: string | null
+          created_at?: string
+          criado_por_nome?: string | null
+          criado_por_user_id?: string | null
+          criterio_coleta_ate?: string | null
+          criterio_material_ids?: string[] | null
+          criterio_observacao?: string | null
+          criterio_validade_ate?: string | null
+          data_programada?: string
+          descricao?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          status?: Database["public"]["Enums"]["expurgo_lote_status"]
+          tenant_id?: string
+          titulo?: string
+          total_executados?: number
+          total_itens?: number
+          total_pulados?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financeiro_audit: {
         Row: {
           acao: string
@@ -8215,6 +8366,12 @@ export type Database = {
         | "RETIRADO"
         | "DEVOLVIDO"
         | "CANCELADO"
+      expurgo_item_status: "PENDENTE" | "EXECUTADO" | "PULADO"
+      expurgo_lote_status:
+        | "PROGRAMADO"
+        | "EM_EXECUCAO"
+        | "CONCLUIDO"
+        | "CANCELADO"
       gateway_environment: "sandbox" | "producao"
       inscricao_status:
         | "Nova"
@@ -8390,6 +8547,13 @@ export const Constants = {
         "REJEITADO",
         "RETIRADO",
         "DEVOLVIDO",
+        "CANCELADO",
+      ],
+      expurgo_item_status: ["PENDENTE", "EXECUTADO", "PULADO"],
+      expurgo_lote_status: [
+        "PROGRAMADO",
+        "EM_EXECUCAO",
+        "CONCLUIDO",
         "CANCELADO",
       ],
       gateway_environment: ["sandbox", "producao"],
