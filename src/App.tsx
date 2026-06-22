@@ -330,6 +330,7 @@ function AppRoutes() {
                 <Route path="/super-admin/planos" element={<SuperAdminPlanos />} />
                 <Route path="/super-admin/auditoria" element={<SuperAdminAuditoria />} />
                 <Route path="/super-admin/configuracoes" element={<SuperAdminConfiguracoes />} />
+                <Route path="/super-admin/notificacoes" element={<SuperAdminNotificacoes />} />
               </Routes>
             </SuperAdminLayout>
           </RequireSuperAdmin>
