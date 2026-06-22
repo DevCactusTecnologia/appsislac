@@ -134,7 +134,7 @@ export function WhatsappActionButton({
     >
       <Icon className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
       {!iconOnly && (
-        <span className={responsive ? "hidden sm:inline" : ""}>{LABEL[state]}</span>
+        <span className={responsive ? "hidden sm:inline" : ""}>{label}</span>
       )}
     </button>
   );
