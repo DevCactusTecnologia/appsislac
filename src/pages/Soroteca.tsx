@@ -1,4 +1,6 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+
 /**
  * IA-FIRST OWNERSHIP HEADER
  * ─────────────────────────
