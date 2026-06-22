@@ -63,16 +63,13 @@ export {
   type OrcamentoPDFData,
 } from "@/domains/result/services/comprovantesHtml";
 
-// ── Upload + shortlink + WhatsApp ───────────────────────────────────────────
+// ── Upload + shortlink + WhatsApp helper ────────────────────────────────────
 import {
   uploadPdfAndGetUrl,
   criarShortlinkPdf,
 } from "@/domains/result/services/comprovantesUpload";
-import {
-  enviarPdfWhatsappCloud,
-  buildWaUrl,
-} from "@/domains/result/services/comprovantesWhatsapp";
-export { uploadPdfAndGetUrl, criarShortlinkPdf, enviarPdfWhatsappCloud, buildWaUrl };
+import { buildWaUrl } from "@/domains/result/services/comprovantesWhatsapp";
+export { uploadPdfAndGetUrl, criarShortlinkPdf, buildWaUrl };
 
 // ============================================================================
 // Orquestração — geração local (download) e envio por WhatsApp.
