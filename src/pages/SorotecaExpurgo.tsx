@@ -23,8 +23,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
