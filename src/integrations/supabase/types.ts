@@ -96,11 +96,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "amostras_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
+            foreignKeyName: "amostras_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_producao_operacional"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
             foreignKeyName: "amostras_atendimento_id_fkey"
             columns: ["atendimento_id"]
             isOneToOne: false
             referencedRelation: "atendimentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amostras_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
           },
           {
             foreignKeyName: "amostras_exame_id_fkey"
@@ -448,11 +469,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "atendimento_exames_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["amostra_id"]
+          },
+          {
             foreignKeyName: "atendimento_exames_atendimento_id_fkey"
             columns: ["atendimento_id"]
             isOneToOne: false
             referencedRelation: "atendimentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
           },
           {
             foreignKeyName: "atendimento_exames_convenio_cobranca_id_fkey"
@@ -545,6 +580,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "atendimentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_pagamentos_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
           },
           {
             foreignKeyName: "atendimento_pagamentos_caixa_sessao_id_fkey"
@@ -932,6 +974,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "convenio_fatura_itens_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: true
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
+            foreignKeyName: "convenio_fatura_itens_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: true
+            referencedRelation: "vw_producao_operacional"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
             foreignKeyName: "convenio_fatura_itens_fatura_id_fkey"
             columns: ["fatura_id"]
             isOneToOne: false
@@ -1301,11 +1357,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "criticos_comunicacoes_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
+            foreignKeyName: "criticos_comunicacoes_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_producao_operacional"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
             foreignKeyName: "criticos_comunicacoes_atendimento_id_fkey"
             columns: ["atendimento_id"]
             isOneToOne: false
             referencedRelation: "atendimentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "criticos_comunicacoes_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
           },
           {
             foreignKeyName: "criticos_comunicacoes_tenant_id_fkey"
@@ -2722,6 +2799,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "identidade_confirmacoes_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
+          },
+          {
             foreignKeyName: "identidade_confirmacoes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -4026,6 +4110,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orientacoes_entregues_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
+          },
+          {
             foreignKeyName: "orientacoes_entregues_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -4757,11 +4848,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "resultados_entregas_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
+            foreignKeyName: "resultados_entregas_atendimento_exame_id_fkey"
+            columns: ["atendimento_exame_id"]
+            isOneToOne: false
+            referencedRelation: "vw_producao_operacional"
+            referencedColumns: ["atendimento_exame_id"]
+          },
+          {
             foreignKeyName: "resultados_entregas_atendimento_id_fkey"
             columns: ["atendimento_id"]
             isOneToOne: false
             referencedRelation: "atendimentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resultados_entregas_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
           },
           {
             foreignKeyName: "resultados_entregas_tenant_id_fkey"
@@ -6656,6 +6768,215 @@ export type Database = {
           },
           {
             foreignKeyName: "unidades_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_coleta_diaria: {
+        Row: {
+          dia: string | null
+          tenant_id: string | null
+          total_amostras: number | null
+          total_atendimentos: number | null
+          total_coletas: number | null
+          unidade_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_coletas_operacionais: {
+        Row: {
+          amostra_codigo: string | null
+          amostra_id: string | null
+          amostra_status: string | null
+          amostra_tipo_material: string | null
+          amostra_validade: string | null
+          atendimento_data: string | null
+          atendimento_exame_id: number | null
+          atendimento_id: number | null
+          atendimento_pk: number | null
+          coletor: string | null
+          data_coleta: string | null
+          exame_id: string | null
+          material: string | null
+          nome_exame: string | null
+          paciente_id: number | null
+          paciente_nome: string | null
+          protocolo: string | null
+          status: string | null
+          tenant_id: string | null
+          unidade_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atendimento_exames_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "atendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_exame_id_fkey"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_liberacao_diaria: {
+        Row: {
+          dia: string | null
+          tempo_medio_coleta_liberacao_seg: number | null
+          tenant_id: string | null
+          total_liberados: number | null
+          unidade_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_producao_diaria: {
+        Row: {
+          analisado: number | null
+          dia: string | null
+          em_analise: number | null
+          em_bancada: number | null
+          exame_categoria: string | null
+          liberado: number | null
+          tenant_id: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vw_producao_operacional: {
+        Row: {
+          analista: string | null
+          atendimento_exame_id: number | null
+          atendimento_id: number | null
+          coletor: string | null
+          data_analise: string | null
+          data_coleta: string | null
+          data_liberacao: string | null
+          exame_categoria: string | null
+          exame_codigo: string | null
+          exame_id: string | null
+          lab_apoio_id: string | null
+          material: string | null
+          nome_exame: string | null
+          paciente_id: number | null
+          paciente_nome: string | null
+          protocolo: string | null
+          retificado: boolean | null
+          status: string | null
+          tenant_id: string | null
+          tipo_processo: string | null
+          unidade_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atendimento_exames_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "atendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["atendimento_pk"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_exame_id_fkey"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_lab_apoio_id_fkey"
+            columns: ["lab_apoio_id"]
+            isOneToOne: false
+            referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
