@@ -803,9 +803,9 @@ const Orcamentos = () => {
                       3: `R$ ${fmtBRLNumber(Math.max(0, orc.total - convertDescontoApplied))}`,
                     },
                   });
-                  showError({ title: "Notificação enfileirada", description: `WhatsApp enviado para ${orc.nome}.` });
+                  toast.success(`WhatsApp enfileirado para ${orc.nome}.`);
                 } catch (e) {
-                  showError(e);
+                  showError(e, { scope: "Orcamentos.convertWhatsapp" });
                 }
                 setShowWhatsappAfterConvert(false); setConvertSuccess(true);
               }} className="w-full py-2.5 rounded-2xl text-sm font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
