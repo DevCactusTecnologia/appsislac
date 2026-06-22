@@ -1,129 +1,126 @@
 
-# Plano — Financeiro 2.0 (laboratorial, simples, profissional)
+# Atendimento 2.0 — Fase 2 — Plano de Execução
 
-> **Modo:** somente plano. Nenhuma migration / código nessa rodada.
-> **Base:** auditoria já existente em `docs/financeiro-audit/*` e `docs/financeiro/ssot.md`.
-> **Decisões já confirmadas:** caixa por unidade (Dinheiro + PIX presencial); não dropar tabelas; DELETE será decidido após a Fase 1.
-> **Constraint do projeto:** mudanças estruturais (rotas, contextos, boot, deps) só com "sim" explícito por fase.
+> Esta fase mexe em estrutura (split de páginas grandes, novas views no banco, remoção de código morto). Pela regra do projeto, **preciso de "sim" explícito antes de executar**. Abaixo está o plano detalhado, fatiado em sub-fases independentes — você pode aprovar tudo ou só parte.
 
----
+## Princípios (não-negociáveis)
 
-## Estado atual relevante (já em produção)
-
-- `financeiro_estornos` **já existe** com RPC `financeiro_estornar(p_id, p_motivo, p_tipo)` e UI `EstornarDialog` ligada em `Financeiro.tsx` para os 3 tipos (`pagamento` | `fatura` | `saida`). O Estorno Formal da Fase 3 já está parcialmente implementado.
-- `financeiro_a_receber_v2` é a SSOT oficial de A Receber (Fase 7 já está praticamente entregue).
-- `caixa_sessoes` existe no schema mas tem **zero uso** no `src/`. É o esqueleto para Fases 5–6.
-- `financeiro_tipos_despesa`, `financeiro_destinos_pagamento`, `financeiro_formas_pagamento`: tabelas legadas, sem leitura/escrita pelo código atual. Decisão do usuário: **não dropar**, apenas documentar.
-- `atendimento_pagamentos` ainda permite DELETE (RLS exige `admin`). Fluxo destrutivo continua possível.
-- Forma de pagamento de saída codificada em `[pgto:X]` na descrição (sem coluna).
-- `atendimentos` não persiste `desconto`/`acrescimo` explicitamente — desconto é distribuído proporcionalmente em `atendimento_exames.desconto`; acréscimo não existe formalmente.
+- Zero mudança de comportamento clínico, fluxo, protocolo, RLS, auditoria, financeiro, convênios.
+- Zero alteração de UX visível (mesmas rotas, mesmos cliques, mesmos resultados).
+- Split é **mecânico**: extrair seções inteiras para arquivos menores, sem reescrever lógica.
+- Cada sub-fase termina com build verde + smoke test manual antes de avançar.
 
 ---
 
-## Fases — ordem de execução proposta
+## Fase 2.1 — Split `NovoAtendimento.tsx` (2801 linhas)
 
-### Fase 1 — Auditoria final + SSOT consolidado *(sem código)*
+Estrutura alvo (`src/pages/NovoAtendimento/`):
 
-- Reusar `docs/financeiro-audit/ssot-report.md` + `docs/financeiro/ssot.md`.
-- Entregar `docs/financeiro/financial-ssot-final.md` com tabela única respondendo "qual é a fonte oficial de cada valor", já refletindo o que existe (estorno, a-receber-v2) e o que falta.
-- Fechar 4 decisões pendentes para liberar Fase 2+:
-  1. DELETE em `atendimento_pagamentos` para admin: revogar ou manter como escape hatch?
-  2. Acréscimo: persistir em `atendimentos.acrescimo_valor` (escalar) ou em `atendimento_exames.acrescimo` (distribuído)?
-  3. Caixa: 1 sessão por unidade *aberta*, mas operadores múltiplos podem lançar nela? (assumido: sim)
-  4. Forma de pagamento de saída: migrar para coluna dedicada agora ou manter `[pgto:X]`?
-
-### Fase 2 — Pagamentos aditivos *(migration + UI)*
-
-- Manter `INSERT` em `atendimento_pagamentos` (já é o caminho atual).
-- Substituir todos os pontos de UI que hoje permitem editar/excluir pagamento por: **estornar** (cria linha em `financeiro_estornos`, marca pagamento como `estornado_em`/`estornado_por`/`estorno_motivo`).
-- Migration: adicionar colunas `estornado_em timestamptz`, `estornado_por uuid`, `estorno_motivo text` em `atendimento_pagamentos`; ajustar `trg_recompute_on_pagamento_change` para ignorar pagamentos estornados; ajustar view `financeiro_entradas` para excluir estornados.
-- RLS: revogar DELETE conforme decisão da Fase 1.
-
-### Fase 3 — Estorno formal unificado *(consolidação)*
-
-- `financeiro_estornos` + `financeiro_estornar()` já são SSOT. Tarefas:
-  - Garantir que os 3 tipos (`pagamento`, `fatura`, `saida`) gravem motivo, usuário, data, valor, origem.
-  - Substituir o "marcar fatura cancelada" e o "deletar saída" por chamadas ao RPC.
-  - Tela `/financeiro` ganha aba/sub-aba "Estornos" lendo de `financeiro_estornos`.
-
-### Fase 4 — Desconto + Acréscimo persistidos *(migration + form)*
-
-- Adicionar em `atendimentos`: `desconto_total numeric`, `acrescimo_total numeric`, `subtotal_bruto numeric`, `total_liquido numeric` (todos derivados, mas materializados para auditoria/relatório).
-- Trigger recomputa esses 4 campos a cada mutação de `atendimento_exames`.
-- Distribuição proporcional do desconto continua client-side em `distribuirDescontoEntreExames` (intocada).
-- Acréscimo: campo único no atendimento (não distribui); soma direto em `total_liquido`.
-- UI `NovoAtendimento.tsx`: bloco "Resumo" passa a mostrar `subtotal / desconto / acréscimo / total` lendo do atendimento.
-
-### Fase 5 — Caixa operacional *(migration + nova UI)*
-
-- Usar `caixa_sessoes` (já existe). Esquema confirmado: `unidade_id`, `aberto_em`, `fechado_em`, `saldo_inicial`, `aberto_por`, `fechado_por`, `tenant_id`.
-- Regra: **1 sessão `aberta` por `unidade_id`** (constraint parcial unique).
-- Vincular ao caixa **apenas** pagamentos com `tipo IN ('Dinheiro','PIX')` e `unidade_id` da sessão aberta. Demais (cartão, convênio, faturamento) seguem fora.
-- Adicionar `caixa_sessao_id` em `atendimento_pagamentos` e `financeiro_saidas` (nullable; preenchido só quando aplicável).
-
-### Fase 6 — Abrir / Fechar caixa *(UI + RPC)*
-
-- 2 RPCs: `caixa_abrir(unidade_id, saldo_inicial)` e `caixa_fechar(sessao_id, saldo_contado, observacao)`.
-- Tela `/financeiro` ganha aba "Caixa Operacional" (substitui o atual "Caixa" derivado, que vira "Livro-caixa" — relatório).
-- Fechamento gera comprovante imprimível com saldo inicial / entradas / saídas / saldo esperado / saldo contado / divergência.
-
-### Fase 7 — A Receber *(consolidação — quase pronto)*
-
-- `financeiro_a_receber_v2` já é SSOT. Tarefas residuais:
-  - Remover `a_receber_pacientes_page` legado (banco mantém função; código já não chama).
-  - Confirmar que `useFinanceiroResumo` também usa v2 ou unificar nessa fase.
-  - Documentar no relatório final.
-
-### Fase 8 — UX por papel *(sem migration; reorganização de UI)*
-
-- Recepção (`registrar_pagamento`): vê em `/atendimentos/.../editar` apenas Receber + Imprimir comprovante + Finalizar.
-- Financeiro (`gestao_financeira`): aba `Caixa Operacional`, `Recebimentos`, `Estornos`, `A Receber`.
-- Gestor (`visualizar_financeiro`): `Painel` (KPIs), `Livro-caixa`, `Convênios`.
-- Implementação: gating já existe via `has_permission`; só ajustar `baseTabs` em `Financeiro/types.ts`.
-
-### Fase 9 — Limpeza *(remoções confirmadas pelo usuário)*
-
-- **Não dropar tabelas** (decisão do usuário). Apenas documentar `financeiro_tipos_despesa`, `financeiro_destinos_pagamento`, `financeiro_formas_pagamento` como legado no relatório.
-- Remover do frontend (TS/TSX): qualquer store, helper ou import que ficar com 0 referência após Fases 2–7. Candidatos atuais conhecidos:
-  - `buildAReceberRowsFromAtendimentos` (já removido na Fase 1 antiga — confirmar).
-  - `buildAReceberConvenioRows`, `fetchSaldoEmAbertoPorConvenio` (idem).
-  - Branching `paginated_atendimentos` em pontos restantes.
-- Critério: **0 referências, 0 imports, 0 consumidores** antes de remover.
-
-### Fase 10 — Relatório executivo *(sem código)*
-
-- `docs/financeiro/financeiro-2.0-report.md` respondendo as 10 perguntas da missão, com diff antes/depois e checklist verificável.
-
----
-
-## Ordem sugerida de execução (com checkpoints)
-
-```
-Fase 1  ── decisões 1-4 ──► Fase 2 ──► Fase 3 ──► Fase 4
-                                                     │
-                                                     ▼
-                                  Fase 5 ──► Fase 6 ──► Fase 7
-                                                     │
-                                                     ▼
-                                            Fase 8 ──► Fase 9 ──► Fase 10
+```text
+NovoAtendimento.tsx                 (orquestrador, ~300 linhas: estado raiz + composição)
+sections/
+  PacienteSection.tsx               (busca/seleção/cadastro rápido de paciente)
+  SolicitanteSection.tsx            (solicitante(s), unidade, data)
+  ConveniosSection.tsx              (convênios + resync de cobrança)
+  ExamesSection.tsx                 (catálogo, busca, IA, lista de exames)
+  FinanceiroSection.tsx             (cobrança, desconto, pagamentos)
+  ResumoSection.tsx                 (resumo + finalizar/imprimir)
+hooks/
+  useAtendimentoForm.ts             (estado central + setters + dirty)
+  useExamesSelecionados.ts          (add/remove/atualizar exames + cobrança)
+  useFinalizarAtendimento.ts        (orquestra submit/edge function)
+services/
+  buildExamesCobranca.ts            (já existe)
+  contarEtiquetas.ts                (já existe)
+  distribuirDesconto.ts             (já existe)
+  resyncCobrancaConvenios.ts        (já existe)
+  pricing.ts                        (já existe)
+  helpers.ts                        (já existe)
 ```
 
-Checkpoint após cada fase: tela do módulo abre sem regressão, comprovantes intactos, RLS preservado, tenants isolados.
+Regras: cada `Section` recebe props do `useAtendimentoForm`; nada de novo store global; mesmos imports externos; testes existentes (`buildExamesCobranca.test.ts`, `pricing.test.ts`) devem continuar passando sem alteração.
+
+## Fase 2.2 — Split `ResultadoDetalhe.tsx` (2648 linhas)
+
+Estrutura alvo (`src/pages/ResultadoDetalhe/`):
+
+```text
+index.tsx                           (orquestrador + tabs, ~300 linhas)
+panels/
+  ParametrosPanel.tsx               (form científico + valores)
+  CriticosPanel.tsx                 (RDC 786, comunicações)
+  LiberacaoPanel.tsx                (validação clínica, assinatura, liberar)
+  ImpressaoPanel.tsx                (laudo, PDF, override)
+  HistoricoPanel.tsx                (auditoria + retificações + entregas)
+hooks/
+  useResultadoExame.ts              (carga + patch via update_atendimento_exame_tx)
+  useLiberacaoFlow.ts
+services/                           (já existe — preservar)
+  auditLogBuilder.ts
+  criticoPipeline.ts
+  laudoHtmlBuilder.ts
+```
+
+**Trava explícita**: `LayoutScientificFormRenderer`, `formula.ts`, `helpers.ts`, `statusHelpers.ts`, layout de impressão e CSS de laudo permanecem **byte-a-byte iguais** (memory: layout-impressao-travado).
+
+## Fase 2.3 — SSOT Coleta (view `vw_coletas_operacionais`)
+
+Migration somente-leitura sobre `atendimento_exames` + `amostras`:
+
+```sql
+CREATE VIEW public.vw_coletas_operacionais AS
+SELECT
+  ae.tenant_id, ae.atendimento_id, ae.id AS atendimento_exame_id,
+  ae.exame_nome, ae.status, ae.coletado_por, ae.data_coleta,
+  a.id AS amostra_id, a.codigo AS amostra_codigo, a.tipo_material,
+  at.unidade_id, at.protocolo
+FROM public.atendimento_exames ae
+LEFT JOIN public.amostras a ON a.atendimento_exame_id = ae.id
+JOIN public.atendimentos at ON at.id = ae.atendimento_id
+WHERE ae.data_coleta IS NOT NULL OR ae.status IN ('coletado','em_bancada','em_analise','analisado','finalizado');
+-- + GRANT SELECT TO authenticated; + security_invoker=on (herda RLS das tabelas-base)
+```
+
+Sem alterar telas. Apenas habilita consumo futuro.
+
+## Fase 2.4 — SSOT Produção (`vw_producao_operacional`)
+
+Análoga, focada em status `em_bancada | em_analise | analisado` com analista, setor (via `setor_id` no catálogo), data prevista x realizada.
+
+## Fase 2.5 — KPIs materializados
+
+Três views agregadas por dia/tenant:
+
+- `vw_coleta_diaria` — total coletas, por unidade, tempo médio recepção→coleta.
+- `vw_producao_diaria` — total em bancada/análise, por setor.
+- `vw_liberacao_diaria` — total liberados, tempo médio coleta→liberação.
+
+Padrão: **views regulares** (não materialized) com `security_invoker=on` para preservar RLS por tenant. Se houver pressão de performance real medida, promovemos a `MATERIALIZED VIEW` em fase futura. `useDashboardKpis` passa a poder consumir essas views (ajuste opcional, não obrigatório nesta fase).
+
+## Fase 2.6 — Limpeza cirúrgica
+
+Critério estrito: **0 imports + 0 referências** (verificado via `rg`). Candidatos serão listados no relatório antes de remover. Sem tocar em componentes, RPCs, triggers, tabelas.
+
+## Fase 2.7 — Auditoria `lab-apoio-*` / `integration-*`
+
+Apenas documental: gerar `docs/atendimento-2.0/terceirizacao-convergencia.md` mapeando sobreposições e plano futuro. **Nenhuma migração ou remoção.**
+
+## Validação por sub-fase
+
+1. `bun run build` verde.
+2. `bunx vitest run` verde (testes de pricing/buildExamesCobranca obrigatórios).
+3. Smoke manual: criar atendimento → coletar → analisar → liberar → imprimir laudo → pagar → estornar. Compare protocolo/laudo/auditoria com baseline.
+
+## Relatório final
+
+`docs/atendimento-2.0/atendimento-phase2-report.md` respondendo às 10 perguntas da missão, com diff de linhas por arquivo, lista de views criadas, lista de remoções e evidências de regressão zero.
 
 ---
 
-## Fora de escopo (regra de parada)
+## Como você quer prosseguir?
 
-- Plano de contas / DRE / centro de custo / contábil / conciliação bancária.
-- Glosa estruturada / recurso / parcial de fatura de convênio.
-- Comissão de solicitante.
-- Mudanças em laudo, CKEditor, mapa, etiquetas, billing de plataforma (super-admin), orçamento.
+1. **Aprovar tudo** — executo 2.1 → 2.7 sequencialmente, parando entre sub-fases para você validar.
+2. **Aprovar só uma sub-fase** — diga qual (ex.: "só 2.3 e 2.4 agora"). As views SSOT são as mais seguras e independentes.
+3. **Ajustar plano** — peça mudanças (ex.: split diferente, materialized view em vez de view, etc.).
 
----
-
-## O que preciso do usuário antes de começar a Fase 2
-
-1. Aprovar o plano acima.
-2. Responder as 4 decisões pendentes da Fase 1 (DELETE, acréscimo, caixa multi-operador, forma de pagamento de saída).
-3. Confirmar se quer que eu execute fase a fase com revisão entre elas, ou rode 1→4 numa rodada e 5→10 em outra.
-
+Recomendo começar por **2.3 + 2.4 + 2.5** (views SSOT — risco baixíssimo, ganho imediato de observabilidade) e só depois encarar os splits 2.1/2.2, que são mais invasivos.
