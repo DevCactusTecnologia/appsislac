@@ -37,6 +37,7 @@ const Financeiro = lazy(() => import("./pages/Financeiro"));
 const Soroteca = lazy(() => import("./pages/Soroteca"));
 const SorotecaEstrutura = lazy(() => import("./pages/SorotecaEstrutura"));
 const SorotecaTriagem = lazy(() => import("./pages/SorotecaTriagem"));
+const SorotecaMateriais = lazy(() => import("./pages/SorotecaMateriais"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 // Fase B — Domain Driven Routes (entidades promovidas)
@@ -382,6 +383,7 @@ function AppRoutes() {
             <Route path="/soroteca" element={<ProtectedRoute permissao="registrar_coleta"><Soroteca /></ProtectedRoute>} />
             <Route path="/soroteca/estrutura" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEstrutura /></ProtectedRoute>} />
             <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
+            <Route path="/soroteca/materiais" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaMateriais /></ProtectedRoute>} />
 
             <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
             <Route path="/configuracoes" element={<ProtectedRoute permissao="configuracoes_sistema"><Configuracoes /></ProtectedRoute>} />
