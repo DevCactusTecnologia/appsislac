@@ -438,16 +438,9 @@ const Orcamentos = () => {
                           </td>
                           <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
-                              {!orc.convertido && hasPhone && (
-                                <button
-                                  onClick={() => setTemplateMenuOrc({ orc, dias })}
-                                  title="Escolher template de WhatsApp"
-                                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,35%)] text-xs font-semibold hover:bg-[hsl(142,70%,45%)]/20 transition-all border border-[hsl(142,70%,45%)]/20 whitespace-nowrap shrink-0">
-                                  <MessageCircle className="h-3.5 w-3.5 shrink-0" /> {tpl.short}
-                                </button>
-                              )}
                               <button onClick={() => setDetailOrc(orc)} className="p-2 rounded-xl border border-border/60 hover:bg-muted transition-colors shrink-0"><Eye className="h-4 w-4 text-muted-foreground" /></button>
                             </div>
+
                           </td>
                         </tr>
                       );
