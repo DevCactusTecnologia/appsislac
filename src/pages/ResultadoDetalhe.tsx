@@ -51,6 +51,7 @@ import { resolveResultadoRegulatorio, renderRegulatorioFooterHtml } from "@/lib/
 import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { notifyResultadoPronto } from "@/lib/whatsapp/notifyResultadoPronto";
 import { validarCredenciaisAnalista } from "@/lib/validarCredenciaisAnalista";
 import { useDicionario } from "@/hooks/useDicionario";
 
