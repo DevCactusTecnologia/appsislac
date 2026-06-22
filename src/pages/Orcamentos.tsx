@@ -478,40 +478,13 @@ const Orcamentos = () => {
               ))}
             </div>
 
-            {detailOrc.telefone && !detailOrc.convertido && (
-              <div className="rounded-2xl bg-muted/40 border border-border/30 p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Templates de WhatsApp</p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{detailOrc.telefone}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Sugestão: <span className="font-semibold text-foreground">{templates[sugerirTemplate(diasDesde(detailOrc.data))].label}</span> · {diasDesde(detailOrc.data)}d desde a criação
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {(["lembrete", "reforco", "ultima"] as const).map((k) => {
-                    const t = templates[k];
-                    const isSugestao = sugerirTemplate(diasDesde(detailOrc.data)) === k;
-                    return (
-                      <button key={k} onClick={() => sendWhatsappTemplate(detailOrc, k)}
-                        className={`relative px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 border ${isSugestao ? "bg-[hsl(142,70%,45%)] text-white border-[hsl(142,70%,45%)] hover:opacity-90" : "bg-card text-foreground border-border/60 hover:bg-muted"}`}>
-                        <span>{t.emoji}</span> {t.short}
-                        {isSugestao && <span className="absolute -top-1 -right-1 text-[8px] bg-[hsl(var(--status-success))] text-white px-1 py-0.5 rounded-md font-bold">★</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {detailOrc.telefone && detailOrc.convertido && (
+            {detailOrc.telefone && (
               <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40 border border-border/30">
                 <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm text-foreground flex-1">{detailOrc.telefone}</span>
               </div>
             )}
+
 
             <div>
               <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Exames ({detailOrc.exames.length})</p>
