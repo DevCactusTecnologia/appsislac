@@ -8,6 +8,7 @@ import { useDicionario } from "@/hooks/useDicionario";
 import { criarRecoleta, type RecoletaEtapa } from "@/data/recoletasStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { notifyRecoleta } from "@/lib/whatsapp/notifyRecoleta";
 
 interface SolicitarRecoletaDialogProps {
   open: boolean;
