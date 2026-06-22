@@ -279,54 +279,132 @@ function FecharCaixaDialog({ open, onClose, sessao, unidadeNome, userName, onFec
     });
   };
 
+  // Métricas pré-calculadas para o resumo
+  const totalEntradas = resumo ? Number(resumo.entradas_dinheiro) + Number(resumo.entradas_pix) : 0;
+  const movimentoLiquido = resumo ? totalEntradas - Number(resumo.saidas) : 0;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Fechar caixa — {unidadeNome}</DialogTitle>
-          <DialogDescription>
-            {resumo
-              ? "Caixa fechado. Imprima o comprovante para conferência."
-              : "Confirma o fechamento? O saldo é calculado automaticamente."}
-          </DialogDescription>
-        </DialogHeader>
-
-        {resumo ? (
-          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-1.5 text-sm tabular-nums">
-            <Linha label="Saldo de abertura" valor={resumo.valor_abertura} />
-            <Linha label="Entradas em dinheiro" valor={resumo.entradas_dinheiro} sign="+" tone="positive" />
-            <Linha label="Entradas em PIX" valor={resumo.entradas_pix} sign="+" tone="positive" />
-            <Linha label="Saídas pagas" valor={resumo.saidas} sign="-" tone="negative" />
-            <div className="border-t border-border pt-2 mt-2 flex items-center justify-between font-semibold">
-              <span>Saldo final</span><span>{fmtBRL(Number(resumo.saldo_final))}</span>
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+        {/* Cabeçalho */}
+        <div className="px-6 pt-6 pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${resumo ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-primary/10 text-primary"}`}>
+              {resumo ? <CheckCircle2 className="h-5 w-5" /> : <Calculator className="h-5 w-5" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <DialogHeader className="space-y-0.5 text-left">
+                <DialogTitle className="text-base font-semibold leading-tight">
+                  {resumo ? "Caixa fechado" : "Fechar caixa"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  {unidadeNome} · {resumo ? "Resumo do fechamento" : `Aberto em ${formatDateBR(sessao.aberta_em)}`}
+                </DialogDescription>
+              </DialogHeader>
             </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="text-sm text-muted-foreground">
-              Aberto em <strong>{formatDateBR(sessao.aberta_em)}</strong> ·
-              saldo inicial <strong>{fmtBRL(Number(sessao.valor_abertura))}</strong>
-            </div>
-            <div>
-              <Label htmlFor="obs-fechar">Observações (opcional)</Label>
-              <Textarea id="obs-fechar" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
-            </div>
-          </div>
-        )}
+        </div>
 
-        <DialogFooter>
+        {/* Corpo */}
+        <div className="px-6 py-5 space-y-5">
           {resumo ? (
             <>
-              <Button variant="outline" onClick={() => { onFechado(); }}>Concluir</Button>
-              <Button onClick={imprimir} className="gap-2">
+              {/* Saldo final em destaque */}
+              <div className="rounded-lg border border-border bg-muted/30 p-5">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Saldo final esperado
+                </p>
+                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+                  {fmtBRL(Number(resumo.saldo_final))}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Movimento líquido do período:{" "}
+                  <span className={`tabular-nums font-medium ${movimentoLiquido >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                    {movimentoLiquido >= 0 ? "+" : ""}{fmtBRL(movimentoLiquido)}
+                  </span>
+                </p>
+              </div>
+
+              {/* Breakdown */}
+              <div className="rounded-lg border border-border divide-y divide-border">
+                <ResumoLinha
+                  icon={<Wallet className="h-4 w-4" />}
+                  label="Saldo de abertura"
+                  valor={Number(resumo.valor_abertura)}
+                />
+                <ResumoLinha
+                  icon={<Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+                  label="Entradas em dinheiro"
+                  valor={Number(resumo.entradas_dinheiro)}
+                  sign="+"
+                  tone="positive"
+                />
+                <ResumoLinha
+                  icon={<ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+                  label="Entradas em PIX"
+                  valor={Number(resumo.entradas_pix)}
+                  sign="+"
+                  tone="positive"
+                />
+                <ResumoLinha
+                  icon={<ArrowDownRight className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
+                  label="Saídas pagas"
+                  valor={Number(resumo.saidas)}
+                  sign="-"
+                  tone="negative"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Card de contexto da sessão */}
+              <div className="rounded-lg border border-border bg-muted/20 p-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Aberto em</p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground">{formatDateBR(sessao.aberta_em)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Saldo inicial</p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground tabular-nums">{fmtBRL(Number(sessao.valor_abertura))}</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed border-border bg-background p-4 text-xs text-muted-foreground leading-relaxed">
+                O saldo final é calculado automaticamente somando entradas em <strong className="text-foreground">Dinheiro</strong> e <strong className="text-foreground">PIX</strong> e subtraindo as <strong className="text-foreground">Saídas</strong> do período. Após o fechamento o caixa não poderá receber novas entradas.
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="obs-fechar" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Observações <span className="normal-case text-muted-foreground/70">(opcional)</span>
+                </Label>
+                <Textarea
+                  id="obs-fechar"
+                  rows={2}
+                  value={obs}
+                  onChange={(e) => setObs(e.target.value)}
+                  placeholder="Ex.: divergência de R$ 5,00 no troco"
+                  className="resize-none text-sm"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <DialogFooter className="px-6 py-4 border-t border-border bg-muted/20 gap-2 sm:gap-2">
+          {resumo ? (
+            <>
+              <Button variant="ghost" onClick={() => { onFechado(); }}>Concluir</Button>
+              <Button onClick={imprimir} className="gap-2 min-w-[180px]">
                 <Printer className="h-4 w-4" /> Imprimir comprovante
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-              <Button onClick={submit} disabled={busy}>
-                {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Fechar caixa
+              <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+              <Button onClick={submit} disabled={busy} className="gap-2 min-w-[140px]">
+                {busy
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Fechando…</>
+                  : <><Lock className="h-4 w-4" /> Fechar caixa</>}
               </Button>
             </>
           )}
@@ -336,13 +414,21 @@ function FecharCaixaDialog({ open, onClose, sessao, unidadeNome, userName, onFec
   );
 }
 
-function Linha({ label, valor, sign, tone }: { label: string; valor: number; sign?: "+" | "-"; tone?: "positive" | "negative" }) {
+function ResumoLinha({ icon, label, valor, sign, tone }: {
+  icon: React.ReactNode; label: string; valor: number; sign?: "+" | "-"; tone?: "positive" | "negative";
+}) {
   const cls = tone === "positive" ? "text-emerald-600 dark:text-emerald-400"
     : tone === "negative" ? "text-rose-600 dark:text-rose-400" : "text-foreground";
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={cls}>{sign ?? ""} {fmtBRL(Number(valor))}</span>
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-muted-foreground shrink-0">{icon}</span>
+        <span className="text-sm text-muted-foreground truncate">{label}</span>
+      </div>
+      <span className={`text-sm font-medium tabular-nums ${cls}`}>
+        {sign ?? ""}{sign ? " " : ""}{fmtBRL(Number(valor))}
+      </span>
     </div>
   );
 }
+
