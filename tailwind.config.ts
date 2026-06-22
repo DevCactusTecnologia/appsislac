@@ -14,6 +14,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        // Opt-in para superfícies redesenhadas (ex.: /financeiro)
+        display: ['Sora', 'Inter', 'system-ui', 'sans-serif'],
+        body: ['Manrope', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
