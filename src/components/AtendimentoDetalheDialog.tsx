@@ -474,6 +474,17 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               )}
             </div>
           </section>
+
+          {/* WhatsApp — histórico de comunicação (Fase 3F.2) */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <MessageCircle className="h-4 w-4 text-[hsl(142,70%,45%)]" />
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">WhatsApp</h3>
+            </div>
+            <div className="rounded-2xl bg-card border border-border p-4">
+              <WhatsappTimeline protocolo={atendimento.protocolo} refreshKey={whatsappRefresh} />
+            </div>
+          </section>
           </div>
         </div>
       </div>
