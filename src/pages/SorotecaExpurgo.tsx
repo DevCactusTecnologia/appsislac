@@ -149,7 +149,10 @@ export default function SorotecaExpurgo() {
         }
       />
 
+      <SorotecaNav />
+
       <div className="flex flex-wrap gap-2 my-4">
+
         {TABS.map((t) => (
           <button
             key={t.id}
