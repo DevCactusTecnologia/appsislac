@@ -1143,6 +1143,6 @@ export default function Soroteca() {
           handleCodigoLido(codigo);
         }}
       />
-    </div>
+    </SorotecaShell>
   );
 }
