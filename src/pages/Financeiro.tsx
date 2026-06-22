@@ -863,15 +863,19 @@ const Financeiro = () => {
 
   return (
     <FinanceiroProvider value={ctxValue}>
-    <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
+    <div className="financeiro-shell font-body relative">
+      {/* Backdrop suave: indigo wash + grid, fixo no topo */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[320px] bg-gradient-to-b from-primary/[0.06] via-primary/[0.02] to-transparent" aria-hidden />
+      <div className="relative p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
       {/* ─── Header (design system unificado SA) ─── */}
       <PageHeader
-        eyebrow="Financeiro"
+        eyebrow="Visão financeira"
         title="Financeiro"
+        description="Acompanhe receitas, despesas, recebíveis e o caixa do laboratório em tempo real."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={periodoRapido} onValueChange={(v) => aplicarPeriodoRapido(v as typeof periodoRapido)}>
-              <SelectTrigger className="h-9 rounded-xl text-xs gap-1.5 w-auto min-w-[130px]">
+              <SelectTrigger className="h-9 rounded-xl text-xs gap-1.5 w-auto min-w-[130px] bg-card/80 backdrop-blur">
                 <CalendarIcon className="h-3.5 w-3.5" />
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
@@ -889,7 +893,7 @@ const Financeiro = () => {
               <>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("rounded-xl text-xs gap-1.5 h-9", !dateFrom && "text-muted-foreground")}>
+                    <Button variant="outline" size="sm" className={cn("rounded-xl text-xs gap-1.5 h-9 bg-card/80 backdrop-blur", !dateFrom && "text-muted-foreground")}>
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {dateFrom ? format(dateFrom, "dd/MM/yy", { locale: ptBR }) : "De"}
                     </Button>
@@ -898,7 +902,7 @@ const Financeiro = () => {
                 </Popover>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("rounded-xl text-xs gap-1.5 h-9", !dateTo && "text-muted-foreground")}>
+                    <Button variant="outline" size="sm" className={cn("rounded-xl text-xs gap-1.5 h-9 bg-card/80 backdrop-blur", !dateTo && "text-muted-foreground")}>
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {dateTo ? format(dateTo, "dd/MM/yy", { locale: ptBR }) : "Até"}
                     </Button>
@@ -915,7 +919,7 @@ const Financeiro = () => {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl h-9 w-9 p-0"
+              className="rounded-xl h-9 w-9 p-0 bg-card/80 backdrop-blur"
               onClick={imprimirDetalhado}
               title="Imprimir relatório detalhado conforme filtros"
             >
@@ -925,9 +929,9 @@ const Financeiro = () => {
         }
       />
 
-      {/* ─── Tab Navigation (Segmentado moderno) ─── */}
-      <div className="overflow-x-auto no-scrollbar">
-        <nav className="inline-flex items-center p-1.5 bg-muted/50 border border-border/60 rounded-xl">
+      {/* ─── Tab Navigation (Segmentado refinado, glass) ─── */}
+      <div className="overflow-x-auto no-scrollbar -mx-1 px-1">
+        <nav className="inline-flex items-center gap-1 p-1.5 bg-card/70 backdrop-blur-md border border-border/60 rounded-2xl shadow-[0_1px_0_0_hsl(var(--border)/0.6),0_8px_24px_-12px_hsl(var(--primary)/0.15)]">
           {tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -936,19 +940,20 @@ const Financeiro = () => {
                 key={tab.key}
                 onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
                 className={cn(
-                  "flex items-center gap-2.5 px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap cursor-pointer",
+                  "relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] transition-all whitespace-nowrap cursor-pointer",
                   isActive
-                    ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                    : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted",
+                    ? "bg-primary text-primary-foreground font-semibold shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.45)]"
+                    : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/60",
                 )}
               >
-                <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                <Icon className="h-[16px] w-[16px]" strokeWidth={2} />
                 {tab.label}
               </button>
             );
           })}
         </nav>
       </div>
+
 
 
       <>
