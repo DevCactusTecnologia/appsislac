@@ -46,15 +46,23 @@ export interface WhatsappActionButtonProps {
   disabled?: boolean;
   /** Tooltip customizado — default: "Enviar mensagem pelo WhatsApp". */
   title?: string;
+  /**
+   * Rótulo customizado para o estado `idle` (ex.: "Enviar Comprovante
+   * de Pagamento"). Mantém o padrão visual canônico, alterando apenas
+   * o texto contextual conforme a aba/documento ativo. Estados
+   * loading/success/error permanecem padronizados.
+   */
+  idleLabel?: string;
   className?: string;
 }
 
-const LABEL: Record<WhatsappActionState, string> = {
+const DEFAULT_LABEL: Record<WhatsappActionState, string> = {
   idle: "Enviar WhatsApp",
   loading: "Enviando...",
   success: "WhatsApp enviado",
   error: "Falha no envio",
 };
+
 
 export function WhatsappActionButton({
   onSendAsync,
@@ -66,12 +74,15 @@ export function WhatsappActionButton({
   size = "md",
   disabled = false,
   title = "Enviar mensagem pelo WhatsApp",
+  idleLabel,
   className = "",
 }: WhatsappActionButtonProps) {
   const [internalState, setInternalState] = useState<WhatsappActionState>("idle");
   const state = controlledState ?? internalState;
   const isLoading = state === "loading";
   const isDisabled = disabled || isLoading;
+  const label = state === "idle" && idleLabel ? idleLabel : DEFAULT_LABEL[state];
+
 
   const handleClick = async () => {
     if (isDisabled) return;
@@ -123,7 +134,7 @@ export function WhatsappActionButton({
     >
       <Icon className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
       {!iconOnly && (
-        <span className={responsive ? "hidden sm:inline" : ""}>{LABEL[state]}</span>
+        <span className={responsive ? "hidden sm:inline" : ""}>{label}</span>
       )}
     </button>
   );
