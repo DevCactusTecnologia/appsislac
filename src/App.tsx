@@ -70,6 +70,7 @@ const SuperAdminInscricoes = lazy(() => import("./pages/superadmin/SuperAdminIns
 const SuperAdminAuditoria = lazy(() => import("./pages/superadmin/SuperAdminAuditoria"));
 const SuperAdminConfiguracoes = lazy(() => import("./pages/superadmin/SuperAdminConfiguracoes"));
 const SuperAdminPlanos = lazy(() => import("./pages/superadmin/SuperAdminPlanos"));
+const SuperAdminNotificacoes = lazy(() => import("./pages/superadmin/SuperAdminNotificacoes"));
 
 // QueryClient é um singleton importado de @/lib/queryClient — ali ficam
 // os defaults de cache (staleTime/gcTime, sem refetch em foco, keepPreviousData)
