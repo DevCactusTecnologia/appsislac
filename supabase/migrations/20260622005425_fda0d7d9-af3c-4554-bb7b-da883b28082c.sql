@@ -1,0 +1,1 @@
+ALTER VIEW public.convenio_fatura_resumo SET (security_invoker = on);
