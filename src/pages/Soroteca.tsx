@@ -157,13 +157,40 @@ export default function Soroteca() {
   const linhasRef = useRef<Map<string, HTMLLIElement>>(new Map());
   const hidBufferRef = useRef<{ value: string; lastAt: number }>({ value: "", lastAt: 0 });
 
+  // ---- Fase 5: Pesquisa avançada (server-side) ----
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [materiais, setMateriais] = useState<MaterialAmostra[]>([]);
+  const [locais, setLocais] = useState<LocalArmazenamento[]>([]);
+  const [galerias, setGalerias] = useState<Galeria[]>([]);
+  const [advMaterialIds, setAdvMaterialIds] = useState<string[]>([]);
+  const [advLocalId, setAdvLocalId] = useState<string>("");
+  const [advGaleriaId, setAdvGaleriaId] = useState<string>("");
+  const [advPaciente, setAdvPaciente] = useState("");
+  const [advProtocolo, setAdvProtocolo] = useState("");
+  const [advColetaInicio, setAdvColetaInicio] = useState("");
+  const [advColetaFim, setAdvColetaFim] = useState("");
+  const [advValidadeInicio, setAdvValidadeInicio] = useState("");
+  const [advValidadeFim, setAdvValidadeFim] = useState("");
+  const [advArmazenamento, setAdvArmazenamento] = useState<"todas" | "armazenadas" | "pendentes">("todas");
+  const [advPage, setAdvPage] = useState(1);
+  const [advPageSize] = useState(30);
+  const [advItems, setAdvItems] = useState<Amostra[]>([]);
+  const [advTotal, setAdvTotal] = useState(0);
+  const [advLoading, setAdvLoading] = useState(false);
+
+  const debPaciente = useDebouncedValue(advPaciente, 350);
+  const debProtocolo = useDebouncedValue(advProtocolo, 350);
+  const debCodigo = useDebouncedValue(search, 350);
+
+  // O modo avançado é ativado quando o painel de filtros está aberto.
+  const advancadoAtivo = filtrosAbertos;
+
   // Localiza uma amostra pelo código de barra (case-insensitive, trim).
-  // Quando achada: aplica filtro para garantir que esteja visível,
-  // abre o detalhe e dá scroll + highlight.
   const handleCodigoLido = (codigoBruto: string) => {
     const codigo = codigoBruto.trim();
     if (!codigo) return;
-    const alvo = amostras.find(
+    const lista = advancadoAtivo ? advItems : amostras;
+    const alvo = lista.find(
       (a) => a.codigo_barra.toLowerCase() === codigo.toLowerCase(),
     );
     if (!alvo) {
