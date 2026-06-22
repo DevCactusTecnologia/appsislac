@@ -177,12 +177,14 @@ export async function fetchItensFaturaveis(
   }
   if (!exames || exames.length === 0) return [];
 
-  // 2) Filtra IDs já vinculados a alguma fatura (aberta ou paga)
+  // 2) Filtra IDs já vinculados a alguma fatura NÃO cancelada
+  //    (itens de faturas canceladas voltam a ser elegíveis — SSOT Fase 2.3)
   const exameIds = exames.map((e) => Number(e.id));
   const { data: jaVinc } = await supabase
     .from("convenio_fatura_itens")
-    .select("atendimento_exame_id")
-    .in("atendimento_exame_id", exameIds);
+    .select("atendimento_exame_id, convenio_faturas!inner(status)")
+    .in("atendimento_exame_id", exameIds)
+    .neq("convenio_faturas.status", "cancelada");
   const jaSet = new Set<number>((jaVinc ?? []).map((j) => Number(j.atendimento_exame_id)));
 
   // 3) Busca atendimentos para filtro por período + dados de exibição
