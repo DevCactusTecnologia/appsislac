@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   }
 
   const rawBody = await req.text();
-  const appSecret = Deno.env.get("WHATSAPP_META_APP_SECRET") ?? Deno.env.get("WHATSAPP_APP_SECRET");
+  const appSecret = Deno.env.get("WHATSAPP_META_APP_SECRET");
   const signatureHeader = req.headers.get("x-hub-signature-256");
   if (!appSecret) {
     console.error("whatsapp-webhook: app secret not configured");
