@@ -1054,21 +1054,52 @@ export default function Soroteca() {
               );
             })}
           </ul>
-          {restantes > 0 && (
-            <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
-                <span className="font-semibold text-foreground">{filtradas.length}</span> amostras
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-              >
-                Carregar mais ({Math.min(PAGE_SIZE, restantes)})
-              </Button>
-            </div>
+          {advancadoAtivo ? (
+            advTotal > advPageSize && (
+              <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Página <span className="font-semibold text-foreground">{advPage}</span> de{" "}
+                  <span className="font-semibold text-foreground">{Math.max(1, Math.ceil(advTotal / advPageSize))}</span>{" "}
+                  · <span className="font-semibold text-foreground">{advTotal}</span> amostra(s)
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={advPage <= 1 || advLoading}
+                    onClick={() => setAdvPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={advPage * advPageSize >= advTotal || advLoading}
+                    onClick={() => setAdvPage((p) => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )
+          ) : (
+            restantes > 0 && (
+              <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
+                  <span className="font-semibold text-foreground">{totalListagem}</span> amostras
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                >
+                  Carregar mais ({Math.min(PAGE_SIZE, restantes)})
+                </Button>
+              </div>
+            )
           )}
+
           </>
         )}
       </div>
