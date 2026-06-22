@@ -74,12 +74,15 @@ export function WhatsappActionButton({
   size = "md",
   disabled = false,
   title = "Enviar mensagem pelo WhatsApp",
+  idleLabel,
   className = "",
 }: WhatsappActionButtonProps) {
   const [internalState, setInternalState] = useState<WhatsappActionState>("idle");
   const state = controlledState ?? internalState;
   const isLoading = state === "loading";
   const isDisabled = disabled || isLoading;
+  const label = state === "idle" && idleLabel ? idleLabel : DEFAULT_LABEL[state];
+
 
   const handleClick = async () => {
     if (isDisabled) return;
