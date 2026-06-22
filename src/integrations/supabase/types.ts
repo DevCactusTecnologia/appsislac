@@ -5552,6 +5552,42 @@ export type Database = {
           },
         ]
       }
+      tenant_notification_settings: {
+        Row: {
+          agendamento_mode: Database["public"]["Enums"]["notification_mode"]
+          atendimento_mode: Database["public"]["Enums"]["notification_mode"]
+          consulta_mode: Database["public"]["Enums"]["notification_mode"]
+          created_at: string
+          orcamento_mode: Database["public"]["Enums"]["notification_mode"]
+          recoleta_mode: Database["public"]["Enums"]["notification_mode"]
+          resultado_pronto_mode: Database["public"]["Enums"]["notification_mode"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          agendamento_mode?: Database["public"]["Enums"]["notification_mode"]
+          atendimento_mode?: Database["public"]["Enums"]["notification_mode"]
+          consulta_mode?: Database["public"]["Enums"]["notification_mode"]
+          created_at?: string
+          orcamento_mode?: Database["public"]["Enums"]["notification_mode"]
+          recoleta_mode?: Database["public"]["Enums"]["notification_mode"]
+          resultado_pronto_mode?: Database["public"]["Enums"]["notification_mode"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          agendamento_mode?: Database["public"]["Enums"]["notification_mode"]
+          atendimento_mode?: Database["public"]["Enums"]["notification_mode"]
+          consulta_mode?: Database["public"]["Enums"]["notification_mode"]
+          created_at?: string
+          orcamento_mode?: Database["public"]["Enums"]["notification_mode"]
+          recoleta_mode?: Database["public"]["Enums"]["notification_mode"]
+          resultado_pronto_mode?: Database["public"]["Enums"]["notification_mode"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenant_pages: {
         Row: {
           conteudo: Json
@@ -7837,6 +7873,7 @@ export type Database = {
         | "HL7"
         | "FHIR"
         | "CUSTOM"
+      notification_mode: "automatic" | "manual"
       payment_provider: "mercado_pago" | "infinitepay"
       subscription_status: "pendente" | "aprovado" | "reprovado"
     }
@@ -8009,6 +8046,7 @@ export const Constants = {
         "FHIR",
         "CUSTOM",
       ],
+      notification_mode: ["automatic", "manual"],
       payment_provider: ["mercado_pago", "infinitepay"],
       subscription_status: ["pendente", "aprovado", "reprovado"],
     },
