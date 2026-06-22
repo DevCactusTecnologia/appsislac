@@ -9,7 +9,6 @@ import {
   type RenderProgress,
   uploadPdfAndGetUrl,
   criarShortlinkPdf,
-  enviarPdfWhatsappCloud,
   buildWaUrl,
   type ComprovanteTipo,
 } from "@/lib/comprovantes";
