@@ -5,6 +5,7 @@ import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
 import { useConvenioFaturas, type ConvenioFaturaRow } from "@/hooks/useConvenioFaturas";
+import CompetenciaAtualCard from "@/components/financeiro/CompetenciaAtualCard";
 
 const TH = "text-left px-4 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.08em]";
 
@@ -86,6 +87,7 @@ export default function ConveniosTab() {
 
   return (
     <div className="space-y-3">
+      <CompetenciaAtualCard />
       <div className="inline-flex items-center gap-0.5 p-1 bg-muted/40 rounded-lg border border-border/40">
         {([
           { key: "aberto",  label: `Em aberto (${aReceberConvenioRows.length})` },

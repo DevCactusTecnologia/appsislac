@@ -257,6 +257,8 @@ export async function criarFatura(input: CriarFaturaInput): Promise<{ ok: boolea
         convenio_id: input.convenioId,
         periodo_inicio: input.periodoInicio,
         periodo_fim: input.periodoFim,
+        // competencia: derivado por trigger a partir de periodo_fim (Fase 4)
+        competencia: input.periodoFim.slice(0, 7),
         // subtotal/total: zero inicial — recalculados por trigger ao inserir os itens
         subtotal: 0,
         desconto: input.desconto || 0,
