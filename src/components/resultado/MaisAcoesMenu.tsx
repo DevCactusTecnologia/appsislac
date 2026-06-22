@@ -26,10 +26,6 @@ interface Props {
   onRecoleta?: () => void;
   onCritico?: () => void;
   onEntrega?: () => void;
-  /** Envia o aviso "resultado pronto" via WhatsApp (modo manual). */
-  onEnviarWhatsapp?: () => void;
-  /** Quando true, mostra "Enviar WhatsApp" no menu. */
-  podeEnviarWhatsapp?: boolean;
   /** Quando true, oculta as ações contextuais ao exame selecionado. */
   modoConsulta?: boolean;
   /** Quando true, desabilita ações que exigem exame selecionado. */
