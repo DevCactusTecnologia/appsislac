@@ -681,7 +681,7 @@ export default function Soroteca() {
         ))}
       </div>
 
-      {/* Tabs + busca */}
+      {/* Tabs + busca + toggle de filtros avançados */}
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex flex-wrap gap-1 p-1 rounded-xl bg-muted/50 border border-border">
           {STATUS_TABS.map((t) => (
@@ -704,7 +704,11 @@ export default function Soroteca() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por código de barra, material ou localização…"
+            placeholder={
+              advancadoAtivo
+                ? "Filtrar por código de barra…"
+                : "Buscar por código de barra, material ou localização…"
+            }
             className="pl-9 pr-10"
           />
           <button
@@ -717,13 +721,205 @@ export default function Soroteca() {
             <ScanLine className="w-4 h-4" />
           </button>
         </div>
+        <Button
+          variant={advancadoAtivo ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFiltrosAbertos((v) => !v)}
+          className="gap-2"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filtros avançados
+          {filtrosAtivosCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1">
+              {filtrosAtivosCount}
+            </span>
+          )}
+        </Button>
       </div>
+
+      {/* Painel de filtros avançados */}
+      {filtrosAbertos && (
+        <section className="rounded-2xl border border-border bg-card p-4 md:p-5 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              Pesquisa avançada
+            </h3>
+            <div className="flex items-center gap-2">
+              {filtrosAtivosCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={limparFiltrosAvancados} className="h-8">
+                  <X className="w-3.5 h-3.5 mr-1" />
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Paciente */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Paciente (nome ou CPF)
+              </label>
+              <Input
+                value={advPaciente}
+                onChange={(e) => setAdvPaciente(e.target.value)}
+                placeholder="Ex.: Maria Silva ou 123.456…"
+                className="h-9"
+              />
+            </div>
+
+            {/* Protocolo */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Protocolo do atendimento
+              </label>
+              <Input
+                value={advProtocolo}
+                onChange={(e) => setAdvProtocolo(e.target.value)}
+                placeholder="Ex.: 2026000123"
+                className="h-9"
+              />
+            </div>
+
+            {/* Material */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Material
+              </label>
+              <select
+                multiple={false}
+                value={advMaterialIds[0] ?? ""}
+                onChange={(e) =>
+                  setAdvMaterialIds(e.target.value ? [e.target.value] : [])
+                }
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos os materiais</option>
+                {materiais.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.nome}
+                    {m.sigla ? ` (${m.sigla})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Local */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Local de armazenamento
+              </label>
+              <select
+                value={advLocalId}
+                onChange={(e) => setAdvLocalId(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos os locais</option>
+                {locais.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Galeria */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Galeria
+              </label>
+              <select
+                value={advGaleriaId}
+                onChange={(e) => setAdvGaleriaId(e.target.value)}
+                disabled={!advLocalId}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm disabled:opacity-50"
+              >
+                <option value="">{advLocalId ? "Todas as galerias" : "Selecione um local"}</option>
+                {galerias.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status de armazenamento */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Armazenamento
+              </label>
+              <select
+                value={advArmazenamento}
+                onChange={(e) =>
+                  setAdvArmazenamento(e.target.value as typeof advArmazenamento)
+                }
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="todas">Todas</option>
+                <option value="armazenadas">Apenas armazenadas</option>
+                <option value="pendentes">Pendentes de armazenamento</option>
+              </select>
+            </div>
+
+            {/* Coleta — período */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Coleta — período
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={advColetaInicio}
+                  onChange={(e) => setAdvColetaInicio(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-xs text-muted-foreground">até</span>
+                <Input
+                  type="date"
+                  value={advColetaFim}
+                  onChange={(e) => setAdvColetaFim(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            {/* Validade — período */}
+            <div className="space-y-1 md:col-span-2">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Validade — período
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={advValidadeInicio}
+                  onChange={(e) => setAdvValidadeInicio(e.target.value)}
+                  className="h-9"
+                />
+                <span className="text-xs text-muted-foreground">até</span>
+                <Input
+                  type="date"
+                  value={advValidadeFim}
+                  onChange={(e) => setAdvValidadeFim(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-muted-foreground border-t border-border pt-3">
+            Resultados consultados <span className="font-medium text-foreground">no servidor</span> com paginação —
+            os filtros se combinam (AND). A aba de status acima também é aplicada.
+          </div>
+        </section>
+      )}
 
       {/* Lista */}
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        {loading ? (
+        {carregando ? (
           <div className="p-12 text-center text-sm text-muted-foreground">Carregando…</div>
-        ) : filtradas.length === 0 ? (
+        ) : listaVazia ? (
+
           <div className="p-12 text-center">
             <FlaskConical className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">Nenhuma amostra encontrada</p>
