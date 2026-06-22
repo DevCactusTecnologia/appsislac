@@ -255,7 +255,10 @@ export default function SorotecaTriagem() {
         }
       />
 
+      <SorotecaNav />
+
       {/* Scanner */}
+
       <section className="rounded-lg border bg-card p-4 space-y-2">
         <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <ScanLine className="h-4 w-4" />
