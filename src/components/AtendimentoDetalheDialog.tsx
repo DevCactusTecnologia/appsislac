@@ -184,16 +184,17 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     });
   };
 
-  // Enviar WhatsApp — escolha automática do template (resultado | pagamento | atendimento).
+  // Enviar WhatsApp — contextual: a aba ativa define exatamente o documento
+  // enviado. Sem dropdown, sem modal de confirmação, sem ambiguidade.
   const handleSendWhatsapp = async () => {
     if (!atendimento) return;
-    const best = getBestWhatsappAction(atendimento, {
+    const r = await sendDocumentWhatsapp(docTab, atendimento, {
       tenantId: user?.tenantId,
-      todosLiberados: todosLiberadosExames,
     });
-    const r = await best.execute();
     if (r.ok) {
-      toast.success("WhatsApp enfileirado", { description: best.hint });
+      toast.success("WhatsApp enfileirado", {
+        description: DOCUMENT_ACTIONS[docTab].title,
+      });
       setWhatsappRefresh((n) => n + 1);
       return;
     }
@@ -206,6 +207,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     }
     throw new Error(r.reason ?? "erro");
   };
+
 
   if (!open || !atendimento) return null;
 
