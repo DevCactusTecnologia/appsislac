@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import StandardDialog from "@/components/ui/standard-dialog";
 import PdfPreviewDialog from "@/components/PdfPreviewDialog";
 import { buildOrcamentoHtml } from "@/lib/comprovantes";
+import { enqueueNotification, buildIdempotencyKey } from "@/lib/whatsapp/enqueueNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { showError } from "@/lib/showError";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
