@@ -813,3 +813,140 @@ function Stat({
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Timeline (Fase 8) — eventos cronológicos derivados de campos auditáveis
+// ---------------------------------------------------------------------------
+type EventoTipo = "CRIACAO" | "INICIO" | "EXECUCAO" | "PULO" | "CONCLUSAO" | "CANCELAMENTO";
+
+interface EventoTimeline {
+  tipo: EventoTipo;
+  ts: string;
+  titulo: string;
+  descricao?: string;
+  autor?: string | null;
+}
+
+function TimelineLote({ lote, itens }: { lote: ExpurgoLote; itens: ExpurgoItem[] }) {
+  const eventos = useMemo<EventoTimeline[]>(() => {
+    const evs: EventoTimeline[] = [];
+
+    evs.push({
+      tipo: "CRIACAO",
+      ts: lote.created_at,
+      titulo: "Lote criado",
+      descricao: `${lote.total_itens} amostra(s) selecionada(s) · programado para ${formatDate(
+        lote.data_programada,
+      )}`,
+      autor: lote.criado_por_nome,
+    });
+
+    // "Início" só existe implicitamente; usamos o 1º item processado como aproximação,
+    // já que não há campo started_at. Mantém-se enxuto sem novas colunas.
+    const primeiroProcessado = itens
+      .filter((i) => i.executado_em)
+      .sort((a, b) => (a.executado_em! < b.executado_em! ? -1 : 1))[0];
+    if (lote.status !== "PROGRAMADO" && primeiroProcessado) {
+      evs.push({
+        tipo: "INICIO",
+        ts: primeiroProcessado.executado_em!,
+        titulo: "Execução iniciada",
+      });
+    }
+
+    for (const i of itens) {
+      if (!i.executado_em) continue;
+      if (i.status === "EXECUTADO") {
+        evs.push({
+          tipo: "EXECUCAO",
+          ts: i.executado_em,
+          titulo: "Amostra descartada",
+          descricao: `${i.snapshot_codigo_barra ?? "—"} · ${i.snapshot_material ?? "—"}`,
+          autor: i.executado_por_nome,
+        });
+      } else if (i.status === "PULADO") {
+        evs.push({
+          tipo: "PULO",
+          ts: i.executado_em,
+          titulo: "Item pulado",
+          descricao: `${i.snapshot_codigo_barra ?? "—"}${i.motivo_pulo ? ` — ${i.motivo_pulo}` : ""}`,
+          autor: i.executado_por_nome,
+        });
+      }
+    }
+
+    if (lote.concluido_em) {
+      evs.push({
+        tipo: "CONCLUSAO",
+        ts: lote.concluido_em,
+        titulo: "Lote concluído",
+        descricao: `${lote.total_executados} descartadas · ${lote.total_pulados} puladas`,
+      });
+    }
+    if (lote.cancelado_em) {
+      evs.push({
+        tipo: "CANCELAMENTO",
+        ts: lote.cancelado_em,
+        titulo: "Lote cancelado",
+        descricao: lote.motivo_cancelamento ?? undefined,
+      });
+    }
+
+    return evs.sort((a, b) => (a.ts < b.ts ? -1 : 1));
+  }, [lote, itens]);
+
+  const config: Record<EventoTipo, { Icon: typeof Clock; tone: string }> = {
+    CRIACAO: { Icon: FileText, tone: "text-foreground bg-muted" },
+    INICIO: { Icon: Play, tone: "text-blue-700 bg-blue-100" },
+    EXECUCAO: { Icon: Trash2, tone: "text-emerald-700 bg-emerald-100" },
+    PULO: { Icon: SkipForward, tone: "text-amber-700 bg-amber-100" },
+    CONCLUSAO: { Icon: CheckCircle2, tone: "text-emerald-700 bg-emerald-100" },
+    CANCELAMENTO: { Icon: Ban, tone: "text-zinc-700 bg-zinc-200" },
+  };
+
+  return (
+    <div className="border border-border rounded-lg p-3">
+      <div className="flex items-center gap-2 mb-3">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Linha do tempo</span>
+        <span className="text-xs text-muted-foreground">({eventos.length} evento{eventos.length === 1 ? "" : "s"})</span>
+      </div>
+
+      <ol className="relative max-h-64 overflow-auto pr-2">
+        {eventos.map((e, idx) => {
+          const { Icon, tone } = config[e.tipo];
+          const isLast = idx === eventos.length - 1;
+          return (
+            <li key={`${e.tipo}-${e.ts}-${idx}`} className="flex gap-3 pb-3 last:pb-0 relative">
+              <div className="flex flex-col items-center">
+                <div className={cn("h-7 w-7 rounded-full flex items-center justify-center shrink-0", tone)}>
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                {!isLast && <div className="w-px flex-1 bg-border mt-1" />}
+              </div>
+              <div className="flex-1 min-w-0 pb-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-medium">{e.titulo}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {formatDateTime(e.ts)}
+                  </span>
+                </div>
+                {e.descricao && (
+                  <p className="text-xs text-muted-foreground mt-0.5 break-words">{e.descricao}</p>
+                )}
+                {e.autor && (
+                  <p className="text-xs text-muted-foreground mt-0.5">por {e.autor}</p>
+                )}
+              </div>
+            </li>
+          );
+        })}
+        {eventos.length === 0 && (
+          <li className="text-sm text-muted-foreground text-center py-4">
+            Sem eventos registrados.
+          </li>
+        )}
+      </ol>
+    </div>
+  );
+}
