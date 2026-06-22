@@ -29,7 +29,7 @@ import LaboratorioTab from "@/components/configuracoes/LaboratorioTab";
 import MapasTrabalhoTab from "@/components/configuracoes/MapasTrabalhoTab";
 import DocumentosTab from "@/components/configuracoes/DocumentosTab";
 import SiteTab from "@/components/configuracoes/SiteTab";
-import NotificacoesTab from "@/components/configuracoes/NotificacoesTab";
+
 import GatewayPagamentoTab from "@/components/configuracoes/GatewayPagamentoTab";
 import IntegracoesApoioTab from "@/components/configuracoes/IntegracoesApoioTab";
 import FornecedoresTab from "@/components/configuracoes/FornecedoresTab";
