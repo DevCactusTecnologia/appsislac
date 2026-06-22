@@ -83,12 +83,6 @@ export function MaisAcoesMenu({
             Registrar entrega
           </DropdownMenuItem>
         )}
-        {!modoConsulta && onEnviarWhatsapp && podeEnviarWhatsapp && (
-          <DropdownMenuItem onSelect={() => run(onEnviarWhatsapp)}>
-            <Send className="h-4 w-4 mr-2 text-[hsl(var(--status-success))]" />
-            Enviar WhatsApp ao paciente
-          </DropdownMenuItem>
-        )}
         {!modoConsulta && (onRetificar || onRecoleta || onCancelarAnalise) && (
           <>
             <DropdownMenuSeparator />
