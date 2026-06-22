@@ -6,6 +6,12 @@ import { toast } from "sonner";
 import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import WhatsappTimeline from "@/components/whatsapp/WhatsappTimeline";
 import { getBestWhatsappAction } from "@/lib/whatsapp/getBestWhatsappAction";
+import {
+  DOCUMENT_ACTIONS,
+  sendDocumentWhatsapp,
+  type DocumentTab,
+} from "@/lib/whatsapp/getWhatsappActionByDocument";
+
 // ----------------------------------------------------------------------------
 // SISLAC Document Ownership (IA-first semantics)
 //   Lab Data  = institutional identity         (labConfigStore — SINGLE SOURCE)
