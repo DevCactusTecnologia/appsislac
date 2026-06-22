@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      amostra_alocacoes: {
+        Row: {
+          alocada_em: string
+          amostra_id: string
+          created_at: string
+          id: string
+          motivo_retirada: string | null
+          observacao: string | null
+          posicao_id: string
+          retirada_em: string | null
+          tenant_id: string
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          alocada_em?: string
+          amostra_id: string
+          created_at?: string
+          id?: string
+          motivo_retirada?: string | null
+          observacao?: string | null
+          posicao_id: string
+          retirada_em?: string | null
+          tenant_id: string
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          alocada_em?: string
+          amostra_id?: string
+          created_at?: string
+          id?: string
+          motivo_retirada?: string | null
+          observacao?: string | null
+          posicao_id?: string
+          retirada_em?: string | null
+          tenant_id?: string
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amostra_alocacoes_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "amostras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "amostra_alocacoes_amostra_id_fkey"
+            columns: ["amostra_id"]
+            isOneToOne: false
+            referencedRelation: "vw_coletas_operacionais"
+            referencedColumns: ["amostra_id"]
+          },
+          {
+            foreignKeyName: "amostra_alocacoes_posicao_id_fkey"
+            columns: ["posicao_id"]
+            isOneToOne: false
+            referencedRelation: "posicoes_galeria"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       amostra_sequence: {
         Row: {
           dia: string
@@ -2723,6 +2787,47 @@ export type Database = {
           },
         ]
       }
+      galerias: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          local_id: string
+          nome: string
+          ordem: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          local_id: string
+          nome: string
+          ordem?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          local_id?: string
+          nome?: string
+          ordem?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galerias_local_id_fkey"
+            columns: ["local_id"]
+            isOneToOne: false
+            referencedRelation: "locais_armazenamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guia_sequence: {
         Row: {
           created_at: string
@@ -3722,6 +3827,45 @@ export type Database = {
           },
         ]
       }
+      locais_armazenamento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          observacao: string | null
+          temperatura_max: number | null
+          temperatura_min: number | null
+          tenant_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          observacao?: string | null
+          temperatura_max?: number | null
+          temperatura_min?: number | null
+          tenant_id: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          observacao?: string | null
+          temperatura_max?: number | null
+          temperatura_min?: number | null
+          tenant_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mapa_exames: {
         Row: {
           created_at: string
@@ -4305,6 +4449,47 @@ export type Database = {
           recurso_tipo?: string
         }
         Relationships: []
+      }
+      posicoes_galeria: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          galeria_id: string
+          id: string
+          ordem: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          galeria_id: string
+          id?: string
+          ordem?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          galeria_id?: string
+          id?: string
+          ordem?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posicoes_galeria_galeria_id_fkey"
+            columns: ["galeria_id"]
+            isOneToOne: false
+            referencedRelation: "galerias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
