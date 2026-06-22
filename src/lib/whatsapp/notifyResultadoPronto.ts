@@ -74,7 +74,7 @@ async function resolveLinkResultado(tenantId: string): Promise<string> {
 export async function notifyResultadoPronto(
   input: NotifyResultadoProntoInput,
 ): Promise<NotifyResultadoProntoResult> {
-  const { protocolo } = input;
+  const { protocolo, force = false } = input;
   if (!protocolo) return { ok: false, reason: "missing_protocolo" };
 
   // 1) Resolve atendimento (tenant + paciente)
@@ -85,6 +85,14 @@ export async function notifyResultadoPronto(
     .maybeSingle();
   if (atErr || !at) return { ok: false, reason: "atendimento_not_found" };
   if (!at.paciente_id) return { ok: false, reason: "paciente_sem_cadastro" };
+
+  // 1.1) Política de envio por laboratório (Fase 3E.1).
+  // Em modo `manual`, o disparo automático (chamada sem `force`) NÃO envia —
+  // espera o operador clicar em "Enviar WhatsApp" na tela de resultado.
+  if (!force) {
+    const mode = await getNotificationMode(at.tenant_id, "resultado_pronto");
+    if (mode === "manual") return { ok: false, reason: "policy_manual" };
+  }
 
   // 2) Resolve telefone do paciente
   const { data: pac } = await supabase
