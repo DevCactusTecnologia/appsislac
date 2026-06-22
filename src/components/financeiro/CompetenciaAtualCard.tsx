@@ -25,7 +25,7 @@ function formatComp(yyyymm: string): string {
 
 export default function CompetenciaAtualCard() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isAdmin = user?.perfil === "admin" || user?.isSuperAdmin === true;
 
   const [resumo, setResumo] = useState<CompetenciaResumo | null>(null);
   const [loading, setLoading] = useState(true);
