@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, Download, Printer, Send, Loader2, Link2, Check, X } from "lucide-react";
+import { FileText, Download, Printer, Loader2, Link2, Check, X } from "lucide-react";
+import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
