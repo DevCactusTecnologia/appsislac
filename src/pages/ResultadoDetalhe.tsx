@@ -51,6 +51,7 @@ import { resolveResultadoRegulatorio, renderRegulatorioFooterHtml } from "@/lib/
 import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
+import { notifyResultadoPronto } from "@/lib/whatsapp/notifyResultadoPronto";
 import { validarCredenciaisAnalista } from "@/lib/validarCredenciaisAnalista";
 import { useDicionario } from "@/hooks/useDicionario";
 
@@ -677,6 +678,9 @@ const ResultadoDetalhe = () => {
     if (naoLiberadosRestantes === 0) {
       fireSuccessConfetti();
       setShowCelebracao(true);
+      // WhatsApp 2.0 — Fase 3E: avisa o paciente que o resultado está pronto.
+      // Server-side aplica opt-out, rate limit, isolamento por tenant e auditoria.
+      void notifyResultadoPronto({ protocolo: paciente.protocolo });
     } else {
       setShowLiberadoPopup(true);
     }
@@ -769,6 +773,8 @@ const ResultadoDetalhe = () => {
       if (naoLiberados === 0) {
         fireSuccessConfetti();
         setShowCelebracao(true);
+        // WhatsApp 2.0 — Fase 3E: notifica o paciente após liberação em lote.
+        void notifyResultadoPronto({ protocolo: paciente.protocolo });
       } else {
         setShowCelebracao(false);
         toast.success(`${okCount} resultado${okCount > 1 ? "s" : ""} liberado${okCount > 1 ? "s" : ""} com sucesso.`);
