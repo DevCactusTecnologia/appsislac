@@ -5708,6 +5708,33 @@ export type Database = {
           },
         ]
       }
+      tenant_rate_limit: {
+        Row: {
+          atualizado_em: string
+          bloqueado_ate: string | null
+          mensagens_por_dia: number
+          mensagens_por_hora: number
+          motivo_bloqueio: string | null
+          tenant_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          bloqueado_ate?: string | null
+          mensagens_por_dia?: number
+          mensagens_por_hora?: number
+          motivo_bloqueio?: string | null
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          bloqueado_ate?: string | null
+          mensagens_por_dia?: number
+          mensagens_por_hora?: number
+          motivo_bloqueio?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       tenant_registry: {
         Row: {
           backup_status: string
@@ -6479,6 +6506,186 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_metrics_tenant: {
+        Row: {
+          atualizado_em: string
+          dia: string
+          entregues: number
+          enviados: number
+          falhas: number
+          lidos: number
+          opt_outs: number
+          tenant_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          dia: string
+          entregues?: number
+          enviados?: number
+          falhas?: number
+          lidos?: number
+          opt_outs?: number
+          tenant_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          dia?: string
+          entregues?: number
+          enviados?: number
+          falhas?: number
+          lidos?: number
+          opt_outs?: number
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_opt_out: {
+        Row: {
+          criado_em: string
+          id: string
+          motivo: string | null
+          origem: string
+          paciente_id: string | null
+          telefone: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          motivo?: string | null
+          origem?: string
+          paciente_id?: string | null
+          telefone?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          motivo?: string | null
+          origem?: string
+          paciente_id?: string | null
+          telefone?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_outbox: {
+        Row: {
+          atendimento_protocolo: string | null
+          atualizado_em: string
+          botoes: Json | null
+          criado_em: string
+          criado_por: string | null
+          erro: string | null
+          id: string
+          idempotency_key: string
+          idioma: string
+          max_tentativas: number
+          message_id: string | null
+          paciente_id: string | null
+          prioridade: number
+          proxima_tentativa_em: string
+          status: string
+          telefone: string
+          template_nome: string
+          template_versao: string | null
+          tenant_id: string
+          tentativa: number
+          tipo_documento: string | null
+          variaveis: Json
+        }
+        Insert: {
+          atendimento_protocolo?: string | null
+          atualizado_em?: string
+          botoes?: Json | null
+          criado_em?: string
+          criado_por?: string | null
+          erro?: string | null
+          id?: string
+          idempotency_key: string
+          idioma?: string
+          max_tentativas?: number
+          message_id?: string | null
+          paciente_id?: string | null
+          prioridade?: number
+          proxima_tentativa_em?: string
+          status?: string
+          telefone: string
+          template_nome: string
+          template_versao?: string | null
+          tenant_id: string
+          tentativa?: number
+          tipo_documento?: string | null
+          variaveis?: Json
+        }
+        Update: {
+          atendimento_protocolo?: string | null
+          atualizado_em?: string
+          botoes?: Json | null
+          criado_em?: string
+          criado_por?: string | null
+          erro?: string | null
+          id?: string
+          idempotency_key?: string
+          idioma?: string
+          max_tentativas?: number
+          message_id?: string | null
+          paciente_id?: string | null
+          prioridade?: number
+          proxima_tentativa_em?: string
+          status?: string
+          telefone?: string
+          template_nome?: string
+          template_versao?: string | null
+          tenant_id?: string
+          tentativa?: number
+          tipo_documento?: string | null
+          variaveis?: Json
+        }
+        Relationships: []
+      }
+      whatsapp_templates_cache: {
+        Row: {
+          botoes: Json | null
+          categoria: string | null
+          corpo: string | null
+          id: string
+          idioma: string
+          meta_payload: Json | null
+          nome: string
+          sincronizado_em: string
+          status: string
+          variaveis_count: number | null
+          versao: string | null
+        }
+        Insert: {
+          botoes?: Json | null
+          categoria?: string | null
+          corpo?: string | null
+          id?: string
+          idioma?: string
+          meta_payload?: Json | null
+          nome: string
+          sincronizado_em?: string
+          status?: string
+          variaveis_count?: number | null
+          versao?: string | null
+        }
+        Update: {
+          botoes?: Json | null
+          categoria?: string | null
+          corpo?: string | null
+          id?: string
+          idioma?: string
+          meta_payload?: Json | null
+          nome?: string
+          sincronizado_em?: string
+          status?: string
+          variaveis_count?: number | null
+          versao?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       convenio_competencia_resumo: {
@@ -7207,6 +7414,25 @@ export type Database = {
         Args: { _fim: string; _inicio: string }
         Returns: Json
       }
+      enqueue_whatsapp: {
+        Args: {
+          p_atendimento_protocolo?: string
+          p_botoes?: Json
+          p_idempotency_key: string
+          p_idioma?: string
+          p_paciente_id: string
+          p_prioridade?: number
+          p_telefone: string
+          p_template: string
+          p_tenant_id: string
+          p_tipo_documento?: string
+          p_variaveis: Json
+        }
+        Returns: {
+          outbox_id: string
+          status: string
+        }[]
+      }
       enrich_tuss_em_lote: {
         Args: { _limit?: number; _threshold?: number }
         Returns: {
@@ -7664,7 +7890,7 @@ export type Database = {
         | "CUSTOM"
       payment_provider: "mercado_pago" | "infinitepay"
       subscription_status: "pendente" | "aprovado" | "reprovado"
-      whatsapp_modo: "simples" | "cloud_api" | "zapi"
+      whatsapp_modo: "simples" | "cloud_api" | "zapi" | "centralized"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7837,7 +8063,7 @@ export const Constants = {
       ],
       payment_provider: ["mercado_pago", "infinitepay"],
       subscription_status: ["pendente", "aprovado", "reprovado"],
-      whatsapp_modo: ["simples", "cloud_api", "zapi"],
+      whatsapp_modo: ["simples", "cloud_api", "zapi", "centralized"],
     },
   },
 } as const
