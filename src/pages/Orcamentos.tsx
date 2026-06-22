@@ -229,74 +229,11 @@ const Orcamentos = () => {
     return { idade: formatIdadeDetalhada(p.dataNascimento), aniversario: isAniversarioHoje(p.dataNascimento) };
   };
 
-  // ===== Fase 2: Templates de WhatsApp por estágio =====
-  type TemplateKey = "lembrete" | "reforco" | "ultima";
+  // WhatsApp 2.0 (Fase 3D.2): templates comerciais de marketing
+  // (lembrete/reforço/última chance) foram REMOVIDOS. O SISLAC não
+  // possui módulo de marketing — apenas notificações operacionais via
+  // enqueueNotification() / Outbox / Meta.
 
-  const templates: Record<TemplateKey, { label: string; short: string; emoji: string; tone: string; build: (orc: Orcamento) => string }> = {
-    lembrete: {
-      label: "Lembrete (D+2)",
-      short: "Lembrete",
-      emoji: "👋",
-      tone: "text-[hsl(var(--status-success))]",
-      build: (orc) => [
-        `👋 Olá *${orc.nome}*, tudo bem?`,
-        "",
-        `Passando para lembrar do seu orçamento *${orc.id}* feito recentemente em nosso laboratório.`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Posso te ajudar a agendar a coleta? Estamos à disposição. 😊`,
-      ].join("\n"),
-    },
-    reforco: {
-      label: "Reforço (D+5)",
-      short: "Reforço",
-      emoji: "💬",
-      tone: "text-[hsl(var(--status-warning))]",
-      build: (orc) => [
-        `💬 Olá *${orc.nome}*, tudo bem?`,
-        "",
-        `Notamos que o orçamento *${orc.id}* ainda está em aberto.`,
-        "",
-        `Se houver qualquer dúvida sobre os exames, preparo ou valores, é só nos chamar — nosso time está pronto pra ajudar.`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Quer que a gente agende sua coleta esta semana?`,
-      ].join("\n"),
-    },
-    ultima: {
-      label: "Última chance (D+15)",
-      short: "Última",
-      emoji: "⏰",
-      tone: "text-[hsl(var(--status-error))]",
-      build: (orc) => [
-        `⏰ Olá *${orc.nome}*!`,
-        "",
-        `Seu orçamento *${orc.id}* está próximo do vencimento (validade de ${VALIDADE_DIAS} dias).`,
-        "",
-        `Para garantir os mesmos valores e condições, podemos agendar sua coleta agora — e ainda temos uma *condição especial* para fechar nesta semana. 💚`,
-        "",
-        `🔬 ${orc.exames.length} exame${orc.exames.length > 1 ? "s" : ""} · 💰 *${fmtBRL(orc.total)}*`,
-        "",
-        `Posso reservar um horário pra você?`,
-      ].join("\n"),
-    },
-  };
-
-  const sugerirTemplate = (dias: number): TemplateKey => {
-    if (dias >= 12) return "ultima";
-    if (dias >= 4) return "reforco";
-    return "lembrete";
-  };
-
-  const sendWhatsappTemplate = (orc: Orcamento, key: TemplateKey) => {
-    const phone = (orc.telefone || "").replace(/\D/g, "");
-    if (!phone) return;
-    const fp = phone.startsWith("55") ? phone : `55${phone}`;
-    const msg = templates[key].build(orc);
-    window.open(`https://wa.me/${fp}?text=${encodeURIComponent(msg)}`, "_blank");
-  };
 
   // ===== Fase 3: Desconto inteligente sugerido =====
   // Heurística: cruza temperatura + score + dias para sugerir um % de desconto
