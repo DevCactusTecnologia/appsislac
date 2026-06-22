@@ -281,42 +281,7 @@ async function testWhatsapp(cfg: WppCfg): Promise<{ ok: boolean; message: string
     }
   }
 
-  if (cfg.provider === "twilio") {
-    if (!cfg.businessAccountId || !cfg.accessToken) {
-      return { ok: false, message: "Account SID (businessAccountId) e Auth Token (accessToken) são obrigatórios." };
-    }
-    try {
-      const auth = btoa(`${cfg.businessAccountId}:${cfg.accessToken}`);
-      const r = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(cfg.businessAccountId)}.json`,
-        { headers: { Authorization: `Basic ${auth}` } },
-      );
-      if (r.ok) {
-        const body = await r.json().catch(() => ({}));
-        return { ok: true, message: `Conta Twilio "${(body as any).friendly_name ?? cfg.businessAccountId}" autenticada.` };
-      }
-      return { ok: false, message: `Twilio respondeu ${r.status}.` };
-    } catch (e) {
-      return { ok: false, message: `Erro de rede: ${e instanceof Error ? e.message : String(e)}` };
-    }
-  }
-
-  // Z-API
-  if (!cfg.phoneNumberId || !cfg.accessToken) {
-    return { ok: false, message: "Instance ID (phoneNumberId) e Token (accessToken) são obrigatórios." };
-  }
-  try {
-    const r = await fetch(
-      `https://api.z-api.io/instances/${encodeURIComponent(cfg.phoneNumberId)}/token/${encodeURIComponent(cfg.accessToken)}/status`,
-    );
-    const body = await r.json().catch(() => ({}));
-    if (r.ok && (body as any)?.connected !== false) {
-      return { ok: true, message: "Instância Z-API acessível." };
-    }
-    return { ok: false, message: `Z-API respondeu ${r.status}.` };
-  } catch (e) {
-    return { ok: false, message: `Erro de rede: ${e instanceof Error ? e.message : String(e)}` };
-  }
+  return { ok: false, message: "Provedor não suportado — apenas Meta Cloud API é aceita." };
 }
 
 /* ------------------------------ Handler ----------------------------------- */
