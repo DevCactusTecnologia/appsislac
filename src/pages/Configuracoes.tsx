@@ -218,6 +218,8 @@ const Configuracoes = () => {
         return <FornecedoresTab />;
       case "formas-pagamento":
         return <FormasPagamentoTab />;
+      case "notificacoes":
+        return <NotificacoesTab />;
       default: {
         const item = menuItems.find((m) => m.id === activeTab);
         const Icon = item?.icon || Building2;
