@@ -167,20 +167,18 @@ export default function SorotecaEmprestimos() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <PageHeader
-        eyebrow="Operacional"
-        title="Empréstimos de amostras"
-        description="Solicite, aprove, registre retiradas e devoluções de amostras emprestadas."
-        actions={
-          <Button size="sm" onClick={() => setNovoOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo empréstimo
-          </Button>
-        }
-      />
+    <SorotecaShell
+      title="Empréstimos de amostras"
+      description="Solicite, aprove, registre retiradas e devoluções de amostras emprestadas."
+      actions={
+        <Button size="sm" onClick={() => setNovoOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo empréstimo
+        </Button>
+      }
+    >
 
-      <SorotecaNav />
+
 
       {/* Tabs + busca */}
 
