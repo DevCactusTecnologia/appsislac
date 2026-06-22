@@ -790,6 +790,20 @@ const ResultadoDetalhe = () => {
     registros: auditLog[exame.id] || [],
   }));
 
+  // Fase 3E.1 — envio manual do "Resultado pronto" pelo operador.
+  // Disponível quando o atendimento já está finalizado. Server-side aplica
+  // opt-out, rate limit, isolamento por tenant e idempotência.
+  const todosLiberados = paciente.exames.length > 0 && paciente.exames.every(
+    (e) => isExameLiberadoStatus(e.status) || e.status === "Cancelado",
+  );
+  const handleEnviarResultadoWhatsapp = async () => {
+    const r = await notifyResultadoPronto({ protocolo: paciente.protocolo, force: true });
+    if (r.ok) toast.success("Aviso de resultado enviado ao paciente.");
+    else if (r.reason === "telefone_invalido") toast.error("Paciente sem telefone válido.");
+    else if (r.reason === "paciente_sem_cadastro") toast.error("Paciente sem cadastro completo.");
+    else toast.error("Não foi possível enviar.", { description: r.reason });
+  };
+
 
   const handleCancelarAnalise = () => {
     setShowCancelarDialog(true);
@@ -1148,6 +1162,8 @@ const ResultadoDetalhe = () => {
                   onAuditoria={() => setShowAuditoria(true)}
                   onCritico={() => setShowCriticoDialog(true)}
                   onEntrega={() => setShowEntregaDialog(true)}
+                  onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
+                  podeEnviarWhatsapp={todosLiberados}
                 />
               }
 
@@ -1622,6 +1638,8 @@ const ResultadoDetalhe = () => {
                     onAuditoria={() => setShowAuditoria(true)}
                     onCritico={() => setShowCriticoDialog(true)}
                     onEntrega={() => setShowEntregaDialog(true)}
+                    onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
+                    podeEnviarWhatsapp={todosLiberados}
                   />
                 }
 

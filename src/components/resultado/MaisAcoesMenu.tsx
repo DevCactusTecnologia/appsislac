@@ -25,6 +25,10 @@ interface Props {
   onRecoleta?: () => void;
   onCritico?: () => void;
   onEntrega?: () => void;
+  /** Envia o aviso "resultado pronto" via WhatsApp (modo manual). */
+  onEnviarWhatsapp?: () => void;
+  /** Quando true, mostra "Enviar WhatsApp" no menu. */
+  podeEnviarWhatsapp?: boolean;
   /** Quando true, oculta as ações contextuais ao exame selecionado. */
   modoConsulta?: boolean;
   /** Quando true, desabilita ações que exigem exame selecionado. */
@@ -40,6 +44,8 @@ export function MaisAcoesMenu({
   onRecoleta,
   onCritico,
   onEntrega,
+  onEnviarWhatsapp,
+  podeEnviarWhatsapp = false,
   modoConsulta = false,
   semExameSelecionado = false,
   canRetificar = true,
@@ -80,6 +86,12 @@ export function MaisAcoesMenu({
           <DropdownMenuItem onSelect={() => run(onEntrega)}>
             <Send className="h-4 w-4 mr-2" />
             Registrar entrega
+          </DropdownMenuItem>
+        )}
+        {!modoConsulta && onEnviarWhatsapp && podeEnviarWhatsapp && (
+          <DropdownMenuItem onSelect={() => run(onEnviarWhatsapp)}>
+            <Send className="h-4 w-4 mr-2 text-[hsl(var(--status-success))]" />
+            Enviar WhatsApp ao paciente
           </DropdownMenuItem>
         )}
         {!modoConsulta && (onRetificar || onRecoleta || onCancelarAnalise) && (

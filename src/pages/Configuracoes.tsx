@@ -16,7 +16,7 @@ import {
   Globe,
   Search,
   X,
-  
+  Bell,
   Plug,
 } from "lucide-react";
 import AdminTab from "@/components/configuracoes/AdminTab";
@@ -34,6 +34,7 @@ import GatewayPagamentoTab from "@/components/configuracoes/GatewayPagamentoTab"
 import IntegracoesApoioTab from "@/components/configuracoes/IntegracoesApoioTab";
 import FornecedoresTab from "@/components/configuracoes/FornecedoresTab";
 import FormasPagamentoTab from "@/components/configuracoes/FormasPagamentoTab";
+import NotificacoesTab from "@/components/configuracoes/NotificacoesTab";
 // OnboardingChecklist removido por solicitação do usuário
 
 /**
@@ -68,8 +69,10 @@ const menuItems: Array<{
   { group: "Operacional", id: "mapas-trabalho", label: "Mapas de Trabalho", icon: FileText, desc: "Workflow operacional de bancada (não controla VR, metodologia ou cálculo)", keywords: ["mapa", "trabalho", "impressão", "operacional", "bancada", "workflow", "fila"] },
   // GOVERNANÇA
   { group: "Governança", id: "admin", label: "Meu acesso", icon: UserCog, desc: "Perfil, email e senha", keywords: ["admin", "perfil", "senha", "password", "email", "conta"] },
-  // Notificações WhatsApp foram centralizadas no painel Super Admin
-  // (`/super-admin/notificacoes`) — não há mais configuração por laboratório.
+  // Fase 3E.1 — política de envio de notificações WhatsApp por laboratório.
+  // Token/número/webhook/Meta continuam exclusivos do Super Admin
+  // (`/super-admin/notificacoes`). Esta aba só define automático × manual.
+  { group: "Governança", id: "notificacoes", label: "Notificações", icon: Bell, desc: "Automático ou manual por tipo de aviso WhatsApp", keywords: ["whatsapp", "notificação", "notificacao", "aviso", "mensagem", "automático", "manual", "resultado", "recoleta", "orçamento", "comprovante"] },
   { group: "Governança", id: "gateway-pagamento", label: "Gateway de pagamento", icon: CreditCard, desc: "Mercado Pago, Pix e cartões", keywords: ["gateway", "pagamento", "mercado pago", "mercadopago", "pix", "cartão", "boleto", "checkout"] },
   // Placeholders ocultos do menu — comportamento e código preservados.
   { group: "Conta", id: "painel", label: "Painel de chamada", icon: MonitorPlay, desc: "Tela de espera", hidden: true },
@@ -215,6 +218,8 @@ const Configuracoes = () => {
         return <FornecedoresTab />;
       case "formas-pagamento":
         return <FormasPagamentoTab />;
+      case "notificacoes":
+        return <NotificacoesTab />;
       default: {
         const item = menuItems.find((m) => m.id === activeTab);
         const Icon = item?.icon || Building2;
