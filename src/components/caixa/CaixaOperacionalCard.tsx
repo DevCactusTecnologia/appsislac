@@ -35,9 +35,17 @@ interface Props {
 export default function CaixaOperacionalCard({ compact = false }: Props) {
   const { user, hasPermission } = useAuth();
   const podeOperar = hasPermission("gestao_financeira");
-  const unidadeId = user?.unidadeAtiva ?? "";
-  const unidadeNome =
-    getUnidades().find((u) => u.id === unidadeId)?.nome ?? unidadeId ?? "Unidade";
+  // Resolve unidade contra o catálogo real — evita FK violation quando o
+  // profile aponta para um id default ("und-001") que não existe no tenant.
+  const unidades = getUnidades();
+  const unidadeAtivaUser = user?.unidadeAtiva ?? "";
+  const unidadeResolvida =
+    unidades.find((u) => u.id === unidadeAtivaUser) ??
+    unidades.find((u) => u.padrao) ??
+    unidades[0] ??
+    null;
+  const unidadeId = unidadeResolvida?.id ?? "";
+  const unidadeNome = unidadeResolvida?.nome ?? "Unidade";
 
   const [loading, setLoading] = useState(true);
   const [sessao, setSessao] = useState<CaixaSessao | null>(null);
