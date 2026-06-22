@@ -393,11 +393,9 @@ const Orcamentos = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(({ orc, score, temperatura, diasRestantes, dias }) => {
+                    {filtered.map(({ orc, score, temperatura, diasRestantes }) => {
                       const scoreCls = score >= 70 ? "text-[hsl(var(--status-success))]" : score >= 40 ? "text-[hsl(var(--status-warning))]" : "text-[hsl(var(--status-error))]";
-                      const sugestao = sugerirTemplate(dias);
-                      const tpl = templates[sugestao];
-                      const hasPhone = !!(orc.telefone || "").replace(/\D/g, "");
+
                       return (
                         <tr key={orc.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setDetailOrc(orc)}>
                           <td className="px-4 py-3.5 whitespace-nowrap">
