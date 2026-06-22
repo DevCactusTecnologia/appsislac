@@ -49,6 +49,7 @@ const SECTIONS: NavSection[] = [
   {
     label: "Plataforma",
     items: [
+      { to: "/super-admin/notificacoes", icon: MessageSquare, label: "Notificações" },
       { to: "/super-admin/configuracoes", icon: Settings, label: "Configurações" },
     ],
   },
