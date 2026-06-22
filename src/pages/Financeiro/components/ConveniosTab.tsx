@@ -5,6 +5,7 @@ import { cn, fmtBRL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useFinanceiroContext } from "../FinanceiroContext";
 import { useConvenioFaturas, type ConvenioFaturaRow } from "@/hooks/useConvenioFaturas";
+import CompetenciaAtualCard from "@/components/financeiro/CompetenciaAtualCard";
 
 const TH = "text-left px-4 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.08em]";
 
