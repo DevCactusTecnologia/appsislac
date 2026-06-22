@@ -31,7 +31,7 @@ interface S3Cfg {
   region: string; bucket: string; endpoint?: string;
 }
 interface WppCfg {
-  provider: "meta" | "twilio" | "zapi";
+  provider: "meta";
   phoneNumberId?: string; accessToken?: string;
   verifyToken?: string; businessAccountId?: string;
 }
