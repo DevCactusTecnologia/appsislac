@@ -406,8 +406,9 @@ export default function SorotecaEmprestimos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 // ---------------------------------------------------------------------------
