@@ -44,17 +44,17 @@ export async function buildIdempotencyKey(parts: Array<string | undefined>): Pro
 export async function enqueueNotification(p: EnqueueParams): Promise<EnqueueResult> {
   const { data, error } = await supabase.rpc("enqueue_whatsapp", {
     p_tenant_id: p.tenantId,
-    p_paciente_id: p.pacienteId ?? null,
+    p_paciente_id: p.pacienteId ?? undefined,
     p_telefone: p.telefone,
     p_template: p.template,
     p_variaveis: (p.variaveis ?? {}) as never,
     p_idempotency_key: p.idempotencyKey,
-    p_atendimento_protocolo: p.atendimentoProtocolo ?? null,
-    p_tipo_documento: p.tipo ?? null,
+    p_atendimento_protocolo: p.atendimentoProtocolo ?? undefined,
+    p_tipo_documento: p.tipo ?? undefined,
     p_idioma: p.idioma ?? "pt_BR",
-    p_botoes: (p.botoes ?? null) as never,
+    p_botoes: (p.botoes ?? undefined) as never,
     p_prioridade: p.prioridade ?? 5,
-  });
+  } as never);
   if (error) throw new Error(error.message || "enqueue_whatsapp_failed");
   const row = Array.isArray(data) ? data[0] : data;
   const outboxId = (row as { outbox_id?: string })?.outbox_id ?? "";
