@@ -1,11 +1,13 @@
-// PainelTab — V3 (cards uniformes refinados, compactos).
+// PainelTab — V4 (Dashboard hero + KPI grid).
 //
-// 6 KPIs em grid uniforme. Densidade compacta. Identidade flat + indigo.
-//   • Acento de tom no canto (dot) em vez de cor no valor — mais sóbrio.
-//   • Hierarquia: label · valor grande · hint.
+// Layout dashboard:
+//   • Hero card "Saldo do mês" (indigo wash, valor grande Sora).
+//   • Receita Hoje + Receita Mês como cartões positivos secundários.
+//   • Grid de KPIs operacionais (A Receber, Despesas, Convênios) abaixo.
 import { motion } from "framer-motion";
 import {
   Wallet, TrendingUp, Clock, ArrowUpCircle, CircleDollarSign, Building2,
+  ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 import { fmtBRL, cn } from "@/lib/utils";
 import { useFinanceiroContext } from "../FinanceiroContext";
@@ -26,17 +28,19 @@ const TONE_DOT: Record<CardDef["tone"], string> = {
   neutral:  "bg-muted-foreground/40",
 };
 
-const TONE_VALUE: Record<CardDef["tone"], string> = {
-  positive: "text-foreground",
-  warning:  "text-foreground",
-  negative: "text-rose-600 dark:text-rose-400",
-  neutral:  "text-foreground",
+const TONE_RING: Record<CardDef["tone"], string> = {
+  positive: "ring-emerald-500/15 bg-emerald-500/5",
+  warning:  "ring-amber-500/15 bg-amber-500/5",
+  negative: "ring-rose-500/15 bg-rose-500/5",
+  neutral:  "ring-border/60 bg-muted/30",
 };
 
 export default function PainelTab() {
   const { painelKpis } = useFinanceiroContext();
 
-  const cards: CardDef[] = [
+  const saldoPositivo = painelKpis.saldoAtual >= 0;
+
+  const heroSecondary: CardDef[] = [
     {
       key: "receitaHoje",
       label: "Receita Hoje",
@@ -52,11 +56,14 @@ export default function PainelTab() {
       label: "Receita Mês",
       value: fmtBRL(painelKpis.receitaMes),
       hint: painelKpis.qtdEntradasMes
-        ? `${painelKpis.qtdEntradasMes} ${painelKpis.qtdEntradasMes === 1 ? "recebimento" : "recebimentos"} no mês`
+        ? `${painelKpis.qtdEntradasMes} no mês`
         : "Nenhum recebimento no mês",
       Icon: TrendingUp,
       tone: "positive",
     },
+  ];
+
+  const cards: CardDef[] = [
     {
       key: "aReceber",
       label: "A Receber",
@@ -78,14 +85,6 @@ export default function PainelTab() {
       tone: "neutral",
     },
     {
-      key: "saldoAtual",
-      label: "Saldo Atual",
-      value: fmtBRL(painelKpis.saldoAtual),
-      hint: "Receitas − Despesas (mês)",
-      Icon: CircleDollarSign,
-      tone: painelKpis.saldoAtual >= 0 ? "positive" : "negative",
-    },
-    {
       key: "conveniosPendentes",
       label: "Convênios Pendentes",
       value: String(painelKpis.conveniosPendentes),
@@ -98,36 +97,105 @@ export default function PainelTab() {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {cards.map((c, i) => {
-        const Icon = c.Icon;
-        return (
-          <motion.div
-            key={c.key}
-            layout
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, delay: i * 0.02 }}
-            className="group relative rounded-xl border border-border/50 bg-card p-4 flex flex-col gap-2 hover:border-border transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className={cn("h-1.5 w-1.5 rounded-full", TONE_DOT[c.tone])} />
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="space-y-4">
+      {/* ─── Hero: Saldo + receitas ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Saldo do mês — destaque */}
+        <motion.div
+          layout
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="lg:col-span-1 relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-transparent p-5"
+        >
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+          <div className="relative flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary/80">
+              Saldo do mês
+            </span>
+            <div className="p-2 rounded-xl bg-primary/10 ring-1 ring-primary/20 text-primary">
+              <CircleDollarSign className="h-4 w-4" strokeWidth={1.75} />
+            </div>
+          </div>
+          <div className={cn(
+            "relative font-display font-semibold tabular-nums leading-none mt-4 text-[34px]",
+            saldoPositivo ? "text-foreground" : "text-rose-600",
+          )}>
+            {fmtBRL(painelKpis.saldoAtual)}
+          </div>
+          <div className="relative flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
+            {saldoPositivo
+              ? <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
+              : <ArrowDownRight className="h-3.5 w-3.5 text-rose-500" />}
+            <span>Receitas − Despesas no mês</span>
+          </div>
+        </motion.div>
+
+        {/* Receita Hoje + Receita Mês */}
+        {heroSecondary.map((c, i) => {
+          const Icon = c.Icon;
+          return (
+            <motion.div
+              key={c.key}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, delay: 0.04 + i * 0.04 }}
+              className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/30 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.18)] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {c.label}
                 </span>
+                <div className={cn("p-2 rounded-xl ring-1", TONE_RING[c.tone])}>
+                  <Icon className="h-4 w-4 text-emerald-600" strokeWidth={1.75} />
+                </div>
               </div>
-              <Icon className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.75} />
-            </div>
-            <div className={cn("text-[22px] font-semibold tabular-nums leading-tight", TONE_VALUE[c.tone])}>
-              {c.value}
-            </div>
-            {c.hint && (
-              <div className="text-[11px] text-muted-foreground">{c.hint}</div>
-            )}
-          </motion.div>
-        );
-      })}
+              <div className="font-display font-semibold tabular-nums text-[26px] leading-none mt-4 text-foreground">
+                {c.value}
+              </div>
+              {c.hint && (
+                <div className="text-xs text-muted-foreground mt-2.5">{c.hint}</div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* ─── Linha operacional: A Receber, Despesas, Convênios ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {cards.map((c, i) => {
+          const Icon = c.Icon;
+          return (
+            <motion.div
+              key={c.key}
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22, delay: 0.12 + i * 0.04 }}
+              className="group relative rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/30 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.18)] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={cn("h-1.5 w-1.5 rounded-full", TONE_DOT[c.tone])} />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    {c.label}
+                  </span>
+                </div>
+                <div className={cn("p-1.5 rounded-lg ring-1", TONE_RING[c.tone])}>
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.75} />
+                </div>
+              </div>
+              <div className="font-display font-semibold tabular-nums text-[22px] leading-none mt-4 text-foreground">
+                {c.value}
+              </div>
+              {c.hint && (
+                <div className="text-xs text-muted-foreground mt-2.5">{c.hint}</div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }

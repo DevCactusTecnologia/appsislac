@@ -1,6 +1,17 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+// Fontes opt-in para superfícies redesenhadas (ex.: /financeiro).
+// O projeto continua usando Inter como fonte global; estas só são aplicadas
+// em escopo via classes utilitárias `font-display`/`font-body`.
+import "@fontsource/sora/400.css";
+import "@fontsource/sora/500.css";
+import "@fontsource/sora/600.css";
+import "@fontsource/sora/700.css";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
 // bootDataStores agora é disparado em App.tsx apenas após autenticação —
 // evita hidratar stores e abrir Realtime em páginas públicas (landing/login),
 // reduzindo trabalho na thread principal no primeiro paint.
