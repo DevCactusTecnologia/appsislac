@@ -387,6 +387,7 @@ function AppRoutes() {
             <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
             <Route path="/soroteca/materiais" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaMateriais /></ProtectedRoute>} />
             <Route path="/soroteca/emprestimos" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEmprestimos /></ProtectedRoute>} />
+            <Route path="/soroteca/expurgo" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaExpurgo /></ProtectedRoute>} />
 
 
             <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
