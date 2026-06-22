@@ -8,6 +8,7 @@ import { useDicionario } from "@/hooks/useDicionario";
 import { criarRecoleta, type RecoletaEtapa } from "@/data/recoletasStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { notifyRecoleta } from "@/lib/whatsapp/notifyRecoleta";
 
 interface SolicitarRecoletaDialogProps {
   open: boolean;
@@ -89,6 +90,38 @@ export default function SolicitarRecoletaDialog({
       toast.success("Recoleta registrada", {
         description: `${exameNome} — ${motivo.label}`,
       });
+      // Fase 3F — WhatsApp da recoleta (mesma arquitetura do Resultado Pronto).
+      // Política `automatic`: enfileira agora. Política `manual`: oferece
+      // ação no toast para o operador disparar manualmente. Server-side
+      // garante opt-out, rate limit, isolamento por tenant e idempotência.
+      try {
+        const r = await notifyRecoleta({ protocolo, motivo: motivo.label });
+        if (r.ok) {
+          toast.success("Aviso de recoleta enviado ao paciente.");
+        } else if (r.reason === "policy_manual") {
+          toast("Envio manual de recoleta", {
+            description: "Política do laboratório exige envio manual.",
+            action: {
+              label: "Enviar WhatsApp",
+              onClick: async () => {
+                const m = await notifyRecoleta({
+                  protocolo,
+                  motivo: motivo.label,
+                  force: true,
+                });
+                if (m.ok) toast.success("Aviso de recoleta enviado.");
+                else if (m.reason === "telefone_invalido") toast.error("Paciente sem telefone válido.");
+                else if (m.reason === "paciente_sem_cadastro") toast.error("Paciente sem cadastro completo.");
+                else toast.error("Não foi possível enviar.", { description: m.reason });
+              },
+            },
+          });
+        } else if (r.reason === "telefone_invalido") {
+          // não bloqueia o fluxo clínico; apenas avisa.
+        }
+      } catch {
+        /* envio é fire-and-forget; recoleta já está persistida */
+      }
       onOpenChange(false);
       if (onConfirmed) await onConfirmed();
     } finally {
