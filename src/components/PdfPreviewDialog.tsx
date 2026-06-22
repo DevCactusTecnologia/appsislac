@@ -225,33 +225,9 @@ const PdfPreviewDialog = ({
         if (short?.shortUrl) shareUrl = short.shortUrl;
       }
 
-      if (whatsappPhone && comprovante) {
-        try {
-          await enviarPdfWhatsappCloud({
-            telefone: whatsappPhone,
-            pdfUrl: longUrl,
-            filename: safeFilename,
-            caption: buildWhatsappMessage("").replace(/📎.*$/m, "").trim(),
-            protocolo: comprovante.protocolo,
-            tipo: comprovante.tipo,
-          });
-          toast({
-            title: "Enviado pela WhatsApp Cloud API",
-            description: "Anexo entregue diretamente para o paciente.",
-          });
-          setCopiedUrl(shareUrl);
-          return;
-        } catch (err) {
-          const code = (err as Error & { code?: string })?.code;
-          if (code !== "WHATSAPP_NAO_CONFIGURADO") {
-            toast({
-              title: "Falha no envio oficial",
-              description: "Caindo no link via WhatsApp Web.",
-              variant: "destructive",
-            });
-          }
-        }
-      }
+      // Envio oficial via Meta agora é assíncrono e centralizado
+      // (enqueueNotification → whatsapp_outbox → whatsapp-dispatcher).
+      // O botão "WhatsApp" aqui apenas abre o wa.me com o link público do PDF.
 
       const msg = buildWhatsappMessage(shareUrl);
       window.open(buildWaUrl(whatsappPhone, msg), "_blank");
