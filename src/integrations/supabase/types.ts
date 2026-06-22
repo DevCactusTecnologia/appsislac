@@ -884,6 +884,13 @@ export type Database = {
             foreignKeyName: "convenio_fatura_itens_fatura_id_fkey"
             columns: ["fatura_id"]
             isOneToOne: false
+            referencedRelation: "convenio_fatura_resumo"
+            referencedColumns: ["fatura_id"]
+          },
+          {
+            foreignKeyName: "convenio_fatura_itens_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
             referencedRelation: "convenio_faturas"
             referencedColumns: ["id"]
           },
@@ -913,6 +920,7 @@ export type Database = {
           created_at: string
           data_pagamento: string | null
           desconto: number
+          fatura_origem_id: number | null
           forma_pagamento: string
           id: number
           motivo_cancelamento: string | null
@@ -922,6 +930,7 @@ export type Database = {
           status: string
           subtotal: number
           tenant_id: string
+          tentativa: number
           total: number
           updated_at: string
         }
@@ -934,6 +943,7 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           desconto?: number
+          fatura_origem_id?: number | null
           forma_pagamento?: string
           id?: number
           motivo_cancelamento?: string | null
@@ -943,6 +953,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tenant_id: string
+          tentativa?: number
           total?: number
           updated_at?: string
         }
@@ -955,6 +966,7 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           desconto?: number
+          fatura_origem_id?: number | null
           forma_pagamento?: string
           id?: number
           motivo_cancelamento?: string | null
@@ -964,6 +976,7 @@ export type Database = {
           status?: string
           subtotal?: number
           tenant_id?: string
+          tentativa?: number
           total?: number
           updated_at?: string
         }
@@ -973,6 +986,20 @@ export type Database = {
             columns: ["convenio_id"]
             isOneToOne: false
             referencedRelation: "convenios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_fatura_origem_id_fkey"
+            columns: ["fatura_origem_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_fatura_resumo"
+            referencedColumns: ["fatura_id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_fatura_origem_id_fkey"
+            columns: ["fatura_origem_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_faturas"
             referencedColumns: ["id"]
           },
           {
@@ -987,6 +1014,105 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      convenio_glosas: {
+        Row: {
+          cancelada_em: string | null
+          cancelada_por: string | null
+          created_at: string
+          created_by: string | null
+          fatura_id: number
+          fatura_item_id: number | null
+          id: number
+          motivo: string
+          motivo_cancelamento: string | null
+          observacao: string
+          reapresentada_em: string | null
+          reapresentada_em_fatura_id: number | null
+          reapresentada_por: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valor_glosado: number
+          valor_original: number
+        }
+        Insert: {
+          cancelada_em?: string | null
+          cancelada_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          fatura_id: number
+          fatura_item_id?: number | null
+          id?: number
+          motivo: string
+          motivo_cancelamento?: string | null
+          observacao?: string
+          reapresentada_em?: string | null
+          reapresentada_em_fatura_id?: number | null
+          reapresentada_por?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          valor_glosado: number
+          valor_original: number
+        }
+        Update: {
+          cancelada_em?: string | null
+          cancelada_por?: string | null
+          created_at?: string
+          created_by?: string | null
+          fatura_id?: number
+          fatura_item_id?: number | null
+          id?: number
+          motivo?: string
+          motivo_cancelamento?: string | null
+          observacao?: string
+          reapresentada_em?: string | null
+          reapresentada_em_fatura_id?: number | null
+          reapresentada_por?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          valor_glosado?: number
+          valor_original?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convenio_glosas_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_fatura_resumo"
+            referencedColumns: ["fatura_id"]
+          },
+          {
+            foreignKeyName: "convenio_glosas_fatura_id_fkey"
+            columns: ["fatura_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_faturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_glosas_fatura_item_id_fkey"
+            columns: ["fatura_item_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_fatura_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_glosas_reapresentada_em_fatura_id_fkey"
+            columns: ["reapresentada_em_fatura_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_fatura_resumo"
+            referencedColumns: ["fatura_id"]
+          },
+          {
+            foreignKeyName: "convenio_glosas_reapresentada_em_fatura_id_fkey"
+            columns: ["reapresentada_em_fatura_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_faturas"
             referencedColumns: ["id"]
           },
         ]
@@ -6189,6 +6315,60 @@ export type Database = {
       }
     }
     Views: {
+      convenio_fatura_resumo: {
+        Row: {
+          codigo: string | null
+          convenio_id: number | null
+          fatura_id: number | null
+          fatura_origem_id: number | null
+          saldo_pendente: number | null
+          status: string | null
+          tenant_id: string | null
+          tentativa: number | null
+          total_faturado: number | null
+          total_glosado: number | null
+          total_glosado_aberto: number | null
+          total_reapresentado: number | null
+          total_recebido: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convenio_faturas_convenio_id_fkey"
+            columns: ["convenio_id"]
+            isOneToOne: false
+            referencedRelation: "convenios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_fatura_origem_id_fkey"
+            columns: ["fatura_origem_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_fatura_resumo"
+            referencedColumns: ["fatura_id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_fatura_origem_id_fkey"
+            columns: ["fatura_origem_id"]
+            isOneToOne: false
+            referencedRelation: "convenio_faturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convenio_faturas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exames_publicos_view: {
         Row: {
           categoria: string | null
@@ -6559,6 +6739,26 @@ export type Database = {
       convenio_fatura_cancelar: {
         Args: { p_fatura_id: number; p_motivo: string }
         Returns: Json
+      }
+      convenio_fatura_glosar: {
+        Args: { p_fatura_id: number; p_itens: Json; p_motivo: string }
+        Returns: {
+          glosa_id: number
+        }[]
+      }
+      convenio_fatura_reapresentar: {
+        Args: {
+          p_fatura_origem_id: number
+          p_glosa_ids: number[]
+          p_motivo: string
+          p_periodo_fim: string
+          p_periodo_inicio: string
+        }
+        Returns: {
+          codigo: string
+          fatura_id: number
+          tentativa: number
+        }[]
       }
       convenio_fatura_recalc: {
         Args: { p_fatura_id: number }
