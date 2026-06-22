@@ -27,16 +27,31 @@ import {
   Layers,
   Timer,
   ScanLine,
+  SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   type Amostra,
   type AmostraStatus,
+  type AmostraAvancadoFiltros,
   listarAmostras,
+  buscarAmostrasAvancado,
   atualizarAmostra,
   marcarVencidas,
   statusVisual,
 } from "@/data/sorotecaStore";
+import {
+  listarLocais,
+  listarGalerias,
+  type LocalArmazenamento,
+  type Galeria,
+} from "@/data/sorotecaEstruturaStore";
+import {
+  listarMateriaisAmostra,
+  type MaterialAmostra,
+} from "@/data/materiaisAmostraStore";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn, searchNormalize } from "@/lib/utils";
