@@ -70,6 +70,8 @@ import { DropdownStatus } from "./NovoAtendimento/DropdownStatus";
 import { distribuirDescontoEntreExames } from "./NovoAtendimento/services/distribuirDesconto";
 import { contarEtiquetas } from "./NovoAtendimento/services/contarEtiquetas";
 import { resyncCobrancaConvenios } from "./NovoAtendimento/services/resyncCobrancaConvenios";
+import { aplicarAjusteLiquidoNosExames as aplicarAjusteLiquidoExamesPure } from "./NovoAtendimento/services/aplicarAjusteLiquido";
+import { imprimirComprovante as imprimirComprovantePure } from "./NovoAtendimento/services/imprimirComprovante";
 
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 
