@@ -207,8 +207,6 @@ const Configuracoes = () => {
         return <DocumentosTab />;
       case "site":
         return <SiteTab />;
-      case "notificacoes":
-        return <NotificacoesTab />;
       case "gateway-pagamento":
         return <GatewayPagamentoTab />;
       case "integracoes-apoio":
