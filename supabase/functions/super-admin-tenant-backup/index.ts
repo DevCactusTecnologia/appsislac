@@ -26,7 +26,7 @@ const TENANT_TABLES = [
   "estoque_movimentacoes", "estoque_fornecedores",
   "orcamentos", "orcamento_exames", "labs_apoio",
   "tenant_lab_config", "tenant_pages", "tenant_settings_public",
-  "tenant_whatsapp_config", "audit_logs", "soroteca" as never,
+  "audit_logs", "soroteca" as never,
 ];
 
 function sqlLiteral(v: unknown): string {
