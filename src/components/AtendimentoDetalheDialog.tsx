@@ -63,6 +63,14 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   useBodyScrollLock(open && !!atendimento);
   const { user } = useAuth();
   const [whatsappRefresh, setWhatsappRefresh] = useState(0);
+  // Aba ativa = fonte única da verdade para o documento exibido/enviado.
+  const pagouAlgo = (atendimento?.pagamentosRealizados ?? []).length > 0;
+  const [docTab, setDocTab] = useState<DocumentTab>(pagouAlgo ? "pagamento" : "atendimento");
+  // Se o pagamento for adicionado/removido em runtime, mantém aba válida.
+  useEffect(() => {
+    if (!pagouAlgo && docTab === "pagamento") setDocTab("atendimento");
+  }, [pagouAlgo, docTab]);
+
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
   // Tick para forçar re-render quando os templates de documento forem
