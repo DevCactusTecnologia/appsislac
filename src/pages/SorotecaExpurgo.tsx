@@ -197,8 +197,9 @@ export default function SorotecaExpurgo() {
           onChanged={recarregar}
         />
       )}
-    </div>
+    </SorotecaShell>
   );
+
 }
 
 // ---------------------------------------------------------------------------
