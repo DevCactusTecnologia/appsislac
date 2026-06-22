@@ -1137,6 +1137,7 @@ const Financeiro = () => {
         />
         </Suspense>
       )}
+      </div>
     </div>
     </FinanceiroProvider>
   );
