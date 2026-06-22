@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode } from "lucide-react";
+import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode, MessageCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
+import WhatsappTimeline from "@/components/whatsapp/WhatsappTimeline";
+import { getBestWhatsappAction } from "@/lib/whatsapp/getBestWhatsappAction";
 // ----------------------------------------------------------------------------
 // SISLAC Document Ownership (IA-first semantics)
 //   Lab Data  = institutional identity         (labConfigStore — SINGLE SOURCE)
