@@ -667,6 +667,10 @@ function DetalheLoteDialog({
           <Stat label="Puladas" value={loteLocal.total_pulados} tone="amber" />
         </div>
 
+        <TimelineLote lote={loteLocal} itens={itens} />
+
+
+
         <div className="border border-border rounded-lg max-h-[400px] overflow-auto">
           {loading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
