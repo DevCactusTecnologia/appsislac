@@ -170,6 +170,29 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     });
   };
 
+  // Send WhatsApp — escolha automática do template (resultado | pagamento | atendimento).
+  const handleSendWhatsapp = async () => {
+    if (!atendimento) return;
+    const best = getBestWhatsappAction(atendimento, {
+      tenantId: user?.tenantId,
+      todosLiberados: todosLiberadosExames,
+    });
+    const r = await best.execute();
+    if (r.ok) {
+      toast({ title: "WhatsApp enfileirado", description: best.hint });
+      setWhatsappRefresh((n) => n + 1);
+      return;
+    }
+    if (r.reason === "telefone_invalido") {
+      toast({ title: "Sem telefone válido", description: "Cadastre o telefone do paciente.", variant: "destructive" });
+    } else if (r.reason === "paciente_sem_cadastro") {
+      toast({ title: "Paciente sem cadastro", description: "Conclua o cadastro antes de enviar.", variant: "destructive" });
+    } else {
+      toast({ title: "Não foi possível enviar", description: r.reason ?? "Erro desconhecido", variant: "destructive" });
+    }
+    throw new Error(r.reason ?? "erro");
+  };
+
   if (!open || !atendimento) return null;
 
   return createPortal((
