@@ -74,7 +74,16 @@ export function useDashboardKpis(enabled: boolean): UseDashboardKpisResult {
         financeiro:  { ...EMPTY.financeiro,  ...(obj.financeiro  ?? {}) },
         pacientes:   { ...EMPTY.pacientes,   ...(obj.pacientes   ?? {}) },
         produtividade: { ...EMPTY.produtividade, ...(obj.produtividade ?? {}) },
-        topExames: Array.isArray(obj.topExames) ? (obj.topExames as Array<[string, number]>) : [],
+        topExames: Array.isArray(obj.topExames)
+          ? (obj.topExames as unknown[]).map((it) => {
+              if (Array.isArray(it)) return [String(it[0] ?? ""), Number(it[1] ?? 0)] as [string, number];
+              if (it && typeof it === "object") {
+                const o = it as { nome?: unknown; total?: unknown };
+                return [String(o.nome ?? ""), Number(o.total ?? 0)] as [string, number];
+              }
+              return ["", 0] as [string, number];
+            })
+          : [],
       });
     } catch (e: unknown) {
       const msg = (e as Error)?.message ?? "Falha ao carregar KPIs";
