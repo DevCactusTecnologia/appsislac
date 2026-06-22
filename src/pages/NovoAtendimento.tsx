@@ -53,6 +53,8 @@ const PdfPreviewDialog = lazy(() => import("@/components/PdfPreviewDialog"));
 const ReutilizarAmostraDialog = lazy(() => import("@/components/soroteca/ReutilizarAmostraDialog"));
 const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPanel"));
 import FerramentasAvancadasMenu from "@/components/atendimento/FerramentasAvancadasMenu";
+import CaixaAlertaNovoAtendimento from "@/components/caixa/CaixaAlertaNovoAtendimento";
+import { getCaixaAbertaPorUnidade } from "@/data/caixaSessoesStore";
 
 // Types, helpers puros, DropdownStatus e highlightMatch foram extraídos para
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
