@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, Download, Printer, Send, Loader2, Link2, Check, Share2, X } from "lucide-react";
+import { FileText, Download, Printer, Send, Loader2, Link2, Check, X } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -9,9 +9,30 @@ import {
   type RenderProgress,
   uploadPdfAndGetUrl,
   criarShortlinkPdf,
-  buildWaUrl,
   type ComprovanteTipo,
 } from "@/lib/comprovantes";
+import {
+  enqueueNotification,
+  buildIdempotencyKey,
+} from "@/lib/whatsapp/enqueueNotification";
+
+/**
+ * Parâmetros para envio centralizado via WhatsApp 2.0 (Meta).
+ * Quando fornecido, o botão "Enviar WhatsApp" enfileira via
+ * `enqueueNotification` (Outbox → Dispatcher → Meta) — sem wa.me,
+ * sem links manuais, sem fetch direto na Graph API.
+ */
+export interface PdfNotifyParams {
+  tenantId: string;
+  template: string;
+  tipo: string;
+  pacienteId?: string | null;
+  atendimentoProtocolo?: string | null;
+  idempotencyParts: Array<string | undefined>;
+  /** Constrói o mapa de variáveis Meta {{1}}..{{n}} a partir do link público do PDF. */
+  variaveis: (publicUrl: string) => Record<string | number, string | number>;
+  botoes?: { url_suffix?: string } | null;
+}
 
 interface PdfPreviewDialogProps {
   open: boolean;
@@ -24,19 +45,16 @@ interface PdfPreviewDialogProps {
   title?: string;
   /** Optional subtitle (e.g., protocol · date). */
   subtitle?: string;
-  /** WhatsApp recipient phone (digits, will be normalized). */
+  /** Patient phone (digits, will be normalized E.164 by the backend). */
   whatsappPhone?: string;
-  /**
-   * Builder for the WhatsApp message. Receives the public PDF URL once
-   * the upload finishes. If omitted, the WhatsApp button stays hidden.
-   */
-  buildWhatsappMessage?: (publicUrl: string) => string;
-  /**
-   * Identificadores opcionais usados para encurtar o link e para tentar o
-   * envio via WhatsApp Cloud API (Meta). Se omitidos, o botão usa apenas
-   * wa.me com a URL longa.
-   */
+  /** Identificadores do comprovante — usados para encurtar o link público. */
   comprovante?: { protocolo: string; tipo: ComprovanteTipo };
+  /**
+   * Notificação centralizada Meta. Quando presente AND whatsappPhone presente,
+   * o botão WhatsApp envia via outbox (enqueueNotification). Se ausente, o
+   * botão fica oculto (envio manual via wa.me não é mais permitido).
+   */
+  notify?: PdfNotifyParams;
 }
 
 
@@ -48,23 +66,17 @@ const PdfPreviewDialog = ({
   title = "Pré-visualização do PDF",
   subtitle,
   whatsappPhone,
-  buildWhatsappMessage,
   comprovante,
+  notify,
 }: PdfPreviewDialogProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [activeAction, setActiveAction] = useState<"print" | "download" | "copy" | "whatsapp" | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [sending, setSending] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<RenderProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  
-  const isMobileShareCapable =
-    typeof navigator !== "undefined" &&
-    typeof navigator.canShare === "function" &&
-    /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || "");
 
   const lastRenderedRef = useRef<string | null>(null);
 
@@ -204,15 +216,15 @@ const PdfPreviewDialog = ({
     document.body.appendChild(iframe);
   };
 
-  const handleWhatsapp = async () => {
-    if (!buildWhatsappMessage) return;
+  // Envio oficial via Meta (centralizado). Sem wa.me, sem links manuais.
+  const handleNotify = async () => {
+    if (!notify || !whatsappPhone) return;
     setActiveAction("whatsapp");
     const r = await ensureBlob();
     if (!r) {
       setActiveAction(null);
       return;
     }
-    setSending(true);
     try {
       const longUrl = await uploadPdfAndGetUrl(r.blob, safeFilename);
       let shareUrl = longUrl;
@@ -225,49 +237,32 @@ const PdfPreviewDialog = ({
         if (short?.shortUrl) shareUrl = short.shortUrl;
       }
 
-      // Envio oficial via Meta agora é assíncrono e centralizado
-      // (enqueueNotification → whatsapp_outbox → whatsapp-dispatcher).
-      // O botão "WhatsApp" aqui apenas abre o wa.me com o link público do PDF.
+      const idempotencyKey = await buildIdempotencyKey([
+        notify.tenantId,
+        notify.template,
+        ...notify.idempotencyParts,
+      ]);
 
-      const msg = buildWhatsappMessage(shareUrl);
-      window.open(buildWaUrl(whatsappPhone, msg), "_blank");
+      const res = await enqueueNotification({
+        tenantId: notify.tenantId,
+        pacienteId: notify.pacienteId ?? null,
+        telefone: whatsappPhone,
+        template: notify.template,
+        variaveis: notify.variaveis(shareUrl),
+        idempotencyKey,
+        atendimentoProtocolo: notify.atendimentoProtocolo ?? null,
+        tipo: notify.tipo,
+        botoes: notify.botoes ?? null,
+      });
+
       setCopiedUrl(shareUrl);
-      toast({ title: "Link gerado", description: "Mensagem do WhatsApp aberta com o link do PDF." });
+      toast({
+        title: "Envio enfileirado",
+        description: `WhatsApp (${notify.template}) — outbox ${res.outboxId.slice(0, 8)}…`,
+      });
     } catch (e) {
-      void handleDownload();
-      const fallback = buildWhatsappMessage("");
-      const cleaned = fallback.replace(/📎.*$/m, "📎 O PDF foi baixado — anexe o arquivo a esta conversa.");
-      window.open(buildWaUrl(whatsappPhone, cleaned), "_blank");
-      toast({ title: "Falha no upload", description: "PDF baixado para anexo manual.", variant: "destructive" });
-    } finally {
-      setSending(false);
-      setActiveAction(null);
-    }
-  };
-
-  const handleShareMobile = async () => {
-    setActiveAction("whatsapp");
-    const r = await ensureBlob();
-    if (!r) {
-      setActiveAction(null);
-      return;
-    }
-    try {
-      const file = new File([r.blob], safeFilename, { type: "application/pdf" });
-      const shareData: ShareData & { files?: File[] } = {
-        files: [file],
-        title: title,
-        text: buildWhatsappMessage ? buildWhatsappMessage("").replace(/📎.*$/m, "").trim() : "",
-      };
-      if (typeof navigator.canShare === "function" && !navigator.canShare(shareData)) {
-        throw new Error("share_unsupported");
-      }
-      await navigator.share(shareData);
-    } catch (e) {
-      const name = (e as Error)?.name;
-      if (name !== "AbortError") {
-        await handleWhatsapp();
-      }
+      const msg = e instanceof Error ? e.message : "Falha ao enfileirar envio.";
+      toast({ title: "Não foi possível enfileirar", description: msg, variant: "destructive" });
     } finally {
       setActiveAction(null);
     }
@@ -299,13 +294,15 @@ const PdfPreviewDialog = ({
         toast({ title: "Link gerado", description: url });
       }
       setCopiedUrl(url);
-    } catch (e) {
+    } catch {
       toast({ title: "Falha ao gerar link", description: "Tente novamente em instantes.", variant: "destructive" });
     } finally {
       setCopying(false);
       setActiveAction(null);
     }
   };
+
+  const showWhatsappButton = Boolean(notify && whatsappPhone);
 
   return (
     <StandardDialog
@@ -373,28 +370,17 @@ const PdfPreviewDialog = ({
             ) : (
               <Link2 className="h-3.5 w-3.5" />
             )}
-            {activeAction === "copy" ? (generating ? "Gerando..." : "Enviando...") : copiedUrl ? "Link copiado" : "Copiar link"}
+            {activeAction === "copy" ? (generating ? "Gerando..." : copying ? "Enviando..." : "Enviando...") : copiedUrl ? "Link copiado" : "Copiar link"}
           </button>
-          {buildWhatsappMessage && (
-            isMobileShareCapable ? (
-              <button
-                onClick={handleShareMobile}
-                disabled={generating || (activeAction !== null && activeAction !== "whatsapp")}
-                className="h-10 px-4 rounded-xl bg-[hsl(var(--status-success))] text-white text-xs font-semibold hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {activeAction === "whatsapp" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-                {activeAction === "whatsapp" ? (generating ? "Gerando..." : "Compartilhando...") : "Compartilhar PDF"}
-              </button>
-            ) : (
-              <button
-                onClick={handleWhatsapp}
-                disabled={generating || (activeAction !== null && activeAction !== "whatsapp")}
-                className="h-10 px-4 rounded-xl bg-[hsl(var(--status-success))] text-white text-xs font-semibold hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {activeAction === "whatsapp" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                {activeAction === "whatsapp" ? (generating ? "Gerando..." : "Enviando...") : "Enviar WhatsApp"}
-              </button>
-            )
+          {showWhatsappButton && (
+            <button
+              onClick={handleNotify}
+              disabled={generating || (activeAction !== null && activeAction !== "whatsapp")}
+              className="h-10 px-4 rounded-xl bg-[hsl(var(--status-success))] text-white text-xs font-semibold hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {activeAction === "whatsapp" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {activeAction === "whatsapp" ? (generating ? "Gerando..." : "Enfileirando...") : "Enviar WhatsApp"}
+            </button>
           )}
         </div>
       }

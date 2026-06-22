@@ -23,7 +23,7 @@ import { addAtendimento, getAtendimentos, getNextProtocolo, updateAtendimento, f
 import { addOrcamento } from "@/data/orcamentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { isValidCPF, looksLikeCPF, sanitizeCPF } from "@/lib/cpf";
-import { gerarOrcamentoPDF, enviarOrcamentoPorWhatsapp, buildOrcamentoHtml, buildComprovanteHtml } from "@/lib/comprovantes";
+import { buildOrcamentoHtml, buildComprovanteHtml } from "@/lib/comprovantes";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import PacienteTelefoneInline from "@/components/PacienteTelefoneInline";
 import { isEdicaoClinicaBloqueada, mensagemBloqueioClinico } from "@/lib/atendimentoPolicy";
@@ -2753,25 +2753,6 @@ const NovoAtendimento = () => {
             filename={`orcamento-${orcData.id}`}
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}
-            buildWhatsappMessage={(url) => {
-              const examesList = orcData.exames.map((e, i) => `  ${i + 1}. ${e}`).join("\n");
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *ORÇAMENTO ${orcData.id}*`,
-                "",
-                `Olá *${orcData.paciente}*, segue o orçamento solicitado:`,
-                "",
-                `🏥 Convênio: ${orcData.convenio}`,
-                orcData.solicitante ? `👨‍⚕️ Solicitante: ${orcData.solicitante}` : "",
-                "",
-                `🔬 *Exames (${orcData.exames.length}):*`,
-                examesList,
-                "",
-                `💰 *Total: R$ ${fmtBRLNumber(orcData.total)}*`,
-                "",
-                linkLine,
-              ].filter(Boolean).join("\n");
-            }}
           />
           </Suspense>
         );

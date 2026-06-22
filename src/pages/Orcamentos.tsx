@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import StandardDialog from "@/components/ui/standard-dialog";
 import PdfPreviewDialog from "@/components/PdfPreviewDialog";
 import { buildOrcamentoHtml } from "@/lib/comprovantes";
+import { enqueueNotification, buildIdempotencyKey } from "@/lib/whatsapp/enqueueNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { showError } from "@/lib/showError";
+import { toast } from "sonner";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
 import { PageHeader } from "@/components/shared/PageHeader";
 
@@ -781,11 +783,31 @@ const Orcamentos = () => {
               <p className="text-sm font-medium text-foreground">{convertedOrcForWhatsapp.nome}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{convertedOrcForWhatsapp.telefone} · Protocolo: {convertedProtocolo}</p>
             </div>
-            {convertedOrcForWhatsapp.telefone ? (
-              <button onClick={() => {
-                const orc = convertedOrcForWhatsapp; const phone = orc.telefone.replace(/\D/g, ""); const fp = phone.startsWith("55") ? phone : `55${phone}`;
-                const msg = [`✅ *ATENDIMENTO CONFIRMADO*`, "", `Olá *${orc.nome}*, seu orçamento *${orc.id}* foi convertido!`, `📋 Protocolo: *${convertedProtocolo}*`, `💰 Total: *R$ ${fmtBRLNumber(Math.max(0, orc.total - convertDescontoApplied))}*`].join("\n");
-                window.open(`https://wa.me/${fp}?text=${encodeURIComponent(msg)}`, "_blank");
+            {convertedOrcForWhatsapp.telefone && user?.tenantId ? (
+              <button onClick={async () => {
+                const orc = convertedOrcForWhatsapp;
+                const tenantId = user.tenantId!;
+                try {
+                  const idempotencyKey = await buildIdempotencyKey([
+                    tenantId, "comprovante_atendimento", convertedProtocolo, orc.telefone,
+                  ]);
+                  await enqueueNotification({
+                    tenantId,
+                    telefone: orc.telefone,
+                    template: "comprovante_atendimento",
+                    tipo: "comprovante_atendimento",
+                    atendimentoProtocolo: convertedProtocolo,
+                    idempotencyKey,
+                    variaveis: {
+                      1: orc.nome,
+                      2: convertedProtocolo,
+                      3: `R$ ${fmtBRLNumber(Math.max(0, orc.total - convertDescontoApplied))}`,
+                    },
+                  });
+                  toast.success(`WhatsApp enfileirado para ${orc.nome}.`);
+                } catch (e) {
+                  showError(e, { scope: "Orcamentos.convertWhatsapp" });
+                }
                 setShowWhatsappAfterConvert(false); setConvertSuccess(true);
               }} className="w-full py-2.5 rounded-2xl text-sm font-semibold text-white bg-[hsl(142,70%,45%)] hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
                 <Send className="h-4 w-4" /> Enviar via WhatsApp
@@ -832,25 +854,18 @@ const Orcamentos = () => {
             title={`Orçamento ${orcData.id}`}
             subtitle={`${orcData.paciente} · ${orcData.data}`}
             whatsappPhone={previewOrc.telefone}
-            buildWhatsappMessage={(url) => {
-              const examesList = orcData.exames.map((e, i) => `  ${i + 1}. ${e}`).join("\n");
-              const linkLine = url ? `📎 *PDF:* ${url}` : "📎 O PDF foi baixado — anexe o arquivo a esta conversa.";
-              return [
-                `📋 *ORÇAMENTO ${orcData.id}*`,
-                "",
-                `Olá *${orcData.paciente}*, segue o orçamento solicitado:`,
-                "",
-                `🏥 Convênio: ${orcData.convenio}`,
-                orcData.solicitante ? `👨‍⚕️ Solicitante: ${orcData.solicitante}` : "",
-                "",
-                `🔬 *Exames (${orcData.exames.length}):*`,
-                examesList,
-                "",
-                `💰 *Total: R$ ${fmtBRLNumber(orcData.total)}*`,
-                "",
-                linkLine,
-              ].filter(Boolean).join("\n");
-            }}
+            notify={user?.tenantId ? {
+              tenantId: user.tenantId,
+              template: "orcamento",
+              tipo: "orcamento",
+              idempotencyParts: [orcData.id, previewOrc.telefone],
+              variaveis: (url: string) => ({
+                1: orcData.paciente,
+                2: orcData.id,
+                3: `R$ ${fmtBRLNumber(orcData.total)}`,
+                4: url,
+              }),
+            } : undefined}
           />
         );
       })()}
