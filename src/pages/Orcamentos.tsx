@@ -14,6 +14,7 @@ import { buildOrcamentoHtml } from "@/lib/comprovantes";
 import { enqueueNotification, buildIdempotencyKey } from "@/lib/whatsapp/enqueueNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { showError } from "@/lib/showError";
+import { toast } from "sonner";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
 import { PageHeader } from "@/components/shared/PageHeader";
 
