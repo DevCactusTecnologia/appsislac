@@ -32,7 +32,7 @@ import {
   type MaterialAmostra,
 } from "@/data/materiaisAmostraStore";
 import { toast } from "@/hooks/use-toast";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 
 interface FormState {
   nome: string;
