@@ -2367,6 +2367,23 @@ const NovoAtendimento = () => {
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
             pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
+            // UX: aviso leve se houver Dinheiro/PIX com caixa fechado.
+            const temCaixaForma = res.novosPagamentos.some(
+              p => p.tipo === "Dinheiro" || p.tipo === "PIX",
+            );
+            if (temCaixaForma && user?.unidadeAtiva) {
+              getCaixaAbertaPorUnidade(user.unidadeAtiva)
+                .then(sessao => {
+                  if (!sessao) {
+                    toast({
+                      title: "Pagamento registrado com o caixa fechado",
+                      description:
+                        "Este valor não será incluído no fechamento do caixa até que uma sessão de caixa seja aberta.",
+                    });
+                  }
+                })
+                .catch(() => { /* silencioso — não bloquear pagamento */ });
+            }
           }
         }}
         onRemovePagamentoRealizado={index => {
