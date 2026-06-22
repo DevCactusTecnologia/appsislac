@@ -38,6 +38,7 @@ const Soroteca = lazy(() => import("./pages/Soroteca"));
 const SorotecaEstrutura = lazy(() => import("./pages/SorotecaEstrutura"));
 const SorotecaTriagem = lazy(() => import("./pages/SorotecaTriagem"));
 const SorotecaMateriais = lazy(() => import("./pages/SorotecaMateriais"));
+const SorotecaEmprestimos = lazy(() => import("./pages/SorotecaEmprestimos"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 // Fase B — Domain Driven Routes (entidades promovidas)
