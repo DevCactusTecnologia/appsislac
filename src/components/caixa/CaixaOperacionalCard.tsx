@@ -120,7 +120,7 @@ export default function CaixaOperacionalCard({ compact = false }: Props) {
 }
 
 /* ───────── Abrir ───────── */
-function AbrirCaixaDialog({ open, onClose, unidadeId, unidadeNome, onAberto }: {
+export function AbrirCaixaDialog({ open, onClose, unidadeId, unidadeNome, onAberto }: {
   open: boolean; onClose: () => void; unidadeId: string; unidadeNome: string; onAberto: () => void;
 }) {
   const [valor, setValor] = useState("0,00");

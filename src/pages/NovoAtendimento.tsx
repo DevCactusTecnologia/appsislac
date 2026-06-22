@@ -53,6 +53,8 @@ const PdfPreviewDialog = lazy(() => import("@/components/PdfPreviewDialog"));
 const ReutilizarAmostraDialog = lazy(() => import("@/components/soroteca/ReutilizarAmostraDialog"));
 const RoteamentoApoioPanel = lazy(() => import("@/components/RoteamentoApoioPanel"));
 import FerramentasAvancadasMenu from "@/components/atendimento/FerramentasAvancadasMenu";
+import CaixaAlertaNovoAtendimento from "@/components/caixa/CaixaAlertaNovoAtendimento";
+import { getCaixaAbertaPorUnidade } from "@/data/caixaSessoesStore";
 
 // Types, helpers puros, DropdownStatus e highlightMatch foram extraídos para
 // ./NovoAtendimento/* (Sprint 1). Comportamento idêntico, apenas reorganização.
@@ -974,7 +976,9 @@ const NovoAtendimento = () => {
   /* ─── Render ─── */
   return (
     <div className="min-h-screen bg-background">
+      {!isEditing && <CaixaAlertaNovoAtendimento />}
       <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-10">
+
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -2365,6 +2369,23 @@ const NovoAtendimento = () => {
           if (res.novosPagamentos && res.novosPagamentos.length > 0) {
             pagamentosTouchedRef.current = true;
             setPagamentosRealizados(prev => [...prev, ...res.novosPagamentos]);
+            // UX: aviso leve se houver Dinheiro/PIX com caixa fechado.
+            const temCaixaForma = res.novosPagamentos.some(
+              p => p.tipo === "Dinheiro" || p.tipo === "PIX",
+            );
+            if (temCaixaForma && user?.unidadeAtiva) {
+              getCaixaAbertaPorUnidade(user.unidadeAtiva)
+                .then(sessao => {
+                  if (!sessao) {
+                    toast({
+                      title: "Pagamento registrado com o caixa fechado",
+                      description:
+                        "Este valor não será incluído no fechamento do caixa até que uma sessão de caixa seja aberta.",
+                    });
+                  }
+                })
+                .catch(() => { /* silencioso — não bloquear pagamento */ });
+            }
           }
         }}
         onRemovePagamentoRealizado={index => {
