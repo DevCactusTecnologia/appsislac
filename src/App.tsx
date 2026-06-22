@@ -70,6 +70,7 @@ const SuperAdminInscricoes = lazy(() => import("./pages/superadmin/SuperAdminIns
 const SuperAdminAuditoria = lazy(() => import("./pages/superadmin/SuperAdminAuditoria"));
 const SuperAdminConfiguracoes = lazy(() => import("./pages/superadmin/SuperAdminConfiguracoes"));
 const SuperAdminPlanos = lazy(() => import("./pages/superadmin/SuperAdminPlanos"));
+const SuperAdminNotificacoes = lazy(() => import("./pages/superadmin/SuperAdminNotificacoes"));
 
 // QueryClient é um singleton importado de @/lib/queryClient — ali ficam
 // os defaults de cache (staleTime/gcTime, sem refetch em foco, keepPreviousData)
@@ -329,6 +330,7 @@ function AppRoutes() {
                 <Route path="/super-admin/planos" element={<SuperAdminPlanos />} />
                 <Route path="/super-admin/auditoria" element={<SuperAdminAuditoria />} />
                 <Route path="/super-admin/configuracoes" element={<SuperAdminConfiguracoes />} />
+                <Route path="/super-admin/notificacoes" element={<SuperAdminNotificacoes />} />
               </Routes>
             </SuperAdminLayout>
           </RequireSuperAdmin>

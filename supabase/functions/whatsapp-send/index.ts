@@ -1,3 +1,8 @@
+// @deprecated WhatsApp 2.0 — substituído pelo fluxo centralizado
+// (`enqueue_whatsapp` + edge function `whatsapp-dispatcher`). Mantido em
+// produção apenas para tenants ainda nos modos legados `simples`, `cloud_api`
+// e `zapi`. Será removido quando 100% dos tenants estiverem em `centralized`.
+//
 // Envia um PDF de comprovante via WhatsApp Cloud API (Meta) usando as
 // credenciais configuradas pelo laboratório (tabela tenant_whatsapp_config).
 //

@@ -13,7 +13,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Building2, LayoutDashboard, LogOut, Shield, Menu, ChevronsLeft, ChevronsRight,
-  Settings, Inbox, PanelLeft, LayoutGrid, CreditCard,
+  Settings, Inbox, PanelLeft, LayoutGrid, CreditCard, MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsCompact } from "@/hooks/use-mobile";
@@ -49,6 +49,7 @@ const SECTIONS: NavSection[] = [
   {
     label: "Plataforma",
     items: [
+      { to: "/super-admin/notificacoes", icon: MessageSquare, label: "Notificações" },
       { to: "/super-admin/configuracoes", icon: Settings, label: "Configurações" },
     ],
   },
