@@ -227,34 +227,33 @@ export default function SorotecaTriagem() {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-6 space-y-4">
-      <PageHeader
-        eyebrow="Soroteca 2.0"
-        title="Triagem e Armazenamento"
-        description="Bipe a etiqueta da amostra para armazenar na próxima posição livre."
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 py-1 text-xs">
-              <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Pendentes:</span>
-              <strong className="tabular-nums">{pendentes}</strong>
-              <button
-                type="button"
-                onClick={refreshPendentes}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-                title="Recontar"
-              >
-                <RefreshCw className="h-3 w-3" />
-              </button>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/soroteca")}>
-              Voltar
-            </Button>
+    <SorotecaShell
+      maxWidth="max-w-3xl"
+      title="Triagem e Armazenamento"
+      description="Bipe a etiqueta da amostra para armazenar na próxima posição livre."
+      actions={
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-md border bg-white px-2.5 py-1 text-xs">
+            <ListChecks className="h-3.5 w-3.5 text-[#94a3b8]" />
+            <span className="text-[#94a3b8]">Pendentes:</span>
+            <strong className="tabular-nums">{pendentes}</strong>
+            <button
+              type="button"
+              onClick={refreshPendentes}
+              className="ml-1 text-[#94a3b8] hover:text-[#1e293b]"
+              title="Recontar"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </button>
           </div>
-        }
-      />
+          <Button variant="outline" size="sm" onClick={() => navigate("/soroteca")}>
+            Voltar
+          </Button>
+        </div>
+      }
+    >
 
-      <SorotecaNav />
+
 
       {/* Scanner */}
 
