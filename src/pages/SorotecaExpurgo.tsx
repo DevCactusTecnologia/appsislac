@@ -1,0 +1,793 @@
+/**
+ * Soroteca — Expurgo Programado (Fase 7)
+ *
+ * Fluxo: Critério → Pré-visualização → Lote PROGRAMADO →
+ *        Execução item a item (EXECUTADO/PULADO) → Conclusão.
+ */
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  Trash2,
+  CalendarClock,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ListChecks,
+  Play,
+  Ban,
+  PackageX,
+} from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  type ExpurgoLote,
+  type ExpurgoItem,
+  type ExpurgoLoteStatus,
+  listarLotes,
+  obterLote,
+  listarItens,
+  preverCandidatas,
+  criarLote,
+  iniciarExecucao,
+  executarItem,
+  pularItem,
+  concluirLote,
+  cancelarLote,
+} from "@/data/sorotecaExpurgoStore";
+import { listarMateriaisAmostra, type MaterialAmostra } from "@/data/materiaisAmostraStore";
+
+type Tab = "ATIVOS" | "TODOS" | ExpurgoLoteStatus;
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "ATIVOS", label: "Ativos" },
+  { id: "PROGRAMADO", label: "Programados" },
+  { id: "EM_EXECUCAO", label: "Em execução" },
+  { id: "CONCLUIDO", label: "Concluídos" },
+  { id: "CANCELADO", label: "Cancelados" },
+  { id: "TODOS", label: "Todos" },
+];
+
+const statusBadge = (s: ExpurgoLoteStatus) => {
+  const map: Record<ExpurgoLoteStatus, string> = {
+    PROGRAMADO: "bg-blue-100 text-blue-800 border-blue-300",
+    EM_EXECUCAO: "bg-amber-100 text-amber-800 border-amber-300",
+    CONCLUIDO: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    CANCELADO: "bg-zinc-100 text-zinc-700 border-zinc-300",
+  };
+  return map[s];
+};
+
+const statusLabel: Record<ExpurgoLoteStatus, string> = {
+  PROGRAMADO: "Programado",
+  EM_EXECUCAO: "Em execução",
+  CONCLUIDO: "Concluído",
+  CANCELADO: "Cancelado",
+};
+
+function formatDate(s: string | null) {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleDateString("pt-BR");
+  } catch {
+    return s;
+  }
+}
+
+export default function SorotecaExpurgo() {
+  const [tab, setTab] = useState<Tab>("ATIVOS");
+  const [lotes, setLotes] = useState<ExpurgoLote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openNovo, setOpenNovo] = useState(false);
+  const [openDetalhe, setOpenDetalhe] = useState<ExpurgoLote | null>(null);
+
+  async function recarregar() {
+    setLoading(true);
+    try {
+      const status =
+        tab === "TODOS" || tab === "ATIVOS" ? undefined : (tab as ExpurgoLoteStatus);
+      const data = await listarLotes(status);
+      const filtrados =
+        tab === "ATIVOS"
+          ? data.filter((l) => l.status === "PROGRAMADO" || l.status === "EM_EXECUCAO")
+          : data;
+      setLotes(filtrados);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    recarregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <PageHeader
+        title="Expurgo Programado"
+        description="Agende e execute o descarte de amostras com auditoria completa."
+        icon={Trash2}
+        backTo="/soroteca"
+        actions={
+          <Button onClick={() => setOpenNovo(true)} className="h-9">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo lote
+          </Button>
+        }
+      />
+
+      <div className="flex flex-wrap gap-2 my-4">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "px-3 h-9 rounded-lg border text-sm",
+              tab === t.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background border-border hover:bg-muted"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-12 text-center">Carregando...</div>
+      ) : lotes.length === 0 ? (
+        <div className="border border-dashed border-border rounded-lg p-12 text-center">
+          <PackageX className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">Nenhum lote de expurgo encontrado.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {lotes.map((l) => (
+            <LoteCard key={l.id} lote={l} onOpen={() => setOpenDetalhe(l)} />
+          ))}
+        </div>
+      )}
+
+      <NovoLoteDialog
+        open={openNovo}
+        onOpenChange={setOpenNovo}
+        onCreated={() => {
+          setOpenNovo(false);
+          recarregar();
+        }}
+      />
+
+      {openDetalhe && (
+        <DetalheLoteDialog
+          lote={openDetalhe}
+          open={!!openDetalhe}
+          onOpenChange={(o) => !o && setOpenDetalhe(null)}
+          onChanged={recarregar}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card de lote
+// ---------------------------------------------------------------------------
+function LoteCard({ lote, onOpen }: { lote: ExpurgoLote; onOpen: () => void }) {
+  const pct =
+    lote.total_itens > 0
+      ? Math.round(((lote.total_executados + lote.total_pulados) / lote.total_itens) * 100)
+      : 0;
+
+  return (
+    <button
+      onClick={onOpen}
+      className="text-left border border-border rounded-lg p-4 hover:bg-muted/50 transition"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium">{lote.titulo}</span>
+            <span
+              className={cn(
+                "text-xs px-2 py-0.5 rounded border",
+                statusBadge(lote.status)
+              )}
+            >
+              {statusLabel[lote.status]}
+            </span>
+          </div>
+          {lote.descricao && (
+            <p className="text-xs text-muted-foreground mt-1">{lote.descricao}</p>
+          )}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+            <span className="flex items-center gap-1">
+              <CalendarClock className="h-3 w-3" />
+              {formatDate(lote.data_programada)}
+            </span>
+            <span>
+              {lote.total_executados + lote.total_pulados} / {lote.total_itens} processados
+            </span>
+            <span>{lote.total_executados} descartadas</span>
+            {lote.total_pulados > 0 && <span>{lote.total_pulados} puladas</span>}
+          </div>
+        </div>
+        <div className="text-right text-sm font-medium tabular-nums">{pct}%</div>
+      </div>
+      <div className="mt-3 h-1.5 bg-muted rounded">
+        <div
+          className="h-full bg-primary rounded transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diálogo: novo lote
+// ---------------------------------------------------------------------------
+function NovoLoteDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onCreated: () => void;
+}) {
+  const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [dataProgramada, setDataProgramada] = useState(
+    () => new Date().toISOString().slice(0, 10)
+  );
+  const [materiais, setMateriais] = useState<MaterialAmostra[]>([]);
+  const [materialIds, setMaterialIds] = useState<string[]>([]);
+  const [coletaAte, setColetaAte] = useState("");
+  const [validadeAte, setValidadeAte] = useState("");
+  const [candidatas, setCandidatas] = useState<any[]>([]);
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const [carregando, setCarregando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setTitulo("");
+      setDescricao("");
+      setDataProgramada(new Date().toISOString().slice(0, 10));
+      setMaterialIds([]);
+      setColetaAte("");
+      setValidadeAte("");
+      setCandidatas([]);
+      setSelecionadas(new Set());
+      listarMateriaisAmostra({ pageSize: 200 }).then((r) => setMateriais(r.rows));
+    }
+  }, [open]);
+
+  async function preview() {
+    setCarregando(true);
+    try {
+      const data = await preverCandidatas({
+        material_ids: materialIds.length ? materialIds : undefined,
+        coleta_ate: coletaAte ? `${coletaAte}T23:59:59.999Z` : undefined,
+        validade_ate: validadeAte ? `${validadeAte}T23:59:59.999Z` : undefined,
+      });
+      setCandidatas(data);
+      setSelecionadas(new Set(data.map((d) => d.id)));
+      if (data.length === 0) toast.info("Nenhuma amostra encontrada para o critério.");
+      else toast.success(`${data.length} amostra(s) candidata(s).`);
+    } catch (e: any) {
+      toast.error("Erro ao pré-visualizar: " + (e.message ?? e));
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  function toggle(id: string) {
+    setSelecionadas((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  async function salvar() {
+    if (!titulo.trim()) {
+      toast.error("Informe um título");
+      return;
+    }
+    if (selecionadas.size === 0) {
+      toast.error("Selecione ao menos uma amostra");
+      return;
+    }
+    setSalvando(true);
+    try {
+      await criarLote({
+        titulo: titulo.trim(),
+        descricao: descricao.trim() || undefined,
+        data_programada: dataProgramada,
+        criterio: {
+          material_ids: materialIds.length ? materialIds : undefined,
+          coleta_ate: coletaAte || undefined,
+          validade_ate: validadeAte || undefined,
+        },
+        amostraIds: Array.from(selecionadas),
+      });
+      toast.success("Lote criado");
+      onCreated();
+    } catch {
+      // erro já exibido pelo store
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Novo lote de expurgo</DialogTitle>
+          <DialogDescription>
+            Defina o critério, pré-visualize e selecione as amostras.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Título</Label>
+              <Input
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                placeholder="Ex: Expurgo trimestral Q2"
+              />
+            </div>
+            <div>
+              <Label>Data programada</Label>
+              <Input
+                type="date"
+                value={dataProgramada}
+                onChange={(e) => setDataProgramada(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Descrição (opcional)</Label>
+            <Textarea
+              rows={2}
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+            />
+          </div>
+
+          <div className="border border-border rounded-lg p-3 bg-muted/30">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Critério
+            </Label>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <Label className="text-xs">Coleta até</Label>
+                <Input
+                  type="date"
+                  value={coletaAte}
+                  onChange={(e) => setColetaAte(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Validade até</Label>
+                <Input
+                  type="date"
+                  value={validadeAte}
+                  onChange={(e) => setValidadeAte(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="mt-3">
+              <Label className="text-xs">Materiais (opcional)</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {materiais.map((m) => {
+                  const on = materialIds.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() =>
+                        setMaterialIds((prev) =>
+                          on ? prev.filter((x) => x !== m.id) : [...prev, m.id]
+                        )
+                      }
+                      className={cn(
+                        "px-2 py-0.5 rounded border text-xs",
+                        on
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border"
+                      )}
+                    >
+                      {m.nome}
+                    </button>
+                  );
+                })}
+                {materiais.length === 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Nenhum material cadastrado.
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button variant="secondary" size="sm" onClick={preview} disabled={carregando}>
+                <ListChecks className="h-4 w-4 mr-2" />
+                {carregando ? "Buscando..." : "Pré-visualizar"}
+              </Button>
+            </div>
+          </div>
+
+          {candidatas.length > 0 && (
+            <div className="border border-border rounded-lg max-h-72 overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left w-8">
+                      <input
+                        type="checkbox"
+                        checked={selecionadas.size === candidatas.length}
+                        onChange={(e) =>
+                          setSelecionadas(
+                            e.target.checked
+                              ? new Set(candidatas.map((c) => c.id))
+                              : new Set()
+                          )
+                        }
+                      />
+                    </th>
+                    <th className="px-2 py-1.5 text-left">Código</th>
+                    <th className="px-2 py-1.5 text-left">Material</th>
+                    <th className="px-2 py-1.5 text-left">Localização</th>
+                    <th className="px-2 py-1.5 text-left">Coleta</th>
+                    <th className="px-2 py-1.5 text-left">Validade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {candidatas.map((c) => (
+                    <tr key={c.id} className="border-t border-border">
+                      <td className="px-2 py-1">
+                        <input
+                          type="checkbox"
+                          checked={selecionadas.has(c.id)}
+                          onChange={() => toggle(c.id)}
+                        />
+                      </td>
+                      <td className="px-2 py-1 font-mono text-xs">{c.codigo_barra}</td>
+                      <td className="px-2 py-1">{c.tipo_material}</td>
+                      <td className="px-2 py-1">{c.localizacao || "—"}</td>
+                      <td className="px-2 py-1">{formatDate(c.data_coleta)}</td>
+                      <td className="px-2 py-1">{formatDate(c.data_validade)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={salvando}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando || selecionadas.size === 0}>
+            <Plus className="h-4 w-4 mr-2" />
+            Criar lote com {selecionadas.size} amostra(s)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Diálogo: detalhe / execução
+// ---------------------------------------------------------------------------
+function DetalheLoteDialog({
+  lote,
+  open,
+  onOpenChange,
+  onChanged,
+}: {
+  lote: ExpurgoLote;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onChanged: () => void;
+}) {
+  const [loteLocal, setLoteLocal] = useState<ExpurgoLote>(lote);
+  const [itens, setItens] = useState<ExpurgoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [motivoPulo, setMotivoPulo] = useState<{ id: string; motivo: string } | null>(null);
+  const [motivoCancel, setMotivoCancel] = useState("");
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  async function recarregar() {
+    setLoading(true);
+    const [l, is] = await Promise.all([obterLote(lote.id), listarItens(lote.id)]);
+    if (l) setLoteLocal(l);
+    setItens(is);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    recarregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lote.id]);
+
+  const pendentes = useMemo(() => itens.filter((i) => i.status === "PENDENTE"), [itens]);
+  const isAtivo = loteLocal.status === "PROGRAMADO" || loteLocal.status === "EM_EXECUCAO";
+
+  async function handleIniciar() {
+    await iniciarExecucao(loteLocal.id);
+    toast.success("Execução iniciada");
+    await recarregar();
+    onChanged();
+  }
+
+  async function handleExecutar(id: string) {
+    await executarItem(id);
+    toast.success("Amostra descartada");
+    await recarregar();
+    onChanged();
+  }
+
+  async function handlePular() {
+    if (!motivoPulo) return;
+    if (!motivoPulo.motivo.trim()) {
+      toast.error("Informe o motivo");
+      return;
+    }
+    await pularItem(motivoPulo.id, motivoPulo.motivo.trim());
+    toast.success("Item pulado");
+    setMotivoPulo(null);
+    await recarregar();
+    onChanged();
+  }
+
+  async function handleConcluir() {
+    if (pendentes.length > 0) {
+      if (!confirm(`Ainda há ${pendentes.length} item(ns) pendentes. Concluir mesmo assim?`)) {
+        return;
+      }
+    }
+    await concluirLote(loteLocal.id);
+    toast.success("Lote concluído");
+    await recarregar();
+    onChanged();
+  }
+
+  async function handleCancelar() {
+    if (!motivoCancel.trim()) {
+      toast.error("Informe o motivo do cancelamento");
+      return;
+    }
+    await cancelarLote(loteLocal.id, motivoCancel.trim());
+    toast.success("Lote cancelado");
+    setConfirmCancel(false);
+    setMotivoCancel("");
+    await recarregar();
+    onChanged();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <div className="flex items-center justify-between gap-3 pr-6">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                {loteLocal.titulo}
+                <span
+                  className={cn(
+                    "text-xs px-2 py-0.5 rounded border",
+                    statusBadge(loteLocal.status)
+                  )}
+                >
+                  {statusLabel[loteLocal.status]}
+                </span>
+              </DialogTitle>
+              <DialogDescription>
+                Programado para {formatDate(loteLocal.data_programada)} ·{" "}
+                {loteLocal.criado_por_nome ?? "—"}
+              </DialogDescription>
+            </div>
+            <div className="flex gap-2">
+              {loteLocal.status === "PROGRAMADO" && (
+                <Button size="sm" onClick={handleIniciar}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Iniciar
+                </Button>
+              )}
+              {isAtivo && (
+                <>
+                  <Button size="sm" variant="secondary" onClick={handleConcluir}>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Concluir
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => setConfirmCancel(true)}>
+                    <Ban className="h-4 w-4 mr-2" />
+                    Cancelar lote
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </DialogHeader>
+
+        {loteLocal.status === "CANCELADO" && loteLocal.motivo_cancelamento && (
+          <div className="bg-zinc-100 border border-zinc-300 text-zinc-700 rounded-lg p-2 text-sm flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5" />
+            <div>
+              <strong>Cancelado:</strong> {loteLocal.motivo_cancelamento}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-4 gap-2 text-center text-sm">
+          <Stat label="Total" value={loteLocal.total_itens} />
+          <Stat label="Pendentes" value={pendentes.length} />
+          <Stat label="Descartadas" value={loteLocal.total_executados} tone="emerald" />
+          <Stat label="Puladas" value={loteLocal.total_pulados} tone="amber" />
+        </div>
+
+        <div className="border border-border rounded-lg max-h-[400px] overflow-auto">
+          {loading ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
+          ) : itens.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">Sem itens.</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 sticky top-0">
+                <tr>
+                  <th className="px-2 py-1.5 text-left">Código</th>
+                  <th className="px-2 py-1.5 text-left">Material</th>
+                  <th className="px-2 py-1.5 text-left">Localização</th>
+                  <th className="px-2 py-1.5 text-left">Coleta</th>
+                  <th className="px-2 py-1.5 text-left">Status</th>
+                  <th className="px-2 py-1.5 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itens.map((i) => (
+                  <tr key={i.id} className="border-t border-border">
+                    <td className="px-2 py-1 font-mono text-xs">{i.snapshot_codigo_barra}</td>
+                    <td className="px-2 py-1">{i.snapshot_material}</td>
+                    <td className="px-2 py-1">{i.snapshot_localizacao || "—"}</td>
+                    <td className="px-2 py-1">{formatDate(i.snapshot_data_coleta)}</td>
+                    <td className="px-2 py-1">
+                      {i.status === "EXECUTADO" ? (
+                        <span className="text-xs text-emerald-700 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Descartada
+                        </span>
+                      ) : i.status === "PULADO" ? (
+                        <span className="text-xs text-amber-700 flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          Pulada
+                          {i.motivo_pulo && (
+                            <span className="text-muted-foreground">— {i.motivo_pulo}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Pendente</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-1 text-right">
+                      {i.status === "PENDENTE" && isAtivo && (
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setMotivoPulo({ id: i.id, motivo: "" })}
+                          >
+                            Pular
+                          </Button>
+                          <Button size="sm" onClick={() => handleExecutar(i.id)}>
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Descartar
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {motivoPulo && (
+          <Dialog open onOpenChange={() => setMotivoPulo(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Pular item</DialogTitle>
+                <DialogDescription>Informe o motivo para não executar o expurgo desta amostra.</DialogDescription>
+              </DialogHeader>
+              <Textarea
+                value={motivoPulo.motivo}
+                onChange={(e) => setMotivoPulo({ ...motivoPulo, motivo: e.target.value })}
+                placeholder="Ex: amostra requisitada para reanálise"
+                rows={3}
+              />
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setMotivoPulo(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handlePular}>Confirmar pulo</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {confirmCancel && (
+          <Dialog open onOpenChange={() => setConfirmCancel(false)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cancelar lote</DialogTitle>
+                <DialogDescription>
+                  Os itens já executados permanecerão descartados. Itens pendentes serão liberados.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                value={motivoCancel}
+                onChange={(e) => setMotivoCancel(e.target.value)}
+                placeholder="Motivo do cancelamento"
+                rows={3}
+              />
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setConfirmCancel(false)}>
+                  Voltar
+                </Button>
+                <Button variant="destructive" onClick={handleCancelar}>
+                  Confirmar cancelamento
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: "emerald" | "amber";
+}) {
+  const color =
+    tone === "emerald"
+      ? "text-emerald-700"
+      : tone === "amber"
+      ? "text-amber-700"
+      : "text-foreground";
+  return (
+    <div className="border border-border rounded-lg py-2">
+      <div className={cn("text-xl font-semibold tabular-nums", color)}>{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
