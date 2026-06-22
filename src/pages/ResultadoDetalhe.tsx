@@ -1162,6 +1162,8 @@ const ResultadoDetalhe = () => {
                   onAuditoria={() => setShowAuditoria(true)}
                   onCritico={() => setShowCriticoDialog(true)}
                   onEntrega={() => setShowEntregaDialog(true)}
+                  onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
+                  podeEnviarWhatsapp={todosLiberados}
                 />
               }
 
