@@ -81,7 +81,7 @@ interface S3Config {
 }
 
 interface WhatsappConfig {
-  provider: "meta" | "twilio" | "zapi";
+  provider: "meta";
   phoneNumberId: string;
   accessToken: string;
   verifyToken: string;
