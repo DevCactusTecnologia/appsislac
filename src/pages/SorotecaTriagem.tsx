@@ -29,8 +29,7 @@ import {
   PackageCheck,
   ListChecks,
 } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { SorotecaNav } from "@/components/soroteca/SorotecaNav";
+import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
