@@ -764,43 +764,8 @@ const Orcamentos = () => {
         );
       })()}
 
-      {/* Template picker dialog (acionado pela seta ▾ na linha) */}
-      <StandardDialog
-        open={!!templateMenuOrc}
-        onClose={() => setTemplateMenuOrc(null)}
-        icon={<MessageCircle className="h-5 w-5 text-[hsl(142,70%,45%)]" />}
-        title="Escolher template"
-        subtitle={templateMenuOrc ? `${templateMenuOrc.orc.id} — ${templateMenuOrc.orc.nome}` : undefined}
-        maxWidth="md"
-      >
-        {templateMenuOrc && (
-          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Há <span className="font-semibold text-foreground">{templateMenuOrc.dias}d</span> desde a criação · Sugestão: <span className="font-semibold text-foreground">{templates[sugerirTemplate(templateMenuOrc.dias)].label}</span>
-            </p>
-            <div className="space-y-2">
-              {(["lembrete", "reforco", "ultima"] as const).map((k) => {
-                const t = templates[k];
-                const isSugestao = sugerirTemplate(templateMenuOrc.dias) === k;
-                return (
-                  <button key={k} onClick={() => { sendWhatsappTemplate(templateMenuOrc.orc, k); setTemplateMenuOrc(null); }}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all ${isSugestao ? "border-[hsl(142,70%,45%)]/40 bg-[hsl(142,70%,45%)]/5" : "border-border/60 hover:bg-muted"}`}>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className={`text-sm font-semibold flex items-center gap-2 ${t.tone}`}>
-                        <span className="text-base">{t.emoji}</span> {t.label}
-                      </span>
-                      {isSugestao && <span className="text-[10px] bg-[hsl(var(--status-success))] text-white px-2 py-0.5 rounded-md font-bold">SUGERIDO</span>}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-line">
-                      {t.build(templateMenuOrc.orc).split("\n").slice(0, 3).join(" ")}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </StandardDialog>
+
+
     </div>
   );
 };
