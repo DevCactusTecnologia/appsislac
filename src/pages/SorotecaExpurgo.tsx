@@ -120,8 +120,6 @@ export default function SorotecaExpurgo() {
       <PageHeader
         title="Expurgo Programado"
         description="Agende e execute o descarte de amostras com auditoria completa."
-        icon={Trash2}
-        backTo="/soroteca"
         actions={
           <Button onClick={() => setOpenNovo(true)} className="h-9">
             <Plus className="h-4 w-4 mr-2" />
