@@ -108,10 +108,15 @@ export async function saveNotificationSettings(
   tenantId: string,
   settings: NotificationSettings,
 ): Promise<void> {
-  const payload: Record<string, string> = { tenant_id: tenantId };
-  for (const k of Object.keys(COLUMN_BY_TYPE) as NotificationType[]) {
-    payload[COLUMN_BY_TYPE[k]] = settings[k];
-  }
+  const payload = {
+    tenant_id: tenantId,
+    resultado_pronto_mode: settings.resultado_pronto,
+    recoleta_mode: settings.recoleta,
+    orcamento_mode: settings.orcamento,
+    atendimento_mode: settings.atendimento,
+    agendamento_mode: settings.agendamento,
+    consulta_mode: settings.consulta,
+  };
   const { error } = await supabase
     .from("tenant_notification_settings")
     .upsert(payload, { onConflict: "tenant_id" });
