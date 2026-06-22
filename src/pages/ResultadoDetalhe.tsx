@@ -773,6 +773,8 @@ const ResultadoDetalhe = () => {
       if (naoLiberados === 0) {
         fireSuccessConfetti();
         setShowCelebracao(true);
+        // WhatsApp 2.0 — Fase 3E: notifica o paciente após liberação em lote.
+        void notifyResultadoPronto({ protocolo: paciente.protocolo });
       } else {
         setShowCelebracao(false);
         toast.success(`${okCount} resultado${okCount > 1 ? "s" : ""} liberado${okCount > 1 ? "s" : ""} com sucesso.`);
