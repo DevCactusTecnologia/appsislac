@@ -233,14 +233,14 @@ export default function SorotecaTriagem() {
       description="Bipe a etiqueta da amostra para armazenar na próxima posição livre."
       actions={
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-md border bg-white px-2.5 py-1 text-xs">
-            <ListChecks className="h-3.5 w-3.5 text-[#94a3b8]" />
-            <span className="text-[#94a3b8]">Pendentes:</span>
+          <div className="flex items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 py-1 text-xs">
+            <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-muted-foreground">Pendentes:</span>
             <strong className="tabular-nums">{pendentes}</strong>
             <button
               type="button"
               onClick={refreshPendentes}
-              className="ml-1 text-[#94a3b8] hover:text-[#1e293b]"
+              className="ml-1 text-muted-foreground hover:text-foreground"
               title="Recontar"
             >
               <RefreshCw className="h-3 w-3" />
