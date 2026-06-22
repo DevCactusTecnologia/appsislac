@@ -253,6 +253,10 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 <span className="truncate">Comparecimento</span>
               </button>
             </div>
+            {/* Ação canônica WhatsApp — sempre visível, decisão automática de template. */}
+            <div className="mt-2 flex items-center justify-end">
+              <WhatsappActionButton onSendAsync={handleSendWhatsapp} responsive={false} />
+            </div>
           </div>
 
           {/* Body */}
