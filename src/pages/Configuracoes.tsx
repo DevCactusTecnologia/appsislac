@@ -16,7 +16,7 @@ import {
   Globe,
   Search,
   X,
-  Bell,
+  
   Plug,
 } from "lucide-react";
 import AdminTab from "@/components/configuracoes/AdminTab";
@@ -29,7 +29,7 @@ import LaboratorioTab from "@/components/configuracoes/LaboratorioTab";
 import MapasTrabalhoTab from "@/components/configuracoes/MapasTrabalhoTab";
 import DocumentosTab from "@/components/configuracoes/DocumentosTab";
 import SiteTab from "@/components/configuracoes/SiteTab";
-import NotificacoesTab from "@/components/configuracoes/NotificacoesTab";
+
 import GatewayPagamentoTab from "@/components/configuracoes/GatewayPagamentoTab";
 import IntegracoesApoioTab from "@/components/configuracoes/IntegracoesApoioTab";
 import FornecedoresTab from "@/components/configuracoes/FornecedoresTab";
@@ -68,7 +68,8 @@ const menuItems: Array<{
   { group: "Operacional", id: "mapas-trabalho", label: "Mapas de Trabalho", icon: FileText, desc: "Workflow operacional de bancada (não controla VR, metodologia ou cálculo)", keywords: ["mapa", "trabalho", "impressão", "operacional", "bancada", "workflow", "fila"] },
   // GOVERNANÇA
   { group: "Governança", id: "admin", label: "Meu acesso", icon: UserCog, desc: "Perfil, email e senha", keywords: ["admin", "perfil", "senha", "password", "email", "conta"] },
-  { group: "Governança", id: "notificacoes", label: "Notificações", icon: Bell, desc: "Envio por WhatsApp e canais de comunicação", keywords: ["notificação", "notificacao", "whatsapp", "envio", "mensagem", "canal", "comunicação"] },
+  // Notificações WhatsApp foram centralizadas no painel Super Admin
+  // (`/super-admin/notificacoes`) — não há mais configuração por laboratório.
   { group: "Governança", id: "gateway-pagamento", label: "Gateway de pagamento", icon: CreditCard, desc: "Mercado Pago, Pix e cartões", keywords: ["gateway", "pagamento", "mercado pago", "mercadopago", "pix", "cartão", "boleto", "checkout"] },
   // Placeholders ocultos do menu — comportamento e código preservados.
   { group: "Conta", id: "painel", label: "Painel de chamada", icon: MonitorPlay, desc: "Tela de espera", hidden: true },
@@ -206,8 +207,6 @@ const Configuracoes = () => {
         return <DocumentosTab />;
       case "site":
         return <SiteTab />;
-      case "notificacoes":
-        return <NotificacoesTab />;
       case "gateway-pagamento":
         return <GatewayPagamentoTab />;
       case "integracoes-apoio":

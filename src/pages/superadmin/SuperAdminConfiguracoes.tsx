@@ -81,7 +81,7 @@ interface S3Config {
 }
 
 interface WhatsappConfig {
-  provider: "meta" | "twilio" | "zapi";
+  provider: "meta";
   phoneNumberId: string;
   accessToken: string;
   verifyToken: string;
@@ -678,15 +678,9 @@ export default function SuperAdminConfiguracoes() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>Provedor</FieldLabel>
-                    <select
-                      value={wpp.provider}
-                      onChange={(e) => updWpp("provider", e.target.value as WhatsappConfig["provider"])}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="meta">Meta Cloud API (oficial)</option>
-                      <option value="twilio">Twilio</option>
-                      <option value="zapi">Z-API</option>
-                    </select>
+                    <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
+                      Meta Cloud API (oficial) — centralizado
+                    </div>
                   </div>
                   <div>
                     <FieldLabel>Phone Number ID</FieldLabel>
@@ -713,7 +707,7 @@ export default function SuperAdminConfiguracoes() {
                 </div>
 
                 <InfoNote>
-                  As credenciais são geradas no painel do provedor escolhido (Meta for Developers, Twilio Console ou Z-API).
+                  As credenciais são geradas em Meta for Developers (única conta corporativa do SISLAC).
                 </InfoNote>
 
                 <ActionsBar

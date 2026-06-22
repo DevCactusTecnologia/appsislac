@@ -3,11 +3,11 @@
 //   2) Mensagens recebidas — usadas para capturar opt-out (STOP/SAIR/CANCELAR)
 //
 // - GET ?hub.mode=subscribe&hub.verify_token=...&hub.challenge=...
-//   Handshake. Aceita se o token bater com WHATSAPP_META_VERIFY_TOKEN (centralizado)
-//   OU com algum webhook_verify_token de tenant (legado, durante migração).
+//   Handshake. Aceita apenas se o token bater com WHATSAPP_META_VERIFY_TOKEN
+//   (arquitetura centralizada Meta — Fase 3B).
 //
-// - POST body assinado por x-hub-signature-256 (HMAC SHA256 com WHATSAPP_META_APP_SECRET
-//   ou WHATSAPP_APP_SECRET legado).
+// - POST body assinado por x-hub-signature-256 (HMAC SHA256 com
+//   WHATSAPP_META_APP_SECRET).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
 
@@ -66,19 +66,8 @@ Deno.serve(async (req) => {
     const mode = url.searchParams.get("hub.mode");
     const tokenSent = url.searchParams.get("hub.verify_token") ?? "";
     const challenge = url.searchParams.get("hub.challenge") ?? "";
-    if (mode !== "subscribe" || !tokenSent) {
-      return new Response("forbidden", { status: 403, headers: corsHeaders });
-    }
     const centralToken = Deno.env.get("WHATSAPP_META_VERIFY_TOKEN") ?? "";
-    if (centralToken && tokenSent === centralToken) {
-      return new Response(challenge, { status: 200, headers: { ...corsHeaders, "Content-Type": "text/plain" } });
-    }
-    const { data } = await admin
-      .from("tenant_whatsapp_config")
-      .select("id")
-      .eq("webhook_verify_token", tokenSent)
-      .limit(1);
-    if (!data || data.length === 0) {
+    if (mode !== "subscribe" || !tokenSent || !centralToken || tokenSent !== centralToken) {
       return new Response("forbidden", { status: 403, headers: corsHeaders });
     }
     return new Response(challenge, {
@@ -92,7 +81,7 @@ Deno.serve(async (req) => {
   }
 
   const rawBody = await req.text();
-  const appSecret = Deno.env.get("WHATSAPP_META_APP_SECRET") ?? Deno.env.get("WHATSAPP_APP_SECRET");
+  const appSecret = Deno.env.get("WHATSAPP_META_APP_SECRET");
   const signatureHeader = req.headers.get("x-hub-signature-256");
   if (!appSecret) {
     console.error("whatsapp-webhook: app secret not configured");
