@@ -66,19 +66,8 @@ Deno.serve(async (req) => {
     const mode = url.searchParams.get("hub.mode");
     const tokenSent = url.searchParams.get("hub.verify_token") ?? "";
     const challenge = url.searchParams.get("hub.challenge") ?? "";
-    if (mode !== "subscribe" || !tokenSent) {
-      return new Response("forbidden", { status: 403, headers: corsHeaders });
-    }
     const centralToken = Deno.env.get("WHATSAPP_META_VERIFY_TOKEN") ?? "";
-    if (centralToken && tokenSent === centralToken) {
-      return new Response(challenge, { status: 200, headers: { ...corsHeaders, "Content-Type": "text/plain" } });
-    }
-    const { data } = await admin
-      .from("tenant_whatsapp_config")
-      .select("id")
-      .eq("webhook_verify_token", tokenSent)
-      .limit(1);
-    if (!data || data.length === 0) {
+    if (mode !== "subscribe" || !tokenSent || !centralToken || tokenSent !== centralToken) {
       return new Response("forbidden", { status: 403, headers: corsHeaders });
     }
     return new Response(challenge, {
