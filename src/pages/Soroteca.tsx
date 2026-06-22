@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/shared/PageHeader";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 
 /**
