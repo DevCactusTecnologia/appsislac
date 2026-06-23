@@ -513,13 +513,13 @@ const AnalisarAmostra = () => {
           </aside>
 
           {/* Painel principal */}
-          <main className={`bg-card rounded-xl border border-border overflow-hidden flex-col self-start w-full ${selectedId ? "flex" : "hidden xl:flex"}`}>
+          <main className={`bg-card rounded-2xl border border-border/60 shadow-elevation-xs overflow-hidden flex-col self-start w-full ${selectedId ? "flex" : "hidden xl:flex"}`}>
             {!hasPendentes ? (
               <div className="min-h-[400px] flex items-center justify-center"><EmptyState /></div>
             ) : !selectedPaciente || !filteredPacientes.find(p => p.id === selectedId) ? (
-              <div className="min-h-[400px] flex flex-col items-center justify-center text-center px-8 py-12">
-                <div className="h-16 w-16 rounded-2xl bg-primary/8 flex items-center justify-center mb-4">
-                  <Sparkles className="h-7 w-7 text-primary/60" />
+              <div className="min-h-[400px] flex flex-col items-center justify-center text-center px-8 py-12 bg-gradient-to-br from-primary/5 via-card to-transparent">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-4">
+                  <Sparkles className="h-7 w-7 text-primary" />
                 </div>
                 <h2 className="text-base font-semibold text-foreground mb-1">Selecione um paciente</h2>
                 <p className="text-sm text-muted-foreground max-w-sm">Escolha um paciente na fila ao lado para iniciar a análise dos exames.</p>
