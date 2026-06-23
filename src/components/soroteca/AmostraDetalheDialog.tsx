@@ -561,7 +561,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                 </ol>
               )}
             </section>
-          </div>
+          </SorotecaDialogBody>
         )}
       </DialogContent>
     </Dialog>
