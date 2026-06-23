@@ -10,7 +10,6 @@
  *   - Back-off exponencial em CHANNEL_ERROR/TIMED_OUT (1s → 30s).
  *   - Pausa quando a aba não está visível (economiza socket).
  *
- * Ver: docs/architecture/realtime-reduction-plan.md (Fase 7)
  */
 
 import { useEffect, useRef } from "react";
