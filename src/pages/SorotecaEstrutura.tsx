@@ -72,10 +72,13 @@ export default function SorotecaEstrutura() {
 
   const [locais, setLocais] = useState<LocalArmazenamento[]>([]);
   const [galerias, setGalerias] = useState<Galeria[]>([]);
-  const [posicoes, setPosicoes] = useState<PosicaoGaleria[]>([]);
+  const [posicoes, setPosicoes] = useState<PosicaoEnriquecida[]>([]);
+  const [ocupacao, setOcupacao] = useState<Record<string, OcupacaoLocal>>({});
 
   const [localSel, setLocalSel] = useState<string | null>(null);
   const [galeriaSel, setGaleriaSel] = useState<string | null>(null);
+  // mobile breadcrumb-style navigation: which level is visible <lg
+  const [mobileView, setMobileView] = useState<"locais" | "galerias" | "posicoes">("locais");
 
   const [loading, setLoading] = useState(true);
 
@@ -91,8 +94,9 @@ export default function SorotecaEstrutura() {
   // ---------- carregamento ----------
   async function refreshLocais() {
     setLoading(true);
-    const data = await listarLocais();
+    const [data, oc] = await Promise.all([listarLocais(), ocupacaoPorLocal()]);
     setLocais(data);
+    setOcupacao(oc);
     setLoading(false);
     if (!data.find((l) => l.id === localSel)) {
       setLocalSel(data[0]?.id ?? null);
@@ -117,7 +121,7 @@ export default function SorotecaEstrutura() {
       setPosicoes([]);
       return;
     }
-    const data = await listarPosicoes(galeriaId);
+    const data = await listarPosicoesComOcupacao(galeriaId);
     setPosicoes(data);
   }
 
@@ -134,6 +138,20 @@ export default function SorotecaEstrutura() {
   useEffect(() => {
     refreshPosicoes(galeriaSel);
   }, [galeriaSel]);
+
+  // Resumo de posições da galeria selecionada
+  const resumoGaleria = useMemo(() => {
+    const r = { total: posicoes.length, ocupadas: 0, livres: 0, vencendo: 0, vencida: 0, inativa: 0 };
+    for (const p of posicoes) {
+      if (p.status === "livre") r.livres++;
+      else if (p.status === "ocupada") r.ocupadas++;
+      else if (p.status === "vencendo") { r.ocupadas++; r.vencendo++; }
+      else if (p.status === "vencida") { r.ocupadas++; r.vencida++; }
+      else r.inativa++;
+    }
+    return r;
+  }, [posicoes]);
+
 
   // ---------- deleções ----------
   async function executarRemocao() {
