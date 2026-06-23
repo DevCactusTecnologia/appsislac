@@ -8,9 +8,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppContext } from "@/contexts/AppContext";
-import { handleError } from "@/lib/errorHandling";
-import { useInterval, useMounted } from "@/hooks/useCleanupUtils";
 
 export interface AReceberRowDTO {
   id: number;
