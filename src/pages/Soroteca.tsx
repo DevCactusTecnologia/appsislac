@@ -11,6 +11,7 @@ import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useHidScanner } from "@/hooks/useHidScanner";
 import {
   FlaskConical,
   Search,
@@ -156,7 +157,7 @@ export default function Soroteca() {
   const [scannerAberto, setScannerAberto] = useState(false);
   const [destaqueId, setDestaqueId] = useState<string | null>(null);
   const linhasRef = useRef<Map<string, HTMLLIElement>>(new Map());
-  const hidBufferRef = useRef<{ value: string; lastAt: number }>({ value: "", lastAt: 0 });
+  
 
   // ---- Fase 5: Pesquisa avançada (server-side) ----
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
@@ -213,39 +214,8 @@ export default function Soroteca() {
     toast.success(`Amostra ${alvo.codigo_barra} localizada.`);
   };
 
-  // Captura HID global: leitores USB/Bluetooth emulam teclado e disparam
-  // ~10ms entre teclas, finalizando com Enter. Acumulamos enquanto não há
-  // input/textarea/select focado e nenhum dialog aberto sobre o foco.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      // Se o usuário está digitando em um campo, não interferimos.
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      const editable = (e.target as HTMLElement | null)?.isContentEditable;
-      if (tag === "input" || tag === "textarea" || tag === "select" || editable) return;
-      // Scanner ou detalhe abertos têm seus próprios inputs — deixamos passar.
-      if (scannerAberto) return;
-      const now = Date.now();
-      const buf = hidBufferRef.current;
-      // reset se demorou demais entre teclas (digitação humana)
-      if (now - buf.lastAt > 50) buf.value = "";
-      buf.lastAt = now;
-      if (e.key === "Enter") {
-        const code = buf.value;
-        buf.value = "";
-        if (code.length >= 4) {
-          e.preventDefault();
-          handleCodigoLido(code);
-        }
-        return;
-      }
-      if (e.key.length === 1) {
-        buf.value += e.key;
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amostras, scannerAberto]);
+  // Scanner HID unificado — hook compartilhado com /soroteca/triagem.
+  useHidScanner({ onScan: handleCodigoLido, disabled: scannerAberto });
 
   const carregar = async () => {
     setLoading(true);
