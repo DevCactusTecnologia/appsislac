@@ -38,9 +38,7 @@ export default function RegistrarCriticoDialog(p: Props) {
     .filter((c) => CRITICO_CANAIS_VALIDOS.includes(c.valor as CriticoCanal))
     .map((c) => ({ value: c.valor as CriticoCanal, label: c.label }));
 
-  if (import.meta.env.DEV && canais.length === 0 && canaisDb.length > 0) {
-    console.warn("[RegistrarCriticoDialog] Nenhum canal válido encontrado em select_options/canais_comunicacao");
-  }
+  // Canais válidos verificados silenciosamente
 
   const reset = () => {
     setCanal("telefone"); setDestinatarioNome(""); setDestinatarioContato(""); setObservacao("");

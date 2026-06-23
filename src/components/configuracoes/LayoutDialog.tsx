@@ -62,21 +62,7 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   const [exibirUnidade, setExibirUnidade] = useState(true);
   const [exibirMaterial, setExibirMaterial] = useState(false);
 
-  // [DIAG-AUTOCLOSE] Investigação de fechamento espontâneo. Remover após resolver.
-  useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.info(`[DIAG LayoutDialog] open=${open}`, new Date().toISOString());
-    if (!open) {
-      // eslint-disable-next-line no-console
-      console.trace("[DIAG LayoutDialog] fechou — stack:");
-    }
-  }, [open]);
-
   const onCloseDiag = () => {
-    // eslint-disable-next-line no-console
-    console.warn("[DIAG LayoutDialog] onClose chamado", new Date().toISOString());
-    // eslint-disable-next-line no-console
-    console.trace("[DIAG LayoutDialog] origem do onClose:");
     onClose();
   };
 

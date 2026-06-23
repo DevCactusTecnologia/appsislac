@@ -97,7 +97,6 @@ export function bootDataStores(): Promise<void> {
 
   if (!SHOULD_BOOT_ATENDIMENTOS) {
     // eslint-disable-next-line no-console
-    console.info("[storeBoot] atendimentos: boot global DESLIGADO (paginated_atendimentos ON)");
   }
 
   const secundario = () => Promise.all([
@@ -133,7 +132,6 @@ export function bootDataStores(): Promise<void> {
       .then((tid) => { try { installAtendimentosRealtime(tid); } catch { /* noop */ } })
       .catch(() => { /* fail-safe: sem realtime, mas app funciona */ });
     // eslint-disable-next-line no-console
-    console.info("[storeBoot] Cadastros essenciais carregados; secundários em background");
   }).catch((err) => {
     showError(err, { scope: "storeBoot.carregarCadastros", silent: true });
     // Mesmo com falha, resolvemos para não travar a UI — stores ficam vazios.
