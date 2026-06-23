@@ -349,7 +349,7 @@ export default function Inscricao() {
                     </>
                   ) : (
                     <>
-                      Quero ver na prática
+                      Entrar
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
