@@ -382,24 +382,26 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 const row = exameRowMap[exame.nome];
                 const isTerc = row?.tipo_processo === "TERCEIRIZADO";
                 return (
-                  <div key={i} className="flex items-center justify-between px-4 py-3 gap-3">
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-foreground truncate">{exame.nome}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {meta && Icon && (
+                          <span
+                            title={meta.label}
+                            aria-label={meta.label}
+                            className={`inline-flex items-center justify-center shrink-0 ${meta.tone}`}
+                          >
+                            <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </span>
+                        )}
+                        <p className="text-[13px] font-medium text-foreground truncate">{exame.nome}</p>
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-[10px] text-muted-foreground">{exame.material}</p>
                         {isConvenio && (
                           <>
                             <span className="text-[10px] text-muted-foreground/40">·</span>
                             <span className="text-[10px] font-medium text-status-info">Cobrado do convênio</span>
-                          </>
-                        )}
-                        {meta && Icon && (
-                          <>
-                            <span className="text-[10px] text-muted-foreground/40">·</span>
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${meta.tone}`}>
-                              <Icon className="h-2.5 w-2.5" strokeWidth={2.5} />
-                              {meta.label}
-                            </span>
                           </>
                         )}
                       </div>
