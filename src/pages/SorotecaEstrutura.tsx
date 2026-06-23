@@ -750,3 +750,157 @@ function NovasPosicoesDialog({
   );
 }
 
+
+function EditarLocalDialog({
+  local,
+  onOpenChange,
+  onSaved,
+}: {
+  local: LocalArmazenamento | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState<LocalTipo>("geladeira");
+  const [tmin, setTmin] = useState("");
+  const [tmax, setTmax] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (local) {
+      setNome(local.nome);
+      setTipo(local.tipo);
+      setTmin(local.temperatura_min != null ? String(local.temperatura_min) : "");
+      setTmax(local.temperatura_max != null ? String(local.temperatura_max) : "");
+    }
+  }, [local]);
+
+  async function submit() {
+    if (!local) return;
+    if (!nome.trim()) {
+      toast.error("Informe o nome do local.");
+      return;
+    }
+    setSaving(true);
+    const res = await atualizarLocal(local.id, {
+      nome,
+      tipo,
+      temperatura_min: tmin ? Number(tmin) : null,
+      temperatura_max: tmax ? Number(tmax) : null,
+    });
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(`Falha ao salvar: ${res.error ?? "erro"}`);
+      return;
+    }
+    toast.success("Local atualizado");
+    onSaved();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!local} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar local</DialogTitle>
+          <DialogDescription>Atualize os dados de {local?.nome}.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="edit-local-nome">Nome</Label>
+            <Input id="edit-local-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TIPOS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="edit-tmin">Temp. mín (°C)</Label>
+              <Input id="edit-tmin" type="number" value={tmin} onChange={(e) => setTmin(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="edit-tmax">Temp. máx (°C)</Label>
+              <Input id="edit-tmax" type="number" value={tmax} onChange={(e) => setTmax(e.target.value)} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditarGaleriaDialog({
+  galeria,
+  onOpenChange,
+  onSaved,
+}: {
+  galeria: Galeria | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [ordem, setOrdem] = useState("0");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (galeria) {
+      setNome(galeria.nome);
+      setOrdem(String(galeria.ordem));
+    }
+  }, [galeria]);
+
+  async function submit() {
+    if (!galeria || !nome.trim()) return;
+    setSaving(true);
+    const res = await atualizarGaleria(galeria.id, { nome, ordem: Number(ordem) || 0 });
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(`Falha ao salvar: ${res.error ?? "erro"}`);
+      return;
+    }
+    toast.success("Galeria atualizada");
+    onSaved();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!galeria} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar galeria</DialogTitle>
+          <DialogDescription>Atualize os dados de {galeria?.nome}.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="edit-g-nome">Nome</Label>
+            <Input id="edit-g-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-g-ordem">Ordem</Label>
+            <Input id="edit-g-ordem" type="number" value={ordem} onChange={(e) => setOrdem(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving || !nome.trim()}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
