@@ -1,100 +1,98 @@
-# WhatsApp 2.0 — Fase 3A | Plano de Implementação Enxuta
+# Plano — Soroteca inteligente + responsivo
 
-Antes de executar, preciso da sua confirmação explícita — esta fase mexe em banco, edge functions, todos os produtores de WhatsApp e remove código legado (mudança estrutural).
-
----
-
-## 1. Banco (1 migration única)
-
-Criar:
-
-- **`whatsapp_outbox`** — fila única
-  - `id, tenant_id, paciente_id, telefone, template_nome, template_versao, idioma, variaveis jsonb, botoes jsonb, prioridade, status (pending|sending|sent|failed|failed_permanent|opted_out|rate_limited), tentativa, max_tentativas, proxima_tentativa_em, idempotency_key UNIQUE, message_id, erro, criado_por, criado_em, atualizado_em`
-- **`whatsapp_opt_out`**
-  - `id, tenant_id (NULL=global), paciente_id, telefone, motivo, origem, criado_em` — chave de busca prioritária: `paciente_id`; `telefone` é fallback
-- **`whatsapp_metrics_tenant`**
-  - `tenant_id, dia, enviados, entregues, lidos, falhas, opt_outs, PRIMARY KEY(tenant_id,dia)`
-- **`whatsapp_templates_cache`** — somente leitura, populada pelo sync (Meta = SSOT)
-  - `nome, idioma, versao, categoria, status, corpo, botoes jsonb, sincronizado_em`
-- **`tenant_rate_limit`**
-  - `tenant_id, mensagens_por_hora, mensagens_por_dia, bloqueado_ate`
-- Função `enqueue_whatsapp(...)` SECURITY DEFINER (valida opt-out + rate limit + insere outbox)
-- RLS + GRANTs em todas; somente Super Admin vê tudo, tenant vê o seu próprio
-- `tenant_whatsapp_config`: campo `modo` ganha valor `centralized` (sem migrar tenants ainda)
-
-## 2. Edge functions
-
-- **`whatsapp-dispatcher`** (novo) — invocado **imediatamente** após `enqueue` (dispatcher imediato); também roda via cron a cada 1 min só para retry/falhas. Lê N itens com `FOR UPDATE SKIP LOCKED`, checa opt-out + rate limit, chama Meta Graph API com credenciais do Vault, grava `whatsapp_mensagens` + atualiza outbox + métricas.
-- **`whatsapp-template-sync`** (novo) — cron diário; lê templates aprovados na Meta e atualiza `whatsapp_templates_cache`. Sem CRUD manual.
-- **`whatsapp-webhook`** (estender) — captura `STOP/SAIR/CANCELAR` → insere opt-out global; processa `delivered/read/failed` ligando por `message_id`.
-- **`whatsapp-send`** (manter, marcar deprecated) — continua atendendo tenants `simples/cloud_api/zapi` durante migração.
-
-Secrets novos (via add_secret): `WHATSAPP_META_PHONE_NUMBER_ID`, `WHATSAPP_META_ACCESS_TOKEN`, `WHATSAPP_META_VERIFY_TOKEN`, `WHATSAPP_META_APP_SECRET`.
-
-## 3. Produtores → `enqueueNotification()`
-
-Novo helper `src/lib/whatsapp/enqueueNotification.ts`:
-
-```ts
-enqueueNotification({ tenantId, pacienteId, telefone, template, variaveis })
-```
-
-Internamente: chama RPC `enqueue_whatsapp` + dispara `whatsapp-dispatcher` (fire-and-forget).
-
-Migrar chamadas em:
-
-- `atendimentoStore.finalizar` → `sislac_comprovante_atendimento`
-- agenda/agendamento confirmado → `sislac_comprovante_agendamento`
-- `ResultadoDetalhe` liberação → `sislac_resultados_prontos`
-- `orcamentoStore.criar` → `sislac_orcamento`
-- `recoletasStore.criar` → `sislac_recoleta`
-- clínica (quando existir) → `sislac_consulta_confirmacao`, `sislac_orcamento_clinica`
-- `leads-manager` (OTP) → `sislac_otp_cadastro` (primeira prova de fogo)
-
-Botão "Enviar comprovante" da UI: muda de `wa.me/whatsapp-send` para `enqueueNotification`. Modo Simples (`wa.me`) só permanece para tenants ainda não migrados.
-
-## 4. Central de Notificações (Super Admin)
-
-Nova rota `/super-admin/notificacoes` exibindo:
-
-- KPIs: envios/dia, entregues, lidos, falhas, opt-outs
-- Tabela outbox com filtros (tenant, status, template, período)
-- Ações: reprocessar item, ver payload, cancelar
-- Lista de templates do cache (somente leitura) + status Meta
-- Lista de opt-outs
-
-Sem editor de campanha, sem chatbot, sem IA, sem disparo em massa.
-
-## 5. Limpeza de legado
-
-Critério estrito: **0 imports, 0 referências, 0 consumidores**.
-
-Auditar e remover (somente o que bater o critério):
-
-- helpers/stores/componentes WhatsApp órfãos
-- código de provider abandonado se sem uso real
-- `simples/cloud_api/zapi` **mantidos** (há tenants ativos) — apenas marcados `@deprecated` no JSDoc
-
-## 6. Validação
-
-- `bun run build`
-- `bunx vitest run`
-- Smoke: cada um dos 7 fluxos (Comprovante Atendimento, Comprovante Agendamento, Resultados, Orçamento, Recoleta, Consulta, OTP) deve entrar na outbox, ser despachado, receber status e gerar auditoria.
-
-## 7. Relatório final
-
-`docs/whatsapp-2.0/phase3a-report.md` respondendo todas as perguntas da missão.
+Entrega em 3 frentes paralelas, sem mexer em rotas, boot, deps globais ou no contrato do banco da Fase 2.
 
 ---
 
-## Confirmação necessária
+## Frente A — Camada 1: inteligência determinística (sem IA)
 
-Você confirma:
+### A1. Mapa visual 2D da galeria (`SorotecaEstrutura.tsx`)
+- Substituir a lista chapada de posições por um **grid responsivo** (auto-fit, min 44px) com tiles coloridos:
+  - 🟢 livre · 🔵 ocupada · 🟡 vencendo (<7d p/ expurgo) · 🔴 vencida · ⚫ inativa
+- Hover/tap → tooltip com: paciente, protocolo, material, data armazenamento, prox. expurgo.
+- Clique → abre `EditarPosicaoDialog` existente.
+- Header da galeria mostra contadores ("18/96 ocupadas · 22% · 3 vencendo").
 
-1. Criar as 5 tabelas novas + função `enqueue_whatsapp` (migration única)?
-2. Criar `whatsapp-dispatcher` e `whatsapp-template-sync`, estender `whatsapp-webhook`?
-3. Migrar todos os 7 produtores listados para `enqueueNotification()` neste turno?
-4. Criar rota Super Admin `/super-admin/notificacoes`?
-5. Solicitar via `add_secret` as 4 credenciais Meta corporativas (você precisará colá-las)?
+### A2. Heatmap de ocupação por Local (header da página)
+- Strip horizontal: cada local vira uma barra com % ocupação + cor (verde<70%, âmbar 70–90%, vermelho >90%).
+- Alerta visual quando >90%.
 
-Se sim a tudo, executo a Fase 3A inteira nas próximas mensagens. Se quiser fatiar (ex.: só infra + OTP primeiro, demais produtores depois), me diga.
+### A3. Criação em lote 2D (`NovaPosicaoDialog`)
+- Adicionar 3º modo no segmented control existente:
+  - **Linear** (atual: prefixo + N)
+  - **Individual** (atual)
+  - **Grid 2D** (novo): linhas A–H × colunas 1–12 → gera `A1, A2…H12` com `ordem` calculada (linha*100+coluna).
+- Preview live do total e dos 6 primeiros códigos.
+
+### A4. Loader único enriquecido
+- Novo helper em `sorotecaEstruturaStore.ts`: `listarPosicoesComOcupacao(galeria_id)` que faz 1 query joinando `posicoes_galeria` + `amostra_alocacoes` ativa + `amostras` + `atendimentos` + `pacientes` + `materiais_amostra` (prazo retenção).
+- Devolve `PosicaoEnriquecida[]` com `status: 'livre'|'ocupada'|'vencendo'|'vencida'|'inativa'` + metadados.
+
+---
+
+## Frente B — Camada 2: Assistente IA de alocação na Triagem
+
+### B1. Edge function `soroteca-sugerir-posicao`
+- Input: `amostra_id`.
+- Carrega: material (temperatura/prazo), exames pendentes, locais ativos + compatibilidade de temperatura, ocupação por galeria, prazos das amostras vizinhas.
+- Modelo: `google/gemini-3-flash-preview` via Lovable AI Gateway (sem chave do usuário).
+- Prompt estruturado pede retorno via `Output.object` com Zod:
+  ```
+  { posicao_id, posicao_caminho, score (0-100), motivo (string curta), alternativas: [{posicao_id, caminho, motivo}] }
+  ```
+- Validação: posição precisa estar livre e compatível com temperatura do material; se IA devolver inválida, fallback determinístico (`proximaPosicaoLivre`).
+- CORS + corsHeaders padrão. Erros 402/429 surfaced.
+
+### B2. UI na tela `/soroteca/triagem`
+- Após escanear amostra, painel "Sugestão IA":
+  - posição recomendada (caminho completo Local > Galeria > Posição) + score + justificativa
+  - 2 alternativas em chip clicável
+  - botão **Aceitar sugestão** (chama `alocarAmostra` existente)
+  - botão **Escolher manualmente** (mantém fluxo atual)
+- Estado de loading discreto (skeleton 200ms); fallback silencioso para próxima posição livre se IA falhar.
+
+### B3. Sem persistência adicional
+- Sugestões não vão para o banco. Apenas o resultado da alocação aceita (já gravado em `amostra_alocacoes`).
+
+---
+
+## Frente C — Responsividade total `/soroteca/*`
+
+Aplicar em `Soroteca.tsx`, `SorotecaEstrutura.tsx`, `SorotecaMateriais.tsx`, `SorotecaTriagem.tsx`, `SorotecaExpurgo.tsx`:
+
+- **Header da página**: stack vertical <640px (título em cima, ações em segunda linha full-width); horizontal ≥640px.
+- **Tabs**: scroll horizontal `.no-scrollbar` em mobile; flex-wrap em tablet.
+- **KPI strips**: grid `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5`.
+- **Estrutura 3 colunas (Local/Galeria/Posição)**:
+  - Desktop ≥1024px: 3 colunas lado a lado.
+  - Tablet 640–1023px: 2 colunas + drawer para posições.
+  - Mobile <640px: 1 coluna com breadcrumb back/forward entre níveis.
+- **Cards de amostra**: já em grid; revisar para `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3` e padding compacto em mobile.
+- **Dialogs Soroteca** (`SorotecaDialogShell`): `max-h-[90vh]`, body com `overflow-y-auto`, footer sticky, padding reduzido em <640px.
+- **Toolbars de busca/filtros**: full-width em mobile, inline em ≥md.
+- Validar com viewport `375×667`, `768×1024`, `1280×800` via Playwright (3 screenshots por página).
+
+---
+
+## Restrições preservadas
+
+- Schema do banco da Fase 2 **inalterado** — nenhuma migration nova nesta entrega.
+- Contratos de `sorotecaEstruturaStore.ts` mantidos; só adições (`listarPosicoesComOcupacao`).
+- Sem novas rotas, sem mudanças em `App.tsx` boot.
+- Dialogs continuam no padrão `SorotecaDialogShell` (flat, blur 6px).
+- Cores via tokens semânticos (sem hex hardcoded).
+- Padrão de busca/animação seguindo memórias core.
+
+## Detalhes técnicos
+
+- Edge function em `supabase/functions/soroteca-sugerir-posicao/index.ts` reusando `_shared/ai-gateway.ts` (criar se não existir, conforme `ai-sdk-lovable-gateway`).
+- Cliente chama via `supabase.functions.invoke("soroteca-sugerir-posicao", { body: { amostra_id }})`.
+- Sem novos secrets: `LOVABLE_API_KEY` já gerenciado pela plataforma.
+- Sem alterações no `vite.config.ts`, `index.css` tokens já cobrem as cores de status (success/warning/destructive/muted).
+
+## Fora de escopo desta entrega
+
+- Drag-and-drop para mover amostra entre posições (próximo passo).
+- Otimizador "Reorganizar galeria com IA" (próximo passo).
+- Linguagem natural para cadastro estrutural (próximo passo).
+- Busca semântica global (próximo passo).
