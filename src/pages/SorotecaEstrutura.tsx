@@ -5,8 +5,8 @@
  * Sem drag-and-drop, sem abstrações desnecessárias.
  */
 
-import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash, Grid3x3, ChevronRight, ArrowLeft } from "lucide-react";
 import {
   SorotecaDialogHeader,
   SorotecaDialogBody,
@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,9 @@ import {
   type Galeria,
   type LocalArmazenamento,
   type LocalTipo,
+  type PosicaoEnriquecida,
   type PosicaoGaleria,
+  type OcupacaoLocal,
   atualizarGaleria,
   atualizarLocal,
   atualizarPosicao,
@@ -45,13 +48,16 @@ import {
   criarLocal,
   criarPosicao,
   criarPosicoesEmLote,
+  criarPosicoesGrid2D,
   listarGalerias,
   listarLocais,
-  listarPosicoes,
+  listarPosicoesComOcupacao,
+  ocupacaoPorLocal,
   removerGaleria,
   removerLocal,
   removerPosicao,
 } from "@/data/sorotecaEstruturaStore";
+
 
 const TIPOS: { value: LocalTipo; label: string }[] = [
   { value: "geladeira", label: "Geladeira" },
