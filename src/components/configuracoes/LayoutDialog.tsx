@@ -194,6 +194,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       padrao,
       criadoPor: user?.nome || user?.email || "USUARIO",
       config: { ...(editData?.config ?? {}), margins: marginsConfig },
+      metodologia: metodologia.trim(),
+      unidadePadrao: unidadePadrao.trim(),
+      textoInterpretativoPadrao: textoInterpretativo,
+      exibirMetodologiaLaudo: exibirMetodologia,
+      exibirUnidadeLaudo: exibirUnidade,
+      exibirMaterialLaudo: exibirMaterial,
     };
     let ok = false;
     if (editData) ok = await updateLayout(editData.id, exame.id, payload);
