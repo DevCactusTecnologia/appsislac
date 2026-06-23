@@ -1,92 +1,75 @@
-# Soroteca — Movimentações inteligentes, histórico, IA e validações
+# Estoque 2.1 — Hardening e Simplificação
 
-Escopo focado em ampliar `/soroteca/estrutura` (mapa 2D) e adicionar fluxos de movimentação seguros e auditáveis. Sem mudança de rotas, sem novas deps de runtime, mantendo SaaS multi-tenant.
+Plano de execução em fases. Cada fase é independente e pode ser revertida. Sem novas features (compras, pedidos, transferências, etc.) — apenas fechar furos e simplificar.
 
-## 1. Banco de dados (1 migration)
+## Fase 2.1 — Saldo somente-leitura + "Definir saldo"
 
-Nova tabela `public.amostra_movimentacoes` para histórico imutável de movimentações entre posições:
+**Frontend:**
+- `LoteDialog.tsx`: campo `quantidade_inicial` permanece editável apenas na criação. Em modo edição, vira somente-leitura com texto "Para alterar saldo, use Movimentação".
+- `MovimentacaoDialog.tsx`: renomear tipo `ajuste` para rótulo "Definir saldo". UI passa a pedir **"Saldo correto"** em vez de delta. Sistema calcula `delta = saldo_correto - quantidade_atual` e envia movimentação `ajuste` com esse delta. O backend continua recebendo `ajuste` (não muda schema).
 
-- `id uuid pk`, `tenant_id uuid not null default current_tenant_id()`
-- `amostra_id uuid not null` (fk lógica)
-- `posicao_origem_id uuid`, `posicao_destino_id uuid not null`
-- `caminho_origem text`, `caminho_destino text` (snapshot legível: Local / Galeria / Código)
-- `motivo text` (ex.: `manual`, `otimizacao_ia`, `undo`, `conflito_resolvido`)
-- `lote_id uuid` (agrupa movimentações da mesma reorganização IA)
-- `desfeita boolean default false`, `desfeita_em timestamptz`, `desfeita_por uuid`
-- `executada_por uuid not null default auth.uid()`, `created_at timestamptz default now()`
-- Índices: `(tenant_id, amostra_id, created_at desc)`, `(tenant_id, lote_id)`
-- GRANT padrão + RLS (4 policies: `current_tenant_id() = tenant_id` + `has_permission`/`is_super_admin`)
+## Fase 2.2 — Histórico imutável
 
-Função `public.mover_amostra(p_amostra uuid, p_destino uuid, p_motivo text, p_lote uuid)`:
-- `security definer`, valida tenant, lê alocação ativa
-- Valida posição destino: ativa, livre (sem alocação ativa), mesma `galeria` opcional? não — entre galerias é permitido
-- Valida compatibilidade térmica (ver §4)
-- Em transação: encerra `amostra_alocacoes` ativa (set `liberada_em`), insere nova alocação para destino, insere linha em `amostra_movimentacoes`
-- Atualiza `amostras.atualizada_em` (data de movimentação)
-- Retorna `movimentacao_id`
+**Migration:**
+- DROP POLICY de DELETE em `estoque_movimentacoes`.
+- Remover botão/ação de excluir movimentação no frontend (se existir).
 
-Função `public.desfazer_movimentacao(p_mov uuid)`:
-- Lê movimentação, valida que é a última ativa da amostra e que origem ainda está livre
-- Chama lógica simétrica (sem registrar nova mov de undo? sim — registrar com `motivo='undo'`, `desfeita=true` na original)
+## Fase 2.3 — Cron diário de validade
 
-## 2. Edge function `soroteca-reorganizar-galeria` (IA)
+**Insert (não migration — contém URL/anon key):**
+- Habilitar `pg_cron` + `pg_net` (migration separada apenas para extensions, se ainda não habilitadas).
+- `cron.schedule('estoque-marcar-vencidos', '0 1 * * *', ...)` chamando a RPC `estoque_marcar_lotes_vencidos()` via `net.http_post` para uma edge function fina OU via `SELECT public.estoque_marcar_lotes_vencidos()` direto. Vou usar SELECT direto (mais simples, sem edge function nova).
 
-- Input: `{ galeria_id }`
-- Carrega posições + alocações + materiais + datas previstas de expurgo
-- Monta prompt para `google/gemini-3-flash-preview` com `Output.object` schema:
-  ```ts
-  { movimentacoes: [{ amostra_id, posicao_destino_id, motivo }], resumo: string, ganho_estimado: string }
-  ```
-- Heurísticas no prompt: agrupar por material/temperatura, deixar próximas do expurgo nas posições de saída fácil (ordem baixa), consolidar espaços livres contíguos
-- Valida output server-side: todas as amostras pertencem à galeria/tenant, posições destino válidas e únicas
-- **Não aplica** — apenas retorna o plano. Aplicação é client-side via `mover_amostra` em loop com `lote_id` compartilhado
+## Fase 2.4 — CHECK constraints
 
-## 3. Frontend
+**Migration:**
+```sql
+ALTER TABLE estoque_lotes ADD CONSTRAINT estoque_lotes_status_check
+  CHECK (status IN ('ativo','esgotado','vencido','descartado'));
+ALTER TABLE estoque_movimentacoes ADD CONSTRAINT estoque_movimentacoes_tipo_check
+  CHECK (tipo IN ('entrada','saida','ajuste','descarte'));
+```
+Validar dados existentes antes; normalizar qualquer linha fora do conjunto.
 
-### `src/data/sorotecaEstruturaStore.ts`
-- `moverAmostra(amostraId, destinoId, motivo)` → chama RPC `mover_amostra`
-- `desfazerMovimentacao(movId)` → RPC `desfazer_movimentacao`
-- `listarMovimentacoes(filtros)` → últimas N por galeria/amostra com nome do usuário (join `profiles`)
-- `validarCompatibilidade(amostraId, destinoId)` → checa material + temperatura do local (campo `temperatura` já existe em `locais_armazenamento`?). Se não houver, infere por nome ou usa `materiais_amostra.temperatura_recomendada` quando presente; senão retorna `ok`
+## Fase 2.5 — KPIs: 5 → 4
 
-### `src/pages/SorotecaEstrutura.tsx`
-- Mapa 2D atual ganha drag-and-drop nativo HTML5 (`draggable`, `onDragStart/Over/Drop`) — sem nova dep
-- Slot ocupado é arrastável; slot livre é alvo válido (highlight). Slot ocupado como alvo abre dialog de troca (swap) com aviso
-- Drop dispara `validarCompatibilidade` → se warning, abre `ConfirmarMovimentacaoDialog` (motivo, alerta térmico, paciente, origem→destino). Confirmar chama `moverAmostra` + toast com botão **Desfazer** (chama `desfazerMovimentacao`)
-- Novo botão **Histórico** no header da galeria → `HistoricoMovimentacoesDialog` (lista paginada, badge "desfeita", botão desfazer por linha quando elegível, mostra usuário)
-- Novo botão **Reorganizar com IA** → chama edge function, abre `ReorganizarPreviewDialog`:
-  - Tabela: Amostra · Origem · Destino · Motivo
-  - Diff visual sobre o mapa (cores: vai sair / vai entrar)
-  - Resumo + ganho estimado
-  - Ações: **Aplicar tudo** (loop com `lote_id`, progresso, rollback automático se falhar metade) · **Aplicar selecionados** · **Descartar**
-- Conflitos: se durante aplicação em lote uma posição destino virou ocupada (race), abre `ResolverConflitoDialog` (manter atual, mover atual para próxima livre, pular)
+**Frontend (`src/pages/Estoque.tsx`):**
+- Unificar "Vencidos" + "Vencendo (≤30d)" em **"Validade Crítica"** (soma).
+- Manter: Total de Insumos · Lotes Ativos · Validade Crítica · Estoque Baixo.
+- Manter DecisionPanel intacto.
 
-### Componentes novos em `src/components/soroteca/`
-- `ConfirmarMovimentacaoDialog.tsx`
-- `HistoricoMovimentacoesDialog.tsx`
-- `ReorganizarPreviewDialog.tsx`
-- `ResolverConflitoDialog.tsx`
+## Fase 2.6 — Permissões alinhadas
 
-Todos usam `SorotecaDialogShell` (padrão flat já estabelecido).
+**Frontend:**
+- Trocar permissão de menu/rota de `/estoque` de `configuracoes_sistema` para verificação de role `admin` (mesmo critério da RLS). Quem não é admin não vê o menu.
+- Ajustar `AppSidebar.tsx` e `App.tsx`.
 
-## 4. Validações de conflito e compatibilidade
+## Fase 2.7 — Proteger histórico de lotes
 
-- **Posição ocupada (swap)**: drop em slot ocupado → dialog "Trocar amostras" (executa duas movimentações no mesmo `lote_id`, via posição temporária se necessário — na prática: mover A para destino direto falha por unique; então estratégia = mover B para origem de A primeiro, depois A para destino)
-- **Temperatura incompatível**: bloqueia com aviso forte mas permite override com `motivo` obrigatório (registrado em `amostra_movimentacoes.motivo`)
-- **Material incompatível com galeria** (se galeria tem `material_id` definido): igual ao térmico, bloqueia com override
-- **Race condition**: RPC `mover_amostra` retorna erro com código `posicao_ocupada` → UI exibe `ResolverConflitoDialog`
-- **Posição inativa**: bloqueio duro, sem override
+**Migration:**
+- `ALTER TABLE estoque_lotes DROP CONSTRAINT … FOREIGN KEY (insumo_id)` e recriar como `ON DELETE RESTRICT`.
+- Mesmo tratamento para `estoque_movimentacoes` → `estoque_lotes`/`estoque_insumos` se hoje for CASCADE.
 
-## 5. Out of scope
+## Fase 2.8 — Limpeza cirúrgica
 
-- Drag-and-drop entre galerias diferentes via UI (apenas via diálogo manual de mover)
-- Mobile drag (touch) — para desktop/tablet por enquanto, mobile usa botão "Mover" no popover do slot
-- Aprovação multi-usuário do plano de IA
+- Manter `estoque_marcar_lotes_vencidos` (passa a ser usada pelo cron — não é mais órfã).
+- Verificar uso de `idx_estoque_insumos_categoria` e `idx_estoque_insumos_nome` via `pg_stat_user_indexes`. Só dropar se `idx_scan = 0` há tempo relevante.
+
+## Resultado esperado
+
+- Saldo só muda via movimentação rastreável.
+- Histórico imutável.
+- Vencimento automático todo dia 01:00.
+- Status e tipos validados no banco.
+- 4 KPIs claros + DecisionPanel.
+- Menu coerente com RLS.
+- Histórico de lotes protegido contra delete em cascata.
 
 ## Ordem de execução
 
-1. Migration (tabela + funções RPC) — aguarda aprovação do usuário
-2. Edge function `soroteca-reorganizar-galeria`
-3. Store helpers + tipos
-4. Dialogs novos
-5. Integração no mapa da `SorotecaEstrutura.tsx`
+1. Migrations (2.2 + 2.4 + 2.7) em uma única migration.
+2. Insert do cron (2.3).
+3. Edits de frontend (2.1 + 2.5 + 2.6).
+4. Verificação de índices (2.8) — informar resultado, não dropar sem confirmação.
+
+Aguardando "ok" para executar.
