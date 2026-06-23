@@ -38,7 +38,7 @@ const Soroteca = lazy(() => import("./pages/Soroteca"));
 const SorotecaEstrutura = lazy(() => import("./pages/SorotecaEstrutura"));
 const SorotecaTriagem = lazy(() => import("./pages/SorotecaTriagem"));
 const SorotecaMateriais = lazy(() => import("./pages/SorotecaMateriais"));
-const SorotecaEmprestimos = lazy(() => import("./pages/SorotecaEmprestimos"));
+
 const SorotecaExpurgo = lazy(() => import("./pages/SorotecaExpurgo"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
@@ -386,7 +386,7 @@ function AppRoutes() {
             <Route path="/soroteca/estrutura" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEstrutura /></ProtectedRoute>} />
             <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
             <Route path="/soroteca/materiais" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaMateriais /></ProtectedRoute>} />
-            <Route path="/soroteca/emprestimos" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEmprestimos /></ProtectedRoute>} />
+            
             <Route path="/soroteca/expurgo" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaExpurgo /></ProtectedRoute>} />
 
 
