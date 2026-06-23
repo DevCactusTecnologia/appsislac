@@ -106,6 +106,11 @@ export default function SorotecaTriagem() {
   const [pendentes, setPendentes] = useState<number>(0);
   const [armazenando, setArmazenando] = useState(false);
   const [trocaAberta, setTrocaAberta] = useState(false);
+  const [sugIA, setSugIA] = useState<SugestaoIA | null>(null);
+  const [altsIA, setAltsIA] = useState<SugestaoIA[]>([]);
+  const [iaFonte, setIaFonte] = useState<"ia" | "fallback" | null>(null);
+  const [iaLoading, setIaLoading] = useState(false);
+
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
