@@ -1057,19 +1057,31 @@ export default function Soroteca() {
               </div>
             )
           ) : (
-            restantes > 0 && (
+            filtradas.length > PAGE_SIZE && (
               <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
-                  Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
-                  <span className="font-semibold text-foreground">{totalListagem}</span> amostras
+                  Página <span className="font-semibold text-foreground">{legacyPage}</span> de{" "}
+                  <span className="font-semibold text-foreground">{legacyTotalPages}</span> ·{" "}
+                  <span className="font-semibold text-foreground">{filtradas.length}</span> amostra(s)
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                >
-                  Carregar mais ({Math.min(PAGE_SIZE, restantes)})
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={legacyPage <= 1}
+                    onClick={() => setLegacyPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={legacyPage >= legacyTotalPages}
+                    onClick={() => setLegacyPage((p) => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
               </div>
             )
           )}
