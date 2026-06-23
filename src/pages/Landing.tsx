@@ -236,44 +236,47 @@ const Landing = () => {
                   </div>
 
 
-                  <div className="overflow-hidden rounded-lg border border-border/60">
-                    <div className="grid grid-cols-12 gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      <div className="col-span-2">Protocolo</div>
-                      <div className="col-span-4">Paciente</div>
-                      <div className="col-span-3">Convênio</div>
-                      <div className="col-span-2">Status</div>
-                      <div className="col-span-1 text-right">Total</div>
-                    </div>
-                    {[
-                      { p: "P-2841", n: "Maria Silva Andrade", c: "Unimed", s: "Em análise", st: "warning" as const, v: "R$ 184" },
-                      { p: "P-2840", n: "João Pedro Almeida", c: "Particular", s: "Finalizado", st: "success" as const, v: "R$ 92" },
-                      { p: "P-2839", n: "Ana Beatriz Costa", c: "Bradesco", s: "Coletado", st: "info" as const, v: "R$ 246" },
-                      { p: "P-2838", n: "Carlos Henrique Lima", c: "SulAmérica", s: "Pendente", st: "pending" as const, v: "R$ 312" },
-                    ].map((r) => (
-                      <div key={r.p} className="grid grid-cols-12 items-center gap-2 border-b border-border/40 px-3 py-2.5 text-xs last:border-b-0">
-                        <div className="col-span-2 font-mono text-[11px] text-muted-foreground">{r.p}</div>
-                        <div className="col-span-4 truncate font-medium">{r.n}</div>
-                        <div className="col-span-3 truncate text-muted-foreground">{r.c}</div>
-                        <div className="col-span-2">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                              r.st === "success"
-                                ? "bg-[hsl(var(--status-success-bg))] text-[hsl(var(--status-success))]"
-                                : r.st === "warning"
-                                  ? "bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]"
-                                  : r.st === "info"
-                                    ? "bg-[hsl(var(--status-info-bg))] text-[hsl(var(--status-info))]"
-                                    : "bg-[hsl(var(--status-pending-bg))] text-[hsl(var(--status-pending))]"
-                            }`}
-                          >
-                            <CircleDot className="h-2.5 w-2.5" />
-                            {r.s}
-                          </span>
-                        </div>
-                        <div className="col-span-1 text-right font-semibold tabular-nums">{r.v}</div>
+                  <div className="overflow-x-auto rounded-lg border border-border/60">
+                    <div className="min-w-[520px]">
+                      <div className="grid grid-cols-12 gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <div className="col-span-2">Protocolo</div>
+                        <div className="col-span-4">Paciente</div>
+                        <div className="col-span-3">Convênio</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-1 text-right">Total</div>
                       </div>
-                    ))}
+                      {[
+                        { p: "P-2841", n: "Maria Silva Andrade", c: "Unimed", s: "Em análise", st: "warning" as const, v: "R$ 184" },
+                        { p: "P-2840", n: "João Pedro Almeida", c: "Particular", s: "Finalizado", st: "success" as const, v: "R$ 92" },
+                        { p: "P-2839", n: "Ana Beatriz Costa", c: "Bradesco", s: "Coletado", st: "info" as const, v: "R$ 246" },
+                        { p: "P-2838", n: "Carlos Henrique Lima", c: "SulAmérica", s: "Pendente", st: "pending" as const, v: "R$ 312" },
+                      ].map((r) => (
+                        <div key={r.p} className="grid grid-cols-12 items-center gap-2 border-b border-border/40 px-3 py-2.5 text-xs last:border-b-0">
+                          <div className="col-span-2 font-mono text-[11px] text-muted-foreground">{r.p}</div>
+                          <div className="col-span-4 truncate font-medium">{r.n}</div>
+                          <div className="col-span-3 truncate text-muted-foreground">{r.c}</div>
+                          <div className="col-span-2">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                r.st === "success"
+                                  ? "bg-[hsl(var(--status-success-bg))] text-[hsl(var(--status-success))]"
+                                  : r.st === "warning"
+                                    ? "bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]"
+                                    : r.st === "info"
+                                      ? "bg-[hsl(var(--status-info-bg))] text-[hsl(var(--status-info))]"
+                                      : "bg-[hsl(var(--status-pending-bg))] text-[hsl(var(--status-pending))]"
+                              }`}
+                            >
+                              <CircleDot className="h-2.5 w-2.5" />
+                              {r.s}
+                            </span>
+                          </div>
+                          <div className="col-span-1 text-right font-semibold tabular-nums">{r.v}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>
