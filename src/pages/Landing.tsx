@@ -134,12 +134,6 @@ const Landing = () => {
                 Começar agora
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
-              <a
-                href="#fluxo"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 py-3 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-card sm:px-7 sm:py-3.5"
-              >
-                Ver demonstração
-              </a>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:gap-x-6 sm:text-xs">
