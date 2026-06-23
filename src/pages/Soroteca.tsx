@@ -175,7 +175,7 @@ export default function Soroteca() {
   const [advValidadeFim, setAdvValidadeFim] = useState("");
   const [advArmazenamento, setAdvArmazenamento] = useState<"todas" | "armazenadas" | "pendentes">("todas");
   const [advPage, setAdvPage] = useState(1);
-  const [advPageSize] = useState(30);
+  const [advPageSize] = useState(PAGE_SIZE);
   const [advItems, setAdvItems] = useState<Amostra[]>([]);
   const [advTotal, setAdvTotal] = useState(0);
   const [advLoading, setAdvLoading] = useState(false);
