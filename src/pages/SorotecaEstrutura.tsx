@@ -86,6 +86,7 @@ export default function SorotecaEstrutura() {
   const [novaPosicaoOpen, setNovaPosicaoOpen] = useState(false);
   const [editarLocal, setEditarLocal] = useState<LocalArmazenamento | null>(null);
   const [editarGaleria, setEditarGaleria] = useState<Galeria | null>(null);
+  const [editarPosicao, setEditarPosicao] = useState<PosicaoGaleria | null>(null);
   const [confirmar, setConfirmar] = useState<{ tipo: "local" | "galeria" | "posicao"; id: string; nome: string } | null>(null);
 
   // ---------- carregamento ----------
