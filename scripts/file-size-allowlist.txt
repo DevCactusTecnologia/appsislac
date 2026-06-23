@@ -7,7 +7,7 @@
 # Baseline 2026-05-09 — arquivos legados em fila de refatoração:
 src/components/configuracoes/NovoExameDialog.tsx
 src/components/configuracoes/mapas/RichTextEditorPro.tsx
-src/data/atendimentoStore.ts
+
 src/lib/comprovantes.ts
 src/pages/AnalisarAmostra.tsx
 src/pages/Financeiro.tsx
