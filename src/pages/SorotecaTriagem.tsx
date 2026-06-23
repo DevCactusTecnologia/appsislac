@@ -378,23 +378,94 @@ export default function SorotecaTriagem() {
         </section>
       )}
 
-      {/* Próxima Posição Livre */}
+      {/* Painel IA — sugestão inteligente de posição */}
+      {amostra && !jaArmazenada && (sugIA || iaLoading) && (
+        <section className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 space-y-3">
+          <header className="flex items-center justify-between gap-2 flex-wrap">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Sugestão IA
+              {iaFonte === "fallback" && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal uppercase tracking-wide">
+                  Determinístico
+                </span>
+              )}
+            </h2>
+            {sugIA && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                score <strong className="text-foreground">{sugIA.score}</strong>/100
+              </span>
+            )}
+          </header>
+          {iaLoading && !sugIA && (
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analisando ocupação, temperatura e prazos…
+            </div>
+          )}
+          {sugIA && (
+            <>
+              <p className="text-sm">
+                <span className="text-muted-foreground">{sugIA.local_nome}</span>
+                <span className="mx-1 text-muted-foreground">›</span>
+                <span className="text-muted-foreground">{sugIA.galeria_nome}</span>
+                <span className="mx-1 text-muted-foreground">›</span>
+                <span className="font-mono font-semibold">{sugIA.posicao_codigo}</span>
+              </p>
+              <p className="text-xs text-muted-foreground italic">"{sugIA.motivo}"</p>
+              {altsIA.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground self-center mr-1">Alternativas:</span>
+                  {altsIA.map((a) => (
+                    <button
+                      key={a.posicao_id}
+                      type="button"
+                      onClick={() => aplicarSugestao(a)}
+                      className={cn(
+                        "text-[11px] px-2 py-1 rounded-md border bg-background hover:bg-muted transition-colors font-mono",
+                        posicao?.posicao_id === a.posicao_id && "border-primary/60 bg-primary/5",
+                      )}
+                      title={a.motivo}
+                    >
+                      {a.local_nome} › {a.galeria_nome} › {a.posicao_codigo}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* Posição escolhida + armazenamento */}
       {amostra && posicao && (
         <section className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
-              Próxima Posição Livre
+              Posição selecionada
             </h2>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setTrocaAberta(true)}
-              className="text-xs"
-            >
-              Trocar
-            </Button>
+            <div className="flex items-center gap-1">
+              {sugIA && posicao.posicao_id !== sugIA.posicao_id && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => aplicarSugestao(sugIA)}
+                  className="text-xs"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" /> Usar IA
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTrocaAberta(true)}
+                className="text-xs"
+              >
+                Trocar
+              </Button>
+            </div>
           </header>
           <p className="text-sm">
             <span className="text-muted-foreground">{posicao.local_nome}</span>
@@ -413,6 +484,8 @@ export default function SorotecaTriagem() {
           </Button>
         </section>
       )}
+
+
 
       <TrocaPosicaoDialog
         open={trocaAberta}
