@@ -239,7 +239,11 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 (atendimento.motivoCancelamento ? ` — ${atendimento.motivoCancelamento}` : "")
               }
               aria-label={`Status: ${atendimento.statusAtendimento.label}`}
-              className={`h-2.5 w-2.5 rounded-full bg-status-${atendimento.statusAtendimento.type} ring-2 ring-status-${atendimento.statusAtendimento.type}/20`}
+              className="h-2.5 w-2.5 rounded-full ring-2"
+              style={{
+                backgroundColor: `hsl(var(--status-${atendimento.statusAtendimento.type}))`,
+                boxShadow: `0 0 0 3px hsl(var(--status-${atendimento.statusAtendimento.type}) / 0.18)`,
+              }}
             />
             <button onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200">
               <X className="h-4 w-4" />
