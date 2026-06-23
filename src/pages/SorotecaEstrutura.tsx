@@ -38,6 +38,8 @@ import {
   type LocalArmazenamento,
   type LocalTipo,
   type PosicaoGaleria,
+  atualizarGaleria,
+  atualizarLocal,
   criarGaleria,
   criarLocal,
   criarPosicao,
