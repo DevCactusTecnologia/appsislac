@@ -483,14 +483,14 @@ const RegistrarColeta = () => {
   // ─── Componentes locais ──────────────────────────────────────────
   const SummaryChip = ({ icon: Icon, label, value, tone }: { icon: typeof Clock; label: string; value: number; tone: "warning" | "success" }) => {
     const map = {
-      warning: "text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))]",
-      success: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success-bg))]",
+      warning: "text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))] ring-[hsl(var(--status-warning))]/15",
+      success: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success-bg))] ring-[hsl(var(--status-success))]/15",
     } as const;
     return (
-      <div className={`flex items-center gap-2 px-3 h-9 rounded-lg ${map[tone]}`}>
+      <div className={`flex items-center gap-2 px-3.5 h-9 rounded-full ring-1 ${map[tone]}`}>
         <Icon className="h-3.5 w-3.5" />
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-sm font-semibold tabular-nums">{value}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-sm font-bold tabular-nums">{value}</span>
       </div>
     );
   };
@@ -507,8 +507,8 @@ const RegistrarColeta = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-b from-muted/30 via-background to-background">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-12 animate-fade-in">
 
         <PageHeader
           eyebrow="Operacional"
@@ -531,16 +531,16 @@ const RegistrarColeta = () => {
         <section className="grid grid-cols-1 xl:grid-cols-[340px_1fr] 2xl:grid-cols-[380px_1fr] gap-5 items-start">
           {/* Sidebar de pacientes — altura natural exibindo todos os pacientes.
               Sem scroll interno; o scroll é o da página. */}
-          <aside className={`bg-card rounded-xl border border-border flex-col overflow-hidden self-start ${selectedId ? "hidden xl:flex" : "flex"}`}>
-            <div className="p-4 border-b border-border">
+          <aside className={`bg-card rounded-2xl border border-border/60 shadow-elevation-xs flex-col self-start overflow-hidden ${selectedId ? "hidden xl:flex" : "flex"}`}>
+            <div className="p-4 border-b border-border/60 bg-gradient-to-br from-primary/5 via-card to-transparent">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar paciente…"
-                  className="pl-10 pr-4 h-10 w-full bg-muted/50 border border-transparent rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:bg-background focus:border-border transition-all"
+                  className="pl-10 pr-4 h-10 w-full bg-card border border-border/60 rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
                 />
               </div>
               <div className="flex items-center justify-between mt-3 px-1">
@@ -566,13 +566,13 @@ const RegistrarColeta = () => {
                   <button
                     key={p.id}
                     onClick={() => { setSelectedId(p.id); setSelectedExames([]); }}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-150 group ${
-                      active ? "bg-primary/8 ring-1 ring-primary/20" : "hover:bg-accent/60"
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-150 group ${
+                      active ? "bg-primary/8 ring-1 ring-primary/25 shadow-elevation-xs" : "hover:bg-accent/60"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors ${
-                        active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                      <div className={`h-9 w-9 shrink-0 rounded-xl flex items-center justify-center text-[11px] font-semibold transition-colors ${
+                        active ? "bg-primary text-primary-foreground ring-1 ring-primary/30" : "bg-muted text-foreground"
                       }`}>
                         {initials(p.nome)}
                       </div>
@@ -598,13 +598,13 @@ const RegistrarColeta = () => {
           </aside>
 
           {/* Painel principal — altura totalmente natural para exibir todas as amostras. */}
-          <main className={`bg-card rounded-xl border border-border overflow-hidden flex-col self-start w-full ${selectedId ? "flex" : "hidden xl:flex"}`}>
+          <main className={`bg-card rounded-2xl border border-border/60 shadow-elevation-xs overflow-hidden flex-col self-start w-full ${selectedId ? "flex" : "hidden xl:flex"}`}>
             {!hasPendentes ? (
               <div className="min-h-[400px] flex items-center justify-center"><EmptyState /></div>
             ) : !selectedPaciente || !filteredPacientes.find(p => p.id === selectedId) ? (
-              <div className="min-h-[400px] flex flex-col items-center justify-center text-center px-8 py-12">
-                <div className="h-16 w-16 rounded-2xl bg-primary/8 flex items-center justify-center mb-4">
-                  <Sparkles className="h-7 w-7 text-primary/60" />
+              <div className="min-h-[400px] flex flex-col items-center justify-center text-center px-8 py-12 bg-gradient-to-br from-primary/5 via-card to-transparent">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center mb-4">
+                  <Sparkles className="h-7 w-7 text-primary" />
                 </div>
                 <h2 className="text-base font-semibold text-foreground mb-1">Selecione um paciente</h2>
                 <p className="text-sm text-muted-foreground max-w-sm">Escolha um paciente na fila ao lado para iniciar o registro de coleta.</p>
@@ -655,7 +655,7 @@ const RegistrarColeta = () => {
                 )}
 
                 {/* Header do paciente — usa PacienteHeaderCard responsivo */}
-                <div className="px-4 sm:px-6 pt-4 sm:pt-5">
+                <div className="px-4 sm:px-6 pt-4 sm:pt-5 bg-gradient-to-br from-primary/5 via-card to-transparent border-b border-border/60 pb-4">
                   <PacienteHeaderCard
                     nome={selectedPaciente.nome}
                     sexo={selectedPaciente.sexo}
@@ -782,12 +782,12 @@ const RegistrarColeta = () => {
                   </ExameListWithFade>
 
                   {/* Action bar — fica logo abaixo do último exame */}
-                  <div className="shrink-0 px-4 lg:px-6 py-3.5 border-t border-border bg-card flex flex-wrap items-center justify-between gap-3">
+                  <div className="shrink-0 px-4 lg:px-6 py-3.5 border-t border-border/60 bg-muted/10 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openCancelDialog(null)}
                         disabled={selectedExames.length === 0}
-                        className="flex items-center gap-2 h-9 px-3.5 rounded-lg text-xs font-medium text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        className="flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-medium text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Cancelar
                         {selectedExames.length > 0 && <span className="h-4 min-w-4 px-1 rounded-full bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] text-[10px] font-bold flex items-center justify-center tabular-nums">{selectedExames.length}</span>}
@@ -795,7 +795,7 @@ const RegistrarColeta = () => {
                       <button
                         onClick={handleColetarSelecionados}
                         disabled={selectedExames.length === 0}
-                        className="flex items-center gap-2 h-9 px-3.5 rounded-lg text-xs font-medium border border-border text-foreground hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        className="flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/60 bg-card text-foreground hover:bg-accent disabled:opacity-40 disabled:hover:bg-card transition-colors"
                       >
                         Coletar selecionados
                         {selectedExames.length > 0 && <span className="h-4 min-w-4 px-1 rounded-full bg-foreground/10 text-foreground text-[10px] font-bold flex items-center justify-center tabular-nums">{selectedExames.length}</span>}
@@ -804,7 +804,7 @@ const RegistrarColeta = () => {
                     <button
                       onClick={handleColetaIntegral}
                       disabled={pendentesCount === 0}
-                      className="h-9 px-4 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors"
+                      className="h-9 px-5 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors shadow-elevation-xs"
                     >
                       Coleta integral
                     </button>
@@ -894,11 +894,11 @@ const RegistrarColeta = () => {
           )}
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setCancelDialogOpen(false)} className="h-10 px-4 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors">Voltar</button>
+            <button onClick={() => setCancelDialogOpen(false)} className="h-10 px-4 rounded-xl border border-border/60 bg-card text-xs font-medium text-foreground hover:bg-accent transition-colors">Voltar</button>
             <button
               onClick={confirmCancel}
               disabled={!cancelMotivo || (cancelMotivo === "Outro" && cancelMotivoCustom.trim().length < 5)}
-              className="h-10 px-5 bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="h-10 px-5 bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] rounded-full text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-elevation-xs"
             >
               Confirmar cancelamento
             </button>
@@ -973,7 +973,7 @@ const RegistrarColeta = () => {
           <div className="flex justify-center">
             <button
               onClick={() => { setSuccessDialog(false); setSuccessPaciente(null); }}
-              className="h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="h-10 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-elevation-xs"
             >
               Continuar
             </button>
@@ -989,7 +989,7 @@ const RegistrarColeta = () => {
           </div>
           <h2 className="text-base font-semibold text-foreground mb-1">Todas canceladas</h2>
           <p className="text-sm text-muted-foreground mb-6">Todas as amostras foram canceladas.</p>
-          <button onClick={() => { setAllCancelledDialog(false); setSelectedId(null); }} className="h-10 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors">Fechar</button>
+          <button onClick={() => { setAllCancelledDialog(false); setSelectedId(null); }} className="h-10 px-6 rounded-xl border border-border/60 bg-card text-sm font-medium text-foreground hover:bg-accent transition-colors">Fechar</button>
         </div>
       </Overlay>
 
@@ -1104,12 +1104,12 @@ function ExameCard({
     cancelado: "bg-[hsl(var(--status-danger))]",
   };
   return (
-    <div className={`relative flex items-stretch rounded-lg border bg-card overflow-hidden transition-all duration-150 ${
+    <div className={`relative flex items-stretch rounded-xl border bg-card overflow-hidden transition-all duration-150 ${
       selected
-        ? "border-primary/40 ring-1 ring-primary/15"
+        ? "border-primary/40 ring-1 ring-primary/20 shadow-elevation-xs"
         : highlight
-        ? "border-primary/50 ring-1 ring-primary/20 bg-primary/5"
-        : "border-border hover:border-border/80"
+        ? "border-primary/50 ring-1 ring-primary/25 bg-primary/5"
+        : "border-border/60 hover:border-border hover:shadow-elevation-xs"
     }`}>
       <span className={`w-1 shrink-0 ${accentBar[exame.status]}`} />
       <div className="flex-1 flex items-center gap-3 px-4 py-3 min-w-0">
@@ -1140,7 +1140,7 @@ function ExameCard({
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {exame.status === "cancelado" ? (
-            <button onClick={onReverter} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-border text-foreground hover:bg-accent transition-colors">
+            <button onClick={onReverter} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-border/60 bg-card text-foreground hover:bg-accent transition-colors">
               <RotateCcw className="h-3.5 w-3.5" /> Reverter
             </button>
           ) : exame.status === "coletado" ? (
@@ -1151,7 +1151,7 @@ function ExameCard({
               {!etiquetaJaPrinted && (
                 <button
                   onClick={onImprimir}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-border text-foreground hover:bg-accent transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-border/60 bg-card text-foreground hover:bg-accent transition-colors"
                   title="Imprimir etiqueta da amostra"
                 >
                   <Printer className="h-3.5 w-3.5" /> Etiqueta
@@ -1159,7 +1159,7 @@ function ExameCard({
               )}
               <button
                 onClick={onRecoleta}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-warning/30 text-warning hover:bg-warning/10 transition-colors"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-warning/30 text-warning hover:bg-warning/10 transition-colors"
                 title="Solicitar recoleta desta amostra"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Recoleta
@@ -1167,10 +1167,10 @@ function ExameCard({
             </>
           ) : (
             <>
-              <button onClick={onCancelar} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] transition-colors" title="Cancelar">
+              <button onClick={onCancelar} className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] transition-colors" title="Cancelar">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
-              <button onClick={onColetar} className="h-8 px-3.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <button onClick={onColetar} className="h-8 px-4 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-elevation-xs">
                 Coletar
               </button>
             </>
@@ -1187,7 +1187,7 @@ function Overlay({ open, onClose, children }: { open: boolean; onClose: () => vo
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
       <div className="absolute inset-0 bg-foreground/40 backdrop-blur-[6px]" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl border border-border shadow-elevation-lg w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6 animate-fade-in-up">
+      <div className="relative bg-card rounded-2xl border border-border/60 shadow-elevation-lg w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6 animate-fade-in-up">
         {children}
       </div>
     </div>
