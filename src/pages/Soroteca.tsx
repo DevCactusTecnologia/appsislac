@@ -75,6 +75,8 @@ interface AmostraInfo {
   paciente?: string;
   cpf?: string;
   protocolo?: string;
+  processada?: boolean;
+  liberada?: boolean;
 }
 
 type StatusFiltro = "TODAS" | AmostraStatus;
