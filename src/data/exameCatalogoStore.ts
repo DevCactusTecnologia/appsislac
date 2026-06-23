@@ -161,7 +161,6 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.sinonimos !== undefined) row.sinonimos = e.sinonimos;
   if (e.sexoAplicavel !== undefined) row.sexo_aplicavel = e.sexoAplicavel;
   if (e.exibirPortal !== undefined) row.exibir_portal = e.exibirPortal;
-  if (e.unidadePadrao !== undefined) row.unidade_padrao = e.unidadePadrao;
   if (e.requerAssinaturaMedica !== undefined) row.requer_assinatura_medica = e.requerAssinaturaMedica;
   if (e.setorId !== undefined) row.setor_id = e.setorId;
   if (e.tussSemEquivalente !== undefined) row.tuss_sem_equivalente = e.tussSemEquivalente;
