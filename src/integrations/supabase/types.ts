@@ -3216,11 +3216,11 @@ export type Database = {
       }
       inscricoes: {
         Row: {
-          cidade: string
+          cidade: string | null
           codigo_expira_em: string | null
           codigo_validacao: string | null
           created_at: string | null
-          estado: string
+          estado: string | null
           id: string
           nome_laboratorio: string
           nome_responsavel: string
@@ -3232,11 +3232,11 @@ export type Database = {
           whatsapp_confirmado: boolean | null
         }
         Insert: {
-          cidade: string
+          cidade?: string | null
           codigo_expira_em?: string | null
           codigo_validacao?: string | null
           created_at?: string | null
-          estado: string
+          estado?: string | null
           id?: string
           nome_laboratorio: string
           nome_responsavel: string
@@ -3248,11 +3248,11 @@ export type Database = {
           whatsapp_confirmado?: boolean | null
         }
         Update: {
-          cidade?: string
+          cidade?: string | null
           codigo_expira_em?: string | null
           codigo_validacao?: string | null
           created_at?: string | null
-          estado?: string
+          estado?: string | null
           id?: string
           nome_laboratorio?: string
           nome_responsavel?: string

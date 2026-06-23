@@ -1,0 +1,1 @@
+ALTER TABLE public.inscricoes ALTER COLUMN cidade DROP NOT NULL; ALTER TABLE public.inscricoes ALTER COLUMN estado DROP NOT NULL;
