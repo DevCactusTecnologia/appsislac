@@ -535,6 +535,9 @@ export default function SorotecaEstrutura() {
                 <TooltipProvider delayDuration={150}>
                   {posicoes.map((pe) => {
                     const p = pe.posicao;
+                    const isDragging = draggingPos === p.id;
+                    const isOver = overPos === p.id;
+                    const canDrop = pe.status === "livre" && draggingPos != null && draggingPos !== p.id;
                     const tone =
                       pe.status === "livre" ? "border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700"
                       : pe.status === "ocupada" ? "border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary"
@@ -546,9 +549,46 @@ export default function SorotecaEstrutura() {
                         <TooltipTrigger asChild>
                           <button
                             type="button"
+                            draggable={!!pe.amostra}
+                            onDragStart={(e) => {
+                              if (!pe.amostra) return;
+                              setDraggingPos(p.id);
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", pe.amostra.id);
+                            }}
+                            onDragEnd={() => { setDraggingPos(null); setOverPos(null); }}
+                            onDragOver={(e) => {
+                              if (pe.status !== "livre" || !draggingPos || draggingPos === p.id) return;
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                              if (overPos !== p.id) setOverPos(p.id);
+                            }}
+                            onDragLeave={() => { if (overPos === p.id) setOverPos(null); }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (pe.status !== "livre" || !draggingPos) return;
+                              const origemPos = posicoes.find((x) => x.posicao.id === draggingPos);
+                              if (!origemPos?.amostra) return;
+                              setMoverPayload({
+                                amostra: {
+                                  id: origemPos.amostra.id,
+                                  codigo_barra: origemPos.amostra.codigo_barra,
+                                  paciente_nome: origemPos.amostra.paciente_nome,
+                                  tipo_material: origemPos.amostra.tipo_material,
+                                },
+                                origem: { id: origemPos.posicao.id, codigo: origemPos.posicao.codigo },
+                                destino: { id: p.id, codigo: p.codigo },
+                              });
+                              setDraggingPos(null);
+                              setOverPos(null);
+                            }}
                             className={cn(
-                              "group relative rounded-md border px-1.5 py-2 text-center text-[11px] font-mono cursor-pointer transition-colors min-h-[44px]",
+                              "group relative rounded-md border px-1.5 py-2 text-center text-[11px] font-mono cursor-pointer transition-all min-h-[44px]",
                               tone,
+                              pe.amostra && "cursor-grab active:cursor-grabbing",
+                              isDragging && "opacity-40 scale-95",
+                              canDrop && "ring-2 ring-primary/40",
+                              isOver && canDrop && "ring-2 ring-primary scale-105 bg-primary/15",
                             )}
                             onClick={() => setEditarPosicao(p)}
                           >
@@ -568,7 +608,7 @@ export default function SorotecaEstrutura() {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[260px]">
                           <div className="font-semibold">{p.codigo}</div>
-                          {pe.status === "livre" && <div className="text-muted-foreground">Livre</div>}
+                          {pe.status === "livre" && <div className="text-muted-foreground">Livre {draggingPos && draggingPos !== p.id ? "— solte aqui" : ""}</div>}
                           {pe.status === "inativa" && <div className="text-muted-foreground">Inativa</div>}
                           {pe.amostra && (
                             <div className="space-y-0.5 mt-0.5">
@@ -587,12 +627,14 @@ export default function SorotecaEstrutura() {
                                   )}
                                 </div>
                               )}
+                              <div className="text-[10px] text-muted-foreground italic mt-1">Arraste para mover</div>
                             </div>
                           )}
                         </TooltipContent>
                       </Tooltip>
                     );
                   })}
+
                 </TooltipProvider>
               </div>
               {/* Legenda */}
