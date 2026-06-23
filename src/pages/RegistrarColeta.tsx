@@ -973,7 +973,7 @@ const RegistrarColeta = () => {
           <div className="flex justify-center">
             <button
               onClick={() => { setSuccessDialog(false); setSuccessPaciente(null); }}
-              className="h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="h-10 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-elevation-xs"
             >
               Continuar
             </button>
