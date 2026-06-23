@@ -284,11 +284,11 @@ const Landing = () => {
         </section>
 
         {/* Pilares */}
-        <section id="pilares" className="px-6 py-24 sm:py-32">
+        <section id="pilares" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-14 max-w-2xl">
+            <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Por que SISLAC</p>
-              <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Quatro pilares que sustentam a operação clínica.
               </h2>
             </div>
@@ -310,12 +310,12 @@ const Landing = () => {
         </section>
 
         {/* Módulos */}
-        <section id="modulos" className="px-6 py-24 sm:py-32">
+        <section id="modulos" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
             <div className="mb-14 flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Módulos</p>
-                <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                   Tudo que o laboratório precisa, em um só lugar.
                 </h2>
               </div>
@@ -347,11 +347,11 @@ const Landing = () => {
         </section>
 
         {/* Fluxo */}
-        <section id="fluxo" className="px-6 py-24 sm:py-32">
+        <section id="fluxo" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-14 max-w-2xl">
+            <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Como funciona</p>
-              <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Cinco passos. Zero retrabalho.
               </h2>
             </div>
@@ -381,12 +381,12 @@ const Landing = () => {
         </section>
 
         {/* Diferenciais */}
-        <section id="diferenciais" className="px-6 py-24 sm:py-32">
+        <section id="diferenciais" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Diferenciais</p>
-                <h2 className="mb-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                   Construído para a realidade do laboratório.
                 </h2>
                 <p className="text-pretty text-base leading-relaxed text-muted-foreground">
@@ -415,7 +415,7 @@ const Landing = () => {
               Pronto para começar
             </div>
 
-            <h2 className="mb-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               Pronto para modernizar
               <br />
               seu laboratório?
