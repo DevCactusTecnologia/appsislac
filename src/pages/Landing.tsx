@@ -103,9 +103,9 @@ const Landing = () => {
 
       <main className="relative z-10">
         {/* Hero */}
-        <section className="px-6 pb-24 pt-40 sm:pt-44">
-          <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3.5 py-1.5 text-xs font-medium tracking-wide text-primary">
+        <section className="px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-40 lg:pt-44">
+          <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center sm:gap-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3 py-1.5 text-[11px] font-medium tracking-wide text-primary sm:px-3.5 sm:text-xs">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -113,36 +113,36 @@ const Landing = () => {
               Plataforma laboratorial v4.0
             </div>
 
-            <h1 className="text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
+            <h1 className="text-balance text-3xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
               Gestão completa para
-              <br />
+              <br className="hidden sm:inline" />{" "}
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                 laboratórios clínicos
               </span>
             </h1>
 
-            <p className="max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
+            <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
               Do atendimento ao resultado, tudo em um único sistema seguro e escalável.
               Coleta rastreada, análises validadas, financeiro integrado.
             </p>
 
-            <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row">
+            <div className="mt-2 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
               <Link
                 to="/inscricao"
-                className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.7)] transition-all hover:scale-[1.02] hover:shadow-[0_14px_48px_-10px_hsl(var(--primary)/0.7)]"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.7)] transition-all hover:scale-[1.02] hover:shadow-[0_14px_48px_-10px_hsl(var(--primary)/0.7)] sm:px-7 sm:py-3.5"
               >
                 Começar agora
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
                 href="#fluxo"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-7 py-3.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-card"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 py-3 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-card sm:px-7 sm:py-3.5"
               >
                 Ver demonstração
               </a>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:gap-x-6 sm:text-xs">
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Reduz retrabalho e recoletas</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Laudos liberados em minutos</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Rastreabilidade ponta a ponta</span>
@@ -150,7 +150,7 @@ const Landing = () => {
           </div>
 
           {/* Hero preview */}
-          <div className="relative mx-auto mt-20 max-w-6xl">
+          <div className="relative mx-auto mt-12 max-w-6xl sm:mt-20">
             <div className="absolute -inset-x-12 -top-6 h-32 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/80 p-2 shadow-[0_30px_80px_-30px_hsl(var(--foreground)/0.35)] backdrop-blur-xl">
               <div className="flex h-10 items-center justify-between border-b border-border/60 px-4">
