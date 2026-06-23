@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode, MessageCircle, Printer } from "lucide-react";
+import { X, User, Building2, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, MessageCircle, Printer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
