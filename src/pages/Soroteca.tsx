@@ -1019,6 +1019,28 @@ export default function Soroteca() {
                         </span>
                       )}
                     </div>
+                    {(() => {
+                      const pac = a.paciente_id ? infoMap[`p:${a.paciente_id}`] : undefined;
+                      const at = a.atendimento_id ? infoMap[`a:${a.atendimento_id}`] : undefined;
+                      if (!pac && !at) return null;
+                      return (
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-sm">
+                          {pac?.paciente && (
+                            <span className="font-semibold text-foreground truncate max-w-[260px]" title={pac.paciente}>
+                              {pac.paciente}
+                            </span>
+                          )}
+                          {pac?.cpf && (
+                            <span className="text-xs text-muted-foreground font-mono">{pac.cpf}</span>
+                          )}
+                          {at?.protocolo && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                              #{at.protocolo}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 flex-wrap">
                       <span className="font-medium text-foreground/80">
                         {a.tipo_material || "—"}
