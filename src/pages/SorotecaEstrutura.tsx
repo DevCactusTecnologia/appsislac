@@ -280,17 +280,32 @@ export default function SorotecaEstrutura() {
                     <div className="truncate font-medium">{g.nome}</div>
                     <div className="text-[11px] text-muted-foreground">Ordem {g.ordem}</div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmar({ tipo: "galeria", id: g.id, nome: g.nome });
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditarGaleria(g);
+                      }}
+                      aria-label="Editar galeria"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmar({ tipo: "galeria", id: g.id, nome: g.nome });
+                      }}
+                      aria-label="Remover galeria"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
