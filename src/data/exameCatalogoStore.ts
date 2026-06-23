@@ -145,7 +145,6 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.porteCBHPM !== undefined) row.porte_cbhpm = e.porteCBHPM || "-";
   if (e.codigoLOINC !== undefined) row.codigo_loinc = e.codigoLOINC;
   if (e.codigoSUS !== undefined) row.codigo_sus = e.codigoSUS;
-  if (e.metodologia !== undefined) row.metodologia = e.metodologia;
   if (e.prazoEntregaDias !== undefined) row.prazo_entrega_dias = e.prazoEntregaDias;
   if (e.urgenciaDisponivel !== undefined) row.urgencia_disponivel = e.urgenciaDisponivel;
   if (e.prazoUrgenciaHoras !== undefined) row.prazo_urgencia_horas = e.prazoUrgenciaHoras;
