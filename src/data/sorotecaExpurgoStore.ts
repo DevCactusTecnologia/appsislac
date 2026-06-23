@@ -86,10 +86,15 @@ export interface ExpurgoCriterio {
 }
 
 export async function preverCandidatas(criterio: ExpurgoCriterio) {
+  // Hardening Soroteca 2.1:
+  //  - status='DISPONIVEL' já exclui DESCARTADA / UTILIZADA / VENCIDA.
+  //  - exige localização física registrada (defesa contra amostras "perdidas").
   let q = supabase
     .from("amostras")
     .select("id, codigo_barra, tipo_material, localizacao, data_coleta, data_validade, material_id")
-    .eq("status", "DISPONIVEL");
+    .eq("status", "DISPONIVEL")
+    .not("localizacao", "is", null)
+    .neq("localizacao", "");
 
   if (criterio.material_ids && criterio.material_ids.length > 0) {
     q = q.in("material_id", criterio.material_ids);

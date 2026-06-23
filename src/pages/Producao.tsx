@@ -20,8 +20,9 @@ import {
 // recharts (~300 KB) só é baixado quando o usuário abre o diálogo "Gráfica".
 const ProducaoChartsLazy = lazy(() => import("./producao/ProducaoChartsLazy"));
 import { useAuth } from "@/contexts/AuthContext";
+import { listarMateriaisAmostra } from "@/data/materiaisAmostraStore";
 
-const MATERIAIS = ["Sangue", "Urina", "Fezes", "Líquor", "Secreção"];
+// Catálogo SSOT — carregado dinamicamente de materiais_amostra (Soroteca 2.1).
 const PERIODOS_RAPIDOS = [
   { label: "Hoje", days: 0 }, { label: "7 dias", days: 7 }, { label: "15 dias", days: 15 }, { label: "30 dias", days: 30 }, { label: "90 dias", days: 90 },
 ];
