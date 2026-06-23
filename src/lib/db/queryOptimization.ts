@@ -252,9 +252,9 @@ export async function bulkDelete(
   const tenantId = await getTenantIdFromAuth();
   if (!tenantId) throw new Error("Tenant ID not found");
   
-  const { error } = await supabase
+  const { error } = await (supabase
     .from(table as never)
-    .delete() as any
+    .delete() as any)
     .eq("tenant_id", tenantId)
     .in("id", ids);
   
