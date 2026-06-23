@@ -202,7 +202,7 @@ export default function Soroteca() {
     // Garante visibilidade na lista
     setStatusFiltro("TODAS");
     setSearch(codigo);
-    setVisibleCount((c) => Math.max(c, PAGE_SIZE));
+    setLegacyPage(1);
     setDetalheId(alvo.id);
     setDestaqueId(alvo.id);
     // scroll + remoção do highlight após uns segundos
