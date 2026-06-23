@@ -87,9 +87,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setNomeLayout(editData.nome);
       setPadrao(!!editData.padrao);
       setEditorContent(editData.conteudo || "<p></p>");
+      setMetodologia(editData.metodologia ?? "");
+      setUnidadePadrao(editData.unidadePadrao ?? "");
+      setTextoInterpretativo(editData.textoInterpretativoPadrao ?? "");
+      setExibirMetodologia(editData.exibirMetodologiaLaudo !== false);
+      setExibirUnidade(editData.exibirUnidadeLaudo !== false);
+      setExibirMaterial(!!editData.exibirMaterialLaudo);
       const m = (editData.config?.margins ?? {}) as Partial<{ top: number; right: number; bottom: number; left: number }>;
-      // Padrão institucional: Direita e Esquerda sempre 10mm em TODOS os layouts científicos
-      // (existentes e novos). Superior/Inferior preservam o que estiver salvo.
       setMargins({
         top: String(m.top ?? 5),
         right: "10",
@@ -101,6 +105,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       const existentes = exame?.id ? getLayouts(exame.id) : [];
       setPadrao(existentes.length === 0);
       setEditorContent("<p></p>");
+      setMetodologia("");
+      setUnidadePadrao("");
+      setTextoInterpretativo("");
+      setExibirMetodologia(true);
+      setExibirUnidade(true);
+      setExibirMaterial(false);
       setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
     }
 
