@@ -46,6 +46,8 @@ export default function Inscricao() {
   const [formData, setFormData] = useState({
     nome_responsavel: "",
     whatsapp: "",
+    email: "",
+    senha: "",
     nome_laboratorio: "",
   });
   const [verificationCode, setVerificationCode] = useState("");
