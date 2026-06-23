@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
