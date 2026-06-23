@@ -157,38 +157,48 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-3">
-            <DialogTitle className="flex items-center gap-2">
-              <Barcode className="w-5 h-5 text-primary" />
+      <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+        <SorotecaDialogHeader
+          icon={Barcode}
+          title={
+            <span className="flex items-center gap-2">
               Detalhes da amostra
-            </DialogTitle>
-            {a && (
+              {a && (
+                <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                  {a.codigo_barra}
+                </span>
+              )}
+            </span>
+          }
+          description="Rastreabilidade completa: paciente, exames vinculados, validade e histórico."
+          right={
+            a && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleImprimirEtiqueta}
-                className="shrink-0 mr-6"
+                className="shrink-0"
               >
                 <Printer className="w-4 h-4 mr-1.5" />
-                Imprimir etiqueta
+                Etiqueta
               </Button>
-            )}
-          </div>
-          <DialogDescription>
-            Rastreabilidade completa: paciente, exames vinculados, validade e histórico.
-          </DialogDescription>
-        </DialogHeader>
+            )
+          }
+        />
 
         {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Carregando…</div>
+          <SorotecaDialogBody>
+            <div className="py-12 text-center text-sm text-muted-foreground">Carregando…</div>
+          </SorotecaDialogBody>
         ) : !detalhe || !a || !status ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            Amostra não encontrada.
-          </div>
+          <SorotecaDialogBody>
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              Amostra não encontrada.
+            </div>
+          </SorotecaDialogBody>
         ) : (
-          <div className="space-y-5">
+          <SorotecaDialogBody className="space-y-5">
+
             {/* Cabeçalho da amostra */}
             <div className={cn("rounded-2xl border p-4", status.bg)}>
               <div className="flex items-start justify-between gap-3 flex-wrap">
