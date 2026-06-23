@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { buscarAmostrasReutilizaveisPorNome, reutilizarAmostra, type Amostra } from "@/data/sorotecaStore";
+import { buscarAmostrasReutilizaveisPorNome, type Amostra } from "@/data/sorotecaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { showError } from "@/lib/showError";
@@ -2554,7 +2554,7 @@ const NovoAtendimento = () => {
               list.push({ amostraId, exameNome: reuseDialog.template.nome, ts: Date.now() });
               sessionStorage.setItem(key, JSON.stringify(list));
             } catch { /* noop */ }
-            void reutilizarAmostra;
+            
             toast({ title: "Amostra reutilizada", description: "Coleta dispensada — material já disponível." });
           }
           setReuseDialog({ open: false, amostras: [], template: null });
