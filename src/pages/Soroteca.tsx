@@ -72,7 +72,7 @@ import BarcodeScannerDialog from "@/components/soroteca/BarcodeScannerDialog";
 
 type StatusFiltro = "TODAS" | AmostraStatus;
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 const STATUS_TABS: { id: StatusFiltro; label: string }[] = [
   { id: "TODAS", label: "Todas" },
