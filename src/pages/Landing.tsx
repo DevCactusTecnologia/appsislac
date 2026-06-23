@@ -86,8 +86,12 @@ const Landing = () => {
       <header className="fixed left-1/2 top-3 z-50 w-[95%] max-w-6xl -translate-x-1/2 rounded-full border border-border/60 bg-card/70 px-3 py-2 shadow-[0_8px_30px_-12px_hsl(var(--foreground)/0.18)] backdrop-blur-xl sm:top-5 sm:px-5 sm:py-2.5">
         <div className="flex items-center justify-between gap-2">
           <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="SISLAC — início">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)]">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)]">
               <FlaskConical className="h-4 w-4" />
+              <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
             </div>
           </Link>
 

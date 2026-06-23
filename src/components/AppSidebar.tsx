@@ -385,6 +385,10 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
         <div className={cn("flex items-center gap-3 min-w-0", collapsed ? "justify-center" : "flex-1")}>
           <div className="relative h-8 w-8 rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-lg shadow-foreground/10">
             <Building2 className="h-4 w-4 text-background" strokeWidth={2.5} />
+            <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
           </div>
           {!collapsed && (
             <div className="min-w-0 leading-none">

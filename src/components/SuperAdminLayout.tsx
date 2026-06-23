@@ -86,6 +86,10 @@ function SidebarInner({ collapsed, isMobile, onToggle, onNavigate, onLogout, use
         <NavLink to="/super-admin" onClick={onNavigate} className="flex items-center gap-3 min-w-0 flex-1">
           <div className="relative h-8 w-8 rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-lg shadow-foreground/10">
             <Shield className="h-4 w-4 text-background" strokeWidth={2.5} />
+            <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
           </div>
           {!compact && (
             <div className="min-w-0 leading-none">
@@ -292,8 +296,12 @@ function TopbarInner({ onLogout, userEmail }: { onLogout: () => void; userEmail?
     <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b border-border">
       <div className="flex items-center gap-3 px-4 lg:px-6 h-12">
         <button onClick={() => navigate("/super-admin")} className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
+          <div className="relative w-7 h-7 rounded-md bg-foreground flex items-center justify-center">
             <Shield className="w-3.5 h-3.5 text-background" strokeWidth={2.5} />
+            <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
           </div>
           <div className="hidden sm:flex flex-col leading-none">
             <span className="text-[13px] font-semibold text-foreground tracking-tight">SISLAC</span>
