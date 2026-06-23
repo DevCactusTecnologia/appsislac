@@ -151,8 +151,9 @@ export default function LoteDialog({ open, onClose, lote, insumos, fornecedores,
                 value={form.quantidade_inicial}
                 onChange={(e) => setForm({ ...form, quantidade_inicial: Number(e.target.value) })}
                 disabled={!!lote}
+                readOnly={!!lote}
               />
-              {lote && <p className="text-[11px] text-muted-foreground">Para alterar quantidade use Movimentação.</p>}
+              {lote && <p className="text-[11px] text-muted-foreground">Saldo é somente leitura. Para alterar use <span className="font-medium text-foreground">Movimentar → Definir saldo</span>.</p>}
             </div>
             <div className="space-y-1.5">
               <Label className="text-[12px] font-medium text-foreground">Custo unitário (R$)</Label>
