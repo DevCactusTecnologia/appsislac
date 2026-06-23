@@ -420,8 +420,8 @@ const AnalisarAmostra = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-b from-muted/30 via-background to-background">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-12 animate-fade-in">
 
         <PageHeader
           eyebrow="Operacional"
