@@ -255,7 +255,7 @@ export default function Estoque() {
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard
           icon={Boxes}
           label="Insumos ativos"
@@ -264,19 +264,16 @@ export default function Estoque() {
         />
           <KpiCard
             icon={AlertTriangle}
-            label="Lotes vencidos"
-            value={kpis.vencidos}
+            label="Validade crítica"
+            value={kpis.vencidos + kpis.venceEmBreve}
+            hint={`${kpis.vencidos} vencidos · ${kpis.venceEmBreve} vencendo`}
             tone="danger"
-            active={smartFilter === "vencidos"}
-            onClick={() => { setSmartFilter(smartFilter === "vencidos" ? null : "vencidos"); setTab("insumos"); }}
-          />
-          <KpiCard
-            icon={Calendar}
-            label="Vencendo em breve"
-            value={kpis.venceEmBreve}
-            tone="warning"
-            active={smartFilter === "vencendo"}
-            onClick={() => { setSmartFilter(smartFilter === "vencendo" ? null : "vencendo"); setTab("insumos"); }}
+            active={smartFilter === "vencidos" || smartFilter === "vencendo"}
+            onClick={() => {
+              const next = smartFilter === "vencidos" || smartFilter === "vencendo" ? null : (kpis.vencidos > 0 ? "vencidos" : "vencendo");
+              setSmartFilter(next);
+              setTab("insumos");
+            }}
           />
           <KpiCard
             icon={TrendingDown}
