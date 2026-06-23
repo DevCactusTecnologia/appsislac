@@ -6,7 +6,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash, Grid3x3, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash, Grid3x3, ChevronRight, ArrowLeft, History, Sparkles } from "lucide-react";
+import { ConfirmarMovimentacaoDialog, HistoricoMovimentacoesDialog, ReorganizarPreviewDialog } from "@/components/soroteca/MovimentacaoDialogs";
 import {
   SorotecaDialogHeader,
   SorotecaDialogBody,
