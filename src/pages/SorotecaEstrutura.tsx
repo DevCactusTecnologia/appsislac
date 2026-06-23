@@ -384,12 +384,14 @@ export default function SorotecaEstrutura() {
         open={novaGaleriaOpen}
         onOpenChange={setNovaGaleriaOpen}
         localId={localSel}
+        localNome={localAtual?.nome}
         onCreated={() => refreshGalerias(localSel)}
       />
       <NovasPosicoesDialog
         open={novaPosicaoOpen}
         onOpenChange={setNovaPosicaoOpen}
         galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
         onCreated={() => refreshPosicoes(galeriaSel)}
       />
 
