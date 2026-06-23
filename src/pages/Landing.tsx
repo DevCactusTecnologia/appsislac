@@ -408,8 +408,8 @@ const Landing = () => {
         </section>
 
         {/* CTA Final */}
-        <section className="px-6 pb-32 pt-12">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-12 text-center sm:p-20">
+        <section className="px-4 pb-20 pt-8 sm:px-6 sm:pb-32 sm:pt-12">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-6 text-center sm:p-12 lg:p-20">
             <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-1.5 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               Pronto para começar
