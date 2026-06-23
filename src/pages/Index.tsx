@@ -473,6 +473,13 @@ const Index = () => {
   const [cancelTarget, setCancelTarget] = useState<MockAtendimento | null>(null);
 
   useEffect(() => subscribe(() => forceUpdate(n => n + 1)), []);
+  useEffect(() => subscribeOrcamentos(() => forceUpdate(n => n + 1)), []);
+  const orcamentosPendentes = useMemo(
+    () => getOrcamentos().filter(o => !o.convertido).length,
+    // recompute on each render driven by subscribe/forceUpdate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   // ── Canary: UI paginada server-side ──
   // Kill-switch global: `USE_LEGACY_STORE` força modo legado (cache global)
