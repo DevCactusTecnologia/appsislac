@@ -120,11 +120,42 @@ export async function criarLocal(input: {
 }
 
 
+export async function atualizarLocal(
+  id: string,
+  input: {
+    nome?: string;
+    tipo?: LocalTipo;
+    temperatura_min?: number | null;
+    temperatura_max?: number | null;
+    observacao?: string | null;
+    ativo?: boolean;
+  },
+): Promise<{ ok: boolean; error?: string }> {
+  const patch: {
+    nome?: string;
+    tipo?: LocalTipo;
+    temperatura_min?: number | null;
+    temperatura_max?: number | null;
+    observacao?: string | null;
+    ativo?: boolean;
+  } = {};
+  if (input.nome !== undefined) patch.nome = input.nome.trim();
+  if (input.tipo !== undefined) patch.tipo = input.tipo;
+  if (input.temperatura_min !== undefined) patch.temperatura_min = input.temperatura_min;
+  if (input.temperatura_max !== undefined) patch.temperatura_max = input.temperatura_max;
+  if (input.observacao !== undefined) patch.observacao = input.observacao;
+  if (input.ativo !== undefined) patch.ativo = input.ativo;
+  const { error } = await supabase.from("locais_armazenamento").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function removerLocal(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("locais_armazenamento").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
 
 // ---------- galerias ----------
 
@@ -162,6 +193,19 @@ export async function criarGaleria(input: {
   }
 }
 
+
+export async function atualizarGaleria(
+  id: string,
+  input: { nome?: string; ordem?: number; ativo?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
+  const patch: { nome?: string; ordem?: number; ativo?: boolean } = {};
+  if (input.nome !== undefined) patch.nome = input.nome.trim();
+  if (input.ordem !== undefined) patch.ordem = input.ordem;
+  if (input.ativo !== undefined) patch.ativo = input.ativo;
+  const { error } = await supabase.from("galerias").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
 
 export async function removerGaleria(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("galerias").delete().eq("id", id);

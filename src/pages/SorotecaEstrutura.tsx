@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
@@ -38,6 +38,8 @@ import {
   type LocalArmazenamento,
   type LocalTipo,
   type PosicaoGaleria,
+  atualizarGaleria,
+  atualizarLocal,
   criarGaleria,
   criarLocal,
   criarPosicao,
@@ -74,6 +76,8 @@ export default function SorotecaEstrutura() {
   const [novoLocalOpen, setNovoLocalOpen] = useState(false);
   const [novaGaleriaOpen, setNovaGaleriaOpen] = useState(false);
   const [novaPosicaoOpen, setNovaPosicaoOpen] = useState(false);
+  const [editarLocal, setEditarLocal] = useState<LocalArmazenamento | null>(null);
+  const [editarGaleria, setEditarGaleria] = useState<Galeria | null>(null);
   const [confirmar, setConfirmar] = useState<{ tipo: "local" | "galeria" | "posicao"; id: string; nome: string } | null>(null);
 
   // ---------- carregamento ----------
@@ -204,17 +208,32 @@ export default function SorotecaEstrutura() {
                     )}
                   </div>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmar({ tipo: "local", id: l.id, nome: l.nome });
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditarLocal(l);
+                    }}
+                    aria-label="Editar local"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmar({ tipo: "local", id: l.id, nome: l.nome });
+                    }}
+                    aria-label="Remover local"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
@@ -261,17 +280,32 @@ export default function SorotecaEstrutura() {
                     <div className="truncate font-medium">{g.nome}</div>
                     <div className="text-[11px] text-muted-foreground">Ordem {g.ordem}</div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmar({ tipo: "galeria", id: g.id, nome: g.nome });
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditarGaleria(g);
+                      }}
+                      aria-label="Editar galeria"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmar({ tipo: "galeria", id: g.id, nome: g.nome });
+                      }}
+                      aria-label="Remover galeria"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -342,6 +376,17 @@ export default function SorotecaEstrutura() {
         onOpenChange={setNovaPosicaoOpen}
         galeriaId={galeriaSel}
         onCreated={() => refreshPosicoes(galeriaSel)}
+      />
+
+      <EditarLocalDialog
+        local={editarLocal}
+        onOpenChange={(o) => !o && setEditarLocal(null)}
+        onSaved={() => refreshLocais()}
+      />
+      <EditarGaleriaDialog
+        galeria={editarGaleria}
+        onOpenChange={(o) => !o && setEditarGaleria(null)}
+        onSaved={() => refreshGalerias(localSel)}
       />
 
       <AlertDialog open={!!confirmar} onOpenChange={(open) => !open && setConfirmar(null)}>
@@ -705,3 +750,157 @@ function NovasPosicoesDialog({
   );
 }
 
+
+function EditarLocalDialog({
+  local,
+  onOpenChange,
+  onSaved,
+}: {
+  local: LocalArmazenamento | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState<LocalTipo>("geladeira");
+  const [tmin, setTmin] = useState("");
+  const [tmax, setTmax] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (local) {
+      setNome(local.nome);
+      setTipo(local.tipo);
+      setTmin(local.temperatura_min != null ? String(local.temperatura_min) : "");
+      setTmax(local.temperatura_max != null ? String(local.temperatura_max) : "");
+    }
+  }, [local]);
+
+  async function submit() {
+    if (!local) return;
+    if (!nome.trim()) {
+      toast.error("Informe o nome do local.");
+      return;
+    }
+    setSaving(true);
+    const res = await atualizarLocal(local.id, {
+      nome,
+      tipo,
+      temperatura_min: tmin ? Number(tmin) : null,
+      temperatura_max: tmax ? Number(tmax) : null,
+    });
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(`Falha ao salvar: ${res.error ?? "erro"}`);
+      return;
+    }
+    toast.success("Local atualizado");
+    onSaved();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!local} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar local</DialogTitle>
+          <DialogDescription>Atualize os dados de {local?.nome}.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="edit-local-nome">Nome</Label>
+            <Input id="edit-local-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TIPOS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="edit-tmin">Temp. mín (°C)</Label>
+              <Input id="edit-tmin" type="number" value={tmin} onChange={(e) => setTmin(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="edit-tmax">Temp. máx (°C)</Label>
+              <Input id="edit-tmax" type="number" value={tmax} onChange={(e) => setTmax(e.target.value)} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditarGaleriaDialog({
+  galeria,
+  onOpenChange,
+  onSaved,
+}: {
+  galeria: Galeria | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState("");
+  const [ordem, setOrdem] = useState("0");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (galeria) {
+      setNome(galeria.nome);
+      setOrdem(String(galeria.ordem));
+    }
+  }, [galeria]);
+
+  async function submit() {
+    if (!galeria || !nome.trim()) return;
+    setSaving(true);
+    const res = await atualizarGaleria(galeria.id, { nome, ordem: Number(ordem) || 0 });
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(`Falha ao salvar: ${res.error ?? "erro"}`);
+      return;
+    }
+    toast.success("Galeria atualizada");
+    onSaved();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!galeria} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar galeria</DialogTitle>
+          <DialogDescription>Atualize os dados de {galeria?.nome}.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="edit-g-nome">Nome</Label>
+            <Input id="edit-g-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="edit-g-ordem">Ordem</Label>
+            <Input id="edit-g-ordem" type="number" value={ordem} onChange={(e) => setOrdem(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
+          <Button onClick={submit} disabled={saving || !nome.trim()}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
