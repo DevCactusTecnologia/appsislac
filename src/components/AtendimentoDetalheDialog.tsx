@@ -232,9 +232,19 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               )}
             </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200 shrink-0">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              title={
+                atendimento.statusAtendimento.label +
+                (atendimento.motivoCancelamento ? ` — ${atendimento.motivoCancelamento}` : "")
+              }
+              aria-label={`Status: ${atendimento.statusAtendimento.label}`}
+              className={`h-2.5 w-2.5 rounded-full bg-status-${atendimento.statusAtendimento.type} ring-2 ring-status-${atendimento.statusAtendimento.type}/20`}
+            />
+            <button onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Single scrollable area covering everything.
