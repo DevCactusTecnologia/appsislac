@@ -13,6 +13,8 @@ interface Body {
   nome_responsavel?: string;
   whatsapp?: string;
   nome_laboratorio?: string;
+  email?: string;
+  senha?: string;
   cidade?: string;
   estado?: string;
   quantidade_unidades?: string;
@@ -29,6 +31,19 @@ function generateSecureOtp(): string {
   crypto.getRandomValues(buf);
   const code = (buf[0] % 1_000_000).toString().padStart(6, "0");
   return code;
+}
+
+/** Hash SHA-256 da senha com salt aleatório. Formato: `sha256$<saltHex>$<hashHex>`. */
+async function hashPassword(senha: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const enc = new TextEncoder();
+  const data = new Uint8Array(salt.length + enc.encode(senha).length);
+  data.set(salt, 0);
+  data.set(enc.encode(senha), salt.length);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const toHex = (buf: ArrayBuffer | Uint8Array) =>
+    Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `sha256$${toHex(salt)}$${toHex(digest)}`;
 }
 
 Deno.serve(async (req) => {
