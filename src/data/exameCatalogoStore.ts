@@ -96,7 +96,6 @@ function fromRow(r: any): ExameCatalogo {
     porteCBHPM: r.porte_cbhpm ?? "-",
     codigoLOINC: r.codigo_loinc ?? "",
     codigoSUS: r.codigo_sus ?? "",
-    metodologia: r.metodologia ?? "",
     prazoEntregaDias: Number(r.prazo_entrega_dias ?? 1),
     urgenciaDisponivel: !!r.urgencia_disponivel,
     prazoUrgenciaHoras: Number(r.prazo_urgencia_horas ?? 0),
