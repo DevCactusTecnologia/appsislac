@@ -190,11 +190,92 @@ export default function SorotecaEstrutura() {
         </div>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Heatmap de ocupação por local */}
+      {locais.length > 0 && (
+        <div className="rounded-lg border bg-card p-3 sm:p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Ocupação por local
+            </h3>
+            <span className="text-[11px] text-muted-foreground">
+              {locais.length} {locais.length === 1 ? "local" : "locais"}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {locais.map((l) => {
+              const o = ocupacao[l.id];
+              const pct = o?.pct ?? 0;
+              const tone =
+                pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-amber-500" : "bg-emerald-500";
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => {
+                    setLocalSel(l.id);
+                    setMobileView("galerias");
+                  }}
+                  className={cn(
+                    "text-left rounded-md border p-2.5 transition-colors hover:border-primary/50",
+                    localSel === l.id && "border-primary bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium truncate">{l.nome}</span>
+                    <span className="text-[11px] tabular-nums text-muted-foreground shrink-0">
+                      {o ? `${o.ocupadas}/${o.total}` : "—"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn("h-full transition-all", tone)}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 text-[10px] text-muted-foreground capitalize flex items-center justify-between">
+                    <span>{l.tipo}{l.temperatura_min != null && l.temperatura_max != null && ` · ${l.temperatura_min}°C–${l.temperatura_max}°C`}</span>
+                    <span className="tabular-nums">{Math.round(pct)}%</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
+      {/* Breadcrumb mobile */}
+      <nav className="lg:hidden flex items-center gap-1 text-xs mb-3 overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setMobileView("locais")}
+          className={cn("px-2 py-1 rounded-md whitespace-nowrap", mobileView === "locais" ? "bg-muted font-medium" : "text-muted-foreground")}
+        >
+          Locais
+        </button>
+        <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+        <button
+          type="button"
+          disabled={!localSel}
+          onClick={() => setMobileView("galerias")}
+          className={cn("px-2 py-1 rounded-md whitespace-nowrap disabled:opacity-40", mobileView === "galerias" ? "bg-muted font-medium" : "text-muted-foreground")}
+        >
+          {localAtual?.nome ?? "Galerias"}
+        </button>
+        <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+        <button
+          type="button"
+          disabled={!galeriaSel}
+          onClick={() => setMobileView("posicoes")}
+          className={cn("px-2 py-1 rounded-md whitespace-nowrap disabled:opacity-40", mobileView === "posicoes" ? "bg-muted font-medium" : "text-muted-foreground")}
+        >
+          {galeriaAtual?.nome ?? "Posições"}
+        </button>
+      </nav>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[260px_260px_1fr] gap-4 items-start">
 
         {/* ------------- LOCAIS ------------- */}
-        <section className="rounded-lg border bg-card">
+        <section className={cn("rounded-lg border bg-card", "lg:block", mobileView !== "locais" && "hidden md:block")}>
           <header className="flex items-center justify-between px-3 py-2 border-b">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -223,7 +304,10 @@ export default function SorotecaEstrutura() {
                   "group flex items-center gap-2 px-3 py-2 border-b last:border-b-0 cursor-pointer text-sm",
                   localSel === l.id ? "bg-muted/60" : "hover:bg-muted/30",
                 )}
-                onClick={() => setLocalSel(l.id)}
+                onClick={() => {
+                  setLocalSel(l.id);
+                  setMobileView("galerias");
+                }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="truncate font-medium">{l.nome}</div>
@@ -234,7 +318,7 @@ export default function SorotecaEstrutura() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -266,12 +350,20 @@ export default function SorotecaEstrutura() {
         </section>
 
         {/* ------------- GALERIAS ------------- */}
-        <section className="rounded-lg border bg-card">
+        <section className={cn("rounded-lg border bg-card", "lg:block", mobileView !== "galerias" && "hidden md:block")}>
           <header className="flex items-center justify-between px-3 py-2 border-b">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Layers className="h-4 w-4 text-muted-foreground" />
-              Galerias
-              <span className="text-xs text-muted-foreground font-normal">({galerias.length})</span>
+            <div className="flex items-center gap-2 text-sm font-semibold min-w-0">
+              <button
+                type="button"
+                className="lg:hidden p-1 -ml-1 text-muted-foreground"
+                onClick={() => setMobileView("locais")}
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate">Galerias</span>
+              <span className="text-xs text-muted-foreground font-normal shrink-0">({galerias.length})</span>
             </div>
             <Button
               size="sm"
@@ -300,13 +392,16 @@ export default function SorotecaEstrutura() {
                     "group flex items-center gap-2 px-3 py-2 border-b last:border-b-0 cursor-pointer text-sm",
                     galeriaSel === g.id ? "bg-muted/60" : "hover:bg-muted/30",
                   )}
-                  onClick={() => setGaleriaSel(g.id)}
+                  onClick={() => {
+                    setGaleriaSel(g.id);
+                    setMobileView("posicoes");
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{g.nome}</div>
                     <div className="text-[11px] text-muted-foreground">Ordem {g.ordem}</div>
                   </div>
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                  <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -338,14 +433,40 @@ export default function SorotecaEstrutura() {
           )}
         </section>
 
-        {/* ------------- POSIÇÕES ------------- */}
-        <section className="rounded-lg border bg-card">
-          <header className="flex items-center justify-between px-3 py-2 border-b">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Boxes className="h-4 w-4 text-muted-foreground" />
-              Posições
-              <span className="text-xs text-muted-foreground font-normal">({posicoes.length})</span>
+        {/* ------------- POSIÇÕES (mapa visual) ------------- */}
+        <section className={cn("rounded-lg border bg-card md:col-span-2 lg:col-span-1", "lg:block", mobileView !== "posicoes" && "hidden md:block")}>
+          <header className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b">
+            <div className="flex items-center gap-2 text-sm font-semibold min-w-0">
+              <button
+                type="button"
+                className="lg:hidden p-1 -ml-1 text-muted-foreground"
+                onClick={() => setMobileView("galerias")}
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <Boxes className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="truncate">{galeriaAtual?.nome ?? "Posições"}</span>
             </div>
+            {galeriaSel && resumoGaleria.total > 0 && (
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground tabular-nums">
+                <span><strong className="text-foreground">{resumoGaleria.ocupadas}</strong>/{resumoGaleria.total} ocupadas</span>
+                <span>·</span>
+                <span>{Math.round((resumoGaleria.ocupadas / resumoGaleria.total) * 100)}%</span>
+                {resumoGaleria.vencendo > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-amber-600">{resumoGaleria.vencendo} vencendo</span>
+                  </>
+                )}
+                {resumoGaleria.vencida > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="text-destructive">{resumoGaleria.vencida} vencida</span>
+                  </>
+                )}
+              </div>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -364,31 +485,85 @@ export default function SorotecaEstrutura() {
               Nenhuma posição em <strong>{galeriaAtual?.nome}</strong>.
             </div>
           ) : (
-            <div className="p-3 grid grid-cols-4 sm:grid-cols-5 gap-1.5 max-h-[60vh] overflow-y-auto">
-              {posicoes.map((p) => (
-                <div
-                  key={p.id}
-                  className="group relative rounded-md border bg-background px-2 py-1.5 text-center text-xs cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                  onClick={() => setEditarPosicao(p)}
-                  title="Editar posição"
-                >
-                  <span className="font-mono">{p.codigo}</span>
-                  <button
-                    type="button"
-                    className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo });
-                    }}
-                  >
-                    <Trash2 className="h-2.5 w-2.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="p-3 grid gap-1.5 max-h-[60vh] overflow-y-auto" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(56px, 1fr))" }}>
+                <TooltipProvider delayDuration={150}>
+                  {posicoes.map((pe) => {
+                    const p = pe.posicao;
+                    const tone =
+                      pe.status === "livre" ? "border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700"
+                      : pe.status === "ocupada" ? "border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary"
+                      : pe.status === "vencendo" ? "border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700"
+                      : pe.status === "vencida" ? "border-destructive/50 bg-destructive/10 hover:bg-destructive/20 text-destructive"
+                      : "border-muted bg-muted/40 text-muted-foreground";
+                    return (
+                      <Tooltip key={p.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "group relative rounded-md border px-1.5 py-2 text-center text-[11px] font-mono cursor-pointer transition-colors min-h-[44px]",
+                              tone,
+                            )}
+                            onClick={() => setEditarPosicao(p)}
+                          >
+                            <span className="block truncate">{p.codigo}</span>
+                            <button
+                              type="button"
+                              className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo });
+                              }}
+                              aria-label="Remover posição"
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </button>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs max-w-[260px]">
+                          <div className="font-semibold">{p.codigo}</div>
+                          {pe.status === "livre" && <div className="text-muted-foreground">Livre</div>}
+                          {pe.status === "inativa" && <div className="text-muted-foreground">Inativa</div>}
+                          {pe.amostra && (
+                            <div className="space-y-0.5 mt-0.5">
+                              <div className="truncate"><span className="text-muted-foreground">Paciente:</span> {pe.amostra.paciente_nome ?? "—"}</div>
+                              <div className="truncate"><span className="text-muted-foreground">Protocolo:</span> {pe.amostra.protocolo ?? "—"}</div>
+                              <div className="truncate"><span className="text-muted-foreground">Material:</span> {pe.amostra.tipo_material}</div>
+                              <div className="truncate"><span className="text-muted-foreground">Armazenado:</span> {new Date(pe.amostra.data_alocacao).toLocaleDateString("pt-BR")}</div>
+                              {pe.amostra.data_expurgo && (
+                                <div className="truncate">
+                                  <span className="text-muted-foreground">Expurgo:</span>{" "}
+                                  {new Date(pe.amostra.data_expurgo).toLocaleDateString("pt-BR")}
+                                  {pe.amostra.dias_para_expurgo != null && (
+                                    <span className={cn("ml-1", pe.amostra.dias_para_expurgo < 0 ? "text-destructive" : pe.amostra.dias_para_expurgo <= 7 ? "text-amber-600" : "text-muted-foreground")}>
+                                      ({pe.amostra.dias_para_expurgo < 0 ? `${-pe.amostra.dias_para_expurgo}d vencida` : `${pe.amostra.dias_para_expurgo}d`})
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </TooltipProvider>
+              </div>
+              {/* Legenda */}
+              <div className="border-t px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                <LegendDot cls="bg-emerald-500/30 border-emerald-500/50" label="Livre" />
+                <LegendDot cls="bg-primary/30 border-primary/50" label="Ocupada" />
+                <LegendDot cls="bg-amber-500/40 border-amber-500/60" label="Vencendo ≤7d" />
+                <LegendDot cls="bg-destructive/40 border-destructive/60" label="Vencida" />
+                <LegendDot cls="bg-muted border-muted-foreground/30" label="Inativa" />
+              </div>
+            </>
           )}
         </section>
       </div>
+
+
 
 
       {/* ----- dialogs ----- */}
