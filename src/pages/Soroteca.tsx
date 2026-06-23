@@ -410,14 +410,8 @@ export default function Soroteca() {
   const carregando = advancadoAtivo ? advLoading : loading;
 
   // Enriquece amostras visíveis com nome do paciente + protocolo do atendimento.
+  // amostras.paciente_id costuma ser NULL — resolvemos via atendimentos.paciente_id.
   useEffect(() => {
-    const pacIds = Array.from(
-      new Set(
-        visiveis
-          .map((a) => a.paciente_id)
-          .filter((id): id is number => typeof id === "number" && !infoMap[`p:${id}`]),
-      ),
-    );
     const atIds = Array.from(
       new Set(
         visiveis
@@ -425,15 +419,39 @@ export default function Soroteca() {
           .filter((id): id is number => typeof id === "number" && !infoMap[`a:${id}`]),
       ),
     );
-    if (pacIds.length === 0 && atIds.length === 0) return;
+    const pacDiretos = Array.from(
+      new Set(
+        visiveis
+          .map((a) => a.paciente_id)
+          .filter((id): id is number => typeof id === "number" && !infoMap[`p:${id}`]),
+      ),
+    );
+    if (atIds.length === 0 && pacDiretos.length === 0) return;
     let cancelado = false;
     (async () => {
       const updates: Record<string, AmostraInfo> = {};
-      if (pacIds.length > 0) {
+      const pacIds = new Set<number>(pacDiretos);
+
+      if (atIds.length > 0) {
+        const { data } = await supabase
+          .from("atendimentos")
+          .select("id,protocolo,paciente_id")
+          .in("id", atIds);
+        (data ?? []).forEach((a) => {
+          updates[`a:${a.id}`] = { protocolo: a.protocolo };
+          if (typeof a.paciente_id === "number" && !infoMap[`p:${a.paciente_id}`]) {
+            pacIds.add(a.paciente_id);
+          }
+          // Liga atendimento → paciente p/ render.
+          updates[`ap:${a.id}`] = { paciente: String(a.paciente_id ?? "") };
+        });
+      }
+
+      if (pacIds.size > 0) {
         const { data } = await supabase
           .from("pacientes")
           .select("id,nome,cpf")
-          .in("id", pacIds);
+          .in("id", Array.from(pacIds));
         (data ?? []).forEach((p) => {
           const cpf = (p.cpf || "").replace(/\D/g, "");
           const cpfFmt = cpf.length === 11
@@ -442,15 +460,7 @@ export default function Soroteca() {
           updates[`p:${p.id}`] = { paciente: p.nome, cpf: cpfFmt };
         });
       }
-      if (atIds.length > 0) {
-        const { data } = await supabase
-          .from("atendimentos")
-          .select("id,protocolo")
-          .in("id", atIds);
-        (data ?? []).forEach((a) => {
-          updates[`a:${a.id}`] = { protocolo: a.protocolo };
-        });
-      }
+
       if (!cancelado && Object.keys(updates).length > 0) {
         setInfoMap((prev) => ({ ...prev, ...updates }));
       }
