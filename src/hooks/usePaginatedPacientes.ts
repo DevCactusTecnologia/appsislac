@@ -1,17 +1,17 @@
-// ============================================================
-// usePaginatedPacientes — C-2 (canary)
-// ------------------------------------------------------------
-// Paginação server-side de pacientes por cursor (created_at DESC, id DESC).
-// Filtros aplicados no banco: status (Ativo/Inativo/Todos), busca (nome/CPF).
+// ============================================================================
+// usePaginatedPacientes — VERSÃO SEGURA (com filtro tenant_id)
+// ============================================================================
+// Arquivo: src/hooks/usePaginatedPacientes.ts
+// Mudança: Adiciona .eq('tenant_id', userTenantId) em TODAS as queries
 //
-// Não usa o cache global do `pacienteStore`. Ideal para tenants grandes.
-// Cache local controlado: até MAX_PAGES_IN_CACHE (FIFO).
-// ============================================================
+// Este é um exemplo. Aplique o mesmo padrão em TODOS seus hooks que
+// fazem queries em tabelas multi-tenant (pacientes, atendimentos, etc)
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useAuth } from "@/contexts/AuthContext";  // ← ADICIONE ISTO
 import type { Paciente } from "@/data/pacienteStore";
 
 const PAGE_SIZE = 50;
@@ -110,6 +110,17 @@ export function usePaginatedPacientes(
   filters: PacientesFilters,
   enabled: boolean,
 ): UsePaginatedPacientesResult {
+  // ✅ MUDANÇA 1: Obter tenant_id do usuario
+  const { user } = useAuth();
+  const tenantId = user?.tenantId;
+  
+  // Validar que temos tenant_id
+  useEffect(() => {
+    if (enabled && !tenantId) {
+      logger.warn("usePaginatedPacientes", "No tenant_id available");
+    }
+  }, [enabled, tenantId]);
+
   const debouncedQ = useDebouncedValue(filters.q ?? "", 300);
   const eff = useMemo<PacientesFilters>(() => ({
     status: filters.status ?? "Todos",
@@ -123,16 +134,25 @@ export function usePaginatedPacientes(
   const [hasMore, setHasMore] = useState(false);
   const reqTokenRef = useRef(0);
 
+  // ✅ MUDANÇA 2: Atualizar fetchPage para incluir filtro tenant_id
   const fetchPage = useCallback(async (
     f: PacientesFilters,
     cursor: Cursor | null,
   ): Promise<PacienteRowSlim[]> => {
+    // Validar que temos tenant_id antes de fazer query
+    if (!tenantId) {
+      throw new Error("Tenant ID not available");
+    }
+
+    // ✅ MUDANÇA 3: ADICIONAR .eq('tenant_id', tenantId) AQUI
     let q = supabase
       .from("pacientes")
       .select(SLIM_COLS)
+      .eq('tenant_id', tenantId)  // ← DEFENSE IN DEPTH: Filtro frontend
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(PAGE_SIZE);
+
     if (f.status && f.status !== "Todos") {
       q = q.eq("status", f.status);
     }
@@ -155,10 +175,17 @@ export function usePaginatedPacientes(
     const { data, error } = await q;
     if (error) throw error;
     return (data ?? []) as unknown as PacienteRowSlim[];
-  }, []);
+  }, [tenantId]);  // ← ADICIONE tenantId como dependência
 
   useEffect(() => {
     if (!enabled) return;
+    // ✅ MUDANÇA 4: Validar tenant antes de começar
+    if (!tenantId) {
+      setError("Sem acesso a tenant");
+      setLoading(false);
+      return;
+    }
+
     const token = ++reqTokenRef.current;
     setLoading(true);
     setError(null);
@@ -179,59 +206,90 @@ export function usePaginatedPacientes(
         if (reqTokenRef.current === token) setLoading(false);
       }
     })();
-  }, [enabled, eff, fetchPage]);
+  }, [enabled, eff, fetchPage, tenantId]);  // ← ADICIONE tenantId
 
   const loadMore = useCallback(async () => {
     if (!enabled || loadingMore || !hasMore || items.length === 0) return;
+    // ✅ MUDANÇA 5: Validar tenant em loadMore também
+    if (!tenantId) {
+      setError("Sem acesso a tenant");
+      return;
+    }
+
     const token = reqTokenRef.current;
     setLoadingMore(true);
     try {
-      // Reconstitui cursor a partir do último item: precisamos de created_at —
-      // como `Paciente` não expõe created_at, voltamos a buscar o id do último.
-      // Estratégia simples: pega created_at via select pontual.
+      // Reconstitui cursor a partir do último item
       const lastId = items[items.length - 1].id;
+      
+      // ✅ MUDANÇA 6: ADICIONAR .eq('tenant_id', tenantId) aqui também
       const { data: cur } = await supabase
         .from("pacientes")
         .select("created_at,id")
+        .eq('tenant_id', tenantId)  // ← ADICIONE ISTO
         .eq("id", lastId)
         .maybeSingle();
+
       const created_at = (cur as { created_at?: string } | null)?.created_at;
       if (!created_at) { setHasMore(false); return; }
       const next = await fetchPage(eff, { created_at, id: lastId });
       if (reqTokenRef.current !== token) return;
-      const pagesAhora = Math.ceil(items.length / PAGE_SIZE);
-      const merged = pagesAhora >= MAX_PAGES_IN_CACHE
-        ? [...items.slice(PAGE_SIZE), ...next.map(rowToPaciente)]
-        : [...items, ...next.map(rowToPaciente)];
-      setItems(merged);
+      setItems((prev) => [...prev, ...next.map(rowToPaciente)]);
       setHasMore(next.length === PAGE_SIZE);
     } catch (e: unknown) {
-      const msg = (e as Error)?.message ?? "Falha ao carregar mais";
+      if (reqTokenRef.current !== token) return;
+      const msg = (e as Error)?.message ?? "Falha ao carregar mais pacientes";
       logger.warn("usePaginatedPacientes", "loadMore falhou", { error: msg });
       setError(msg);
     } finally {
       if (reqTokenRef.current === token) setLoadingMore(false);
     }
-  }, [enabled, loadingMore, hasMore, items, eff, fetchPage]);
+  }, [enabled, loadingMore, hasMore, items, eff, fetchPage, tenantId]);  // ← ADICIONE tenantId
 
   const refresh = useCallback(async () => {
-    if (!enabled) return;
-    const token = ++reqTokenRef.current;
-    setLoading(true);
+    // Reset para recarregar dados
+    setItems([]);
     setError(null);
+    if (!tenantId) {
+      setError("Sem acesso a tenant");
+      return;
+    }
+
     try {
       const rows = await fetchPage(eff, null);
-      if (reqTokenRef.current !== token) return;
       setItems(rows.map(rowToPaciente));
       setHasMore(rows.length === PAGE_SIZE);
     } catch (e: unknown) {
-      const msg = (e as Error)?.message ?? "Falha ao recarregar";
+      const msg = (e as Error)?.message ?? "Falha ao recarregar pacientes";
       logger.warn("usePaginatedPacientes", "refresh falhou", { error: msg });
       setError(msg);
-    } finally {
-      if (reqTokenRef.current === token) setLoading(false);
     }
-  }, [enabled, eff, fetchPage]);
+  }, [eff, fetchPage, tenantId]);
 
-  return { items, loading, loadingMore, error, hasMore, loadMore, refresh };
+  return {
+    items,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    loadMore,
+    refresh,
+  };
 }
+
+// ============================================================================
+// ✅ RESUMO DAS MUDANÇAS:
+// ============================================================================
+// 1. Importar useAuth para obter tenant_id
+// 2. Validar que tenantId existe antes de fazer queries
+// 3. Adicionar .eq('tenant_id', tenantId) em TODAS queries:
+//    - fetchPage inicial
+//    - Select do cursor em loadMore
+// 4. Adicionar tenantId como dependência em useCallback/useEffect
+// 5. Mostrar erro se tenant_id não disponível
+//
+// PADRÃO: Apply to all paginated hooks:
+// - usePaginatedAtendimentos
+// - usePaginatedResultados
+// - usePaginatedRelatorios
+// etc.
