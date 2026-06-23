@@ -490,15 +490,37 @@ export default function SorotecaEstrutura() {
                 )}
               </div>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setNovaPosicaoOpen(true)}
-              disabled={!galeriaSel}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setHistoricoOpen(true)}
+                disabled={!galeriaSel}
+                title="Histórico de movimentações"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setReorgOpen(true)}
+                disabled={!galeriaSel || resumoGaleria.ocupadas < 2}
+                title="Reorganizar com IA"
+                className="text-primary"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setNovaPosicaoOpen(true)}
+                disabled={!galeriaSel}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </header>
+
           {!galeriaSel ? (
             <div className="px-3 py-8 text-center text-muted-foreground text-sm">
               Selecione uma galeria.
