@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -15,8 +15,6 @@ import {
   ChevronRight,
   CircleDot,
   BadgeCheck,
-  Menu,
-  X,
 } from "lucide-react";
 
 const pillars = [
@@ -54,8 +52,6 @@ const differentials = [
 ];
 
 const Landing = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   useEffect(() => {
     const original = document.title;
     document.title = "SISLAC — Gestão completa para laboratórios clínicos";
@@ -86,78 +82,30 @@ const Landing = () => {
         />
       </div>
 
-      {/* Header - RESPONSIVO */}
-      <header className="fixed left-1/2 top-3 z-50 w-[95%] max-w-6xl -translate-x-1/2 rounded-full border border-border/60 bg-card/70 px-3 py-2 shadow-[0_8px_30px_-12px_hsl(var(--foreground)/0.18)] backdrop-blur-xl sm:top-5 sm:px-6 sm:py-2.5">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)] sm:h-8 sm:w-8">
-              <FlaskConical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+      {/* Header — minimalista: apenas logo + Entrar */}
+      <header className="fixed left-1/2 top-3 z-50 w-[95%] max-w-6xl -translate-x-1/2 rounded-full border border-border/60 bg-card/70 px-3 py-2 shadow-[0_8px_30px_-12px_hsl(var(--foreground)/0.18)] backdrop-blur-xl sm:top-5 sm:px-5 sm:py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="SISLAC — início">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)]">
+              <FlaskConical className="h-4 w-4" />
             </div>
-            <span className="hidden text-sm font-semibold tracking-tight text-foreground sm:text-base lg:inline">SISLAC</span>
           </Link>
 
-          {/* Nav Desktop */}
-          <nav className="hidden items-center gap-5 text-xs text-muted-foreground lg:flex lg:gap-7 lg:text-sm">
-            <a href="#pilares" className="transition-colors hover:text-foreground">Pilares</a>
-            <a href="#modulos" className="transition-colors hover:text-foreground">Módulos</a>
-            <a href="#fluxo" className="transition-colors hover:text-foreground">Fluxo</a>
-            <a href="#diferenciais" className="transition-colors hover:text-foreground">Diferenciais</a>
-          </nav>
-
-          {/* CTA - Desktop e Mobile */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Link
-              to="/login"
-              className="hidden rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex sm:px-3.5 sm:py-1.5 sm:text-sm"
-            >
-              Entrar
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-transform hover:scale-[1.02] sm:hidden sm:px-4 sm:py-1.5 sm:text-sm"
-              aria-label="Entrar no sistema"
-            >
-              <span className="hidden sm:inline">Entrar</span>
-              <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            </Link>
-            <Link
-              to="/login"
-              className="hidden items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] sm:inline-flex"
-            >
-              Entrar
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="inline-flex items-center justify-center p-1.5 text-foreground lg:hidden"
-            aria-label="Toggle menu"
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background transition-transform hover:scale-[1.02] sm:px-5 sm:py-2 sm:text-sm"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            Entrar
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <nav className="mt-4 border-t border-border/40 pt-4 lg:hidden">
-            <div className="flex flex-col gap-3">
-              <a href="#pilares" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Pilares</a>
-              <a href="#modulos" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Módulos</a>
-              <a href="#fluxo" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Fluxo</a>
-              <a href="#diferenciais" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Diferenciais</a>
-            </div>
-          </nav>
-        )}
       </header>
 
       <main className="relative z-10">
         {/* Hero */}
-        <section className="px-6 pb-24 pt-40 sm:pt-44">
-          <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3.5 py-1.5 text-xs font-medium tracking-wide text-primary">
+        <section className="px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-40 lg:pt-44">
+          <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center sm:gap-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3 py-1.5 text-[11px] font-medium tracking-wide text-primary sm:px-3.5 sm:text-xs">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -165,36 +113,36 @@ const Landing = () => {
               Plataforma laboratorial v4.0
             </div>
 
-            <h1 className="text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
+            <h1 className="text-balance text-3xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
               Gestão completa para
-              <br />
+              <br className="hidden sm:inline" />{" "}
               <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                 laboratórios clínicos
               </span>
             </h1>
 
-            <p className="max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
+            <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
               Do atendimento ao resultado, tudo em um único sistema seguro e escalável.
               Coleta rastreada, análises validadas, financeiro integrado.
             </p>
 
-            <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row">
+            <div className="mt-2 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
               <Link
                 to="/inscricao"
-                className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.7)] transition-all hover:scale-[1.02] hover:shadow-[0_14px_48px_-10px_hsl(var(--primary)/0.7)]"
+                className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.7)] transition-all hover:scale-[1.02] hover:shadow-[0_14px_48px_-10px_hsl(var(--primary)/0.7)] sm:px-7 sm:py-3.5"
               >
                 Começar agora
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
                 href="#fluxo"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-7 py-3.5 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-card"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 py-3 text-sm font-semibold text-foreground backdrop-blur-md transition-colors hover:bg-card sm:px-7 sm:py-3.5"
               >
                 Ver demonstração
               </a>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:gap-x-6 sm:text-xs">
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Reduz retrabalho e recoletas</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Laudos liberados em minutos</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Rastreabilidade ponta a ponta</span>
@@ -202,7 +150,7 @@ const Landing = () => {
           </div>
 
           {/* Hero preview */}
-          <div className="relative mx-auto mt-20 max-w-6xl">
+          <div className="relative mx-auto mt-12 max-w-6xl sm:mt-20">
             <div className="absolute -inset-x-12 -top-6 h-32 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/80 p-2 shadow-[0_30px_80px_-30px_hsl(var(--foreground)/0.35)] backdrop-blur-xl">
               <div className="flex h-10 items-center justify-between border-b border-border/60 px-4">
@@ -250,28 +198,28 @@ const Landing = () => {
                   </div>
                 </aside>
 
-                <div className="col-span-12 p-5 md:col-span-9 md:p-6">
-                  <div className="mb-5 flex items-center justify-between">
+                <div className="col-span-12 p-3 sm:p-5 md:col-span-9 md:p-6">
+                  <div className="mb-4 flex items-center justify-between sm:mb-5">
                     <div>
-                      <h3 className="text-base font-semibold">Atendimentos</h3>
-                      <p className="text-xs text-muted-foreground">Visão geral do dia</p>
+                      <h3 className="text-sm font-semibold sm:text-base">Atendimentos</h3>
+                      <p className="text-[11px] text-muted-foreground sm:text-xs">Visão geral do dia</p>
                     </div>
-                    <div className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground">
-                      + Novo atendimento
+                    <div className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground sm:px-3 sm:py-1.5 sm:text-[11px]">
+                      + Novo
                     </div>
                   </div>
 
-                  <div className="mb-5 grid grid-cols-4 gap-2.5">
+                  <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:grid-cols-4 sm:gap-2.5">
                     {[
                       { l: "Total", v: "248", t: "primary" as const },
                       { l: "Em andamento", v: "57", t: "warning" as const },
                       { l: "Finalizados", v: "184", t: "success" as const },
                       { l: "Críticos", v: "3", t: "danger" as const },
                     ].map((k) => (
-                      <div key={k.l} className="rounded-lg border border-border/60 bg-card p-3">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.l}</div>
+                      <div key={k.l} className="rounded-lg border border-border/60 bg-card p-2.5 sm:p-3">
+                        <div className="text-[9px] uppercase tracking-wide text-muted-foreground sm:text-[10px]">{k.l}</div>
                         <div
-                          className={`mt-1 text-xl font-semibold tabular-nums ${
+                          className={`mt-1 text-lg font-semibold tabular-nums sm:text-xl ${
                             k.t === "primary"
                               ? "text-primary"
                               : k.t === "warning"
@@ -287,44 +235,48 @@ const Landing = () => {
                     ))}
                   </div>
 
-                  <div className="overflow-hidden rounded-lg border border-border/60">
-                    <div className="grid grid-cols-12 gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      <div className="col-span-2">Protocolo</div>
-                      <div className="col-span-4">Paciente</div>
-                      <div className="col-span-3">Convênio</div>
-                      <div className="col-span-2">Status</div>
-                      <div className="col-span-1 text-right">Total</div>
-                    </div>
-                    {[
-                      { p: "P-2841", n: "Maria Silva Andrade", c: "Unimed", s: "Em análise", st: "warning" as const, v: "R$ 184" },
-                      { p: "P-2840", n: "João Pedro Almeida", c: "Particular", s: "Finalizado", st: "success" as const, v: "R$ 92" },
-                      { p: "P-2839", n: "Ana Beatriz Costa", c: "Bradesco", s: "Coletado", st: "info" as const, v: "R$ 246" },
-                      { p: "P-2838", n: "Carlos Henrique Lima", c: "SulAmérica", s: "Pendente", st: "pending" as const, v: "R$ 312" },
-                    ].map((r) => (
-                      <div key={r.p} className="grid grid-cols-12 items-center gap-2 border-b border-border/40 px-3 py-2.5 text-xs last:border-b-0">
-                        <div className="col-span-2 font-mono text-[11px] text-muted-foreground">{r.p}</div>
-                        <div className="col-span-4 truncate font-medium">{r.n}</div>
-                        <div className="col-span-3 truncate text-muted-foreground">{r.c}</div>
-                        <div className="col-span-2">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                              r.st === "success"
-                                ? "bg-[hsl(var(--status-success-bg))] text-[hsl(var(--status-success))]"
-                                : r.st === "warning"
-                                  ? "bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]"
-                                  : r.st === "info"
-                                    ? "bg-[hsl(var(--status-info-bg))] text-[hsl(var(--status-info))]"
-                                    : "bg-[hsl(var(--status-pending-bg))] text-[hsl(var(--status-pending))]"
-                            }`}
-                          >
-                            <CircleDot className="h-2.5 w-2.5" />
-                            {r.s}
-                          </span>
-                        </div>
-                        <div className="col-span-1 text-right font-semibold tabular-nums">{r.v}</div>
+
+                  <div className="overflow-x-auto rounded-lg border border-border/60">
+                    <div className="min-w-[520px]">
+                      <div className="grid grid-cols-12 gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <div className="col-span-2">Protocolo</div>
+                        <div className="col-span-4">Paciente</div>
+                        <div className="col-span-3">Convênio</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-1 text-right">Total</div>
                       </div>
-                    ))}
+                      {[
+                        { p: "P-2841", n: "Maria Silva Andrade", c: "Unimed", s: "Em análise", st: "warning" as const, v: "R$ 184" },
+                        { p: "P-2840", n: "João Pedro Almeida", c: "Particular", s: "Finalizado", st: "success" as const, v: "R$ 92" },
+                        { p: "P-2839", n: "Ana Beatriz Costa", c: "Bradesco", s: "Coletado", st: "info" as const, v: "R$ 246" },
+                        { p: "P-2838", n: "Carlos Henrique Lima", c: "SulAmérica", s: "Pendente", st: "pending" as const, v: "R$ 312" },
+                      ].map((r) => (
+                        <div key={r.p} className="grid grid-cols-12 items-center gap-2 border-b border-border/40 px-3 py-2.5 text-xs last:border-b-0">
+                          <div className="col-span-2 font-mono text-[11px] text-muted-foreground">{r.p}</div>
+                          <div className="col-span-4 truncate font-medium">{r.n}</div>
+                          <div className="col-span-3 truncate text-muted-foreground">{r.c}</div>
+                          <div className="col-span-2">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                r.st === "success"
+                                  ? "bg-[hsl(var(--status-success-bg))] text-[hsl(var(--status-success))]"
+                                  : r.st === "warning"
+                                    ? "bg-[hsl(var(--status-warning-bg))] text-[hsl(var(--status-warning))]"
+                                    : r.st === "info"
+                                      ? "bg-[hsl(var(--status-info-bg))] text-[hsl(var(--status-info))]"
+                                      : "bg-[hsl(var(--status-pending-bg))] text-[hsl(var(--status-pending))]"
+                              }`}
+                            >
+                              <CircleDot className="h-2.5 w-2.5" />
+                              {r.s}
+                            </span>
+                          </div>
+                          <div className="col-span-1 text-right font-semibold tabular-nums">{r.v}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -332,11 +284,11 @@ const Landing = () => {
         </section>
 
         {/* Pilares */}
-        <section id="pilares" className="px-6 py-24 sm:py-32">
+        <section id="pilares" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-14 max-w-2xl">
+            <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Por que SISLAC</p>
-              <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Quatro pilares que sustentam a operação clínica.
               </h2>
             </div>
@@ -358,12 +310,12 @@ const Landing = () => {
         </section>
 
         {/* Módulos */}
-        <section id="modulos" className="px-6 py-24 sm:py-32">
+        <section id="modulos" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
             <div className="mb-14 flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
               <div className="max-w-2xl">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Módulos</p>
-                <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                   Tudo que o laboratório precisa, em um só lugar.
                 </h2>
               </div>
@@ -395,11 +347,11 @@ const Landing = () => {
         </section>
 
         {/* Fluxo */}
-        <section id="fluxo" className="px-6 py-24 sm:py-32">
+        <section id="fluxo" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
-            <div className="mb-14 max-w-2xl">
+            <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Como funciona</p>
-              <h2 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Cinco passos. Zero retrabalho.
               </h2>
             </div>
@@ -429,12 +381,12 @@ const Landing = () => {
         </section>
 
         {/* Diferenciais */}
-        <section id="diferenciais" className="px-6 py-24 sm:py-32">
+        <section id="diferenciais" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
           <div className="mx-auto max-w-6xl">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
               <div>
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Diferenciais</p>
-                <h2 className="mb-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+                <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                   Construído para a realidade do laboratório.
                 </h2>
                 <p className="text-pretty text-base leading-relaxed text-muted-foreground">
@@ -456,14 +408,14 @@ const Landing = () => {
         </section>
 
         {/* CTA Final */}
-        <section className="px-6 pb-32 pt-12">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-12 text-center sm:p-20">
+        <section className="px-4 pb-20 pt-8 sm:px-6 sm:pb-32 sm:pt-12">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-6 text-center sm:p-12 lg:p-20">
             <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-1.5 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               Pronto para começar
             </div>
 
-            <h2 className="mb-5 text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               Pronto para modernizar
               <br />
               seu laboratório?
@@ -485,7 +437,7 @@ const Landing = () => {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-border/60 px-6 py-10">
+        <footer className="border-t border-border/60 px-4 py-8 sm:px-6 sm:py-10">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-xs text-muted-foreground sm:flex-row">
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
