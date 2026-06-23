@@ -116,6 +116,29 @@ Deno.serve(async (req) => {
   const isAdminFlag = body.isAdmin === true;
   const passwordRaw = typeof body.password === "string" ? body.password : "";
   const usePassword = passwordRaw.length > 0;
+
+  // 3b. Tenant boundary em unidades — Equipe 2.1 Fase 2.3.
+  //     Garante que TODA unidade enviada pertence ao tenant do caller.
+  //     Super admin pode atribuir qualquer unidade (uso operacional).
+  if (unidadeIds.length > 0 && !callerIsSuper) {
+    const { data: validUnidades, error: unidadesErr } = await admin
+      .from("unidades")
+      .select("id")
+      .eq("tenant_id", callerTenantId)
+      .in("id", unidadeIds);
+    if (unidadesErr) {
+      log.error("validar unidades falhou", { err: unidadesErr.message });
+      return errorResponse(500, "Falha ao validar unidades", requestId, log);
+    }
+    const validSet = new Set((validUnidades ?? []).map((u: { id: string }) => u.id));
+    const invalid = unidadeIds.filter((id) => !validSet.has(id));
+    if (invalid.length > 0) {
+      log.warn("tentativa de vincular unidades fora do tenant", {
+        callerId: caller.id, callerTenantId, invalid,
+      });
+      return errorResponse(400, `Unidades inválidas (não pertencem ao seu laboratório): ${invalid.join(", ")}`, requestId, log);
+    }
+  }
   if (usePassword && passwordRaw.length < 8) {
     return errorResponse(400, "Senha deve ter no mínimo 8 caracteres", requestId, log);
   }
