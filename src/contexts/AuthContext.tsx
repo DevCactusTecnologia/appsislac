@@ -114,12 +114,10 @@ async function isTenantActive(tenantId: string | null | undefined): Promise<bool
 
     const status = (data as { status?: string } | null)?.status;
 
-    // ⚠️ Sem registro = dados inconsistentes
+    // ✅ Sem registro = NEGAR acesso (falha segura)
     if (!status) {
       console.warn("⚠️  [Auth] Tenant não encontrado no banco", tenantId);
-      // Aqui deixamos passar (pode ser RLS bloqueando)
-      // Mas em produção, isso seria um sinal de problema
-      return true;
+      return false; // ✅ Falha segura: nega em vez de permitir
     }
 
     const isActive = status === "ativo";

@@ -1,13 +1,60 @@
 /**
- * CONSTANTES CENTRALIZADAS
- * 
- * REGRA: Nunca use magic strings
- * SEMPRE: Importe constantes deste arquivo
+ * Constantes centralizadas do sistema
+ * Elimina magic strings e facilita manutenção
  */
 
-// ============================================================================
-// ROLES E PERFIS
-// ============================================================================
+// ============================================
+// PERMISSÕES
+// ============================================
+
+export const PERMISSIONS = {
+  // Dashboard
+  VIEW_DASHBOARD: "visualizar_dashboard",
+  
+  // Pacientes
+  VIEW_PATIENTS: "visualizar_pacientes",
+  CREATE_PATIENT: "cadastrar_paciente",
+  EDIT_PATIENT: "editar_paciente",
+  
+  // Atendimentos
+  VIEW_APPOINTMENTS: "visualizar_atendimentos",
+  CREATE_APPOINTMENT: "criar_atendimento",
+  EDIT_APPOINTMENT: "editar_atendimento",
+  
+  // Exames
+  ANALYZE_SAMPLE: "analisar_amostra",
+  RELEASE_RESULT: "liberar_resultado",
+  PRINT_REPORT: "imprimir_laudo",
+  
+  // Coleta
+  REGISTER_COLLECTION: "registrar_coleta",
+  
+  // Resultados
+  CONSULT_RESULTS: "consultar_resultados",
+  
+  // Lab
+  LAB_SUPPORT_ACCESS: "lab_apoio_acesso",
+  WORK_MAP_ACCESS: "mapa_trabalho_acesso",
+  
+  // Financeiro
+  FINANCIAL_MANAGEMENT: "gestao_financeira",
+  REGISTER_PAYMENT: "registrar_pagamento",
+  VIEW_FINANCIAL: "visualizar_financeiro",
+  
+  // Orçamentos
+  CREATE_QUOTE: "criar_orcamento",
+  VIEW_QUOTES: "visualizar_orcamentos",
+  
+  // Site
+  SITE_REQUESTS_ACCESS: "solicitacoes_site_acesso",
+  
+  // Relatórios
+  VIEW_PRODUCTION_REPORTS: "relatorios_producao",
+} as const;
+
+// ============================================
+// PERFIS/ROLES
+// ============================================
 
 export const ROLES = {
   ADMIN: "admin",
@@ -17,284 +64,207 @@ export const ROLES = {
   SUPER_ADMIN: "super_admin",
 } as const;
 
-export type Role = (typeof ROLES)[keyof typeof ROLES];
-
-// ============================================================================
-// PERMISSÕES
-// ============================================================================
-
-export const PERMISSIONS = {
-  // Dashboard
-  VIEW_DASHBOARD: "visualizar_dashboard",
-
-  // Pacientes
-  VIEW_PATIENTS: "visualizar_pacientes",
-  CREATE_PATIENT: "cadastrar_paciente",
-  EDIT_PATIENT: "editar_paciente",
-
-  // Atendimentos
-  VIEW_APPOINTMENTS: "visualizar_atendimentos",
-  CREATE_APPOINTMENT: "criar_atendimento",
-  EDIT_APPOINTMENT: "editar_atendimento",
-
-  // Exames
-  ANALYZE_SAMPLE: "analisar_amostra",
-  RELEASE_RESULT: "liberar_resultado",
-  PRINT_REPORT: "imprimir_laudo",
-  REGISTER_COLLECTION: "registrar_coleta",
-  QUERY_RESULTS: "consultar_resultados",
-
-  // Financeiro
-  FINANCIAL_MANAGEMENT: "gestao_financeira",
-  REGISTER_PAYMENT: "registrar_pagamento",
-  VIEW_FINANCIAL: "visualizar_financeiro",
-
-  // Orçamentos
-  CREATE_BUDGET: "criar_orcamento",
-  VIEW_BUDGETS: "visualizar_orcamentos",
-
-  // Módulos
-  LAB_SUPPORT_ACCESS: "lab_apoio_acesso",
-  WORK_MAP_ACCESS: "mapa_trabalho_acesso",
-  SITE_REQUESTS_ACCESS: "solicitacoes_site_acesso",
-
-  // Relatórios
-  VIEW_REPORTS: "relatorios_producao",
-
-  // Wildcard
-  ADMIN_ALL: "*",
-} as const;
-
-export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
-
-// ============================================================================
+// ============================================
 // STATUS
-// ============================================================================
+// ============================================
 
-export const STATUS = {
+export const STATUSES = {
   ACTIVE: "ativo",
   INACTIVE: "inativo",
   PENDING: "pendente",
+  PROCESSING: "processando",
+  COMPLETED: "concluido",
+  CANCELLED: "cancelado",
   ARCHIVED: "arquivado",
 } as const;
 
-export type Status = (typeof STATUS)[keyof typeof STATUS];
-
-// ============================================================================
-// STATUS DE ATENDIMENTO
-// ============================================================================
-
-export const APPOINTMENT_STATUS = {
-  INITIAL: "inicial",
-  COLLECTION: "coleta",
-  ANALYSIS: "analise",
-  CRITICAL: "critico",
-  RESULT: "resultado",
-  RELEASED: "liberado",
-  PRINTED: "impresso",
-  COMPLETED: "completo",
-  CANCELLED: "cancelado",
+export const TENANT_STATUSES = {
+  ACTIVE: "ativo",
+  INACTIVE: "inativo",
+  SUSPENDED: "suspenso",
 } as const;
 
-export type AppointmentStatus =
-  (typeof APPOINTMENT_STATUS)[keyof typeof APPOINTMENT_STATUS];
-
-// ============================================================================
-// STATUS DE RESULTADO
-// ============================================================================
-
-export const RESULT_STATUS = {
-  PENDING: "pendente",
-  REVIEW: "revisao",
-  CRITICAL: "critico",
-  RELEASED: "liberado",
-  PRINTED: "impresso",
+export const APPOINTMENT_STATUSES = {
+  DRAFT: "Rascunho",
+  SCHEDULED: "Agendado",
+  IN_PROGRESS: "Em andamento",
+  COMPLETED: "Concluído",
+  CANCELLED: "Cancelado",
 } as const;
 
-export type ResultStatus = (typeof RESULT_STATUS)[keyof typeof RESULT_STATUS];
-
-// ============================================================================
-// STATUS FINANCEIRO
-// ============================================================================
-
-export const FINANCIAL_STATUS = {
-  PENDING: "pendente",
-  PAID: "pago",
-  OVERDUE: "vencido",
-  CANCELLED: "cancelado",
+export const RESULT_STATUSES = {
+  PENDING: "Pendente",
+  RELEASED: "Liberado",
+  REVIEWED: "Revisado",
+  SENT: "Enviado",
 } as const;
 
-export type FinancialStatus =
-  (typeof FINANCIAL_STATUS)[keyof typeof FINANCIAL_STATUS];
+export const CRITICAL_STATUSES = {
+  NORMAL: "Normal",
+  CRITICAL: "Crítico",
+  ALERT: "Alerta",
+} as const;
 
-// ============================================================================
-// TIPOS DE UNIDADE
-// ============================================================================
+// ============================================
+// TIPOS E CATEGORIAS
+// ============================================
+
+export const USER_TYPES = {
+  STAFF: "colaborador",
+  PATIENT: "paciente",
+} as const;
 
 export const UNIT_TYPES = {
-  HEADQUARTERS: "matriz",
-  CLINIC: "clinica",
-  COLLECTION_POINT: "ponto_coleta",
+  LAB: "laboratório",
+  CLINIC: "clínica",
 } as const;
 
-export type UnitType = (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES];
-
-// ============================================================================
-// TABELAS DE PREÇO
-// ============================================================================
-
-export const PRICE_TABLE_TYPES = {
-  OWN: "Própria",
-  AGREEMENT: "Convênio",
-  SPECIAL: "Especial",
+export const GENDER = {
+  MALE: "M",
+  FEMALE: "F",
+  OTHER: "O",
 } as const;
 
-export type PriceTableType =
-  (typeof PRICE_TABLE_TYPES)[keyof typeof PRICE_TABLE_TYPES];
-
-// ============================================================================
-// TIPOS DE DESCONTO
-// ============================================================================
-
-export const DISCOUNT_TYPES = {
-  PERCENTAGE: "percentual",
-  FIXED: "fixo",
+export const PATIENT_TYPES = {
+  REGULAR: "regular",
+  HEALTH_PLAN: "convenio",
+  PARTICULAR: "particular",
 } as const;
 
-export type DiscountType = (typeof DISCOUNT_TYPES)[keyof typeof DISCOUNT_TYPES];
-
-// ============================================================================
-// TIPOS DE ACRÉSCIMO
-// ============================================================================
-
-export const SURCHARGE_TYPES = {
-  PERCENTAGE: "percentual",
-  FIXED: "fixo",
-} as const;
-
-export type SurchargeType =
-  (typeof SURCHARGE_TYPES)[keyof typeof SURCHARGE_TYPES];
-
-// ============================================================================
-// TIPOS DE INTEGRAÇÃO
-// ============================================================================
-
-export const INTEGRATION_TYPES = {
-  HERMES_PARDINI: "hermes_pardini",
-  DBSYNC: "dbsync",
-} as const;
-
-export type IntegrationType =
-  (typeof INTEGRATION_TYPES)[keyof typeof INTEGRATION_TYPES];
-
-// ============================================================================
-// PADRÕES DE VALIDAÇÃO
-// ============================================================================
-
-export const VALIDATION_PATTERNS = {
-  UUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^(\d{10,11})$/,
-  CPF: /^(\d{3}\.?\d{3}\.?\d{3}-?\d{2})$/,
-  CEP: /^(\d{5}-?\d{3})$/,
-} as const;
-
-// ============================================================================
+// ============================================
 // LIMITES E CONFIGURAÇÕES
-// ============================================================================
+// ============================================
 
 export const LIMITS = {
-  MAX_ITEMS_PER_PAGE: 50,
-  MAX_SEARCH_RESULTS: 100,
-  MAX_BATCH_SIZE: 1000,
-  SESSION_TIMEOUT_MS: 1000 * 60 * 30, // 30 min
-  TOKEN_REFRESH_THRESHOLD_MS: 1000 * 60 * 5, // 5 min antes de expirar
+  MAX_PATIENTS_PER_PAGE: 50,
+  MAX_APPOINTMENTS_PER_DAY: 500,
+  MAX_EXAMS_PER_APPOINTMENT: 100,
+  MAX_FILE_SIZE_MB: 50,
+  MAX_LOGIN_ATTEMPTS: 5,
+  LOGIN_ATTEMPT_WINDOW_MINUTES: 15,
+  SESSION_TIMEOUT_MINUTES: 60,
+  TOKEN_REFRESH_THRESHOLD_MINUTES: 5,
+  API_RATE_LIMIT_PER_MINUTE: 100,
 } as const;
 
-// ============================================================================
-// ENDPOINTS E TABELAS
-// ============================================================================
-
-export const TABLES = {
-  TENANTS: "tenants",
-  PROFILES: "profiles",
-  USER_ROLES: "user_roles",
-  PATIENTS: "pacientes",
-  APPOINTMENTS: "atendimentos",
-  EXAMS: "exames",
-  EXAM_PRICES: "exames_tabela_preco",
-  RESULTS: "resultados",
-  CONVENIOS: "convenios",
-  UNITS: "unidades",
-  USERS: "usuarios",
-  AUDIT_LOG: "audit_log",
+export const CACHE_DURATION = {
+  SHORT: 5 * 60 * 1000,      // 5 minutos
+  MEDIUM: 15 * 60 * 1000,    // 15 minutos
+  LONG: 60 * 60 * 1000,      // 1 hora
+  VERY_LONG: 24 * 60 * 60 * 1000, // 24 horas
 } as const;
 
-// ============================================================================
-// MENSAGENS
-// ============================================================================
+// ============================================
+// MENSAGENS PADRÃO
+// ============================================
 
 export const MESSAGES = {
-  SUCCESS: {
-    SAVED: "Dados salvos com sucesso",
-    DELETED: "Dados deletados com sucesso",
-    UPDATED: "Dados atualizados com sucesso",
-    CREATED: "Dados criados com sucesso",
-  },
-  ERROR: {
-    VALIDATION: "Verifique os dados e tente novamente",
-    PERMISSION: "Você não tem permissão para realizar esta ação",
-    NETWORK: "Erro de conexão - tente novamente",
-    NOT_FOUND: "Recurso não encontrado",
-    CONFLICT: "Conflito ao salvar - tente novamente",
-    UNEXPECTED: "Erro inesperado - suporte foi notificado",
-  },
-  LOADING: "Carregando...",
-  EMPTY: "Nenhum resultado encontrado",
+  // Sucesso
+  SUCCESS_CREATED: "Criado com sucesso",
+  SUCCESS_UPDATED: "Atualizado com sucesso",
+  SUCCESS_DELETED: "Deletado com sucesso",
+  SUCCESS_SAVED: "Salvo com sucesso",
+  
+  // Erro
+  ERROR_LOADING: "Erro ao carregar dados",
+  ERROR_SAVING: "Erro ao salvar",
+  ERROR_DELETING: "Erro ao deletar",
+  ERROR_NETWORK: "Erro de conexão",
+  ERROR_PERMISSION: "Sem permissão",
+  ERROR_NOT_FOUND: "Não encontrado",
+  
+  // Validação
+  VALIDATION_REQUIRED: "Campo obrigatório",
+  VALIDATION_INVALID_EMAIL: "Email inválido",
+  VALIDATION_INVALID_PHONE: "Telefone inválido",
+  VALIDATION_INVALID_CPF: "CPF inválido",
+  VALIDATION_PASSWORD_WEAK: "Senha muito fraca",
+  
+  // Confirmação
+  CONFIRM_DELETE: "Tem certeza que deseja deletar?",
+  CONFIRM_LOGOUT: "Deseja realmente sair?",
 } as const;
 
-// ============================================================================
-// CORES E TEMA
-// ============================================================================
+// ============================================
+// REGEX PATTERNS
+// ============================================
 
-export const COLORS = {
-  SUCCESS: "#10b981",
-  ERROR: "#ef4444",
-  WARNING: "#f59e0b",
-  INFO: "#3b82f6",
-  PENDING: "#f59e0b",
-  ACTIVE: "#10b981",
-  INACTIVE: "#6b7280",
+export const PATTERNS = {
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  PHONE: /^(\d{2})\s(\d{4,5})-(\d{4})$/,
+  CPF: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+  CEP: /^\d{5}-\d{3}$/,
+  UUID: /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
+  URL: /^https?:\/\/.+/,
+  NUMERIC: /^\d+$/,
+  ALPHANUMERIC: /^[a-zA-Z0-9]+$/,
 } as const;
 
-// ============================================================================
+// ============================================
+// API ENDPOINTS
+// ============================================
+
+export const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: "/auth/login",
+    LOGOUT: "/auth/logout",
+    REFRESH: "/auth/refresh",
+    RESET_PASSWORD: "/auth/reset-password",
+  },
+  PATIENTS: {
+    LIST: "/patients",
+    GET: "/patients/:id",
+    CREATE: "/patients",
+    UPDATE: "/patients/:id",
+    DELETE: "/patients/:id",
+  },
+  APPOINTMENTS: {
+    LIST: "/appointments",
+    GET: "/appointments/:id",
+    CREATE: "/appointments",
+    UPDATE: "/appointments/:id",
+    DELETE: "/appointments/:id",
+  },
+  RESULTS: {
+    LIST: "/results",
+    GET: "/results/:id",
+    RELEASE: "/results/:id/release",
+  },
+} as const;
+
+// ============================================
+// EVENTOS E HOOKS
+// ============================================
+
+export const EVENTS = {
+  PATIENT_CREATED: "patient.created",
+  PATIENT_UPDATED: "patient.updated",
+  PATIENT_DELETED: "patient.deleted",
+  APPOINTMENT_CREATED: "appointment.created",
+  APPOINTMENT_UPDATED: "appointment.updated",
+  RESULT_RELEASED: "result.released",
+  PAYMENT_REGISTERED: "payment.registered",
+} as const;
+
+// ============================================
 // HELPERS
-// ============================================================================
+// ============================================
 
-/**
- * Type-safe object keys
- */
-export function getEnumKeys<T extends Record<string, string>>(
-  enumObj: T
-): (keyof T)[] {
-  return Object.keys(enumObj) as (keyof T)[];
+export function getPermissionLabel(permission: string): string {
+  const entries = Object.entries(PERMISSIONS);
+  const match = entries.find(([_, v]) => v === permission);
+  return match ? match[0].replace(/_/g, " ").toLowerCase() : permission;
 }
 
-/**
- * Type-safe object values
- */
-export function getEnumValues<T extends Record<string, string>>(
-  enumObj: T
-): T[keyof T][] {
-  return Object.values(enumObj) as T[keyof T][];
+export function getRoleLabel(role: string): string {
+  const entries = Object.entries(ROLES);
+  const match = entries.find(([_, v]) => v === role);
+  return match ? match[0].replace(/_/g, " ").toLowerCase() : role;
 }
 
-/**
- * Converter para label amigável
- */
-export function toLabel(value: string): string {
-  return value
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+export function getStatusLabel(status: string): string {
+  const allStatuses = { ...STATUSES, ...APPOINTMENT_STATUSES, ...RESULT_STATUSES };
+  const entries = Object.entries(allStatuses);
+  const match = entries.find(([_, v]) => v === status);
+  return match ? match[0].replace(/_/g, " ").toLowerCase() : status;
 }
