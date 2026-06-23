@@ -158,6 +158,26 @@ export default function SorotecaMateriais() {
         <meta name="description" content="Catálogo canônico de materiais laboratoriais da Soroteca." />
       </Helmet>
 
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Total", value: total, Icon: FlaskConical, tone: "text-foreground" },
+          { label: "Ativos", value: rows.filter((r) => r.ativo).length, Icon: CheckCircle2, tone: "text-emerald-600" },
+          { label: "Reutilizáveis", value: rows.filter((r) => r.reutilizavel).length, Icon: RotateCcw, tone: "text-blue-600" },
+          { label: "Inativos", value: rows.filter((r) => !r.ativo).length, Icon: PackageOpen, tone: "text-muted-foreground" },
+        ].map(({ label, value, Icon, tone }) => (
+          <div key={label} className="rounded-lg border bg-card px-4 py-3 flex items-center gap-3">
+            <div className={`h-9 w-9 rounded-md bg-muted flex items-center justify-center ${tone}`}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+              <div className="text-lg font-semibold leading-tight">{value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
