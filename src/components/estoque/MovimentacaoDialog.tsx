@@ -35,7 +35,7 @@ const TIPOS: {
   { value: "saida", label: "Saída", hint: "Reduz a quantidade do lote (consumo)", icon: ArrowDown, tone: "text-blue-600 bg-blue-500/10 border-blue-500/20" },
   { value: "entrada", label: "Entrada extra", hint: "Adiciona quantidade ao lote existente", icon: ArrowUp, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" },
   { value: "descarte", label: "Descarte", hint: "Remove material vencido/contaminado", icon: Trash2, tone: "text-red-600 bg-red-500/10 border-red-500/20" },
-  { value: "ajuste", label: "Ajuste", hint: "Diferença encontrada na contagem (positiva ou negativa)", icon: SlidersHorizontal, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
+  { value: "ajuste", label: "Definir saldo", hint: "Informe o saldo real após contagem; o sistema calcula a diferença e registra a movimentação.", icon: SlidersHorizontal, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
 ];
 
 export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insumoIdInicial, loteIdInicial, onSaved }: Props) {
@@ -64,16 +64,28 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
 
   async function handleSave() {
     if (!insumoId) return toast.error("Selecione o insumo");
-    if (!quantidade || Number(quantidade) === 0) return toast.error("Quantidade é obrigatória");
-    if (tipo !== "ajuste" && Number(quantidade) < 0) return toast.error("Quantidade deve ser positiva");
+
+    let qtdFinal = Number(quantidade);
+
+    if (tipo === "ajuste") {
+      if (!loteId || !loteSel) return toast.error("Selecione o lote para definir o saldo");
+      const saldoAtual = Number(loteSel.quantidade_atual);
+      const saldoCorreto = Number(quantidade);
+      if (Number.isNaN(saldoCorreto) || saldoCorreto < 0) return toast.error("Informe um saldo correto válido (≥ 0)");
+      qtdFinal = saldoCorreto - saldoAtual;
+      if (qtdFinal === 0) return toast.error("O saldo informado é igual ao saldo atual — nada a registrar");
+    } else {
+      if (!qtdFinal || qtdFinal === 0) return toast.error("Quantidade é obrigatória");
+      if (qtdFinal < 0) return toast.error("Quantidade deve ser positiva");
+    }
 
     setSaving(true);
     const res = await registrarMovimentacao({
       insumo_id: insumoId,
       lote_id: loteId || null,
       tipo,
-      quantidade: Number(quantidade),
-      motivo,
+      quantidade: qtdFinal,
+      motivo: tipo === "ajuste" && !motivo ? "Definir saldo (contagem física)" : motivo,
       observacao,
     });
     setSaving(false);
@@ -81,13 +93,13 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
       toast.error(res.error ?? "Erro ao registrar movimentação");
       return;
     }
-    toast.success("Movimentação registrada");
+    toast.success(tipo === "ajuste" ? "Saldo redefinido" : "Movimentação registrada");
     onSaved();
     onClose();
   }
 
   const tipoSel = TIPOS.find((t) => t.value === tipo);
-  const loteObrigatorio = tipo === "saida" || tipo === "descarte";
+  const loteObrigatorio = tipo === "saida" || tipo === "descarte" || tipo === "ajuste";
 
   return (
     <StandardDialog
@@ -192,14 +204,29 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Detalhes</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1 space-y-1.5">
-              <Label className="text-[12px] font-medium text-foreground">Quantidade <span className="text-destructive">*</span></Label>
+              <Label className="text-[12px] font-medium text-foreground">
+                {tipo === "ajuste" ? "Saldo correto" : "Quantidade"} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 type="number"
+                min="0"
                 step="0.001"
                 value={quantidade}
                 onChange={(e) => setQuantidade(Number(e.target.value))}
+                placeholder={tipo === "ajuste" ? "Saldo após contagem física" : ""}
               />
-              {tipo === "ajuste" && <p className="text-[11px] text-muted-foreground">Use valor negativo para reduzir.</p>}
+              {tipo === "ajuste" && loteSel && (
+                <p className="text-[11px] text-muted-foreground">
+                  Saldo atual: <span className="font-medium text-foreground tabular-nums">{loteSel.quantidade_atual}</span> → diferença{" "}
+                  <span className={cn("font-semibold tabular-nums", Number(quantidade) - Number(loteSel.quantidade_atual) < 0 ? "text-red-600" : "text-emerald-600")}>
+                    {Number(quantidade) - Number(loteSel.quantidade_atual) >= 0 ? "+" : ""}
+                    {(Number(quantidade) - Number(loteSel.quantidade_atual)).toLocaleString("pt-BR", { maximumFractionDigits: 3 })}
+                  </span>
+                </p>
+              )}
+              {tipo === "ajuste" && !loteSel && (
+                <p className="text-[11px] text-amber-600">Selecione um lote para definir o saldo.</p>
+              )}
             </div>
             <div className="col-span-2 sm:col-span-1 space-y-1.5">
               <Label className="text-[12px] font-medium text-foreground">Motivo</Label>
