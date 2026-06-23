@@ -47,6 +47,7 @@ import {
   type PosicaoGaleria,
   atualizarGaleria,
   atualizarLocal,
+  atualizarPosicao,
   criarGaleria,
   criarLocal,
   criarPosicao,
