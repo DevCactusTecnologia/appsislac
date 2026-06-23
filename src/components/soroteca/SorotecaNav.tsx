@@ -11,7 +11,6 @@ import {
   Layers,
   ScanLine,
   Boxes,
-  HandHelping,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +20,6 @@ const ITEMS: { to: string; label: string; icon: typeof FlaskConical; end?: boole
   { to: "/soroteca/estrutura", label: "Estrutura & Galerias", icon: Layers },
   { to: "/soroteca/triagem", label: "Triagem", icon: ScanLine },
   { to: "/soroteca/materiais", label: "Materiais", icon: Boxes },
-  { to: "/soroteca/emprestimos", label: "Empréstimos", icon: HandHelping },
   { to: "/soroteca/expurgo", label: "Expurgo", icon: Trash2 },
 ];
 

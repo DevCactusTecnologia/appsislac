@@ -119,20 +119,6 @@ export async function criarLocal(input: {
   }
 }
 
-export async function atualizarLocal(
-  id: string,
-  patch: Partial<Pick<LocalArmazenamento, "nome" | "tipo" | "temperatura_min" | "temperatura_max" | "observacao" | "ativo">>,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await persistOneOrThrow(
-      supabase.from("locais_armazenamento").update(patch).eq("id", id),
-      "soroteca.estrutura.atualizarLocal",
-    );
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
 
 export async function removerLocal(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("locais_armazenamento").delete().eq("id", id);
@@ -176,20 +162,6 @@ export async function criarGaleria(input: {
   }
 }
 
-export async function atualizarGaleria(
-  id: string,
-  patch: Partial<Pick<Galeria, "nome" | "ordem" | "ativo">>,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await persistOneOrThrow(
-      supabase.from("galerias").update(patch).eq("id", id),
-      "soroteca.estrutura.atualizarGaleria",
-    );
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
 
 export async function removerGaleria(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("galerias").delete().eq("id", id);
@@ -259,20 +231,6 @@ export async function criarPosicoesEmLote(input: {
   return { ok: true, total: rows.length };
 }
 
-export async function atualizarPosicao(
-  id: string,
-  patch: Partial<Pick<PosicaoGaleria, "codigo" | "ordem" | "ativo">>,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await persistOneOrThrow(
-      supabase.from("posicoes_galeria").update(patch).eq("id", id),
-      "soroteca.estrutura.atualizarPosicao",
-    );
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
 
 export async function removerPosicao(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("posicoes_galeria").delete().eq("id", id);

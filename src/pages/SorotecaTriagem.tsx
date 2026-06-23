@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useHidScanner } from "@/hooks/useHidScanner";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -95,7 +96,6 @@ export default function SorotecaTriagem() {
   const [trocaAberta, setTrocaAberta] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const hidBufferRef = useRef<{ value: string; lastAt: number }>({ value: "", lastAt: 0 });
 
   // Foco automático no input.
   useEffect(() => {
@@ -110,34 +110,8 @@ export default function SorotecaTriagem() {
     refreshPendentes();
   }, []);
 
-  // Captura HID global (mesmo padrão de /soroteca).
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      const editable = (e.target as HTMLElement | null)?.isContentEditable;
-      // Se já está no input principal, deixamos o input lidar.
-      if (tag === "input" || tag === "textarea" || tag === "select" || editable) return;
-      if (trocaAberta) return;
-      const now = Date.now();
-      const buf = hidBufferRef.current;
-      if (now - buf.lastAt > 50) buf.value = "";
-      buf.lastAt = now;
-      if (e.key === "Enter") {
-        const code = buf.value;
-        buf.value = "";
-        if (code.length >= 4) {
-          e.preventDefault();
-          void buscar(code);
-        }
-        return;
-      }
-      if (e.key.length === 1) {
-        buf.value += e.key;
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [trocaAberta]);
+  // Scanner HID unificado — hook compartilhado com /soroteca.
+  useHidScanner({ onScan: (code) => void buscar(code), disabled: trocaAberta });
 
   const limpar = () => {
     setCodigo("");

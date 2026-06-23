@@ -35,13 +35,8 @@ export interface Amostra {
 /** Validade padrão em horas (fallback quando exame não define). */
 const VALIDADE_PADRAO_HORAS = 24;
 
-/** Materiais que NÃO podem ser reutilizados (sempre exigem material fresco). */
-const MATERIAIS_NAO_REUTILIZAVEIS = new Set<string>([
-  "URINA",
-  "FEZES",
-  "ESCARRO",
-  "SECRECAO",
-]);
+// Reutilização é controlada pelo catálogo `materiais_amostra.reutilizavel`
+// (SSOT) e por validade. Nenhuma lista hardcoded.
 
 function calcValidade(horas: number = VALIDADE_PADRAO_HORAS, base: Date = new Date()): string {
   const d = new Date(base.getTime() + horas * 60 * 60 * 1000);
@@ -282,9 +277,15 @@ export async function buscarAmostrasReutilizaveis(params: {
   tipoMaterial?: string;
 }): Promise<Amostra[]> {
   if (!params.pacienteId || !params.exameId) return [];
-  // Bloqueio por material não-reutilizável
-  if (params.tipoMaterial && MATERIAIS_NAO_REUTILIZAVEIS.has(params.tipoMaterial.toUpperCase())) {
-    return [];
+
+  // Consulta o catálogo SSOT para saber se o material é reutilizável.
+  if (params.tipoMaterial && params.tipoMaterial.trim()) {
+    const { data: mat } = await supabase
+      .from("materiais_amostra")
+      .select("reutilizavel")
+      .ilike("nome", params.tipoMaterial.trim())
+      .maybeSingle();
+    if (mat && mat.reutilizavel === false) return [];
   }
 
   const nowIso = new Date().toISOString();
@@ -301,56 +302,9 @@ export async function buscarAmostrasReutilizaveis(params: {
     showError(error, { scope: "soroteca.buscarReutilizaveis", silent: true });
     return [];
   }
-  const candidatas = (data ?? []) as Amostra[];
-  if (candidatas.length === 0) return [];
-
-  // Fase 6: amostras em empréstimo ATIVO não podem ser reutilizadas.
-  const ids = candidatas.map((a) => a.id);
-  const { data: emprestadas } = await supabase
-    .from("amostra_emprestimos")
-    .select("amostra_id")
-    .in("amostra_id", ids)
-    .in("status", ["PENDENTE", "APROVADO", "RETIRADO"]);
-  const bloqueadas = new Set((emprestadas ?? []).map((e) => e.amostra_id as string));
-  return candidatas.filter((a) => !bloqueadas.has(a.id));
+  return (data ?? []) as Amostra[];
 }
 
-/**
- * Marca uma amostra como UTILIZADA e vincula ao novo exame de atendimento.
- * Usado quando o usuário escolhe reutilizar.
- */
-export async function reutilizarAmostra(params: {
-  amostraId: string;
-  atendimentoExameId: number;
-}): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await persistOneOrThrow(
-      supabase.from("amostras").update({ status: "UTILIZADA" }).eq("id", params.amostraId),
-      "soroteca.reutilizar.amostra",
-    );
-    try {
-      await persistOneOrThrow(
-        supabase
-          .from("atendimento_exames")
-          .update({
-            amostra_id: params.amostraId,
-            is_reutilizacao: true,
-            status: "coletado",
-            data_coleta: new Date().toISOString(),
-          })
-          .eq("id", params.atendimentoExameId),
-        "soroteca.reutilizar.vincular",
-      );
-    } catch (e) {
-      // Rollback do status da amostra
-      await supabase.from("amostras").update({ status: "DISPONIVEL" }).eq("id", params.amostraId);
-      return { ok: false, error: (e as Error).message };
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: (e as Error).message };
-  }
-}
 
 /** Lista todas amostras (para tela de gestão futura). */
 export async function listarAmostras(filtros?: {
