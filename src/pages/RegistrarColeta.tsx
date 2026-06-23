@@ -483,14 +483,14 @@ const RegistrarColeta = () => {
   // ─── Componentes locais ──────────────────────────────────────────
   const SummaryChip = ({ icon: Icon, label, value, tone }: { icon: typeof Clock; label: string; value: number; tone: "warning" | "success" }) => {
     const map = {
-      warning: "text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))]",
-      success: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success-bg))]",
+      warning: "text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning-bg))] ring-[hsl(var(--status-warning))]/15",
+      success: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success-bg))] ring-[hsl(var(--status-success))]/15",
     } as const;
     return (
-      <div className={`flex items-center gap-2 px-3 h-9 rounded-lg ${map[tone]}`}>
+      <div className={`flex items-center gap-2 px-3.5 h-9 rounded-full ring-1 ${map[tone]}`}>
         <Icon className="h-3.5 w-3.5" />
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-sm font-semibold tabular-nums">{value}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-sm font-bold tabular-nums">{value}</span>
       </div>
     );
   };
