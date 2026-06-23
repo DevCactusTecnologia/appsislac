@@ -579,6 +579,7 @@ export type Database = {
           is_reutilizacao: boolean
           lab_apoio_id: string | null
           material: string
+          material_id: string | null
           metodologia_snapshot: string | null
           motivo_cancelamento: string | null
           nome_exame: string
@@ -627,6 +628,7 @@ export type Database = {
           is_reutilizacao?: boolean
           lab_apoio_id?: string | null
           material?: string
+          material_id?: string | null
           metodologia_snapshot?: string | null
           motivo_cancelamento?: string | null
           nome_exame: string
@@ -675,6 +677,7 @@ export type Database = {
           is_reutilizacao?: boolean
           lab_apoio_id?: string | null
           material?: string
+          material_id?: string | null
           metodologia_snapshot?: string | null
           motivo_cancelamento?: string | null
           nome_exame?: string
@@ -749,6 +752,13 @@ export type Database = {
             columns: ["lab_apoio_id"]
             isOneToOne: false
             referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -2361,6 +2371,7 @@ export type Database = {
           integracao_ativa: boolean
           lab_apoio_id: string | null
           material: string
+          material_id: string | null
           mnemonico: string
           nome: string
           permite_envio_apoio: boolean
@@ -2409,6 +2420,7 @@ export type Database = {
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
+          material_id?: string | null
           mnemonico: string
           nome: string
           permite_envio_apoio?: boolean
@@ -2457,6 +2469,7 @@ export type Database = {
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
+          material_id?: string | null
           mnemonico?: string
           nome?: string
           permite_envio_apoio?: boolean
@@ -2487,6 +2500,13 @@ export type Database = {
             columns: ["lab_apoio_id"]
             isOneToOne: false
             referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exames_catalogo_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -8278,6 +8298,7 @@ export type Database = {
           is_reutilizacao: boolean
           lab_apoio_id: string | null
           material: string
+          material_id: string | null
           metodologia_snapshot: string | null
           motivo_cancelamento: string | null
           nome_exame: string

@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "./_tenant";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
+import { resolveMaterialNome } from "./materiaisAmostraStore";
+
 
 export interface ExameCatalogo {
   id: string;
@@ -14,7 +16,11 @@ export interface ExameCatalogo {
   codigo: string;
   codigoCBHPM: string;
   codigoTUSS: string;
+  /** UUID em `materiais_amostra` (SSOT). NULL para exames sem material físico. */
+  materialId: string | null;
+  /** Nome derivado para UI/etiqueta — resolvido em runtime a partir de `materialId`. */
   material: string;
+
   ativo: boolean;
   usadoEmAtendimento: boolean;
   // Terceirizados
@@ -74,10 +80,11 @@ const _fullInflight = new Map<string, Promise<ExameCatalogo | null>>();
 /** Colunas leves carregadas no boot. */
 const SLIM_COLUMNS =
   "id,mnemonico,nome,categoria,analise,codigo,codigo_cbhpm,codigo_tuss," +
-  "material,ativo,usado_em_atendimento,tipo_processo,lab_apoio_id," +
+  "material_id,ativo,usado_em_atendimento,tipo_processo,lab_apoio_id," +
   "integracao_ativa,setor_id,exibir_portal,porte_cbhpm,tuss_sem_equivalente,codigo_exame_apoio";
 
 function fromRow(r: any): ExameCatalogo {
+  const materialId = r.material_id ?? null;
   return {
     id: r.id,
     mnemonico: r.mnemonico ?? "",
@@ -87,7 +94,9 @@ function fromRow(r: any): ExameCatalogo {
     codigo: r.codigo ?? "",
     codigoCBHPM: r.codigo_cbhpm ?? "",
     codigoTUSS: r.codigo_tuss ?? "",
-    material: r.material ?? "",
+    materialId,
+    material: resolveMaterialNome(materialId),
+
     ativo: !!r.ativo,
     usadoEmAtendimento: !!r.usado_em_atendimento,
     tipoProcesso: (r.tipo_processo === "TERCEIRIZADO" ? "TERCEIRIZADO" : "INTERNO"),
@@ -136,7 +145,9 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.codigo !== undefined) row.codigo = e.codigo;
   if (e.codigoCBHPM !== undefined) row.codigo_cbhpm = e.codigoCBHPM;
   if (e.codigoTUSS !== undefined) row.codigo_tuss = e.codigoTUSS;
-  if (e.material !== undefined) row.material = e.material;
+  if (e.materialId !== undefined) row.material_id = e.materialId;
+  // `material` (texto derivado) é ignorado em writes — SSOT é `material_id`.
+
   if (e.ativo !== undefined) row.ativo = e.ativo;
   if (e.usadoEmAtendimento !== undefined) row.usado_em_atendimento = e.usadoEmAtendimento;
   if (e.tipoProcesso !== undefined) row.tipo_processo = e.tipoProcesso;
