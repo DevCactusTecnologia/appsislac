@@ -279,6 +279,44 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
           </button>
         </div>
 
+        {/* Configurações científicas — fonte de verdade RDC 786/2023 (Exames 2.2) */}
+        <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-3">
+          <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Configurações científicas
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Metodologia</label>
+              <input type="text" value={metodologia} onChange={(e) => setMetodologia(e.target.value)}
+                className={inputClass} placeholder="Ex.: Citometria de fluxo / impedância" />
+            </div>
+            <div>
+              <label className={labelClass}>Unidade padrão</label>
+              <input type="text" value={unidadePadrao} onChange={(e) => setUnidadePadrao(e.target.value)}
+                className={inputClass} placeholder="Ex.: mg/dL" />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Texto interpretativo padrão</label>
+            <textarea value={textoInterpretativo} onChange={(e) => setTextoInterpretativo(e.target.value)}
+              rows={2} className={`${inputClass} h-auto py-2 resize-none`}
+              placeholder="Interpretação clínica padrão exibida no laudo." />
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+            {[
+              { label: "Exibir metodologia no laudo", v: exibirMetodologia, set: setExibirMetodologia },
+              { label: "Exibir unidade no laudo", v: exibirUnidade, set: setExibirUnidade },
+              { label: "Exibir material no laudo", v: exibirMaterial, set: setExibirMaterial },
+            ].map((f) => (
+              <label key={f.label} className="flex items-center gap-2 text-[12px] text-foreground cursor-pointer">
+                <input type="checkbox" checked={f.v} onChange={(e) => f.set(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary" />
+                {f.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="flex items-center gap-1 border-b border-border/50">
           <button
