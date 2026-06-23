@@ -351,13 +351,18 @@ export default function SorotecaEstrutura() {
               {posicoes.map((p) => (
                 <div
                   key={p.id}
-                  className="group relative rounded-md border bg-background px-2 py-1.5 text-center text-xs"
+                  className="group relative rounded-md border bg-background px-2 py-1.5 text-center text-xs cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  onClick={() => setEditarPosicao(p)}
+                  title="Editar posição"
                 >
                   <span className="font-mono">{p.codigo}</span>
                   <button
                     type="button"
                     className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-                    onClick={() => setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo });
+                    }}
                   >
                     <Trash2 className="h-2.5 w-2.5" />
                   </button>
@@ -367,6 +372,7 @@ export default function SorotecaEstrutura() {
           )}
         </section>
       </div>
+
 
       {/* ----- dialogs ----- */}
       <NovoLocalDialog
