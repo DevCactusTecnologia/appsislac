@@ -29,6 +29,7 @@ import {
   RefreshCw,
   PackageCheck,
   ListChecks,
+  Sparkles,
 } from "lucide-react";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+interface SugestaoIA {
+  posicao_id: string;
+  posicao_codigo: string;
+  galeria_nome: string;
+  local_nome: string;
+  score: number;
+  motivo: string;
+}
+
 
 interface DadosBasicos {
   paciente_nome: string | null;
