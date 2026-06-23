@@ -690,6 +690,29 @@ export default function SorotecaEstrutura() {
         onSaved={() => refreshPosicoes(galeriaSel)}
       />
 
+      <ConfirmarMovimentacaoDialog
+        open={!!moverPayload}
+        onOpenChange={(o) => !o && setMoverPayload(null)}
+        amostra={moverPayload?.amostra ?? null}
+        origem={moverPayload ? { id: moverPayload.origem.id, codigo: moverPayload.origem.codigo } : { id: null, codigo: null }}
+        destino={moverPayload?.destino ?? { id: "", codigo: "" }}
+        onConfirmed={() => { setMoverPayload(null); refreshPosicoes(galeriaSel); }}
+      />
+      <HistoricoMovimentacoesDialog
+        open={historicoOpen}
+        onOpenChange={setHistoricoOpen}
+        galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
+        onChanged={() => refreshPosicoes(galeriaSel)}
+      />
+      <ReorganizarPreviewDialog
+        open={reorgOpen}
+        onOpenChange={setReorgOpen}
+        galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
+        onApplied={() => refreshPosicoes(galeriaSel)}
+      />
+
       <AlertDialog open={!!confirmar} onOpenChange={(open) => !open && setConfirmar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
