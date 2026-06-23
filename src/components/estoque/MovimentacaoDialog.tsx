@@ -204,14 +204,29 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Detalhes</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1 space-y-1.5">
-              <Label className="text-[12px] font-medium text-foreground">Quantidade <span className="text-destructive">*</span></Label>
+              <Label className="text-[12px] font-medium text-foreground">
+                {tipo === "ajuste" ? "Saldo correto" : "Quantidade"} <span className="text-destructive">*</span>
+              </Label>
               <Input
                 type="number"
+                min="0"
                 step="0.001"
                 value={quantidade}
                 onChange={(e) => setQuantidade(Number(e.target.value))}
+                placeholder={tipo === "ajuste" ? "Saldo após contagem física" : ""}
               />
-              {tipo === "ajuste" && <p className="text-[11px] text-muted-foreground">Use valor negativo para reduzir.</p>}
+              {tipo === "ajuste" && loteSel && (
+                <p className="text-[11px] text-muted-foreground">
+                  Saldo atual: <span className="font-medium text-foreground tabular-nums">{loteSel.quantidade_atual}</span> → diferença{" "}
+                  <span className={cn("font-semibold tabular-nums", Number(quantidade) - Number(loteSel.quantidade_atual) < 0 ? "text-red-600" : "text-emerald-600")}>
+                    {Number(quantidade) - Number(loteSel.quantidade_atual) >= 0 ? "+" : ""}
+                    {(Number(quantidade) - Number(loteSel.quantidade_atual)).toLocaleString("pt-BR", { maximumFractionDigits: 3 })}
+                  </span>
+                </p>
+              )}
+              {tipo === "ajuste" && !loteSel && (
+                <p className="text-[11px] text-amber-600">Selecione um lote para definir o saldo.</p>
+              )}
             </div>
             <div className="col-span-2 sm:col-span-1 space-y-1.5">
               <Label className="text-[12px] font-medium text-foreground">Motivo</Label>
