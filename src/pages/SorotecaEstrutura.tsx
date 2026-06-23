@@ -378,6 +378,17 @@ export default function SorotecaEstrutura() {
         onCreated={() => refreshPosicoes(galeriaSel)}
       />
 
+      <EditarLocalDialog
+        local={editarLocal}
+        onOpenChange={(o) => !o && setEditarLocal(null)}
+        onSaved={() => refreshLocais()}
+      />
+      <EditarGaleriaDialog
+        galeria={editarGaleria}
+        onOpenChange={(o) => !o && setEditarGaleria(null)}
+        onSaved={() => refreshGalerias(localSel)}
+      />
+
       <AlertDialog open={!!confirmar} onOpenChange={(open) => !open && setConfirmar(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
