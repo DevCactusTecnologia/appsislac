@@ -74,6 +74,17 @@ const Producao = () => {
 
   const conveniosNomes = useMemo(() => getConveniosAtivosNomes(), []);
 
+  // SSOT — materiais carregados de materiais_amostra (Soroteca 2.1).
+  const { data: materiaisCatalog } = useQuery({
+    queryKey: ["tenant", tenantId, "materiais_amostra", "ativos"],
+    queryFn: async () => (await listarMateriaisAmostra({ ativosOnly: true, pageSize: 100 })).rows,
+    staleTime: 5 * 60_000,
+  });
+  const MATERIAIS = useMemo(
+    () => (materiaisCatalog ?? []).map((m) => m.nome),
+    [materiaisCatalog],
+  );
+
   const iniIso = dataInicial.toISOString().slice(0, 10);
   const fimIso = dataFinal.toISOString().slice(0, 10);
 
