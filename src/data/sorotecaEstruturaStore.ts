@@ -723,8 +723,8 @@ export async function moverAmostra(input: {
     p_amostra: input.amostra_id,
     p_destino: input.destino_id,
     p_motivo: input.motivo ?? "manual",
-    p_lote: input.lote_id ?? null,
-    p_observacao: input.observacao ?? null,
+    p_lote: input.lote_id ?? undefined,
+    p_observacao: input.observacao ?? undefined,
   });
   if (error) {
     const m = error.message.match(/(posicao_ocupada|posicao_inativa|posicao_inexistente|posicao_igual_atual|tenant_nao_resolvido)/);
