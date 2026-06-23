@@ -29,6 +29,7 @@ import {
   RefreshCw,
   PackageCheck,
   ListChecks,
+  Sparkles,
 } from "lucide-react";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+interface SugestaoIA {
+  posicao_id: string;
+  posicao_codigo: string;
+  galeria_nome: string;
+  local_nome: string;
+  score: number;
+  motivo: string;
+}
+
 
 interface DadosBasicos {
   paciente_nome: string | null;
@@ -94,6 +106,11 @@ export default function SorotecaTriagem() {
   const [pendentes, setPendentes] = useState<number>(0);
   const [armazenando, setArmazenando] = useState(false);
   const [trocaAberta, setTrocaAberta] = useState(false);
+  const [sugIA, setSugIA] = useState<SugestaoIA | null>(null);
+  const [altsIA, setAltsIA] = useState<SugestaoIA[]>([]);
+  const [iaFonte, setIaFonte] = useState<"ia" | "fallback" | null>(null);
+  const [iaLoading, setIaLoading] = useState(false);
+
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -120,7 +137,21 @@ export default function SorotecaTriagem() {
     setPosicao(null);
     setJaArmazenada(null);
     setErro(null);
+    setSugIA(null);
+    setAltsIA([]);
+    setIaFonte(null);
     setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const aplicarSugestao = (s: SugestaoIA) => {
+    setPosicao({
+      posicao_id: s.posicao_id,
+      posicao_codigo: s.posicao_codigo,
+      galeria_id: "",
+      galeria_nome: s.galeria_nome,
+      local_id: "",
+      local_nome: s.local_nome,
+    });
   };
 
   const buscar = async (valor?: string) => {
@@ -131,6 +162,9 @@ export default function SorotecaTriagem() {
     setAmostra(null);
     setPosicao(null);
     setJaArmazenada(null);
+    setSugIA(null);
+    setAltsIA([]);
+    setIaFonte(null);
     setDados({ paciente_nome: null, setor: null });
 
     const a = await buscarAmostraPorCodigo(v);
@@ -143,7 +177,6 @@ export default function SorotecaTriagem() {
     setAmostra(a);
     setCodigo(a.codigo_barra);
 
-    // Dados auxiliares (paciente + setor do exame) — leves, 1 query cada.
     const [pacRes, exRes, alocAtiva] = await Promise.all([
       a.paciente_id
         ? supabase.from("pacientes").select("nome").eq("id", a.paciente_id).maybeSingle()
@@ -163,7 +196,6 @@ export default function SorotecaTriagem() {
       setor: (exRes.data as { setor_laboratorial?: string } | null)?.setor_laboratorial ?? null,
     });
 
-    // Já armazenada → bloqueia.
     if (alocAtiva) {
       const cam = await getPosicaoCaminho(alocAtiva.posicao_id);
       setJaArmazenada(cam);
@@ -172,17 +204,37 @@ export default function SorotecaTriagem() {
       return;
     }
 
-    // Sugestão automática de posição livre.
+    // 1) fallback determinístico imediato (sempre confiável)
     const livre = await proximaPosicaoLivre({});
-    if (!livre) {
+    if (livre) {
+      const cam = await getPosicaoCaminho(livre.id);
+      if (cam) setPosicao(cam);
+    } else {
       setErro("Nenhuma posição livre encontrada.");
-      setLoading(false);
-      return;
     }
-    const cam = await getPosicaoCaminho(livre.id);
-    setPosicao(cam);
     setLoading(false);
+
+    // 2) consulta IA em paralelo (não bloqueia o fluxo)
+    setIaLoading(true);
+    try {
+      const { data: iaData, error: iaErr } = await supabase.functions.invoke(
+        "soroteca-sugerir-posicao",
+        { body: { amostra_id: a.id } },
+      );
+      if (!iaErr && iaData?.sugestao) {
+        setSugIA(iaData.sugestao as SugestaoIA);
+        setAltsIA((iaData.alternativas as SugestaoIA[]) ?? []);
+        setIaFonte((iaData.fonte as "ia" | "fallback") ?? "ia");
+        // Adota automaticamente a sugestão da IA como posição padrão
+        if (iaData.fonte === "ia") aplicarSugestao(iaData.sugestao as SugestaoIA);
+      }
+    } catch (_e) {
+      // silencioso — fallback determinístico já está aplicado
+    } finally {
+      setIaLoading(false);
+    }
   };
+
 
   const handleArmazenar = async () => {
     if (!amostra || !posicao) return;
@@ -326,23 +378,94 @@ export default function SorotecaTriagem() {
         </section>
       )}
 
-      {/* Próxima Posição Livre */}
+      {/* Painel IA — sugestão inteligente de posição */}
+      {amostra && !jaArmazenada && (sugIA || iaLoading) && (
+        <section className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-4 space-y-3">
+          <header className="flex items-center justify-between gap-2 flex-wrap">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Sugestão IA
+              {iaFonte === "fallback" && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-normal uppercase tracking-wide">
+                  Determinístico
+                </span>
+              )}
+            </h2>
+            {sugIA && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">
+                score <strong className="text-foreground">{sugIA.score}</strong>/100
+              </span>
+            )}
+          </header>
+          {iaLoading && !sugIA && (
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analisando ocupação, temperatura e prazos…
+            </div>
+          )}
+          {sugIA && (
+            <>
+              <p className="text-sm">
+                <span className="text-muted-foreground">{sugIA.local_nome}</span>
+                <span className="mx-1 text-muted-foreground">›</span>
+                <span className="text-muted-foreground">{sugIA.galeria_nome}</span>
+                <span className="mx-1 text-muted-foreground">›</span>
+                <span className="font-mono font-semibold">{sugIA.posicao_codigo}</span>
+              </p>
+              <p className="text-xs text-muted-foreground italic">"{sugIA.motivo}"</p>
+              {altsIA.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground self-center mr-1">Alternativas:</span>
+                  {altsIA.map((a) => (
+                    <button
+                      key={a.posicao_id}
+                      type="button"
+                      onClick={() => aplicarSugestao(a)}
+                      className={cn(
+                        "text-[11px] px-2 py-1 rounded-md border bg-background hover:bg-muted transition-colors font-mono",
+                        posicao?.posicao_id === a.posicao_id && "border-primary/60 bg-primary/5",
+                      )}
+                      title={a.motivo}
+                    >
+                      {a.local_nome} › {a.galeria_nome} › {a.posicao_codigo}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* Posição escolhida + armazenamento */}
       {amostra && posicao && (
         <section className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
-          <header className="flex items-center justify-between">
+          <header className="flex items-center justify-between gap-2 flex-wrap">
             <h2 className="text-sm font-semibold flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
-              Próxima Posição Livre
+              Posição selecionada
             </h2>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setTrocaAberta(true)}
-              className="text-xs"
-            >
-              Trocar
-            </Button>
+            <div className="flex items-center gap-1">
+              {sugIA && posicao.posicao_id !== sugIA.posicao_id && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => aplicarSugestao(sugIA)}
+                  className="text-xs"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" /> Usar IA
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTrocaAberta(true)}
+                className="text-xs"
+              >
+                Trocar
+              </Button>
+            </div>
           </header>
           <p className="text-sm">
             <span className="text-muted-foreground">{posicao.local_nome}</span>
@@ -361,6 +484,8 @@ export default function SorotecaTriagem() {
           </Button>
         </section>
       )}
+
+
 
       <TrocaPosicaoDialog
         open={trocaAberta}

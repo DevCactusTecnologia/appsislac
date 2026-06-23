@@ -215,6 +215,183 @@ export async function removerGaleria(id: string): Promise<{ ok: boolean; error?:
 
 // ---------- posições ----------
 
+/** Visão enriquecida (posição + alocação ativa + paciente + protocolo + prazo de expurgo). */
+export type PosicaoStatus = "livre" | "ocupada" | "vencendo" | "vencida" | "inativa";
+
+export interface PosicaoEnriquecida {
+  posicao: PosicaoGaleria;
+  status: PosicaoStatus;
+  amostra?: {
+    id: string;
+    codigo_barra: string;
+    tipo_material: string;
+    data_coleta: string;
+    paciente_nome: string | null;
+    protocolo: string | null;
+    data_alocacao: string;
+    data_expurgo: string | null; // estimada (alocada_em + retencao_dias do material)
+    dias_para_expurgo: number | null;
+  };
+}
+
+export async function listarPosicoesComOcupacao(galeriaId: string): Promise<PosicaoEnriquecida[]> {
+  const posicoes = await listarPosicoes(galeriaId);
+  if (posicoes.length === 0) return [];
+  const ids = posicoes.map((p) => p.id);
+  const { data: alocs } = await supabase
+    .from("amostra_alocacoes")
+    .select(
+      "id, posicao_id, alocada_em, amostra_id, amostras!inner(id, codigo_barra, tipo_material, data_coleta, atendimento_id)",
+    )
+    .is("retirada_em", null)
+    .in("posicao_id", ids);
+
+  const alocList = (alocs ?? []) as Array<{
+    posicao_id: string;
+    alocada_em: string;
+    amostras: {
+      id: string;
+      codigo_barra: string;
+      tipo_material: string;
+      data_coleta: string;
+      atendimento_id: number | null;
+    };
+  }>;
+
+  // Materiais — retencao_dias por nome.
+  const materiais = Array.from(new Set(alocList.map((a) => a.amostras.tipo_material).filter(Boolean)));
+  const retencaoMap: Record<string, number | null> = {};
+  if (materiais.length > 0) {
+    const { data: mats } = await supabase
+      .from("materiais_amostra")
+      .select("nome, dias_retencao")
+      .in("nome", materiais);
+    for (const m of (mats ?? []) as Array<{ nome: string; dias_retencao: number | null }>) {
+      retencaoMap[m.nome] = m.dias_retencao;
+    }
+  }
+
+  // Atendimentos -> paciente_nome + protocolo.
+  const atendIds = Array.from(
+    new Set(alocList.map((a) => a.amostras.atendimento_id).filter((v): v is number => v != null)),
+  );
+  const atendMap: Record<number, { paciente_nome: string | null; protocolo: string | null }> = {};
+  if (atendIds.length > 0) {
+    const { data: atends } = await supabase
+      .from("atendimentos")
+      .select("id, protocolo, paciente_nome")
+      .in("id", atendIds);
+    for (const a of atends ?? []) {
+      const row = a as { id: number; protocolo: string | null; paciente_nome: string | null };
+      atendMap[row.id] = { paciente_nome: row.paciente_nome, protocolo: row.protocolo };
+    }
+  }
+
+  const byPos = new Map<string, (typeof alocList)[number]>();
+  for (const a of alocList) byPos.set(a.posicao_id, a);
+
+  const now = Date.now();
+  return posicoes.map((p) => {
+    if (!p.ativo) return { posicao: p, status: "inativa" as const };
+    const a = byPos.get(p.id);
+    if (!a) return { posicao: p, status: "livre" as const };
+    const at = a.amostras.atendimento_id != null ? atendMap[a.amostras.atendimento_id] : undefined;
+    const ret = retencaoMap[a.amostras.tipo_material] ?? null;
+    let dataExpurgo: string | null = null;
+    let dias: number | null = null;
+    let status: PosicaoStatus = "ocupada";
+    if (ret != null && ret > 0) {
+      const exp = new Date(a.alocada_em);
+      exp.setDate(exp.getDate() + ret);
+      dataExpurgo = exp.toISOString();
+      dias = Math.ceil((exp.getTime() - now) / (1000 * 60 * 60 * 24));
+      if (dias < 0) status = "vencida";
+      else if (dias <= 7) status = "vencendo";
+    }
+    return {
+      posicao: p,
+      status,
+      amostra: {
+        id: a.amostras.id,
+        codigo_barra: a.amostras.codigo_barra,
+        tipo_material: a.amostras.tipo_material,
+        data_coleta: a.amostras.data_coleta,
+        paciente_nome: at?.paciente_nome ?? null,
+        protocolo: at?.protocolo ?? null,
+        data_alocacao: a.alocada_em,
+        data_expurgo: dataExpurgo,
+        dias_para_expurgo: dias,
+      },
+    };
+  });
+}
+
+/** Ocupação por local (somatório de posições ativas vs. ocupadas). */
+export interface OcupacaoLocal {
+  local_id: string;
+  total: number;
+  ocupadas: number;
+  pct: number;
+}
+export async function ocupacaoPorLocal(): Promise<Record<string, OcupacaoLocal>> {
+  const { data: pos } = await supabase
+    .from("posicoes_galeria")
+    .select("id, galeria_id, ativo, galerias!inner(local_id)")
+    .eq("ativo", true);
+  type Row = { id: string; galerias: { local_id: string } };
+  const rows = (pos ?? []) as unknown as Row[];
+  if (rows.length === 0) return {};
+  const byLocal: Record<string, { total: number; ids: string[] }> = {};
+  for (const r of rows) {
+    const lid = r.galerias.local_id;
+    if (!byLocal[lid]) byLocal[lid] = { total: 0, ids: [] };
+    byLocal[lid].total++;
+    byLocal[lid].ids.push(r.id);
+  }
+  const allIds = rows.map((r) => r.id);
+  const { data: alocs } = await supabase
+    .from("amostra_alocacoes")
+    .select("posicao_id")
+    .is("retirada_em", null)
+    .in("posicao_id", allIds);
+  const ocupadas = new Set((alocs ?? []).map((a) => (a as { posicao_id: string }).posicao_id));
+  const out: Record<string, OcupacaoLocal> = {};
+  for (const [lid, v] of Object.entries(byLocal)) {
+    const oc = v.ids.filter((id) => ocupadas.has(id)).length;
+    out[lid] = { local_id: lid, total: v.total, ocupadas: oc, pct: v.total ? (oc / v.total) * 100 : 0 };
+  }
+  return out;
+}
+
+/** Criação em grid 2D (linhas A..Z × colunas 1..N). */
+export async function criarPosicoesGrid2D(input: {
+  galeria_id: string;
+  linhas: number; // 1..26
+  colunas: number; // 1..99
+}): Promise<{ ok: boolean; total: number; error?: string }> {
+  const tenant_id = await resolveTenantId();
+  if (!tenant_id) return { ok: false, total: 0, error: "no-tenant" };
+  if (input.linhas < 1 || input.linhas > 26 || input.colunas < 1 || input.colunas > 99) {
+    return { ok: false, total: 0, error: "dimensões inválidas" };
+  }
+  const rows = [];
+  for (let l = 0; l < input.linhas; l++) {
+    const letra = String.fromCharCode(65 + l);
+    for (let c = 1; c <= input.colunas; c++) {
+      rows.push({
+        tenant_id,
+        galeria_id: input.galeria_id,
+        codigo: `${letra}${c}`,
+        ordem: (l + 1) * 100 + c,
+      });
+    }
+  }
+  const { error } = await supabase.from("posicoes_galeria").insert(rows);
+  if (error) return { ok: false, total: 0, error: error.message };
+  return { ok: true, total: rows.length };
+}
+
+
 export async function listarPosicoes(galeriaId?: string): Promise<PosicaoGaleria[]> {
   let q = supabase.from("posicoes_galeria").select("*").order("ordem").order("codigo");
   if (galeriaId) q = q.eq("galeria_id", galeriaId);
