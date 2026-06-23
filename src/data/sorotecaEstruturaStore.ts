@@ -640,3 +640,183 @@ export async function contarPendentesArmazenamento(): Promise<number> {
   const alocadas = new Set((ativas ?? []).map((a) => a.amostra_id)).size;
   return Math.max(0, (totalDisp ?? 0) - alocadas);
 }
+
+// =================================================================
+// Movimentações entre posições + IA de reorganização
+// =================================================================
+
+export interface MovimentacaoRow {
+  id: string;
+  amostra_id: string;
+  posicao_origem_id: string | null;
+  posicao_destino_id: string;
+  caminho_origem: string | null;
+  caminho_destino: string | null;
+  motivo: string;
+  lote_id: string | null;
+  desfeita: boolean;
+  desfeita_em: string | null;
+  executada_por: string | null;
+  executada_por_nome?: string | null;
+  amostra_codigo?: string | null;
+  paciente_nome?: string | null;
+  created_at: string;
+}
+
+export type CompatibilidadeAviso =
+  | { ok: true }
+  | { ok: false; severidade: "bloqueio" | "aviso"; codigo: string; mensagem: string };
+
+export async function validarCompatibilidade(
+  amostraId: string,
+  destinoId: string,
+): Promise<CompatibilidadeAviso> {
+  const { data: am } = await supabase
+    .from("amostras")
+    .select("tipo_material")
+    .eq("id", amostraId)
+    .maybeSingle();
+  if (!am) return { ok: false, severidade: "bloqueio", codigo: "amostra_inexistente", mensagem: "Amostra não encontrada." };
+
+  const { data: pos } = await supabase
+    .from("posicoes_galeria")
+    .select("id, ativo, galerias!inner(local_id, locais_armazenamento!inner(nome, temperatura_min, temperatura_max))")
+    .eq("id", destinoId)
+    .maybeSingle();
+  if (!pos) return { ok: false, severidade: "bloqueio", codigo: "posicao_inexistente", mensagem: "Posição não encontrada." };
+  if (!pos.ativo) return { ok: false, severidade: "bloqueio", codigo: "posicao_inativa", mensagem: "Posição está inativa." };
+
+  const local = (pos as unknown as { galerias: { locais_armazenamento: { nome: string; temperatura_min: number | null; temperatura_max: number | null } } }).galerias.locais_armazenamento;
+  const { data: mat } = await supabase
+    .from("materiais_amostra")
+    .select("temperatura_recomendada")
+    .eq("nome", am.tipo_material)
+    .maybeSingle();
+  const rec = (mat?.temperatura_recomendada || "").toLowerCase();
+  if (!rec || local.temperatura_min == null || local.temperatura_max == null) return { ok: true };
+
+  let faixaOk = true;
+  if (rec.includes("ambiente")) faixaOk = local.temperatura_max >= 15 && local.temperatura_min <= 30;
+  else if (rec.includes("refriger") || rec.includes("2-8") || rec.includes("2 a 8")) faixaOk = local.temperatura_min >= 2 && local.temperatura_max <= 10;
+  else if (rec.includes("-20") || rec.includes("congel")) faixaOk = local.temperatura_max <= -15;
+  else if (rec.includes("-80") || rec.includes("ultra")) faixaOk = local.temperatura_max <= -70;
+
+  if (!faixaOk) {
+    return {
+      ok: false,
+      severidade: "aviso",
+      codigo: "temperatura_incompativel",
+      mensagem: `Temperatura recomendada (${mat?.temperatura_recomendada}) não bate com o local "${local.nome}" (${local.temperatura_min}°C a ${local.temperatura_max}°C).`,
+    };
+  }
+  return { ok: true };
+}
+
+export async function moverAmostra(input: {
+  amostra_id: string;
+  destino_id: string;
+  motivo?: string;
+  lote_id?: string;
+  observacao?: string;
+}): Promise<{ ok: true; mov_id: string } | { ok: false; error: string; codigo?: string }> {
+  const { data, error } = await supabase.rpc("mover_amostra", {
+    p_amostra: input.amostra_id,
+    p_destino: input.destino_id,
+    p_motivo: input.motivo ?? "manual",
+    p_lote: input.lote_id ?? undefined,
+    p_observacao: input.observacao ?? undefined,
+  });
+  if (error) {
+    const m = error.message.match(/(posicao_ocupada|posicao_inativa|posicao_inexistente|posicao_igual_atual|tenant_nao_resolvido)/);
+    return { ok: false, error: error.message, codigo: m?.[0] };
+  }
+  return { ok: true, mov_id: data as string };
+}
+
+export async function desfazerMovimentacao(movId: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc("desfazer_movimentacao", { p_mov: movId });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function listarMovimentacoes(filtro: {
+  galeria_id?: string;
+  amostra_id?: string;
+  limite?: number;
+}): Promise<MovimentacaoRow[]> {
+  let q = supabase
+    .from("amostra_movimentacoes")
+    .select("id, amostra_id, posicao_origem_id, posicao_destino_id, caminho_origem, caminho_destino, motivo, lote_id, desfeita, desfeita_em, executada_por, created_at")
+    .order("created_at", { ascending: false })
+    .limit(filtro.limite ?? 100);
+  if (filtro.amostra_id) q = q.eq("amostra_id", filtro.amostra_id);
+  const { data, error } = await q;
+  if (error || !data) return [];
+  let rows = data as MovimentacaoRow[];
+
+  if (filtro.galeria_id) {
+    const { data: posIds } = await supabase
+      .from("posicoes_galeria")
+      .select("id")
+      .eq("galeria_id", filtro.galeria_id);
+    const set = new Set((posIds ?? []).map((p) => p.id as string));
+    rows = rows.filter((r) => set.has(r.posicao_destino_id) || (r.posicao_origem_id != null && set.has(r.posicao_origem_id)));
+  }
+
+  const userIds = Array.from(new Set(rows.map((r) => r.executada_por).filter((v): v is string => !!v)));
+  const amostraIds = Array.from(new Set(rows.map((r) => r.amostra_id)));
+  const [profs, ams] = await Promise.all([
+    userIds.length
+      ? supabase.from("profiles").select("user_id, nome, email").in("user_id", userIds)
+      : Promise.resolve({ data: [] as Array<{ user_id: string; nome: string | null; email: string | null }> }),
+    amostraIds.length
+      ? supabase.from("amostras").select("id, codigo_barra, atendimento_id").in("id", amostraIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; codigo_barra: string; atendimento_id: number | null }> }),
+  ]);
+  const profRows = ((profs.data ?? []) as unknown as Array<{ user_id: string; nome: string | null; email: string | null }>);
+  const profMap = new Map(profRows.map((p) => [p.user_id, p.nome || p.email] as [string, string | null]));
+  const amMap = new Map((ams.data ?? []).map((a) => [a.id, a]));
+  const atendIds = Array.from(new Set((ams.data ?? []).map((a) => a.atendimento_id).filter((v): v is number => v != null)));
+  let pacMap = new Map<number, string | null>();
+  if (atendIds.length) {
+    const { data: ats } = await supabase
+      .from("atendimentos")
+      .select("id, paciente_nome")
+      .in("id", atendIds);
+    pacMap = new Map((ats ?? []).map((a) => [a.id as number, (a as { paciente_nome: string | null }).paciente_nome]));
+  }
+  return rows.map((r) => {
+    const am = amMap.get(r.amostra_id);
+    return {
+      ...r,
+      executada_por_nome: r.executada_por ? profMap.get(r.executada_por) ?? null : null,
+      amostra_codigo: am?.codigo_barra ?? null,
+      paciente_nome: am?.atendimento_id != null ? pacMap.get(am.atendimento_id) ?? null : null,
+    };
+  });
+}
+
+export interface PlanoReorganizacao {
+  movimentacoes: Array<{
+    amostra_id: string;
+    amostra_codigo: string;
+    paciente_nome: string | null;
+    posicao_origem_id: string;
+    posicao_origem_codigo: string;
+    posicao_destino_id: string;
+    posicao_destino_codigo: string;
+    motivo: string;
+  }>;
+  resumo: string;
+  ganho_estimado: string;
+  fonte: "ia" | "fallback";
+}
+
+export async function sugerirReorganizacaoGaleria(galeriaId: string): Promise<{ ok: true; plano: PlanoReorganizacao } | { ok: false; error: string }> {
+  const { data, error } = await supabase.functions.invoke("soroteca-reorganizar-galeria", {
+    body: { galeria_id: galeriaId },
+  });
+  if (error) return { ok: false, error: error.message };
+  if ((data as { error?: string })?.error) return { ok: false, error: (data as { error: string }).error };
+  return { ok: true, plano: data as PlanoReorganizacao };
+}

@@ -6,7 +6,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash, Grid3x3, ChevronRight, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash, Grid3x3, ChevronRight, ArrowLeft, History, Sparkles } from "lucide-react";
+import { ConfirmarMovimentacaoDialog, HistoricoMovimentacoesDialog, ReorganizarPreviewDialog } from "@/components/soroteca/MovimentacaoDialogs";
 import {
   SorotecaDialogHeader,
   SorotecaDialogBody,
@@ -100,6 +101,18 @@ export default function SorotecaEstrutura() {
   const [editarGaleria, setEditarGaleria] = useState<Galeria | null>(null);
   const [editarPosicao, setEditarPosicao] = useState<PosicaoGaleria | null>(null);
   const [confirmar, setConfirmar] = useState<{ tipo: "local" | "galeria" | "posicao"; id: string; nome: string } | null>(null);
+
+  // Drag & drop + movimentação
+  const [draggingPos, setDraggingPos] = useState<string | null>(null);
+  const [overPos, setOverPos] = useState<string | null>(null);
+  const [moverPayload, setMoverPayload] = useState<{
+    amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; tipo_material?: string };
+    origem: { id: string; codigo: string };
+    destino: { id: string; codigo: string };
+  } | null>(null);
+  const [historicoOpen, setHistoricoOpen] = useState(false);
+  const [reorgOpen, setReorgOpen] = useState(false);
+
 
   // ---------- carregamento ----------
   async function refreshLocais() {
@@ -477,15 +490,37 @@ export default function SorotecaEstrutura() {
                 )}
               </div>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setNovaPosicaoOpen(true)}
-              disabled={!galeriaSel}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setHistoricoOpen(true)}
+                disabled={!galeriaSel}
+                title="Histórico de movimentações"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setReorgOpen(true)}
+                disabled={!galeriaSel || resumoGaleria.ocupadas < 2}
+                title="Reorganizar com IA"
+                className="text-primary"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setNovaPosicaoOpen(true)}
+                disabled={!galeriaSel}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </header>
+
           {!galeriaSel ? (
             <div className="px-3 py-8 text-center text-muted-foreground text-sm">
               Selecione uma galeria.
@@ -500,6 +535,9 @@ export default function SorotecaEstrutura() {
                 <TooltipProvider delayDuration={150}>
                   {posicoes.map((pe) => {
                     const p = pe.posicao;
+                    const isDragging = draggingPos === p.id;
+                    const isOver = overPos === p.id;
+                    const canDrop = pe.status === "livre" && draggingPos != null && draggingPos !== p.id;
                     const tone =
                       pe.status === "livre" ? "border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700"
                       : pe.status === "ocupada" ? "border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary"
@@ -511,9 +549,46 @@ export default function SorotecaEstrutura() {
                         <TooltipTrigger asChild>
                           <button
                             type="button"
+                            draggable={!!pe.amostra}
+                            onDragStart={(e) => {
+                              if (!pe.amostra) return;
+                              setDraggingPos(p.id);
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", pe.amostra.id);
+                            }}
+                            onDragEnd={() => { setDraggingPos(null); setOverPos(null); }}
+                            onDragOver={(e) => {
+                              if (pe.status !== "livre" || !draggingPos || draggingPos === p.id) return;
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                              if (overPos !== p.id) setOverPos(p.id);
+                            }}
+                            onDragLeave={() => { if (overPos === p.id) setOverPos(null); }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (pe.status !== "livre" || !draggingPos) return;
+                              const origemPos = posicoes.find((x) => x.posicao.id === draggingPos);
+                              if (!origemPos?.amostra) return;
+                              setMoverPayload({
+                                amostra: {
+                                  id: origemPos.amostra.id,
+                                  codigo_barra: origemPos.amostra.codigo_barra,
+                                  paciente_nome: origemPos.amostra.paciente_nome,
+                                  tipo_material: origemPos.amostra.tipo_material,
+                                },
+                                origem: { id: origemPos.posicao.id, codigo: origemPos.posicao.codigo },
+                                destino: { id: p.id, codigo: p.codigo },
+                              });
+                              setDraggingPos(null);
+                              setOverPos(null);
+                            }}
                             className={cn(
-                              "group relative rounded-md border px-1.5 py-2 text-center text-[11px] font-mono cursor-pointer transition-colors min-h-[44px]",
+                              "group relative rounded-md border px-1.5 py-2 text-center text-[11px] font-mono cursor-pointer transition-all min-h-[44px]",
                               tone,
+                              pe.amostra && "cursor-grab active:cursor-grabbing",
+                              isDragging && "opacity-40 scale-95",
+                              canDrop && "ring-2 ring-primary/40",
+                              isOver && canDrop && "ring-2 ring-primary scale-105 bg-primary/15",
                             )}
                             onClick={() => setEditarPosicao(p)}
                           >
@@ -533,7 +608,7 @@ export default function SorotecaEstrutura() {
                         </TooltipTrigger>
                         <TooltipContent side="top" className="text-xs max-w-[260px]">
                           <div className="font-semibold">{p.codigo}</div>
-                          {pe.status === "livre" && <div className="text-muted-foreground">Livre</div>}
+                          {pe.status === "livre" && <div className="text-muted-foreground">Livre {draggingPos && draggingPos !== p.id ? "— solte aqui" : ""}</div>}
                           {pe.status === "inativa" && <div className="text-muted-foreground">Inativa</div>}
                           {pe.amostra && (
                             <div className="space-y-0.5 mt-0.5">
@@ -552,12 +627,14 @@ export default function SorotecaEstrutura() {
                                   )}
                                 </div>
                               )}
+                              <div className="text-[10px] text-muted-foreground italic mt-1">Arraste para mover</div>
                             </div>
                           )}
                         </TooltipContent>
                       </Tooltip>
                     );
                   })}
+
                 </TooltipProvider>
               </div>
               {/* Legenda */}
@@ -611,6 +688,29 @@ export default function SorotecaEstrutura() {
         posicao={editarPosicao}
         onOpenChange={(o) => !o && setEditarPosicao(null)}
         onSaved={() => refreshPosicoes(galeriaSel)}
+      />
+
+      <ConfirmarMovimentacaoDialog
+        open={!!moverPayload}
+        onOpenChange={(o) => !o && setMoverPayload(null)}
+        amostra={moverPayload?.amostra ?? null}
+        origem={moverPayload ? { id: moverPayload.origem.id, codigo: moverPayload.origem.codigo } : { id: null, codigo: null }}
+        destino={moverPayload?.destino ?? { id: "", codigo: "" }}
+        onConfirmed={() => { setMoverPayload(null); refreshPosicoes(galeriaSel); }}
+      />
+      <HistoricoMovimentacoesDialog
+        open={historicoOpen}
+        onOpenChange={setHistoricoOpen}
+        galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
+        onChanged={() => refreshPosicoes(galeriaSel)}
+      />
+      <ReorganizarPreviewDialog
+        open={reorgOpen}
+        onOpenChange={setReorgOpen}
+        galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
+        onApplied={() => refreshPosicoes(galeriaSel)}
       />
 
       <AlertDialog open={!!confirmar} onOpenChange={(open) => !open && setConfirmar(null)}>
