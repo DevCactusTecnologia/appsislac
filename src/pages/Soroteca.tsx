@@ -411,8 +411,9 @@ export default function Soroteca() {
   const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
   const carregando = advancadoAtivo ? advLoading : loading;
 
-  // Enriquece amostras visíveis com nome do paciente + protocolo do atendimento.
-  // amostras.paciente_id costuma ser NULL — resolvemos via atendimentos.paciente_id.
+  // Enriquece amostras visíveis com nome do paciente, protocolo e status do exame.
+  // Usa campos denormalizados em atendimentos (paciente_nome/paciente_cpf/protocolo)
+  // e consulta atendimento_exames para flags Processada/Liberada.
   useEffect(() => {
     const atIds = Array.from(
       new Set(
@@ -421,45 +422,46 @@ export default function Soroteca() {
           .filter((id): id is number => typeof id === "number" && !infoMap[`a:${id}`]),
       ),
     );
-    const pacDiretos = Array.from(
+    const exIds = Array.from(
       new Set(
         visiveis
-          .map((a) => a.paciente_id)
-          .filter((id): id is number => typeof id === "number" && !infoMap[`p:${id}`]),
+          .map((a) => (a as { atendimento_exame_id?: number | null }).atendimento_exame_id)
+          .filter((id): id is number => typeof id === "number" && !infoMap[`e:${id}`]),
       ),
     );
-    if (atIds.length === 0 && pacDiretos.length === 0) return;
+    if (atIds.length === 0 && exIds.length === 0) return;
     let cancelado = false;
     (async () => {
       const updates: Record<string, AmostraInfo> = {};
-      const pacIds = new Set<number>(pacDiretos);
 
       if (atIds.length > 0) {
         const { data } = await supabase
           .from("atendimentos")
-          .select("id,protocolo,paciente_id")
+          .select("id,protocolo,paciente_nome,paciente_cpf")
           .in("id", atIds);
         (data ?? []).forEach((a) => {
-          updates[`a:${a.id}`] = { protocolo: a.protocolo };
-          if (typeof a.paciente_id === "number" && !infoMap[`p:${a.paciente_id}`]) {
-            pacIds.add(a.paciente_id);
-          }
-          // Liga atendimento → paciente p/ render.
-          updates[`ap:${a.id}`] = { paciente: String(a.paciente_id ?? "") };
+          const cpf = (a.paciente_cpf || "").replace(/\D/g, "");
+          const cpfFmt = cpf.length === 11
+            ? `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`
+            : a.paciente_cpf || "";
+          updates[`a:${a.id}`] = {
+            paciente: a.paciente_nome ?? undefined,
+            cpf: cpfFmt || undefined,
+            protocolo: a.protocolo,
+          };
         });
       }
 
-      if (pacIds.size > 0) {
+      if (exIds.length > 0) {
         const { data } = await supabase
-          .from("pacientes")
-          .select("id,nome,cpf")
-          .in("id", Array.from(pacIds));
-        (data ?? []).forEach((p) => {
-          const cpf = (p.cpf || "").replace(/\D/g, "");
-          const cpfFmt = cpf.length === 11
-            ? `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`
-            : p.cpf || "";
-          updates[`p:${p.id}`] = { paciente: p.nome, cpf: cpfFmt };
+          .from("atendimento_exames")
+          .select("id,data_analise,data_liberacao")
+          .in("id", exIds);
+        (data ?? []).forEach((e) => {
+          updates[`e:${e.id}`] = {
+            processada: !!e.data_analise,
+            liberada: !!e.data_liberacao,
+          };
         });
       }
 
@@ -471,6 +473,7 @@ export default function Soroteca() {
       cancelado = true;
     };
   }, [visiveis, infoMap]);
+
 
   const counts = useMemo(() => {
     const c: Record<AmostraStatus, number> = {
