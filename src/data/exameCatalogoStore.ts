@@ -167,9 +167,6 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.providerIntegracao !== undefined) row.provider_integracao = e.providerIntegracao;
   if (e.codigoExameApoio !== undefined) row.codigo_exame_apoio = e.codigoExameApoio;
   if (e.permiteEnvioApoio !== undefined) row.permite_envio_apoio = e.permiteEnvioApoio;
-  if (e.exibirMetodologiaLaudo !== undefined) row.exibir_metodologia_laudo = e.exibirMetodologiaLaudo;
-  if (e.exibirUnidadeLaudo !== undefined) row.exibir_unidade_laudo = e.exibirUnidadeLaudo;
-  if (e.exibirMaterialLaudo !== undefined) row.exibir_material_laudo = e.exibirMaterialLaudo;
   if (e.tags !== undefined) row.tags = Array.isArray(e.tags) ? e.tags : [];
   if (e.codigoInterfaceamento !== undefined) row.codigo_interfaceamento = e.codigoInterfaceamento || null;
   if (e.codigoHL7 !== undefined) row.codigo_hl7 = e.codigoHL7 || null;
