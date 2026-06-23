@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, User, Building2, Stethoscope, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, Percent, Banknote, QrCode, MessageCircle, Printer } from "lucide-react";
+import { X, User, Building2, FlaskConical, CreditCard, FileText, Receipt, ClipboardCheck, MapPin, Clock, Droplet, Microscope, CheckCircle2, XCircle, MessageCircle, Printer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
@@ -232,9 +232,23 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               )}
             </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200 shrink-0">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              title={
+                atendimento.statusAtendimento.label +
+                (atendimento.motivoCancelamento ? ` — ${atendimento.motivoCancelamento}` : "")
+              }
+              aria-label={`Status: ${atendimento.statusAtendimento.label}`}
+              className="h-2.5 w-2.5 rounded-full ring-2"
+              style={{
+                backgroundColor: `hsl(var(--status-${atendimento.statusAtendimento.type}))`,
+                boxShadow: `0 0 0 3px hsl(var(--status-${atendimento.statusAtendimento.type}) / 0.18)`,
+              }}
+            />
+            <button onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Single scrollable area covering everything.
@@ -368,24 +382,26 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 const row = exameRowMap[exame.nome];
                 const isTerc = row?.tipo_processo === "TERCEIRIZADO";
                 return (
-                  <div key={i} className="flex items-center justify-between px-4 py-3 gap-3">
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium text-foreground truncate">{exame.nome}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {meta && Icon && (
+                          <span
+                            title={meta.label}
+                            aria-label={meta.label}
+                            className={`inline-flex items-center justify-center shrink-0 ${meta.tone}`}
+                          >
+                            <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </span>
+                        )}
+                        <p className="text-[13px] font-medium text-foreground truncate">{exame.nome}</p>
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-[10px] text-muted-foreground">{exame.material}</p>
                         {isConvenio && (
                           <>
                             <span className="text-[10px] text-muted-foreground/40">·</span>
                             <span className="text-[10px] font-medium text-status-info">Cobrado do convênio</span>
-                          </>
-                        )}
-                        {meta && Icon && (
-                          <>
-                            <span className="text-[10px] text-muted-foreground/40">·</span>
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${meta.tone}`}>
-                              <Icon className="h-2.5 w-2.5" strokeWidth={2.5} />
-                              {meta.label}
-                            </span>
                           </>
                         )}
                       </div>
@@ -434,39 +450,26 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
               </div>
 
               {((atendimento.pagamentosRealizados && atendimento.pagamentosRealizados.length > 0) || descontoPaciente > 0) && (
-                <div className="space-y-1.5">
+                <div className="space-y-0.5">
                   <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pagamentos realizados</span>
                   {descontoPaciente > 0 && (
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(var(--status-success) / 0.10)" }}>
-                          <Percent className="h-3.5 w-3.5" style={{ color: "hsl(var(--status-success))" }} />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-[12px] font-medium text-foreground block leading-tight">Desconto</span>
-                          <p className="text-[10px] text-muted-foreground leading-tight truncate">{atendimento.data}</p>
-                        </div>
+                    <div className="flex items-center justify-between gap-3 py-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[12px] font-medium text-foreground">Desconto</span>
+                        <span className="text-[11px] text-muted-foreground">· {atendimento.data}</span>
                       </div>
-                      <span className="text-[13px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
+                      <span className="text-[12px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>− R$ {fmtBRLNumber(descontoPaciente)}</span>
                     </div>
                   )}
-                  {atendimento.pagamentosRealizados?.map((p, i) => {
-                    const Icon = p.tipo === "Dinheiro" ? Banknote : p.tipo === "PIX" ? QrCode : CreditCard;
-                    return (
-                      <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(var(--status-success) / 0.10)" }}>
-                            <Icon className="h-3.5 w-3.5" style={{ color: "hsl(var(--status-success))" }} />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="text-[12px] font-medium text-foreground block leading-tight">{p.tipo}</span>
-                            <p className="text-[10px] text-muted-foreground leading-tight truncate">{p.data}</p>
-                          </div>
-                        </div>
-                        <span className="text-[13px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>R$ {fmtBRLNumber(p.valor)}</span>
+                  {atendimento.pagamentosRealizados?.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3 py-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[12px] font-medium text-foreground">{p.tipo}</span>
+                        <span className="text-[11px] text-muted-foreground">· {p.data}</span>
                       </div>
-                    );
-                  })}
+                      <span className="text-[12px] font-semibold tabular-nums whitespace-nowrap" style={{ color: "hsl(var(--status-success))" }}>R$ {fmtBRLNumber(p.valor)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -505,19 +508,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
             </div>
           </section>
 
-          {/* Status */}
-          <section>
-            <div className="flex items-center gap-2 mb-2">
-              <Stethoscope className="h-4 w-4 text-primary" />
-              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status do Atendimento</h3>
-            </div>
-            <div className="rounded-2xl bg-card border border-border p-4">
-              <StatusBadge label={atendimento.statusAtendimento.label} type={atendimento.statusAtendimento.type} showIcon={atendimento.statusAtendimento.showIcon} tooltip={atendimento.motivoCancelamento} />
-              {atendimento.motivoCancelamento && (
-                <p className="text-[11px] mt-2" style={{ color: "hsl(var(--status-danger))" }}>Motivo: {atendimento.motivoCancelamento}</p>
-              )}
-            </div>
-          </section>
+
+
 
           {/* WhatsApp — histórico de comunicação (Fase 3F.2) */}
           <section>
