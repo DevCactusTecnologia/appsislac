@@ -28,7 +28,7 @@ import {
   type UsuarioIntegridade,
 } from "@/data/usuariosStore";
 import { useAuth } from "@/contexts/AuthContext";
-import AssinaturaSection from "@/components/usuarios/AssinaturaSection";
+// AssinaturaSection movido para /perfil em Equipe 2.1 Fase 2.7
 
 const perfilLabels: Record<Perfil, string> = {
   admin: "Administrador",
