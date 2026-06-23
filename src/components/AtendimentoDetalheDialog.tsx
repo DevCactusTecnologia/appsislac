@@ -508,19 +508,8 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
             </div>
           </section>
 
-          {/* Status */}
-          <section>
-            <div className="flex items-center gap-2 mb-2">
-              <Stethoscope className="h-4 w-4 text-primary" />
-              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status do Atendimento</h3>
-            </div>
-            <div className="rounded-2xl bg-card border border-border p-4">
-              <StatusBadge label={atendimento.statusAtendimento.label} type={atendimento.statusAtendimento.type} showIcon={atendimento.statusAtendimento.showIcon} tooltip={atendimento.motivoCancelamento} />
-              {atendimento.motivoCancelamento && (
-                <p className="text-[11px] mt-2" style={{ color: "hsl(var(--status-danger))" }}>Motivo: {atendimento.motivoCancelamento}</p>
-              )}
-            </div>
-          </section>
+
+
 
           {/* WhatsApp — histórico de comunicação (Fase 3F.2) */}
           <section>
