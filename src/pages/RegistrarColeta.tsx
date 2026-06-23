@@ -531,16 +531,16 @@ const RegistrarColeta = () => {
         <section className="grid grid-cols-1 xl:grid-cols-[340px_1fr] 2xl:grid-cols-[380px_1fr] gap-5 items-start">
           {/* Sidebar de pacientes — altura natural exibindo todos os pacientes.
               Sem scroll interno; o scroll é o da página. */}
-          <aside className={`bg-card rounded-xl border border-border flex-col overflow-hidden self-start ${selectedId ? "hidden xl:flex" : "flex"}`}>
-            <div className="p-4 border-b border-border">
+          <aside className={`bg-card rounded-2xl border border-border/60 shadow-elevation-xs flex-col self-start overflow-hidden ${selectedId ? "hidden xl:flex" : "flex"}`}>
+            <div className="p-4 border-b border-border/60 bg-gradient-to-br from-primary/5 via-card to-transparent">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar paciente…"
-                  className="pl-10 pr-4 h-10 w-full bg-muted/50 border border-transparent rounded-lg text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:bg-background focus:border-border transition-all"
+                  className="pl-10 pr-4 h-10 w-full bg-card border border-border/60 rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
                 />
               </div>
               <div className="flex items-center justify-between mt-3 px-1">
