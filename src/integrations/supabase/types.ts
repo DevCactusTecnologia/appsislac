@@ -2094,10 +2094,16 @@ export type Database = {
           created_at: string
           criado_por: string
           exame_id: string
+          exibir_material_laudo: boolean
+          exibir_metodologia_laudo: boolean
+          exibir_unidade_laudo: boolean
           id: number
+          metodologia: string
           nome: string
           padrao: boolean
           tenant_id: string
+          texto_interpretativo_padrao: string
+          unidade_padrao: string
           updated_at: string
         }
         Insert: {
@@ -2106,10 +2112,16 @@ export type Database = {
           created_at?: string
           criado_por?: string
           exame_id: string
+          exibir_material_laudo?: boolean
+          exibir_metodologia_laudo?: boolean
+          exibir_unidade_laudo?: boolean
           id?: number
+          metodologia?: string
           nome: string
           padrao?: boolean
           tenant_id: string
+          texto_interpretativo_padrao?: string
+          unidade_padrao?: string
           updated_at?: string
         }
         Update: {
@@ -2118,10 +2130,16 @@ export type Database = {
           created_at?: string
           criado_por?: string
           exame_id?: string
+          exibir_material_laudo?: boolean
+          exibir_metodologia_laudo?: boolean
+          exibir_unidade_laudo?: boolean
           id?: number
+          metodologia?: string
           nome?: string
           padrao?: boolean
           tenant_id?: string
+          texto_interpretativo_padrao?: string
+          unidade_padrao?: string
           updated_at?: string
         }
         Relationships: [
@@ -2335,10 +2353,7 @@ export type Database = {
           cor_tampa: string
           created_at: string
           estabilidade: string
-          exibir_material_laudo: boolean
-          exibir_metodologia_laudo: boolean
           exibir_portal: boolean
-          exibir_unidade_laudo: boolean
           grupo_etiquetas: string
           horas_jejum: number
           id: string
@@ -2346,7 +2361,6 @@ export type Database = {
           integracao_ativa: boolean
           lab_apoio_id: string | null
           material: string
-          metodologia: string
           mnemonico: string
           nome: string
           permite_envio_apoio: boolean
@@ -2366,7 +2380,6 @@ export type Database = {
           tenant_id: string
           tipo_processo: string
           tuss_sem_equivalente: boolean
-          unidade_padrao: string
           updated_at: string
           urgencia_disponivel: boolean
           usado_em_atendimento: boolean
@@ -2388,10 +2401,7 @@ export type Database = {
           cor_tampa?: string
           created_at?: string
           estabilidade?: string
-          exibir_material_laudo?: boolean
-          exibir_metodologia_laudo?: boolean
           exibir_portal?: boolean
-          exibir_unidade_laudo?: boolean
           grupo_etiquetas?: string
           horas_jejum?: number
           id?: string
@@ -2399,7 +2409,6 @@ export type Database = {
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
-          metodologia?: string
           mnemonico: string
           nome: string
           permite_envio_apoio?: boolean
@@ -2419,7 +2428,6 @@ export type Database = {
           tenant_id: string
           tipo_processo?: string
           tuss_sem_equivalente?: boolean
-          unidade_padrao?: string
           updated_at?: string
           urgencia_disponivel?: boolean
           usado_em_atendimento?: boolean
@@ -2441,10 +2449,7 @@ export type Database = {
           cor_tampa?: string
           created_at?: string
           estabilidade?: string
-          exibir_material_laudo?: boolean
-          exibir_metodologia_laudo?: boolean
           exibir_portal?: boolean
-          exibir_unidade_laudo?: boolean
           grupo_etiquetas?: string
           horas_jejum?: number
           id?: string
@@ -2452,7 +2457,6 @@ export type Database = {
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
-          metodologia?: string
           mnemonico?: string
           nome?: string
           permite_envio_apoio?: boolean
@@ -2472,7 +2476,6 @@ export type Database = {
           tenant_id?: string
           tipo_processo?: string
           tuss_sem_equivalente?: boolean
-          unidade_padrao?: string
           updated_at?: string
           urgencia_disponivel?: boolean
           usado_em_atendimento?: boolean
