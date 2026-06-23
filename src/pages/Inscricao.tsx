@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   FlaskConical,
   Loader2,
+  Lock,
+  Mail,
   MessageCircle,
   Phone,
   ShieldCheck,
@@ -44,6 +46,8 @@ export default function Inscricao() {
   const [formData, setFormData] = useState({
     nome_responsavel: "",
     whatsapp: "",
+    email: "",
+    senha: "",
     nome_laboratorio: "",
   });
   const [verificationCode, setVerificationCode] = useState("");
@@ -258,6 +262,59 @@ export default function Inscricao() {
 
                 <div>
                   <Label
+                    htmlFor="email"
+                    className="block text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-2 ml-1"
+                  >
+                    E-mail
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#4D41F3] transition-colors">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="seu@email.com"
+                      className="w-full pl-12 pr-4 h-14 bg-slate-50 border border-slate-200 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-indigo-50 focus-visible:border-[#4D41F3] focus:bg-white transition-all text-slate-700 font-medium placeholder:text-slate-400 text-base"
+                      required
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, email: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="senha"
+                    className="block text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-2 ml-1"
+                  >
+                    Senha
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#4D41F3] transition-colors">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <Input
+                      id="senha"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Mínimo de 6 caracteres"
+                      minLength={6}
+                      className="w-full pl-12 pr-4 h-14 bg-slate-50 border border-slate-200 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-indigo-50 focus-visible:border-[#4D41F3] focus:bg-white transition-all text-slate-700 font-medium placeholder:text-slate-400 text-base"
+                      required
+                      value={formData.senha}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, senha: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label
                     htmlFor="nome_laboratorio"
                     className="block text-[11px] font-bold text-slate-400 tracking-widest uppercase mb-2 ml-1"
                   >
@@ -292,7 +349,7 @@ export default function Inscricao() {
                     </>
                   ) : (
                     <>
-                      Quero ver na prática
+                      Entrar
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}

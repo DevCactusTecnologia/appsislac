@@ -13,6 +13,8 @@ interface Body {
   nome_responsavel?: string;
   whatsapp?: string;
   nome_laboratorio?: string;
+  email?: string;
+  senha?: string;
   cidade?: string;
   estado?: string;
   quantidade_unidades?: string;
@@ -31,6 +33,19 @@ function generateSecureOtp(): string {
   return code;
 }
 
+/** Hash SHA-256 da senha com salt aleatório. Formato: `sha256$<saltHex>$<hashHex>`. */
+async function hashPassword(senha: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const enc = new TextEncoder();
+  const data = new Uint8Array(salt.length + enc.encode(senha).length);
+  data.set(salt, 0);
+  data.set(enc.encode(senha), salt.length);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const toHex = (buf: ArrayBuffer | Uint8Array) =>
+    Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `sha256$${toHex(salt)}$${toHex(digest)}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   const requestId = newRequestId(req);
@@ -47,10 +62,18 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "submit") {
-      const { nome_responsavel, whatsapp, nome_laboratorio, cidade, estado, quantidade_unidades } = body;
+      const { nome_responsavel, whatsapp, nome_laboratorio, email, senha, cidade, estado, quantidade_unidades } = body;
 
-      if (!nome_responsavel || !whatsapp || !nome_laboratorio) {
+      if (!nome_responsavel || !whatsapp || !nome_laboratorio || !email || !senha) {
         return errorResponse(400, "Campos obrigatórios ausentes", requestId, log);
+      }
+
+      const emailNorm = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+        return errorResponse(400, "E-mail inválido", requestId, log);
+      }
+      if (String(senha).length < 6) {
+        return errorResponse(400, "A senha deve ter ao menos 6 caracteres", requestId, log);
       }
 
       // Rate limit por IP — submit
@@ -64,12 +87,16 @@ Deno.serve(async (req) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + OTP_TTL_MIN);
 
+      const senhaHash = await hashPassword(String(senha));
+
       const { data: lead, error: insertError } = await admin
         .from("inscricoes")
         .insert({
           nome_responsavel,
           whatsapp,
           nome_laboratorio,
+          email: emailNorm,
+          senha_hash: senhaHash,
           cidade,
           estado,
           quantidade_unidades,
