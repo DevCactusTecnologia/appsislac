@@ -6,7 +6,14 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Snowflake, Thermometer, ListPlus, Hash } from "lucide-react";
+import {
+  SorotecaDialogHeader,
+  SorotecaDialogBody,
+  SorotecaDialogFooter as SDFooter,
+  Field,
+  Section,
+} from "@/components/soroteca/SorotecaDialogShell";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
