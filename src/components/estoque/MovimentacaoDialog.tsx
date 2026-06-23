@@ -64,16 +64,28 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
 
   async function handleSave() {
     if (!insumoId) return toast.error("Selecione o insumo");
-    if (!quantidade || Number(quantidade) === 0) return toast.error("Quantidade é obrigatória");
-    if (tipo !== "ajuste" && Number(quantidade) < 0) return toast.error("Quantidade deve ser positiva");
+
+    let qtdFinal = Number(quantidade);
+
+    if (tipo === "ajuste") {
+      if (!loteId || !loteSel) return toast.error("Selecione o lote para definir o saldo");
+      const saldoAtual = Number(loteSel.quantidade_atual);
+      const saldoCorreto = Number(quantidade);
+      if (Number.isNaN(saldoCorreto) || saldoCorreto < 0) return toast.error("Informe um saldo correto válido (≥ 0)");
+      qtdFinal = saldoCorreto - saldoAtual;
+      if (qtdFinal === 0) return toast.error("O saldo informado é igual ao saldo atual — nada a registrar");
+    } else {
+      if (!qtdFinal || qtdFinal === 0) return toast.error("Quantidade é obrigatória");
+      if (qtdFinal < 0) return toast.error("Quantidade deve ser positiva");
+    }
 
     setSaving(true);
     const res = await registrarMovimentacao({
       insumo_id: insumoId,
       lote_id: loteId || null,
       tipo,
-      quantidade: Number(quantidade),
-      motivo,
+      quantidade: qtdFinal,
+      motivo: tipo === "ajuste" && !motivo ? "Definir saldo (contagem física)" : motivo,
       observacao,
     });
     setSaving(false);
@@ -81,13 +93,13 @@ export default function MovimentacaoDialog({ open, onClose, insumos, lotes, insu
       toast.error(res.error ?? "Erro ao registrar movimentação");
       return;
     }
-    toast.success("Movimentação registrada");
+    toast.success(tipo === "ajuste" ? "Saldo redefinido" : "Movimentação registrada");
     onSaved();
     onClose();
   }
 
   const tipoSel = TIPOS.find((t) => t.value === tipo);
-  const loteObrigatorio = tipo === "saida" || tipo === "descarte";
+  const loteObrigatorio = tipo === "saida" || tipo === "descarte" || tipo === "ajuste";
 
   return (
     <StandardDialog
