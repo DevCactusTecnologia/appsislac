@@ -25,8 +25,7 @@ export interface ExameCatalogo {
   porteCBHPM: string;
   codigoLOINC: string;
   codigoSUS: string;
-  // Analítico
-  metodologia: string;
+  // Analítico (não-científico — campos científicos vivem em exame_layouts)
   prazoEntregaDias: number;
   urgenciaDisponivel: boolean;
   prazoUrgenciaHoras: number;
@@ -47,7 +46,6 @@ export interface ExameCatalogo {
   sexoAplicavel: "AMBOS" | "MASCULINO" | "FEMININO";
   exibirPortal: boolean;
   // Pós-analítico
-  unidadePadrao: string;
   requerAssinaturaMedica: boolean;
   // Vínculo relacional com setor (setores_laboratoriais.id)
   setorId: string | null;
@@ -57,17 +55,13 @@ export interface ExameCatalogo {
   providerIntegracao: string;
   codigoExameApoio: string;
   permiteEnvioApoio: boolean;
-  // Resultado / Laudo
-  exibirMetodologiaLaudo: boolean;
-  exibirUnidadeLaudo: boolean;
-  exibirMaterialLaudo: boolean;
   tags: string[];
-  // Interface Engine readiness (Exames 2.1 Sub-fase B) — preparação, sem
-  // validação até o motor de integrações ser implementado.
+  // Interface Engine readiness (Exames 2.1 Sub-fase B)
   codigoInterfaceamento: string;
   codigoHL7: string;
   codigoEquipamento: Record<string, string> | null;
 }
+
 
 let exames: ExameCatalogo[] = [];
 let _listeners: Array<() => void> = [];
