@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveAmostrasPorLab, type RoteavelExame } from "@/lib/labApoio";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
+import { resolveMaterialNome } from "./materiaisAmostraStore";
+
 
 export type AmostraStatus = "DISPONIVEL" | "UTILIZADA" | "VENCIDA" | "DESCARTADA";
 
@@ -749,7 +751,7 @@ export async function getAmostraDetalhe(id: string): Promise<AmostraDetalhe | nu
     id: `criacao-${amostra.id}`,
     tipo: "CRIACAO",
     titulo: "Amostra criada",
-    descricao: `Código ${amostra.codigo_barra} • Material: ${amostra.tipo_material || "—"}`,
+    descricao: `Código ${amostra.codigo_barra} • Material: ${resolveMaterialNome(amostra.material_id) || "—"}`,
     data: amostra.created_at,
   });
 

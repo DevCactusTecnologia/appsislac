@@ -677,7 +677,7 @@ export async function validarCompatibilidade(
 ): Promise<CompatibilidadeAviso> {
   const { data: am } = await supabase
     .from("amostras")
-    .select("tipo_material")
+    .select("material_id")
     .eq("id", amostraId)
     .maybeSingle();
   if (!am) return { ok: false, severidade: "bloqueio", codigo: "amostra_inexistente", mensagem: "Amostra não encontrada." };
@@ -691,11 +691,13 @@ export async function validarCompatibilidade(
   if (!pos.ativo) return { ok: false, severidade: "bloqueio", codigo: "posicao_inativa", mensagem: "Posição está inativa." };
 
   const local = (pos as unknown as { galerias: { locais_armazenamento: { nome: string; temperatura_min: number | null; temperatura_max: number | null } } }).galerias.locais_armazenamento;
+  if (!am.material_id) return { ok: true };
   const { data: mat } = await supabase
     .from("materiais_amostra")
     .select("temperatura_recomendada")
-    .eq("nome", am.tipo_material)
+    .eq("id", am.material_id)
     .maybeSingle();
+
   const rec = (mat?.temperatura_recomendada || "").toLowerCase();
   if (!rec || local.temperatura_min == null || local.temperatura_max == null) return { ok: true };
 

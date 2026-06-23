@@ -12,6 +12,8 @@ import { formatIdadeDetalhada } from "@/lib/idade";
 import { getCurrentTenantNome, getCachedTenantNome } from "@/data/_tenant";
 import { toast } from "sonner";
 import { showError } from "@/lib/showError";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 
 function isoToBR(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -33,10 +35,11 @@ export async function imprimirEtiquetaPorAtendimentoExame(
     const { data: exRow, error: exErr } = await supabase
       .from("atendimento_exames")
       .select(
-        "id, atendimento_id, exame_id, amostra_id, nome_exame, material, data_coleta, tipo_processo, lab_apoio_id, protocolo_externo",
+        "id, atendimento_id, exame_id, amostra_id, nome_exame, material_id, data_coleta, tipo_processo, lab_apoio_id, protocolo_externo",
       )
       .eq("id", atendimentoExameId)
       .maybeSingle();
+
 
     if (exErr || !exRow) {
       showError(exErr, { scope: "etiqueta.exameNaoEncontrado", silent: true });
@@ -50,7 +53,7 @@ export async function imprimirEtiquetaPorAtendimentoExame(
       exRow.amostra_id
         ? supabase
             .from("amostras")
-            .select("codigo_barra, data_coleta, tipo_material, observacao")
+            .select("codigo_barra, data_coleta, material_id, observacao")
             .eq("id", exRow.amostra_id)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null } as const),
@@ -107,7 +110,7 @@ export async function imprimirEtiquetaPorAtendimentoExame(
     const codigoBarra = amostra?.codigo_barra
       ?? `S/AMOSTRA-${exRow.id}`; // fallback (ex.: ainda não coletado)
     const dataColeta = amostra?.data_coleta || exRow.data_coleta || new Date().toISOString();
-    const material = amostra?.tipo_material || exRow.material || "—";
+    const material = resolveMaterialNome(amostra?.material_id ?? exRow.material_id) || "—";
     const copias = Math.max(1, Math.min(20, Number(catalogo?.quantidade_etiquetas ?? 1)));
     const pacienteIdade = atendimento?.paciente_nascimento
       ? formatIdadeDetalhada(isoToBR(atendimento.paciente_nascimento))
