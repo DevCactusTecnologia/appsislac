@@ -887,8 +887,8 @@ function ExameCard({
     cancelado:  "bg-[hsl(var(--status-danger))]",
   };
   return (
-    <div className={`relative flex items-stretch rounded-lg border bg-card overflow-hidden transition-all duration-150 ${
-      selected ? "border-primary/40 ring-1 ring-primary/15" : "border-border hover:border-border/80"
+    <div className={`relative flex items-stretch rounded-xl border bg-card overflow-hidden transition-all duration-150 ${
+      selected ? "border-primary/40 ring-1 ring-primary/20 shadow-elevation-xs" : "border-border/60 hover:border-border hover:shadow-elevation-xs"
     }`}>
       <span className={`w-1 shrink-0 ${accentBar[exame.status]}`} />
       <div className="flex-1 flex items-center gap-3 px-4 py-3 min-w-0">
@@ -924,21 +924,21 @@ function ExameCard({
           {exame.amostraId && (
             <button
               onClick={onImprimir}
-              className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               title="Reimprimir etiqueta da amostra"
             >
               <Printer className="h-3.5 w-3.5" />
             </button>
           )}
           {exame.status === "cancelado" ? (
-            <button onClick={onReverter} className="flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-border text-foreground hover:bg-accent transition-colors">
+            <button onClick={onReverter} className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-border/60 bg-card text-foreground hover:bg-accent transition-colors">
               <RotateCcw className="h-3.5 w-3.5" /> Reverter
             </button>
           ) : exame.status === "finalizada" ? (
             <>
               <button
                 onClick={onRecoleta}
-                className="h-8 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-warning hover:border-warning/40 hover:bg-warning/5 transition-colors flex items-center gap-1.5"
+                className="h-8 px-3 rounded-lg text-xs font-medium border border-border/60 bg-card text-muted-foreground hover:text-warning hover:border-warning/40 hover:bg-warning/5 transition-colors flex items-center gap-1.5"
                 title="Solicitar recoleta"
               >
                 <RotateCcw className="h-3.5 w-3.5" /> Recoleta
@@ -949,24 +949,24 @@ function ExameCard({
             </>
           ) : (
             <>
-              <button onClick={onCancelar} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] transition-colors" title="Cancelar">
+              <button onClick={onCancelar} className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] transition-colors" title="Cancelar">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
               {exame.status === "analisado" && (
                 <button
                   onClick={onRecoleta}
-                  className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-warning hover:bg-warning/10 transition-colors"
                   title="Solicitar recoleta"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                 </button>
               )}
               {exame.status === "analisado" ? (
-                <button onClick={onFinalizar} className="h-8 px-3.5 rounded-md text-xs font-semibold bg-[hsl(var(--status-success))] text-[hsl(var(--status-success-foreground))] hover:opacity-90 transition-opacity">
+                <button onClick={onFinalizar} className="h-8 px-4 rounded-full text-xs font-semibold bg-[hsl(var(--status-success))] text-[hsl(var(--status-success-foreground))] hover:opacity-90 transition-opacity shadow-elevation-xs">
                   Finalizar
                 </button>
               ) : (
-                <button onClick={onAnalisar} className="h-8 px-3.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                <button onClick={onAnalisar} className="h-8 px-4 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-elevation-xs">
                   Analisar
                 </button>
               )}
