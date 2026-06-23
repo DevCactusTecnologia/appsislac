@@ -194,6 +194,19 @@ export async function criarGaleria(input: {
 }
 
 
+export async function atualizarGaleria(
+  id: string,
+  input: { nome?: string; ordem?: number; ativo?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
+  const patch: { nome?: string; ordem?: number; ativo?: boolean } = {};
+  if (input.nome !== undefined) patch.nome = input.nome.trim();
+  if (input.ordem !== undefined) patch.ordem = input.ordem;
+  if (input.ativo !== undefined) patch.ativo = input.ativo;
+  const { error } = await supabase.from("galerias").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function removerGaleria(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("galerias").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
