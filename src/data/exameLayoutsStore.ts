@@ -117,9 +117,12 @@ async function clearPadrao(exameId: string, exceptId?: number) {
   );
 }
 
+export type ExameLayoutInput = Partial<Omit<ExameLayout, "id" | "exameId" | "criadoEm">> &
+  Pick<ExameLayout, "nome" | "conteudo" | "padrao" | "criadoPor">;
+
 export async function addLayout(
   exameId: string,
-  data: Omit<ExameLayout, "id" | "exameId" | "criadoEm">
+  data: ExameLayoutInput
 ): Promise<ExameLayout | null> {
   try {
     if (data.padrao) await clearPadrao(exameId);
