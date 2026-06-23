@@ -5,6 +5,8 @@ import { _initUnidadesStore } from "./unidadeStore";
 import { _initConveniosStore } from "./convenioStore";
 import { _initLabsApoioStore } from "./labApoioStore";
 import { _initExamesCatalogoStore } from "./exameCatalogoStore";
+import { _initMateriaisAmostraStore } from "./materiaisAmostraStore";
+
 import { _initTabelaPrecoStore } from "./tabelaPrecoStore";
 import { _initValoresReferenciaStore } from "./valoresReferenciaStore";
 import { _initPacientesStore } from "./pacienteStore";
@@ -86,7 +88,9 @@ export function bootDataStores(): Promise<void> {
     _initConveniosStore(),
     _initLabsApoioStore(),
     _initExamesCatalogoStore(),
+    _initMateriaisAmostraStore(),
     _initPacientesStore(),
+
     SHOULD_BOOT_ATENDIMENTOS ? _initAtendimentosStore() : Promise.resolve(),
     _initUsuariosStore(),
   ]);

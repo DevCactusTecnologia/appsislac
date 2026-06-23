@@ -39,10 +39,12 @@ import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { sanitizeTuss, validarTuss, PORTES_CBHPM } from "@/lib/regulatorio";
 import { showError } from "@/lib/showError";
 import {
-  MATERIAIS_PADRAO, RECIPIENTES, SEXOS_APLICAVEIS,
+  RECIPIENTES, SEXOS_APLICAVEIS,
   formatCbhpm, validarCbhpm, validarLoinc,
 } from "@/lib/laboratorioPadroes";
 import { gerarMnemonico, getPresetForSetor } from "@/lib/exameDefaults";
+import { getMateriaisAmostraAtivosSync, resolveMaterialIdBySigla, resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 import { Switch } from "@/components/ui/switch";
 import ComboboxField from "@/components/configuracoes/_shared/ComboboxField";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +60,7 @@ interface NovoExameDialogProps {
 // Defaults iniciais — slim Exames 2.2 (campos científicos foram para exame_layouts).
 const emptyForm: ExameFormData = {
   nome: "", mnemonico: "", categoria: "", codigoCBHPM: "", codigoTUSS: "",
-  material: "", tipoProcesso: "INTERNO", labApoioId: null, integracaoAtiva: false,
+  material: "", materialId: null, tipoProcesso: "INTERNO", labApoioId: null, integracaoAtiva: false,
   porteCBHPM: "-", codigoLOINC: "", codigoSUS: "",
   prazoEntregaDias: 1, urgenciaDisponivel: false, prazoUrgenciaHoras: 0,
   recipiente: "", corTampa: "", volumeMinimoMl: 0, estabilidade: "",
@@ -186,7 +188,13 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
       if (field === "categoria" && !editData?.id) {
         const preset = getPresetForSetor(String(v));
         if (preset) {
-          if (!next.material && preset.material) next.material = preset.material;
+          if (!next.materialId && preset.materialSigla) {
+            const id = resolveMaterialIdBySigla(preset.materialSigla);
+            if (id) {
+              next.materialId = id;
+              next.material = resolveMaterialNome(id);
+            }
+          }
           if (!next.recipiente && preset.recipiente) {
             next.recipiente = preset.recipiente;
             const r = RECIPIENTES.find((x) => x.value === preset.recipiente);
@@ -200,6 +208,7 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
           if (!next.grupoEtiquetas && preset.grupoEtiquetas) next.grupoEtiquetas = preset.grupoEtiquetas;
         }
       }
+
 
       if (field === "tipoProcesso" && v !== "TERCEIRIZADO") {
         next.labApoioId = null; next.integracaoAtiva = false;
@@ -243,12 +252,13 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
     const payload = {
       ...form,
       categoria: form.categoria || "GERAL",
-      material: form.material || "Soro",
+      material: form.material || resolveMaterialNome(form.materialId),
       codigo: form.codigoCBHPM || form.codigoTUSS || form.mnemonico,
       analise,
       labApoioId: form.tipoProcesso === "TERCEIRIZADO" ? form.labApoioId : null,
       integracaoAtiva: form.tipoProcesso === "TERCEIRIZADO" ? form.integracaoAtiva : false,
     };
+
 
     const setor = form.categoria.trim();
     if (setor && !isSetorPadrao(setor)) {
@@ -386,13 +396,22 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
 
             <div>
               <label className={labelClass}>Material padrão de coleta</label>
-              <ComboboxField
-                value={form.material}
-                onChange={(v) => updateField("material", v)}
-                options={MATERIAIS_PADRAO.map((m) => ({ value: m, label: m }))}
-                placeholder="Digite ou selecione"
-              />
+              <select
+                className={selectClass}
+                value={form.materialId ?? ""}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  updateField("materialId", id);
+                  updateField("material", resolveMaterialNome(id));
+                }}
+              >
+                <option value="">— Sem material —</option>
+                {getMateriaisAmostraAtivosSync().map((m) => (
+                  <option key={m.id} value={m.id}>{m.nome}{m.sigla ? ` (${m.sigla})` : ""}</option>
+                ))}
+              </select>
             </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 import {
   type Galeria,
   type LocalArmazenamento,
@@ -106,7 +108,7 @@ export default function SorotecaEstrutura() {
   const [draggingPos, setDraggingPos] = useState<string | null>(null);
   const [overPos, setOverPos] = useState<string | null>(null);
   const [moverPayload, setMoverPayload] = useState<{
-    amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; tipo_material?: string };
+    amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; material_id?: string | null };
     origem: { id: string; codigo: string };
     destino: { id: string; codigo: string };
   } | null>(null);
@@ -574,7 +576,7 @@ export default function SorotecaEstrutura() {
                                   id: origemPos.amostra.id,
                                   codigo_barra: origemPos.amostra.codigo_barra,
                                   paciente_nome: origemPos.amostra.paciente_nome,
-                                  tipo_material: origemPos.amostra.tipo_material,
+                                  material_id: origemPos.amostra.material_id,
                                 },
                                 origem: { id: origemPos.posicao.id, codigo: origemPos.posicao.codigo },
                                 destino: { id: p.id, codigo: p.codigo },
@@ -614,7 +616,7 @@ export default function SorotecaEstrutura() {
                             <div className="space-y-0.5 mt-0.5">
                               <div className="truncate"><span className="text-muted-foreground">Paciente:</span> {pe.amostra.paciente_nome ?? "—"}</div>
                               <div className="truncate"><span className="text-muted-foreground">Protocolo:</span> {pe.amostra.protocolo ?? "—"}</div>
-                              <div className="truncate"><span className="text-muted-foreground">Material:</span> {pe.amostra.tipo_material}</div>
+                              <div className="truncate"><span className="text-muted-foreground">Material:</span> {resolveMaterialNome(pe.amostra.material_id)}</div>
                               <div className="truncate"><span className="text-muted-foreground">Armazenado:</span> {new Date(pe.amostra.data_alocacao).toLocaleDateString("pt-BR")}</div>
                               {pe.amostra.data_expurgo && (
                                 <div className="truncate">

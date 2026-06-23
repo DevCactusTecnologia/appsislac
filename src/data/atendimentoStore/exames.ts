@@ -2,6 +2,8 @@
 // Mantém o contrato síncrono via re-hidratação do cache após mutações.
 
 import { supabase } from "@/integrations/supabase/client";
+import { resolveMaterialNome } from "../materiaisAmostraStore";
+
 import { showError } from "@/lib/showError";
 import { persistOrThrow } from "@/lib/persist";
 import type { TablesUpdate } from "@/integrations/supabase/types";
@@ -208,7 +210,10 @@ export async function getExamesOperacionaisByStatus(
         nome: e.nome_exame,
         exame_id: e.exame_id ?? null,
         amostra_id: e.amostra_id ?? null,
-        material: e.material || "—",
+        material_id: (e as { material_id?: string | null }).material_id ?? null,
+        material: resolveMaterialNome((e as { material_id?: string | null }).material_id) || "—",
+
+
         status: e.status as "pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado",
         data_coleta: e.data_coleta,
         data_analise: e.data_analise,

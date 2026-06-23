@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveAmostrasPorLab, type RoteavelExame } from "@/lib/labApoio";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
+import { resolveMaterialNome } from "./materiaisAmostraStore";
+
 
 export type AmostraStatus = "DISPONIVEL" | "UTILIZADA" | "VENCIDA" | "DESCARTADA";
 
@@ -22,7 +24,8 @@ export interface Amostra {
   exame_id: string | null;
   paciente_id: number | null;
   codigo_barra: string;
-  tipo_material: string;
+  /** FK em `materiais_amostra` — SSOT do material (Exames 2.3). */
+  material_id: string | null;
   status: AmostraStatus;
   data_coleta: string;
   data_validade: string;
@@ -31,6 +34,7 @@ export interface Amostra {
   created_at: string;
   updated_at: string;
 }
+
 
 /** Validade padrão em horas (fallback quando exame não define). */
 const VALIDADE_PADRAO_HORAS = 24;
@@ -104,7 +108,8 @@ export async function criarAmostraParaExame(params: {
   atendimentoId?: number | null;
   exameId?: string | null;
   pacienteId?: number | null;
-  tipoMaterial?: string;
+  /** UUID em `materiais_amostra` — SSOT (Exames 2.3). */
+  materialId?: string | null;
   localizacao?: string;
   validadeHoras?: number;
 }): Promise<{ ok: boolean; amostra?: Amostra; error?: string }> {
@@ -128,13 +133,14 @@ export async function criarAmostraParaExame(params: {
       exame_id: params.exameId ?? null,
       paciente_id: params.pacienteId ?? null,
       codigo_barra: await gerarCodigoBarra(profile.tenant_id),
-      tipo_material: (params.tipoMaterial ?? "").toUpperCase(),
+      material_id: params.materialId ?? null,
       status: "DISPONIVEL" as AmostraStatus,
       data_coleta: new Date().toISOString(),
       data_validade: calcValidade(params.validadeHoras),
       localizacao: params.localizacao ?? "",
       observacao: "",
     };
+
 
     let data: Amostra;
     try {
@@ -184,7 +190,8 @@ export interface ExameParaAmostragem extends RoteavelExame {
   atendimentoId?: number | null;
   exameId?: string | null;
   pacienteId?: number | null;
-  tipoMaterial?: string;
+  /** UUID em `materiais_amostra` — SSOT (Exames 2.3). */
+  materialId?: string | null;
 }
 
 export async function criarAmostrasParaExames(
@@ -213,7 +220,7 @@ export async function criarAmostrasParaExames(
     try {
       const codigo = await gerarCodigoBarra(tenantId);
       // Material e contexto comuns ao grupo (vem do primeiro exame não-vazio)
-      const ref = grupo.exames.find((e) => e.tipoMaterial) ?? grupo.exames[0];
+      const ref = grupo.exames.find((e) => e.materialId) ?? grupo.exames[0];
       const insert = {
         tenant_id: tenantId,
         atendimento_id: ref.atendimentoId ?? null,
@@ -221,7 +228,7 @@ export async function criarAmostrasParaExames(
         exame_id: ref.exameId ?? null,
         paciente_id: ref.pacienteId ?? null,
         codigo_barra: codigo,
-        tipo_material: (ref.tipoMaterial ?? "").toUpperCase(),
+        material_id: ref.materialId ?? null,
         status: "DISPONIVEL" as AmostraStatus,
         data_coleta: new Date().toISOString(),
         data_validade: calcValidade(opts?.validadeHoras),
@@ -230,6 +237,7 @@ export async function criarAmostrasParaExames(
           ? `Destino: lab apoio ${grupo.labApoioId ?? "(n/d)"}`
           : "",
       };
+
       let amostraId: string;
       try {
         const row = await persistOneOrThrow<{ id: string }>(
@@ -274,19 +282,21 @@ export async function criarAmostrasParaExames(
 export async function buscarAmostrasReutilizaveis(params: {
   pacienteId: number;
   exameId?: string | null;
-  tipoMaterial?: string;
+  /** UUID em `materiais_amostra`. */
+  materialId?: string | null;
 }): Promise<Amostra[]> {
   if (!params.pacienteId || !params.exameId) return [];
 
   // Consulta o catálogo SSOT para saber se o material é reutilizável.
-  if (params.tipoMaterial && params.tipoMaterial.trim()) {
+  if (params.materialId) {
     const { data: mat } = await supabase
       .from("materiais_amostra")
       .select("reutilizavel")
-      .ilike("nome", params.tipoMaterial.trim())
+      .eq("id", params.materialId)
       .maybeSingle();
     if (mat && mat.reutilizavel === false) return [];
   }
+
 
   const nowIso = new Date().toISOString();
   const { data, error } = await supabase
@@ -549,7 +559,7 @@ export async function buscarAmostrasReutilizaveisPorNome(params: {
   if (!params.pacienteId || !params.nomeExame) return [];
   const { data: catalogo } = await supabase
     .from("exames_catalogo")
-    .select("id, material")
+    .select("id, material_id")
     .ilike("nome", params.nomeExame)
     .limit(1)
     .maybeSingle();
@@ -557,9 +567,10 @@ export async function buscarAmostrasReutilizaveisPorNome(params: {
   return buscarAmostrasReutilizaveis({
     pacienteId: params.pacienteId,
     exameId: catalogo.id,
-    tipoMaterial: catalogo.material ?? "",
+    materialId: catalogo.material_id ?? null,
   });
 }
+
 
 /**
  * Detalhes completos da amostra para o modal de inspeção.
@@ -740,7 +751,7 @@ export async function getAmostraDetalhe(id: string): Promise<AmostraDetalhe | nu
     id: `criacao-${amostra.id}`,
     tipo: "CRIACAO",
     titulo: "Amostra criada",
-    descricao: `Código ${amostra.codigo_barra} • Material: ${amostra.tipo_material || "—"}`,
+    descricao: `Código ${amostra.codigo_barra} • Material: ${resolveMaterialNome(amostra.material_id) || "—"}`,
     data: amostra.created_at,
   });
 

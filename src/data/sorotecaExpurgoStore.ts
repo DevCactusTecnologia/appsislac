@@ -12,6 +12,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/lib/showError";
+import { resolveMaterialNome } from "./materiaisAmostraStore";
+
 
 export type ExpurgoLoteStatus =
   | "PROGRAMADO"
@@ -91,7 +93,7 @@ export async function preverCandidatas(criterio: ExpurgoCriterio) {
   //  - exige localização física registrada (defesa contra amostras "perdidas").
   let q = supabase
     .from("amostras")
-    .select("id, codigo_barra, tipo_material, localizacao, data_coleta, data_validade, material_id")
+    .select("id, codigo_barra, localizacao, data_coleta, data_validade, material_id")
     .eq("status", "DISPONIVEL")
     .not("localizacao", "is", null)
     .neq("localizacao", "");
@@ -159,7 +161,7 @@ export async function criarLote(input: {
       // pega snapshot
       const { data: amostras, error: aErr } = await supabase
         .from("amostras")
-        .select("id, codigo_barra, tipo_material, localizacao, data_coleta, data_validade")
+        .select("id, codigo_barra, material_id, localizacao, data_coleta, data_validade")
         .in("id", input.amostraIds);
       if (aErr) throw aErr;
 
@@ -168,11 +170,12 @@ export async function criarLote(input: {
         lote_id: lote.id,
         amostra_id: a.id,
         snapshot_codigo_barra: a.codigo_barra,
-        snapshot_material: a.tipo_material,
+        snapshot_material: resolveMaterialNome(a.material_id) || "",
         snapshot_localizacao: a.localizacao,
         snapshot_data_coleta: a.data_coleta,
         snapshot_data_validade: a.data_validade,
       }));
+
 
       const { error: iErr } = await supabase.from("expurgo_itens").insert(itens);
       if (iErr) throw iErr;

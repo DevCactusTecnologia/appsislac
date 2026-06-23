@@ -11,6 +11,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { MockAtendimento, PagamentoRealizado } from "../types";
 import { deriveAtendimentoStatus, derivePagamentoStatus } from "@/lib/atendimentoStatus";
 import { formatDateBR as _formatDateBR, formatDateTimeBR as _formatDateTimeBR } from "@/lib/dateBR";
+import { resolveMaterialNome } from "../materiaisAmostraStore";
+
 
 export type AtendimentoRow = Tables<"atendimentos">;
 export type AtendimentoExameDbRow = Tables<"atendimento_exames">;
@@ -98,7 +100,8 @@ export const ATENDIMENTO_COLS =
 export const EXAME_COLS =
   "id,atendimento_id,nome_exame,exame_id,ordem,valor,valor_original,analista,status," +
   "cobranca_destino,convenio_cobranca_id,amostra_seq,grupo_exame_id," +
-  "is_reutilizacao,material,amostra_id,tipo_processo,lab_apoio_id,solicitante,data_liberacao";
+  "is_reutilizacao,material_id,amostra_id,tipo_processo,lab_apoio_id,solicitante,data_liberacao";
+
 export const PAGAMENTO_COLS = "id,atendimento_id,tipo,valor,data";
 
 // ── Conversão DB row → MockAtendimento (preserva API legacy) ──
@@ -150,7 +153,7 @@ export function buildAtendimento(
       amostraSeq: typeof e.amostra_seq === "number" ? e.amostra_seq : 1,
       grupoExameId: e.grupo_exame_id ?? null,
       isReutilizacao: !!e.is_reutilizacao,
-      material: e.material ?? "",
+      material: resolveMaterialNome(e.material_id),
       amostraId: e.amostra_id ?? null,
       tipoProcesso: (e.tipo_processo === "TERCEIRIZADO" ? "TERCEIRIZADO" : "INTERNO"),
       labApoioId: e.lab_apoio_id ?? null,

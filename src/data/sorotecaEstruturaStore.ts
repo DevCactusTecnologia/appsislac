@@ -224,7 +224,7 @@ export interface PosicaoEnriquecida {
   amostra?: {
     id: string;
     codigo_barra: string;
-    tipo_material: string;
+    material_id: string | null;
     data_coleta: string;
     paciente_nome: string | null;
     protocolo: string | null;
@@ -241,7 +241,7 @@ export async function listarPosicoesComOcupacao(galeriaId: string): Promise<Posi
   const { data: alocs } = await supabase
     .from("amostra_alocacoes")
     .select(
-      "id, posicao_id, alocada_em, amostra_id, amostras!inner(id, codigo_barra, tipo_material, data_coleta, atendimento_id)",
+      "id, posicao_id, alocada_em, amostra_id, amostras!inner(id, codigo_barra, material_id, data_coleta, atendimento_id)",
     )
     .is("retirada_em", null)
     .in("posicao_id", ids);
@@ -252,22 +252,24 @@ export async function listarPosicoesComOcupacao(galeriaId: string): Promise<Posi
     amostras: {
       id: string;
       codigo_barra: string;
-      tipo_material: string;
+      material_id: string | null;
       data_coleta: string;
       atendimento_id: number | null;
     };
   }>;
 
-  // Materiais — retencao_dias por nome.
-  const materiais = Array.from(new Set(alocList.map((a) => a.amostras.tipo_material).filter(Boolean)));
+  // Retenção por material_id (FK direto — Exames 2.3).
+  const materialIds = Array.from(
+    new Set(alocList.map((a) => a.amostras.material_id).filter((v): v is string => !!v)),
+  );
   const retencaoMap: Record<string, number | null> = {};
-  if (materiais.length > 0) {
+  if (materialIds.length > 0) {
     const { data: mats } = await supabase
       .from("materiais_amostra")
-      .select("nome, dias_retencao")
-      .in("nome", materiais);
-    for (const m of (mats ?? []) as Array<{ nome: string; dias_retencao: number | null }>) {
-      retencaoMap[m.nome] = m.dias_retencao;
+      .select("id, dias_retencao")
+      .in("id", materialIds);
+    for (const m of (mats ?? []) as Array<{ id: string; dias_retencao: number | null }>) {
+      retencaoMap[m.id] = m.dias_retencao;
     }
   }
 
@@ -296,7 +298,7 @@ export async function listarPosicoesComOcupacao(galeriaId: string): Promise<Posi
     const a = byPos.get(p.id);
     if (!a) return { posicao: p, status: "livre" as const };
     const at = a.amostras.atendimento_id != null ? atendMap[a.amostras.atendimento_id] : undefined;
-    const ret = retencaoMap[a.amostras.tipo_material] ?? null;
+    const ret = a.amostras.material_id ? retencaoMap[a.amostras.material_id] ?? null : null;
     let dataExpurgo: string | null = null;
     let dias: number | null = null;
     let status: PosicaoStatus = "ocupada";
@@ -314,10 +316,11 @@ export async function listarPosicoesComOcupacao(galeriaId: string): Promise<Posi
       amostra: {
         id: a.amostras.id,
         codigo_barra: a.amostras.codigo_barra,
-        tipo_material: a.amostras.tipo_material,
+        material_id: a.amostras.material_id,
         data_coleta: a.amostras.data_coleta,
         paciente_nome: at?.paciente_nome ?? null,
         protocolo: at?.protocolo ?? null,
+
         data_alocacao: a.alocada_em,
         data_expurgo: dataExpurgo,
         dias_para_expurgo: dias,
@@ -556,7 +559,7 @@ export async function retirarAmostra(input: {
 export interface AmostraTriagem {
   id: string;
   codigo_barra: string;
-  tipo_material: string;
+  material_id: string | null;
   data_coleta: string;
   status: string;
   paciente_id: number | null;
@@ -571,12 +574,13 @@ export async function buscarAmostraPorCodigo(
   if (!v) return null;
   const { data, error } = await supabase
     .from("amostras")
-    .select("id, codigo_barra, tipo_material, data_coleta, status, paciente_id, atendimento_id")
+    .select("id, codigo_barra, material_id, data_coleta, status, paciente_id, atendimento_id")
     .eq("codigo_barra", v)
     .maybeSingle();
   if (error || !data) return null;
   return data as AmostraTriagem;
 }
+
 
 /** Alocação ativa atual da amostra (null se está pendente). */
 export async function getAlocacaoAtiva(
@@ -673,7 +677,7 @@ export async function validarCompatibilidade(
 ): Promise<CompatibilidadeAviso> {
   const { data: am } = await supabase
     .from("amostras")
-    .select("tipo_material")
+    .select("material_id")
     .eq("id", amostraId)
     .maybeSingle();
   if (!am) return { ok: false, severidade: "bloqueio", codigo: "amostra_inexistente", mensagem: "Amostra não encontrada." };
@@ -687,11 +691,13 @@ export async function validarCompatibilidade(
   if (!pos.ativo) return { ok: false, severidade: "bloqueio", codigo: "posicao_inativa", mensagem: "Posição está inativa." };
 
   const local = (pos as unknown as { galerias: { locais_armazenamento: { nome: string; temperatura_min: number | null; temperatura_max: number | null } } }).galerias.locais_armazenamento;
+  if (!am.material_id) return { ok: true };
   const { data: mat } = await supabase
     .from("materiais_amostra")
     .select("temperatura_recomendada")
-    .eq("nome", am.tipo_material)
+    .eq("id", am.material_id)
     .maybeSingle();
+
   const rec = (mat?.temperatura_recomendada || "").toLowerCase();
   if (!rec || local.temperatura_min == null || local.temperatura_max == null) return { ok: true };
 

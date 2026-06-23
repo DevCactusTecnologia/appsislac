@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 import {
   SorotecaDialogHeader,
   SorotecaDialogBody,
@@ -44,7 +46,7 @@ export function ConfirmarMovimentacaoDialog({
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; tipo_material?: string } | null;
+  amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; material_id?: string | null } | null;
   origem: { id: string | null; codigo: string | null };
   destino: { id: string; codigo: string };
   onConfirmed: () => void;
@@ -108,7 +110,7 @@ export function ConfirmarMovimentacaoDialog({
             <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm space-y-1">
               <div className="font-mono text-xs">{amostra.codigo_barra}</div>
               {amostra.paciente_nome && <div className="truncate"><span className="text-muted-foreground">Paciente:</span> {amostra.paciente_nome}</div>}
-              {amostra.tipo_material && <div className="text-xs text-muted-foreground">{amostra.tipo_material}</div>}
+              {amostra.material_id && <div className="text-xs text-muted-foreground">{resolveMaterialNome(amostra.material_id)}</div>}
             </div>
           )}
           <div className="flex items-center justify-center gap-3 py-1">

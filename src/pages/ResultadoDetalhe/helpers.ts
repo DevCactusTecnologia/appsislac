@@ -5,6 +5,8 @@ import { getAtendimentos, type AtendimentoExameRow } from "@/data/atendimentoSto
 import type { MockAtendimento } from "@/data/types";
 import type { DigitacaoSegmento } from "@/lib/layoutScientificRuntime";
 import type { DbIdMap, Exame, ExameStatus, Paciente, Parametro } from "./types";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 
 /**
  * Templates legados de parâmetros por protocolo.
@@ -140,7 +142,7 @@ export function buildExamesFromDB(
     return {
       id: uiId,
       nome: row.nome_exame,
-      material: row.material || "Sangue",
+      material: resolveMaterialNome((row as { material_id?: string | null }).material_id) || "",
       status: statusDbToUi(row),
       dataAnalise: row.data_analise
         ? new Date(row.data_analise).toLocaleDateString("pt-BR")

@@ -282,7 +282,6 @@ export type Database = {
           paciente_id: number | null
           status: string
           tenant_id: string
-          tipo_material: string
           updated_at: string
         }
         Insert: {
@@ -300,7 +299,6 @@ export type Database = {
           paciente_id?: number | null
           status?: string
           tenant_id: string
-          tipo_material?: string
           updated_at?: string
         }
         Update: {
@@ -318,7 +316,6 @@ export type Database = {
           paciente_id?: number | null
           status?: string
           tenant_id?: string
-          tipo_material?: string
           updated_at?: string
         }
         Relationships: [
@@ -578,7 +575,7 @@ export type Database = {
           integracao_ativa: boolean
           is_reutilizacao: boolean
           lab_apoio_id: string | null
-          material: string
+          material_id: string | null
           metodologia_snapshot: string | null
           motivo_cancelamento: string | null
           nome_exame: string
@@ -626,7 +623,7 @@ export type Database = {
           integracao_ativa?: boolean
           is_reutilizacao?: boolean
           lab_apoio_id?: string | null
-          material?: string
+          material_id?: string | null
           metodologia_snapshot?: string | null
           motivo_cancelamento?: string | null
           nome_exame: string
@@ -674,7 +671,7 @@ export type Database = {
           integracao_ativa?: boolean
           is_reutilizacao?: boolean
           lab_apoio_id?: string | null
-          material?: string
+          material_id?: string | null
           metodologia_snapshot?: string | null
           motivo_cancelamento?: string | null
           nome_exame?: string
@@ -749,6 +746,13 @@ export type Database = {
             columns: ["lab_apoio_id"]
             isOneToOne: false
             referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -2360,7 +2364,7 @@ export type Database = {
           informacoes_coleta: string
           integracao_ativa: boolean
           lab_apoio_id: string | null
-          material: string
+          material_id: string | null
           mnemonico: string
           nome: string
           permite_envio_apoio: boolean
@@ -2408,7 +2412,7 @@ export type Database = {
           informacoes_coleta?: string
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
-          material?: string
+          material_id?: string | null
           mnemonico: string
           nome: string
           permite_envio_apoio?: boolean
@@ -2456,7 +2460,7 @@ export type Database = {
           informacoes_coleta?: string
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
-          material?: string
+          material_id?: string | null
           mnemonico?: string
           nome?: string
           permite_envio_apoio?: boolean
@@ -2487,6 +2491,13 @@ export type Database = {
             columns: ["lab_apoio_id"]
             isOneToOne: false
             referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exames_catalogo_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -7272,6 +7283,7 @@ export type Database = {
           destaque: boolean | null
           exame_id: string | null
           material: string | null
+          material_id: string | null
           modo_publicacao: string | null
           nome: string | null
           ordem: number | null
@@ -7282,6 +7294,13 @@ export type Database = {
           valor: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "exames_catalogo_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "exames_publicos_exame_id_fkey"
             columns: ["exame_id"]
@@ -7516,8 +7535,8 @@ export type Database = {
         Row: {
           amostra_codigo: string | null
           amostra_id: string | null
+          amostra_material_id: string | null
           amostra_status: string | null
-          amostra_tipo_material: string | null
           amostra_validade: string | null
           atendimento_data: string | null
           atendimento_exame_id: number | null
@@ -7526,7 +7545,7 @@ export type Database = {
           coletor: string | null
           data_coleta: string | null
           exame_id: string | null
-          material: string | null
+          material_id: string | null
           nome_exame: string | null
           paciente_id: number | null
           paciente_nome: string | null
@@ -7536,6 +7555,13 @@ export type Database = {
           unidade_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "amostras_material_id_fkey"
+            columns: ["amostra_material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "atendimento_exames_atendimento_id_fkey"
             columns: ["atendimento_id"]
@@ -7555,6 +7581,13 @@ export type Database = {
             columns: ["exame_id"]
             isOneToOne: false
             referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -7639,7 +7672,7 @@ export type Database = {
           exame_codigo: string | null
           exame_id: string | null
           lab_apoio_id: string | null
-          material: string | null
+          material_id: string | null
           nome_exame: string | null
           paciente_id: number | null
           paciente_nome: string | null
@@ -7677,6 +7710,13 @@ export type Database = {
             columns: ["lab_apoio_id"]
             isOneToOne: false
             referencedRelation: "labs_apoio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimento_exames_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_amostra"
             referencedColumns: ["id"]
           },
           {
@@ -8277,7 +8317,7 @@ export type Database = {
           integracao_ativa: boolean
           is_reutilizacao: boolean
           lab_apoio_id: string | null
-          material: string
+          material_id: string | null
           metodologia_snapshot: string | null
           motivo_cancelamento: string | null
           nome_exame: string

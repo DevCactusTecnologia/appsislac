@@ -18,7 +18,11 @@ export interface AtendimentoExameRow {
   /** UUID do exame no catálogo. Pode ser nulo em rows muito antigas. */
   exame_id: string | null;
   nome_exame: string;
+  /** UUID do material em `materiais_amostra` (SSOT). */
+  material_id: string | null;
+  /** Nome derivado (display) — resolvido em runtime a partir de `material_id`. */
   material: string;
+
   status: "pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado";
   data_coleta: string | null;
   data_analise: string | null;
@@ -87,7 +91,9 @@ export interface ExameOperacionalRow {
     nome: string;
     exame_id: string | null;
     amostra_id: string | null;
+    material_id: string | null;
     material: string;
+
     status: "pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado";
     data_coleta: string | null;
     data_analise: string | null;

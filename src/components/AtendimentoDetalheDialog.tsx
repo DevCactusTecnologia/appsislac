@@ -123,7 +123,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
     const valorOriginal = Math.max(Number(meta?.valorOriginal) || 0, valor, valorTabela);
     return {
       nome: nomeExame,
-      material: meta?.material ?? "Sangue",
+      material: meta?.material ?? "",
       valor,
       valorOriginal,
       cobrancaDestino: meta?.cobrancaDestino ?? "paciente",
