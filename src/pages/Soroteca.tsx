@@ -51,8 +51,10 @@ import {
 } from "@/data/sorotecaEstruturaStore";
 import {
   listarMateriaisAmostra,
+  resolveMaterialNome,
   type MaterialAmostra,
 } from "@/data/materiaisAmostraStore";
+
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -387,7 +389,7 @@ export default function Soroteca() {
       lista = lista.filter(
         (a) =>
           searchNormalize(a.codigo_barra).includes(q) ||
-          searchNormalize(a.tipo_material).includes(q) ||
+          searchNormalize(resolveMaterialNome(a.material_id)).includes(q) ||
           searchNormalize(a.localizacao).includes(q),
       );
     }
@@ -498,7 +500,7 @@ export default function Soroteca() {
     const map = new Map<string, number>();
     amostras.forEach((a) => {
       if (!a.atendimento_id) return;
-      const k = `${a.atendimento_id}|${(a.tipo_material || "").toUpperCase()}`;
+      const k = `${a.atendimento_id}|${(resolveMaterialNome(a.material_id) || "").toUpperCase()}`;
       map.set(k, (map.get(k) ?? 0) + 1);
     });
     return map;
@@ -983,7 +985,7 @@ export default function Soroteca() {
               const visual = statusVisual(a);
               const venc = avaliarVencimento(a);
               const grupoKey = a.atendimento_id
-                ? `${a.atendimento_id}|${(a.tipo_material || "").toUpperCase()}`
+                ? `${a.atendimento_id}|${(resolveMaterialNome(a.material_id) || "").toUpperCase()}`
                 : null;
               const tamanhoGrupo = grupoKey ? grupoMaterial.get(grupoKey) ?? 1 : 1;
               return (
@@ -1059,7 +1061,7 @@ export default function Soroteca() {
                           )}
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 flex-wrap">
                             <span className="font-medium text-foreground/80">
-                              {a.tipo_material || "—"}
+                              {resolveMaterialNome(a.material_id) || "—"}
                             </span>
                             {a.localizacao && (
                               <span className="flex items-center gap-1">

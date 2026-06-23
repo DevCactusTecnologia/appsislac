@@ -49,21 +49,22 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
     }
 
     // Resolve catálogo de exames
-    let catMap = new Map<string, { id: string; material: string; tipo_processo: string; lab_apoio_id: string | null }>();
+    let catMap = new Map<string, { id: string; material_id: string | null; tipo_processo: string; lab_apoio_id: string | null }>();
     if (at.exames.length > 0) {
       const nomesUnicos = Array.from(new Set(at.exames));
       const { data: catRows } = await supabase
         .from("exames_catalogo")
-        .select("id, nome, material, tipo_processo, lab_apoio_id")
+        .select("id, nome, material_id, tipo_processo, lab_apoio_id")
         .in("nome", nomesUnicos);
-      type CatLite = Pick<ExamesCatalogoRow, "id" | "nome" | "material" | "tipo_processo" | "lab_apoio_id">;
+      type CatLite = Pick<ExamesCatalogoRow, "id" | "nome" | "material_id" | "tipo_processo" | "lab_apoio_id">;
       catMap = new Map((catRows ?? []).map((c: CatLite) => [c.nome, {
         id: c.id,
-        material: c.material || "",
+        material_id: c.material_id ?? null,
         tipo_processo: c.tipo_processo || "INTERNO",
         lab_apoio_id: c.lab_apoio_id ?? null,
       }]));
     }
+
 
     const seqCount = new Map<string, number>();
     const grupoMap = new Map<string, string>();
@@ -83,7 +84,8 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
       return {
         nome_exame: nome,
         exame_id: cat?.id ?? null,
-        material: cat?.material ?? "",
+        material_id: cat?.material_id ?? null,
+
         status: "pendente",
         valor: Number(meta?.valor) || 0,
         // Preço cheio (antes do desconto distribuído) — fallback = valor.
@@ -250,17 +252,18 @@ async function persistUpdateAtendimentoTx(
       const nomesUnicos = Array.from(new Set(updates.exames));
       const { data: catRows } = await supabase
         .from("exames_catalogo")
-        .select("id, nome, material, tipo_processo, lab_apoio_id")
+        .select("id, nome, material_id, tipo_processo, lab_apoio_id")
         .in("nome", nomesUnicos);
-      type CatLite = Pick<ExamesCatalogoRow, "id" | "nome" | "material" | "tipo_processo" | "lab_apoio_id">;
-      const catMap = new Map<string, { id: string; material: string; tipo_processo: string; lab_apoio_id: string | null }>(
+      type CatLite = Pick<ExamesCatalogoRow, "id" | "nome" | "material_id" | "tipo_processo" | "lab_apoio_id">;
+      const catMap = new Map<string, { id: string; material_id: string | null; tipo_processo: string; lab_apoio_id: string | null }>(
         (catRows ?? []).map((c: CatLite) => [c.nome, {
           id: c.id,
-          material: c.material || "",
+          material_id: c.material_id ?? null,
           tipo_processo: c.tipo_processo || "INTERNO",
           lab_apoio_id: c.lab_apoio_id ?? null,
         }]),
       );
+
 
       const seqCount = new Map<string, number>();
       const grupoMap = new Map<string, string>();
@@ -282,7 +285,7 @@ async function persistUpdateAtendimentoTx(
         return {
           nome_exame: nome,
           exame_id: cat?.id ?? null,
-          material: cat?.material ?? "",
+          material_id: cat?.material_id ?? null,
           status: cancelarTudoFlag ? "cancelado" : "pendente",
           valor: Number(meta?.valor) || 0,
           // Preço cheio antes do desconto distribuído.

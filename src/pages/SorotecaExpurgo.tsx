@@ -59,7 +59,7 @@ import {
   concluirLote,
   cancelarLote,
 } from "@/data/sorotecaExpurgoStore";
-import { listarMateriaisAmostra, type MaterialAmostra } from "@/data/materiaisAmostraStore";
+import { listarMateriaisAmostra, resolveMaterialNome, type MaterialAmostra } from "@/data/materiaisAmostraStore";
 
 type Tab = "ATIVOS" | "TODOS" | ExpurgoLoteStatus;
 
@@ -513,7 +513,7 @@ function NovoLoteDialog({
                           />
                         </td>
                         <td className="px-3 py-1.5 font-mono text-xs">{c.codigo_barra}</td>
-                        <td className="px-3 py-1.5">{c.tipo_material}</td>
+                        <td className="px-3 py-1.5">{resolveMaterialNome(c.material_id)}</td>
                         <td className="px-3 py-1.5 text-muted-foreground">{c.localizacao || "—"}</td>
                         <td className="px-3 py-1.5">{formatDate(c.data_coleta)}</td>
                         <td className="px-3 py-1.5">{formatDate(c.data_validade)}</td>

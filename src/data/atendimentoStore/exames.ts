@@ -208,7 +208,9 @@ export async function getExamesOperacionaisByStatus(
         nome: e.nome_exame,
         exame_id: e.exame_id ?? null,
         amostra_id: e.amostra_id ?? null,
+        material_id: e.material_id ?? null,
         material: e.material || "—",
+
         status: e.status as "pendente" | "coletado" | "em_bancada" | "analisado" | "em_analise" | "finalizado" | "cancelado",
         data_coleta: e.data_coleta,
         data_analise: e.data_analise,

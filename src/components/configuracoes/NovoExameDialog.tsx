@@ -188,7 +188,13 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
       if (field === "categoria" && !editData?.id) {
         const preset = getPresetForSetor(String(v));
         if (preset) {
-          if (!next.material && preset.material) next.material = preset.material;
+          if (!next.materialId && preset.materialSigla) {
+            const id = resolveMaterialIdBySigla(preset.materialSigla);
+            if (id) {
+              next.materialId = id;
+              next.material = resolveMaterialNome(id);
+            }
+          }
           if (!next.recipiente && preset.recipiente) {
             next.recipiente = preset.recipiente;
             const r = RECIPIENTES.find((x) => x.value === preset.recipiente);
@@ -202,6 +208,7 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
           if (!next.grupoEtiquetas && preset.grupoEtiquetas) next.grupoEtiquetas = preset.grupoEtiquetas;
         }
       }
+
 
       if (field === "tipoProcesso" && v !== "TERCEIRIZADO") {
         next.labApoioId = null; next.integracaoAtiva = false;
@@ -245,12 +252,13 @@ const NovoExameDialog = ({ open, onClose, editData }: NovoExameDialogProps) => {
     const payload = {
       ...form,
       categoria: form.categoria || "GERAL",
-      material: form.material || "Soro",
+      material: form.material || resolveMaterialNome(form.materialId),
       codigo: form.codigoCBHPM || form.codigoTUSS || form.mnemonico,
       analise,
       labApoioId: form.tipoProcesso === "TERCEIRIZADO" ? form.labApoioId : null,
       integracaoAtiva: form.tipoProcesso === "TERCEIRIZADO" ? form.integracaoAtiva : false,
     };
+
 
     const setor = form.categoria.trim();
     if (setor && !isSetorPadrao(setor)) {

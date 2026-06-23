@@ -53,6 +53,7 @@ interface Exame {
   id: number;
   nome: string;
   material: string;
+  material_id?: string | null;
   status: ExameStatus;
   dataColeta: string | null;
   exameId?: string | null;
@@ -60,6 +61,7 @@ interface Exame {
   tipoProcesso?: "INTERNO" | "TERCEIRIZADO";
   labApoioId?: string | null;
 }
+
 
 interface Paciente {
   id: number;
@@ -116,6 +118,8 @@ async function fetchPacientesColeta(): Promise<Paciente[]> {
             id: e.id,
             nome: e.nome,
             material: e.material,
+            material_id: e.material_id ?? null,
+
             status: ui,
             dataColeta: formatColetaDate(e.data_coleta),
             exameId: e.exame_id ?? null,
@@ -332,7 +336,7 @@ const RegistrarColeta = () => {
               atendimentoId: pacienteId,
               exameId: ex?.exameId ?? null,
               pacienteId: pacienteAtual?.pacienteId ?? null,
-              tipoMaterial: ex?.material ?? "",
+              materialId: ex?.material_id ?? null,
             });
           }),
         );

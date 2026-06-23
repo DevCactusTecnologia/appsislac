@@ -1,4 +1,5 @@
 // Dialog com dados completos da amostra: paciente, atendimento, exames vinculados,
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
 // histórico de status e auditoria. Aberto ao clicar em uma linha da Soroteca.
 
 import { useEffect, useState } from "react";
@@ -144,7 +145,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
         pacienteIdade: detalhe?.paciente?.nascimento
           ? idadeAnos(detalhe.paciente.nascimento)
           : undefined,
-        material: a.tipo_material,
+        material: resolveMaterialNome(a.material_id),
         dataColeta: a.data_coleta,
         observacao: a.observacao || undefined,
       });
@@ -216,7 +217,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                     )}
                   </div>
                   <p className="text-sm text-foreground/80 mt-1">
-                    Material: <span className="font-medium">{a.tipo_material || "—"}</span>
+                    Material: <span className="font-medium">{resolveMaterialNome(a.material_id) || "—"}</span>
                   </p>
                   {detalhe.atendimento && (
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -471,7 +472,7 @@ export default function AmostraDetalheDialog({ amostraId, open, onOpenChange }: 
                       `, ${detalhe.agrupamento.examesReuso} por reaproveitamento`}
                     ) — agrupados pelo material{" "}
                     <span className="font-mono font-medium">
-                      {a.tipo_material || "—"}
+                      {resolveMaterialNome(a.material_id) || "—"}
                     </span>
                     .
                   </div>

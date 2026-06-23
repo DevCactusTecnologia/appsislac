@@ -1,4 +1,5 @@
 /**
+
  * Soroteca 2.0 — Fase 3: Triagem e Armazenamento
  *
  * Filosofia (igual Financeiro 2.0 / Convênios 2.0 / WhatsApp 2.0):
@@ -67,6 +68,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
+
 
 interface SugestaoIA {
   posicao_id: string;
@@ -358,7 +361,7 @@ export default function SorotecaTriagem() {
             </div>
             <div>
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Material</dt>
-              <dd>{amostra.tipo_material || "—"}</dd>
+              <dd>{resolveMaterialNome(amostra.material_id) || "—"}</dd>
             </div>
             <div>
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Paciente</dt>
