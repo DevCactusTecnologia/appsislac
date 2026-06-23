@@ -62,10 +62,18 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === "submit") {
-      const { nome_responsavel, whatsapp, nome_laboratorio, cidade, estado, quantidade_unidades } = body;
+      const { nome_responsavel, whatsapp, nome_laboratorio, email, senha, cidade, estado, quantidade_unidades } = body;
 
-      if (!nome_responsavel || !whatsapp || !nome_laboratorio) {
+      if (!nome_responsavel || !whatsapp || !nome_laboratorio || !email || !senha) {
         return errorResponse(400, "Campos obrigatórios ausentes", requestId, log);
+      }
+
+      const emailNorm = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm)) {
+        return errorResponse(400, "E-mail inválido", requestId, log);
+      }
+      if (String(senha).length < 6) {
+        return errorResponse(400, "A senha deve ter ao menos 6 caracteres", requestId, log);
       }
 
       // Rate limit por IP — submit
@@ -79,12 +87,16 @@ Deno.serve(async (req) => {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + OTP_TTL_MIN);
 
+      const senhaHash = await hashPassword(String(senha));
+
       const { data: lead, error: insertError } = await admin
         .from("inscricoes")
         .insert({
           nome_responsavel,
           whatsapp,
           nome_laboratorio,
+          email: emailNorm,
+          senha_hash: senhaHash,
           cidade,
           estado,
           quantidade_unidades,
