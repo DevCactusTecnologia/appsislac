@@ -165,7 +165,7 @@ const LandingPageResponsive = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              Plataforma laboratorial v4.0
+              Mais laudos liberados, menos retrabalho
             </div>
 
             <h1 className="text-balance text-2xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl sm:leading-[1.1] md:text-5xl md:leading-[1.05] lg:text-7xl">

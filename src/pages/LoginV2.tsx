@@ -232,7 +232,7 @@ export default function LoginV2() {
           <div className="max-w-xl space-y-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-[11px] font-medium text-muted-foreground backdrop-blur-sm">
               <Sparkles className="h-3 w-3 text-primary" />
-              Plataforma SaaS multi-laboratório
+              Seu laboratório no controle, do atendimento ao laudo
             </div>
 
             <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-foreground xl:text-5xl">
