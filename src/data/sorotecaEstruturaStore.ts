@@ -264,10 +264,10 @@ export async function listarPosicoesComOcupacao(galeriaId: string): Promise<Posi
   if (materiais.length > 0) {
     const { data: mats } = await supabase
       .from("materiais_amostra")
-      .select("nome, retencao_dias")
+      .select("nome, dias_retencao")
       .in("nome", materiais);
-    for (const m of mats ?? []) {
-      retencaoMap[(m as { nome: string }).nome] = (m as { retencao_dias: number | null }).retencao_dias;
+    for (const m of (mats ?? []) as Array<{ nome: string; dias_retencao: number | null }>) {
+      retencaoMap[m.nome] = m.dias_retencao;
     }
   }
 
