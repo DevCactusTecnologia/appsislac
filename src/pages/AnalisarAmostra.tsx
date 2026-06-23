@@ -539,7 +539,7 @@ const AnalisarAmostra = () => {
                 </div>
 
                 {/* Header do paciente — PacienteHeaderCard responsivo */}
-                <div className="px-4 sm:px-6 pt-4 sm:pt-5">
+                <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4 bg-gradient-to-br from-primary/5 via-card to-transparent border-b border-border/60">
                   <PacienteHeaderCard
                     nome={selectedPaciente.nome}
                     sexo={selectedPaciente.sexo}
