@@ -989,7 +989,7 @@ const RegistrarColeta = () => {
           </div>
           <h2 className="text-base font-semibold text-foreground mb-1">Todas canceladas</h2>
           <p className="text-sm text-muted-foreground mb-6">Todas as amostras foram canceladas.</p>
-          <button onClick={() => { setAllCancelledDialog(false); setSelectedId(null); }} className="h-10 px-6 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors">Fechar</button>
+          <button onClick={() => { setAllCancelledDialog(false); setSelectedId(null); }} className="h-10 px-6 rounded-xl border border-border/60 bg-card text-sm font-medium text-foreground hover:bg-accent transition-colors">Fechar</button>
         </div>
       </Overlay>
 
