@@ -385,16 +385,18 @@ export default function Soroteca() {
 
   // Reset paginação ao mudar filtros
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    setLegacyPage(1);
   }, [statusFiltro, search]);
 
-  const visiveisLegacy = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
-  const restantesLegacy = filtradas.length - visiveisLegacy.length;
+  const legacyTotalPages = Math.max(1, Math.ceil(filtradas.length / PAGE_SIZE));
+  const visiveisLegacy = useMemo(
+    () => filtradas.slice((legacyPage - 1) * PAGE_SIZE, legacyPage * PAGE_SIZE),
+    [filtradas, legacyPage],
+  );
 
   // Lista final que vai para a UI (server-side avançado OU legado client-side).
   const visiveis = advancadoAtivo ? advItems : visiveisLegacy;
   const totalListagem = advancadoAtivo ? advTotal : filtradas.length;
-  const restantes = advancadoAtivo ? 0 : restantesLegacy;
   const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
   const carregando = advancadoAtivo ? advLoading : loading;
 
