@@ -54,6 +54,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
     top: "5", right: "10", bottom: "5", left: "10",
   });
+  // ─── Campos científicos oficiais (Exames 2.2) ─────────────────────────────
+  const [metodologia, setMetodologia] = useState("");
+  const [unidadePadrao, setUnidadePadrao] = useState("");
+  const [textoInterpretativo, setTextoInterpretativo] = useState("");
+  const [exibirMetodologia, setExibirMetodologia] = useState(true);
+  const [exibirUnidade, setExibirUnidade] = useState(true);
+  const [exibirMaterial, setExibirMaterial] = useState(false);
 
   // [DIAG-AUTOCLOSE] Investigação de fechamento espontâneo. Remover após resolver.
   useEffect(() => {
@@ -80,9 +87,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       setNomeLayout(editData.nome);
       setPadrao(!!editData.padrao);
       setEditorContent(editData.conteudo || "<p></p>");
+      setMetodologia(editData.metodologia ?? "");
+      setUnidadePadrao(editData.unidadePadrao ?? "");
+      setTextoInterpretativo(editData.textoInterpretativoPadrao ?? "");
+      setExibirMetodologia(editData.exibirMetodologiaLaudo !== false);
+      setExibirUnidade(editData.exibirUnidadeLaudo !== false);
+      setExibirMaterial(!!editData.exibirMaterialLaudo);
       const m = (editData.config?.margins ?? {}) as Partial<{ top: number; right: number; bottom: number; left: number }>;
-      // Padrão institucional: Direita e Esquerda sempre 10mm em TODOS os layouts científicos
-      // (existentes e novos). Superior/Inferior preservam o que estiver salvo.
       setMargins({
         top: String(m.top ?? 5),
         right: "10",
@@ -94,6 +105,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       const existentes = exame?.id ? getLayouts(exame.id) : [];
       setPadrao(existentes.length === 0);
       setEditorContent("<p></p>");
+      setMetodologia("");
+      setUnidadePadrao("");
+      setTextoInterpretativo("");
+      setExibirMetodologia(true);
+      setExibirUnidade(true);
+      setExibirMaterial(false);
       setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
     }
 
@@ -177,6 +194,12 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
       padrao,
       criadoPor: user?.nome || user?.email || "USUARIO",
       config: { ...(editData?.config ?? {}), margins: marginsConfig },
+      metodologia: metodologia.trim(),
+      unidadePadrao: unidadePadrao.trim(),
+      textoInterpretativoPadrao: textoInterpretativo,
+      exibirMetodologiaLaudo: exibirMetodologia,
+      exibirUnidadeLaudo: exibirUnidade,
+      exibirMaterialLaudo: exibirMaterial,
     };
     let ok = false;
     if (editData) ok = await updateLayout(editData.id, exame.id, payload);
@@ -254,6 +277,44 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
             <Star className={`h-4 w-4 ${padrao ? "fill-primary" : ""}`} />
             {padrao ? "Padrão" : "Definir padrão"}
           </button>
+        </div>
+
+        {/* Configurações científicas — fonte de verdade RDC 786/2023 (Exames 2.2) */}
+        <div className="rounded-lg border border-border/60 bg-muted/10 p-3 space-y-3">
+          <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Configurações científicas
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Metodologia</label>
+              <input type="text" value={metodologia} onChange={(e) => setMetodologia(e.target.value)}
+                className={inputClass} placeholder="Ex.: Citometria de fluxo / impedância" />
+            </div>
+            <div>
+              <label className={labelClass}>Unidade padrão</label>
+              <input type="text" value={unidadePadrao} onChange={(e) => setUnidadePadrao(e.target.value)}
+                className={inputClass} placeholder="Ex.: mg/dL" />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Texto interpretativo padrão</label>
+            <textarea value={textoInterpretativo} onChange={(e) => setTextoInterpretativo(e.target.value)}
+              rows={2} className={`${inputClass} h-auto py-2 resize-none`}
+              placeholder="Interpretação clínica padrão exibida no laudo." />
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+            {[
+              { label: "Exibir metodologia no laudo", v: exibirMetodologia, set: setExibirMetodologia },
+              { label: "Exibir unidade no laudo", v: exibirUnidade, set: setExibirUnidade },
+              { label: "Exibir material no laudo", v: exibirMaterial, set: setExibirMaterial },
+            ].map((f) => (
+              <label key={f.label} className="flex items-center gap-2 text-[12px] text-foreground cursor-pointer">
+                <input type="checkbox" checked={f.v} onChange={(e) => f.set(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary" />
+                {f.label}
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Tabs */}

@@ -25,8 +25,7 @@ export interface ExameCatalogo {
   porteCBHPM: string;
   codigoLOINC: string;
   codigoSUS: string;
-  // Analítico
-  metodologia: string;
+  // Analítico (não-científico — campos científicos vivem em exame_layouts)
   prazoEntregaDias: number;
   urgenciaDisponivel: boolean;
   prazoUrgenciaHoras: number;
@@ -47,7 +46,6 @@ export interface ExameCatalogo {
   sexoAplicavel: "AMBOS" | "MASCULINO" | "FEMININO";
   exibirPortal: boolean;
   // Pós-analítico
-  unidadePadrao: string;
   requerAssinaturaMedica: boolean;
   // Vínculo relacional com setor (setores_laboratoriais.id)
   setorId: string | null;
@@ -57,17 +55,13 @@ export interface ExameCatalogo {
   providerIntegracao: string;
   codigoExameApoio: string;
   permiteEnvioApoio: boolean;
-  // Resultado / Laudo
-  exibirMetodologiaLaudo: boolean;
-  exibirUnidadeLaudo: boolean;
-  exibirMaterialLaudo: boolean;
   tags: string[];
-  // Interface Engine readiness (Exames 2.1 Sub-fase B) — preparação, sem
-  // validação até o motor de integrações ser implementado.
+  // Interface Engine readiness (Exames 2.1 Sub-fase B)
   codigoInterfaceamento: string;
   codigoHL7: string;
   codigoEquipamento: Record<string, string> | null;
 }
+
 
 let exames: ExameCatalogo[] = [];
 let _listeners: Array<() => void> = [];
@@ -102,7 +96,6 @@ function fromRow(r: any): ExameCatalogo {
     porteCBHPM: r.porte_cbhpm ?? "-",
     codigoLOINC: r.codigo_loinc ?? "",
     codigoSUS: r.codigo_sus ?? "",
-    metodologia: r.metodologia ?? "",
     prazoEntregaDias: Number(r.prazo_entrega_dias ?? 1),
     urgenciaDisponivel: !!r.urgencia_disponivel,
     prazoUrgenciaHoras: Number(r.prazo_urgencia_horas ?? 0),
@@ -119,16 +112,12 @@ function fromRow(r: any): ExameCatalogo {
     sinonimos: r.sinonimos ?? "",
     sexoAplicavel: (r.sexo_aplicavel === "MASCULINO" || r.sexo_aplicavel === "FEMININO" ? r.sexo_aplicavel : "AMBOS"),
     exibirPortal: r.exibir_portal !== false,
-    unidadePadrao: r.unidade_padrao ?? "",
     requerAssinaturaMedica: r.requer_assinatura_medica !== false,
     setorId: r.setor_id ?? null,
     tussSemEquivalente: !!r.tuss_sem_equivalente,
     providerIntegracao: r.provider_integracao ?? "",
     codigoExameApoio: r.codigo_exame_apoio ?? "",
     permiteEnvioApoio: !!r.permite_envio_apoio,
-    exibirMetodologiaLaudo: r.exibir_metodologia_laudo !== false,
-    exibirUnidadeLaudo: r.exibir_unidade_laudo !== false,
-    exibirMaterialLaudo: !!r.exibir_material_laudo,
     tags: Array.isArray(r.tags) ? r.tags : [],
     codigoInterfaceamento: r.codigo_interfaceamento ?? "",
     codigoHL7: r.codigo_hl7 ?? "",
@@ -156,7 +145,6 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.porteCBHPM !== undefined) row.porte_cbhpm = e.porteCBHPM || "-";
   if (e.codigoLOINC !== undefined) row.codigo_loinc = e.codigoLOINC;
   if (e.codigoSUS !== undefined) row.codigo_sus = e.codigoSUS;
-  if (e.metodologia !== undefined) row.metodologia = e.metodologia;
   if (e.prazoEntregaDias !== undefined) row.prazo_entrega_dias = e.prazoEntregaDias;
   if (e.urgenciaDisponivel !== undefined) row.urgencia_disponivel = e.urgenciaDisponivel;
   if (e.prazoUrgenciaHoras !== undefined) row.prazo_urgencia_horas = e.prazoUrgenciaHoras;
@@ -173,16 +161,12 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.sinonimos !== undefined) row.sinonimos = e.sinonimos;
   if (e.sexoAplicavel !== undefined) row.sexo_aplicavel = e.sexoAplicavel;
   if (e.exibirPortal !== undefined) row.exibir_portal = e.exibirPortal;
-  if (e.unidadePadrao !== undefined) row.unidade_padrao = e.unidadePadrao;
   if (e.requerAssinaturaMedica !== undefined) row.requer_assinatura_medica = e.requerAssinaturaMedica;
   if (e.setorId !== undefined) row.setor_id = e.setorId;
   if (e.tussSemEquivalente !== undefined) row.tuss_sem_equivalente = e.tussSemEquivalente;
   if (e.providerIntegracao !== undefined) row.provider_integracao = e.providerIntegracao;
   if (e.codigoExameApoio !== undefined) row.codigo_exame_apoio = e.codigoExameApoio;
   if (e.permiteEnvioApoio !== undefined) row.permite_envio_apoio = e.permiteEnvioApoio;
-  if (e.exibirMetodologiaLaudo !== undefined) row.exibir_metodologia_laudo = e.exibirMetodologiaLaudo;
-  if (e.exibirUnidadeLaudo !== undefined) row.exibir_unidade_laudo = e.exibirUnidadeLaudo;
-  if (e.exibirMaterialLaudo !== undefined) row.exibir_material_laudo = e.exibirMaterialLaudo;
   if (e.tags !== undefined) row.tags = Array.isArray(e.tags) ? e.tags : [];
   if (e.codigoInterfaceamento !== undefined) row.codigo_interfaceamento = e.codigoInterfaceamento || null;
   if (e.codigoHL7 !== undefined) row.codigo_hl7 = e.codigoHL7 || null;

@@ -55,24 +55,23 @@ interface NovoExameDialogProps {
   editData?: Partial<ExameCatalogo> | null;
 }
 
-// Defaults iniciais — alinhados ao schema slim Exames 2.1.
+// Defaults iniciais — slim Exames 2.2 (campos científicos foram para exame_layouts).
 const emptyForm: ExameFormData = {
   nome: "", mnemonico: "", categoria: "", codigoCBHPM: "", codigoTUSS: "",
   material: "", tipoProcesso: "INTERNO", labApoioId: null, integracaoAtiva: false,
-  porteCBHPM: "-", codigoLOINC: "", codigoSUS: "", metodologia: "",
+  porteCBHPM: "-", codigoLOINC: "", codigoSUS: "",
   prazoEntregaDias: 1, urgenciaDisponivel: false, prazoUrgenciaHoras: 0,
   recipiente: "", corTampa: "", volumeMinimoMl: 0, estabilidade: "",
   requerJejum: false, horasJejum: 0, preparoPaciente: "",
   grupoEtiquetas: "", quantidadeEtiquetas: 1, informacoesColeta: "",
   sinonimos: "", sexoAplicavel: "AMBOS", exibirPortal: true,
-  unidadePadrao: "", requerAssinaturaMedica: true, setorId: null,
+  requerAssinaturaMedica: true, setorId: null,
   tussSemEquivalente: false,
   providerIntegracao: "", codigoExameApoio: "", permiteEnvioApoio: false,
-  exibirMetodologiaLaudo: true, exibirUnidadeLaudo: true, exibirMaterialLaudo: false,
   tags: [],
-  // Interface Engine readiness (Sub-fase B) — preparação, sem UI ainda.
   codigoInterfaceamento: "", codigoHL7: "", codigoEquipamento: null,
 };
+
 
 const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all";
 const selectClass = `${inputClass} appearance-none cursor-pointer pr-8`;
