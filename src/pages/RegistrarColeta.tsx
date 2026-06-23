@@ -782,12 +782,12 @@ const RegistrarColeta = () => {
                   </ExameListWithFade>
 
                   {/* Action bar — fica logo abaixo do último exame */}
-                  <div className="shrink-0 px-4 lg:px-6 py-3.5 border-t border-border bg-card flex flex-wrap items-center justify-between gap-3">
+                  <div className="shrink-0 px-4 lg:px-6 py-3.5 border-t border-border/60 bg-muted/10 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openCancelDialog(null)}
                         disabled={selectedExames.length === 0}
-                        className="flex items-center gap-2 h-9 px-3.5 rounded-lg text-xs font-medium text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        className="flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-medium text-[hsl(var(--status-danger))] hover:bg-[hsl(var(--status-danger-bg))] disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Cancelar
                         {selectedExames.length > 0 && <span className="h-4 min-w-4 px-1 rounded-full bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] text-[10px] font-bold flex items-center justify-center tabular-nums">{selectedExames.length}</span>}
@@ -795,7 +795,7 @@ const RegistrarColeta = () => {
                       <button
                         onClick={handleColetarSelecionados}
                         disabled={selectedExames.length === 0}
-                        className="flex items-center gap-2 h-9 px-3.5 rounded-lg text-xs font-medium border border-border text-foreground hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                        className="flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-medium border border-border/60 bg-card text-foreground hover:bg-accent disabled:opacity-40 disabled:hover:bg-card transition-colors"
                       >
                         Coletar selecionados
                         {selectedExames.length > 0 && <span className="h-4 min-w-4 px-1 rounded-full bg-foreground/10 text-foreground text-[10px] font-bold flex items-center justify-center tabular-nums">{selectedExames.length}</span>}
@@ -804,7 +804,7 @@ const RegistrarColeta = () => {
                     <button
                       onClick={handleColetaIntegral}
                       disabled={pendentesCount === 0}
-                      className="h-9 px-4 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors"
+                      className="h-9 px-5 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary transition-colors shadow-elevation-xs"
                     >
                       Coleta integral
                     </button>
