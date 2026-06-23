@@ -20,7 +20,7 @@ import {
   isSetorPadrao,
   type SetorCustomizado,
 } from "@/data/setoresLaboratoriaisStore";
-import { getCurrentTenantId } from "@/data/_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 
 type StatusFilter = "todos" | "ativos" | "inativos";
 

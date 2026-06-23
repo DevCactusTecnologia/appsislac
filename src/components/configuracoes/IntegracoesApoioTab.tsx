@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { getCurrentTenantId } from "@/data/_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import {
   Plug, RefreshCw, PlugZap, FileText, AlertTriangle, Clock,
   Search, Download, RotateCcw, X, Loader2, Zap, ChevronDown,

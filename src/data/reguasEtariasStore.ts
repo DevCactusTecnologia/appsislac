@@ -6,7 +6,7 @@
  * NÃO reescreve VRs).
  */
 
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { FaixaEtaria, MAX_DIAS, toDias } from "@/lib/idadeFaixas";
 
 export interface ReguaEtaria {

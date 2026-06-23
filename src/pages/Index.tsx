@@ -26,7 +26,7 @@ import { useFeatureFlag } from "@/lib/featureFlags";
 import { usePaginatedAtendimentos, pageRowToLightAtendimento } from "@/hooks/usePaginatedAtendimentos";
 import { normalizeAtendimento } from "@/data/atendimentoNormalize";
 import { logger } from "@/lib/logger";
-import { getCurrentTenantId } from "@/data/_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { useAuth } from "@/contexts/AuthContext";
 
 /* ── Helpers ── */

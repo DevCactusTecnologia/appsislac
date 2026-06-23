@@ -2,7 +2,7 @@
 // Itens com sistema=true não podem ser renomeados nem excluídos (trigger no DB).
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

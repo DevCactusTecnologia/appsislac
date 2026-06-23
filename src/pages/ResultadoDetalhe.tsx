@@ -27,7 +27,7 @@ import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchA
 import { isFeatureEnabled } from "@/lib/featureFlags";
 import type { MockAtendimento } from "@/data/types";
 import { loadParametros, getParametros, type ExameParametro } from "@/data/exameParametrosStore";
-import { avaliarCritico, type NivelCritico } from "@/lib/criticoChecker";
+import { avaliarCritico, type NivelCritico } from "@/domains/result/services/criticoChecker";
 import { registrarLiberacaoCritica } from "@/lib/criticoAudit";
 import {
   hidratarSegmentosParaDigitacao,

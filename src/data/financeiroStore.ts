@@ -3,7 +3,7 @@
 // - Entradas: view financeiro_entradas (read-only, derivada de atendimento_pagamentos)
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 import { formatDateBR } from "@/lib/dateBR";

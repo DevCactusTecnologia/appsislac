@@ -34,7 +34,7 @@ import {
   loadSetoresCustomizados, subscribeSetoresCustomizados, getSetoresClassificados,
   addSetorCustomizado, isSetorPadrao, resolveSetorIdByNome,
 } from "@/data/setoresLaboratoriaisStore";
-import { getCurrentTenantId } from "@/data/_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { sanitizeTuss, validarTuss, PORTES_CBHPM } from "@/lib/regulatorio";
 import { showError } from "@/lib/showError";

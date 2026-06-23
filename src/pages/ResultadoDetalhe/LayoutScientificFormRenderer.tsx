@@ -21,7 +21,7 @@ import { AlertOctagon } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { ParamTypedInput } from "./ParamTypedInput";
 import type { Parametro } from "./types";
-import type { NivelCritico } from "@/lib/criticoChecker";
+import type { NivelCritico } from "@/domains/result/services/criticoChecker";
 import { toast } from "@/hooks/use-toast";
 
 /** Regex que casa elementos cujo conteúdo de texto é exatamente um único placeholder. */

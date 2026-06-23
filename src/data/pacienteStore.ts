@@ -2,7 +2,7 @@
 // API pública preservada para consumers que fazem leitura sincrona.
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, PersistError } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 import { formatDateBR } from "@/lib/dateBR";
