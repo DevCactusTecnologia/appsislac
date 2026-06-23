@@ -809,7 +809,7 @@ const AnalisarAmostra = () => {
           </div>
           <h2 className="text-base font-semibold text-foreground mb-1">Não é possível finalizar</h2>
           <p className="text-sm text-muted-foreground mb-6">As amostras precisam estar com status <strong className="text-foreground">Analisada</strong> antes de finalizar.</p>
-          <button onClick={() => setFinalizarWarningDialog(false)} className="h-10 px-6 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">Entendi</button>
+          <button onClick={() => setFinalizarWarningDialog(false)} className="h-10 px-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-elevation-xs">Entendi</button>
         </div>
       </Overlay>
 
