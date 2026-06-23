@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   FlaskConical,
   Loader2,
+  Lock,
+  Mail,
   MessageCircle,
   Phone,
   ShieldCheck,
