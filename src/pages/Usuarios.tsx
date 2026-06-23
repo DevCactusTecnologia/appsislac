@@ -542,11 +542,19 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
             </div>
           </label>
 
-          {/* Permissões agrupadas */}
+          {/* Permissões agrupadas — colapsadas por padrão (Equipe 2.1) */}
           {!form.isAdmin && (
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2"><Shield className="h-4 w-4" /> Permissões</Label>
-              <div className="space-y-3">
+            <details className="group rounded-2xl border border-border/60 overflow-hidden">
+              <summary className="flex items-center justify-between gap-2 px-4 py-3 cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors list-none">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-foreground">Permissões avançadas</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  Ajustes finos — só altere se souber o que está fazendo.
+                </span>
+              </summary>
+              <div className="p-3 space-y-3">
                 {PERMISSOES_AGRUPADAS.map((grupo) => (
                   <div key={grupo.id} className="rounded-2xl border border-border/60 overflow-hidden">
                     <div className="px-3 py-2 bg-muted/40 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{grupo.label}</div>
@@ -573,22 +581,11 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
           )}
 
-          {/* Assinatura no laudo (apenas para edição) */}
-          {editingId && (
-            <AssinaturaSection
-              userId={editingId}
-              tipo={form.assinaturaTipo}
-              conselho={form.assinaturaConselho}
-              imagemKey={form.assinaturaImagemKey}
-              nome={form.nome}
-              onChangeTipo={(t) => setForm((f) => ({ ...f, assinaturaTipo: t }))}
-              onChangeConselho={(v) => setForm((f) => ({ ...f, assinaturaConselho: v }))}
-              onImagemChange={(key) => setForm((f) => ({ ...f, assinaturaImagemKey: key, assinaturaTipo: key ? "imagem" : "carimbo" }))}
-            />
-          )}
+          {/* Assinatura — movida para /perfil (Equipe 2.1 Fase 2.7).
+              Admin não edita assinatura alheia. */}
 
           {/* Unidades */}
           <div className="space-y-3">
