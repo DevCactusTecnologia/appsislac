@@ -3,16 +3,17 @@ import { Helmet } from "react-helmet-async";
 import { Plus, Pencil, Trash2, Search, Loader2, FlaskConical, CheckCircle2, RotateCcw, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  SorotecaDialogHeader,
+  SorotecaDialogBody,
+  SorotecaDialogFooter as SDFooter,
+  Field,
+  Section,
+} from "@/components/soroteca/SorotecaDialogShell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -256,59 +257,102 @@ export default function SorotecaMateriais() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar material" : "Novo material"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <Label htmlFor="nome">Nome *</Label>
-              <Input id="nome" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Ex.: Soro" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="sigla">Sigla</Label>
-                <Input id="sigla" value={form.sigla} onChange={(e) => setForm({ ...form, sigla: e.target.value.toUpperCase() })} maxLength={8} placeholder="SOR" />
+        <DialogContent className="sm:max-w-[560px] max-h-[92vh] overflow-y-auto p-0 gap-0">
+          <SorotecaDialogHeader
+            icon={editing ? Pencil : Plus}
+            title={editing ? "Editar material" : "Novo material"}
+            description={
+              editing
+                ? `Atualize os parâmetros de ${editing.nome}.`
+                : "Catálogo único usado por Coleta, Atendimento, Produção e Resultados."
+            }
+            tone={editing ? "muted" : "primary"}
+          />
+          <SorotecaDialogBody>
+            <Section title="Identificação">
+              <Field label="Nome" htmlFor="nome" required>
+                <Input
+                  id="nome"
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  placeholder="Ex.: Soro"
+                  autoFocus
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Sigla" htmlFor="sigla" hint="máx. 8">
+                  <Input
+                    id="sigla"
+                    value={form.sigla}
+                    onChange={(e) => setForm({ ...form, sigla: e.target.value.toUpperCase() })}
+                    maxLength={8}
+                    placeholder="SOR"
+                    className="font-mono"
+                  />
+                </Field>
+                <Field label="Temperatura" htmlFor="temp" hint="ideal">
+                  <Input
+                    id="temp"
+                    value={form.temperaturaRecomendada}
+                    onChange={(e) => setForm({ ...form, temperaturaRecomendada: e.target.value })}
+                    placeholder="2-8°C"
+                  />
+                </Field>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="temp">Temperatura</Label>
-                <Input id="temp" value={form.temperaturaRecomendada} onChange={(e) => setForm({ ...form, temperaturaRecomendada: e.target.value })} placeholder="2-8°C" />
+            </Section>
+
+            <Section title="Validade e retenção" hint="usado na soroteca e expurgo">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Dias de retenção" htmlFor="retencao">
+                  <Input
+                    id="retencao"
+                    type="number"
+                    min={0}
+                    value={form.diasRetencao}
+                    onChange={(e) => setForm({ ...form, diasRetencao: e.target.value })}
+                  />
+                </Field>
+                <Field label="Horas de validade" htmlFor="validade">
+                  <Input
+                    id="validade"
+                    type="number"
+                    min={0}
+                    value={form.horasValidade}
+                    onChange={(e) => setForm({ ...form, horasValidade: e.target.value })}
+                  />
+                </Field>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="retencao">Dias de retenção</Label>
-                <Input id="retencao" type="number" min={0} value={form.diasRetencao} onChange={(e) => setForm({ ...form, diasRetencao: e.target.value })} />
+            </Section>
+
+            <Section title="Comportamento">
+              <div className="flex items-center justify-between rounded-md border px-3 h-12">
+                <div>
+                  <p className="text-sm font-medium">Reutilizável</p>
+                  <p className="text-xs text-muted-foreground">Permite múltiplas alíquotas do mesmo tubo.</p>
+                </div>
+                <Switch checked={form.reutilizavel} onCheckedChange={(v) => setForm({ ...form, reutilizavel: v })} />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="validade">Horas de validade</Label>
-                <Input id="validade" type="number" min={0} value={form.horasValidade} onChange={(e) => setForm({ ...form, horasValidade: e.target.value })} />
+              <div className="flex items-center justify-between rounded-md border px-3 h-12">
+                <div>
+                  <p className="text-sm font-medium">Ativo</p>
+                  <p className="text-xs text-muted-foreground">Aparece nos formulários de seleção.</p>
+                </div>
+                <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
               </div>
-            </div>
-            <div className="flex items-center justify-between rounded-md border px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">Reutilizável</p>
-                <p className="text-xs text-muted-foreground">Permite múltiplas alíquotas.</p>
-              </div>
-              <Switch checked={form.reutilizavel} onCheckedChange={(v) => setForm({ ...form, reutilizavel: v })} />
-            </div>
-            <div className="flex items-center justify-between rounded-md border px-3 py-2">
-              <div>
-                <p className="text-sm font-medium">Ativo</p>
-                <p className="text-xs text-muted-foreground">Aparece nos formulários de seleção.</p>
-              </div>
-              <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>Cancelar</Button>
+            </Section>
+          </SorotecaDialogBody>
+          <SDFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+              Cancelar
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editing ? "Salvar" : "Criar"}
+              {editing ? "Salvar alterações" : "Criar material"}
             </Button>
-          </DialogFooter>
+          </SDFooter>
         </DialogContent>
       </Dialog>
+
 
       <AlertDialog open={!!confirmRemove} onOpenChange={(o) => !o && setConfirmRemove(null)}>
         <AlertDialogContent>

@@ -6,22 +6,22 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash } from "lucide-react";
+import {
+  SorotecaDialogHeader,
+  SorotecaDialogBody,
+  SorotecaDialogFooter as SDFooter,
+  Field,
+  Section,
+} from "@/components/soroteca/SorotecaDialogShell";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SorotecaShell } from "@/components/soroteca/SorotecaShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,7 @@ import {
   type PosicaoGaleria,
   atualizarGaleria,
   atualizarLocal,
+  atualizarPosicao,
   criarGaleria,
   criarLocal,
   criarPosicao,
@@ -78,6 +79,7 @@ export default function SorotecaEstrutura() {
   const [novaPosicaoOpen, setNovaPosicaoOpen] = useState(false);
   const [editarLocal, setEditarLocal] = useState<LocalArmazenamento | null>(null);
   const [editarGaleria, setEditarGaleria] = useState<Galeria | null>(null);
+  const [editarPosicao, setEditarPosicao] = useState<PosicaoGaleria | null>(null);
   const [confirmar, setConfirmar] = useState<{ tipo: "local" | "galeria" | "posicao"; id: string; nome: string } | null>(null);
 
   // ---------- carregamento ----------
@@ -342,13 +344,18 @@ export default function SorotecaEstrutura() {
               {posicoes.map((p) => (
                 <div
                   key={p.id}
-                  className="group relative rounded-md border bg-background px-2 py-1.5 text-center text-xs"
+                  className="group relative rounded-md border bg-background px-2 py-1.5 text-center text-xs cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  onClick={() => setEditarPosicao(p)}
+                  title="Editar posição"
                 >
                   <span className="font-mono">{p.codigo}</span>
                   <button
                     type="button"
                     className="absolute -top-1.5 -right-1.5 hidden group-hover:flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
-                    onClick={() => setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmar({ tipo: "posicao", id: p.id, nome: p.codigo });
+                    }}
                   >
                     <Trash2 className="h-2.5 w-2.5" />
                   </button>
@@ -358,6 +365,7 @@ export default function SorotecaEstrutura() {
           )}
         </section>
       </div>
+
 
       {/* ----- dialogs ----- */}
       <NovoLocalDialog
@@ -369,12 +377,14 @@ export default function SorotecaEstrutura() {
         open={novaGaleriaOpen}
         onOpenChange={setNovaGaleriaOpen}
         localId={localSel}
+        localNome={localAtual?.nome}
         onCreated={() => refreshGalerias(localSel)}
       />
       <NovasPosicoesDialog
         open={novaPosicaoOpen}
         onOpenChange={setNovaPosicaoOpen}
         galeriaId={galeriaSel}
+        galeriaNome={galeriaAtual?.nome}
         onCreated={() => refreshPosicoes(galeriaSel)}
       />
 
@@ -387,6 +397,11 @@ export default function SorotecaEstrutura() {
         galeria={editarGaleria}
         onOpenChange={(o) => !o && setEditarGaleria(null)}
         onSaved={() => refreshGalerias(localSel)}
+      />
+      <EditarPosicaoDialog
+        posicao={editarPosicao}
+        onOpenChange={(o) => !o && setEditarPosicao(null)}
+        onSaved={() => refreshPosicoes(galeriaSel)}
       />
 
       <AlertDialog open={!!confirmar} onOpenChange={(open) => !open && setConfirmar(null)}>
@@ -415,8 +430,11 @@ export default function SorotecaEstrutura() {
 }
 
 // =================================================================
-// Subdialogs
+// Subdialogs — padrão flat tenant (SorotecaDialogShell)
 // =================================================================
+
+const DIALOG_CONTENT_CLS =
+  "sm:max-w-[560px] max-h-[92vh] overflow-y-auto p-0 gap-0";
 
 function NovoLocalDialog({
   open,
@@ -431,6 +449,7 @@ function NovoLocalDialog({
   const [tipo, setTipo] = useState<LocalTipo>("geladeira");
   const [tmin, setTmin] = useState("");
   const [tmax, setTmax] = useState("");
+  const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -439,6 +458,7 @@ function NovoLocalDialog({
       setTipo("geladeira");
       setTmin("");
       setTmax("");
+      setObservacao("");
     }
   }, [open]);
 
@@ -453,6 +473,7 @@ function NovoLocalDialog({
       tipo,
       temperatura_min: tmin ? Number(tmin) : null,
       temperatura_max: tmax ? Number(tmax) : null,
+      observacao: observacao.trim() || null,
     });
     setSaving(false);
     if (!res.ok) {
@@ -466,66 +487,88 @@ function NovoLocalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Novo local</DialogTitle>
-          <DialogDescription>Cadastre uma geladeira, freezer, armário ou sala.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="local-nome">Nome</Label>
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={MapPin}
+          title="Novo local"
+          description="Cadastre uma geladeira, freezer, armário ou sala. Tudo o que armazena amostras vive aqui."
+        />
+        <SorotecaDialogBody>
+          <Section title="Identificação">
+            <Field label="Nome" htmlFor="local-nome" required>
+              <Input
+                id="local-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex.: Geladeira 01"
+                autoFocus
+              />
+            </Field>
+            <Field label="Tipo" required>
+              <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </Section>
+
+          <Section title="Faixa de temperatura" hint="opcional — exibida na triagem">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Mínima" htmlFor="tmin" hint="°C">
+                <div className="relative">
+                  <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="tmin"
+                    type="number"
+                    value={tmin}
+                    onChange={(e) => setTmin(e.target.value)}
+                    className="pl-8"
+                    placeholder="2"
+                  />
+                </div>
+              </Field>
+              <Field label="Máxima" htmlFor="tmax" hint="°C">
+                <div className="relative">
+                  <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="tmax"
+                    type="number"
+                    value={tmax}
+                    onChange={(e) => setTmax(e.target.value)}
+                    className="pl-8"
+                    placeholder="8"
+                  />
+                </div>
+              </Field>
+            </div>
+          </Section>
+
+          <Section title="Observação" hint="opcional">
             <Input
-              id="local-nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex.: Geladeira 01"
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Ex.: Geladeira do corredor norte, controle de temperatura por termômetro digital."
             />
-          </div>
-          <div>
-            <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIPOS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="tmin">Temp. mín (°C)</Label>
-              <Input
-                id="tmin"
-                type="number"
-                value={tmin}
-                onChange={(e) => setTmin(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="tmax">Temp. máx (°C)</Label>
-              <Input
-                id="tmax"
-                type="number"
-                value={tmax}
-                onChange={(e) => setTmax(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
+          </Section>
+        </SorotecaDialogBody>
+        <SDFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
           <Button onClick={submit} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            Criar
+            <Plus className="h-4 w-4 mr-1.5" />
+            Criar local
           </Button>
-        </DialogFooter>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
@@ -535,11 +578,13 @@ function NovaGaleriaDialog({
   open,
   onOpenChange,
   localId,
+  localNome,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   localId: string | null;
+  localNome?: string;
   onCreated: () => void;
 }) {
   const [nome, setNome] = useState("");
@@ -569,40 +614,47 @@ function NovaGaleriaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nova galeria</DialogTitle>
-          <DialogDescription>Subdivisão do local (bandeja, rack, prateleira).</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="g-nome">Nome</Label>
-            <Input
-              id="g-nome"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex.: Bandeja A"
-            />
-          </div>
-          <div>
-            <Label htmlFor="g-ordem">Ordem</Label>
-            <Input
-              id="g-ordem"
-              type="number"
-              value={ordem}
-              onChange={(e) => setOrdem(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={Layers}
+          title="Nova galeria"
+          description={
+            localNome
+              ? `Subdivisão de ${localNome} (bandeja, rack, prateleira).`
+              : "Subdivisão do local (bandeja, rack, prateleira)."
+          }
+        />
+        <SorotecaDialogBody>
+          <Section title="Identificação">
+            <Field label="Nome" htmlFor="g-nome" required>
+              <Input
+                id="g-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Ex.: Bandeja A"
+                autoFocus
+              />
+            </Field>
+            <Field label="Ordem de exibição" htmlFor="g-ordem" hint="quanto menor, mais acima">
+              <Input
+                id="g-ordem"
+                type="number"
+                value={ordem}
+                onChange={(e) => setOrdem(e.target.value)}
+              />
+            </Field>
+          </Section>
+        </SorotecaDialogBody>
+        <SDFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
           <Button onClick={submit} disabled={saving || !nome.trim()}>
             {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            Criar
+            <Plus className="h-4 w-4 mr-1.5" />
+            Criar galeria
           </Button>
-        </DialogFooter>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
@@ -612,11 +664,13 @@ function NovasPosicoesDialog({
   open,
   onOpenChange,
   galeriaId,
+  galeriaNome,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   galeriaId: string | null;
+  galeriaNome?: string;
   onCreated: () => void;
 }) {
   const [modo, setModo] = useState<"individual" | "lote">("lote");
@@ -632,8 +686,14 @@ function NovasPosicoesDialog({
       setPrefixo("A");
       setInicio("1");
       setFim("10");
+      setModo("lote");
     }
   }, [open]);
+
+  const ini = Number(inicio);
+  const fi = Number(fim);
+  const lotePreviewTotal =
+    Number.isFinite(ini) && Number.isFinite(fi) && fi >= ini ? fi - ini + 1 : 0;
 
   async function submit() {
     if (!galeriaId) return;
@@ -652,14 +712,17 @@ function NovasPosicoesDialog({
       }
       toast.success("Posição criada");
     } else {
-      const ini = Number(inicio);
-      const fi = Number(fim);
       if (!Number.isFinite(ini) || !Number.isFinite(fi) || fi < ini) {
         toast.error("Intervalo inválido.");
         setSaving(false);
         return;
       }
-      const res = await criarPosicoesEmLote({ galeria_id: galeriaId, prefixo, inicio: ini, fim: fi });
+      const res = await criarPosicoesEmLote({
+        galeria_id: galeriaId,
+        prefixo,
+        inicio: ini,
+        fim: fi,
+      });
       setSaving(false);
       if (!res.ok) {
         toast.error(`Falha: ${res.error ?? "erro"}`);
@@ -673,83 +736,124 @@ function NovasPosicoesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Novas posições</DialogTitle>
-          <DialogDescription>Crie posições individualmente ou em lote.</DialogDescription>
-        </DialogHeader>
-        <div className="flex gap-2 text-sm">
-          <button
-            type="button"
-            className={cn(
-              "flex-1 rounded-md border px-3 py-1.5",
-              modo === "lote" ? "bg-primary text-primary-foreground border-primary" : "bg-card",
-            )}
-            onClick={() => setModo("lote")}
-          >
-            Em lote
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "flex-1 rounded-md border px-3 py-1.5",
-              modo === "individual" ? "bg-primary text-primary-foreground border-primary" : "bg-card",
-            )}
-            onClick={() => setModo("individual")}
-          >
-            Individual
-          </button>
-        </div>
-        {modo === "individual" ? (
-          <div>
-            <Label htmlFor="pos-codigo">Código</Label>
-            <Input
-              id="pos-codigo"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
-              placeholder="Ex.: A12"
-            />
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={Boxes}
+          title="Novas posições"
+          description={
+            galeriaNome
+              ? `Adicione orifícios/slots a ${galeriaNome}. Crie um por vez ou um intervalo inteiro.`
+              : "Crie posições individualmente ou em lote."
+          }
+        />
+        <SorotecaDialogBody>
+          <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg">
+            <button
+              type="button"
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2",
+                modo === "lote"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              onClick={() => setModo("lote")}
+            >
+              <ListPlus className="h-4 w-4" />
+              Em lote
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-md px-3 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2",
+                modo === "individual"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              onClick={() => setModo("individual")}
+            >
+              <Hash className="h-4 w-4" />
+              Individual
+            </button>
           </div>
-        ) : (
-          <div className="grid gap-3">
-            <div>
-              <Label htmlFor="pref">Prefixo</Label>
-              <Input
-                id="pref"
-                value={prefixo}
-                onChange={(e) => setPrefixo(e.target.value)}
-                placeholder="A"
-              />
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Resultado: <span className="font-mono">{prefixo}{inicio}</span> ... <span className="font-mono">{prefixo}{fim}</span>
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="ini">De</Label>
-                <Input id="ini" type="number" value={inicio} onChange={(e) => setInicio(e.target.value)} />
+
+          {modo === "individual" ? (
+            <Section title="Posição">
+              <Field label="Código" htmlFor="pos-codigo" required>
+                <Input
+                  id="pos-codigo"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  placeholder="Ex.: A12"
+                  className="font-mono"
+                  autoFocus
+                />
+              </Field>
+            </Section>
+          ) : (
+            <Section
+              title="Geração em lote"
+              hint={lotePreviewTotal > 0 ? `${lotePreviewTotal} posições` : undefined}
+            >
+              <Field label="Prefixo" htmlFor="pref" hint="opcional">
+                <Input
+                  id="pref"
+                  value={prefixo}
+                  onChange={(e) => setPrefixo(e.target.value)}
+                  placeholder="A"
+                  className="font-mono"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="De" htmlFor="ini" required>
+                  <Input
+                    id="ini"
+                    type="number"
+                    value={inicio}
+                    onChange={(e) => setInicio(e.target.value)}
+                  />
+                </Field>
+                <Field label="Até" htmlFor="fi" required>
+                  <Input
+                    id="fi"
+                    type="number"
+                    value={fim}
+                    onChange={(e) => setFim(e.target.value)}
+                  />
+                </Field>
               </div>
-              <div>
-                <Label htmlFor="fi">Até</Label>
-                <Input id="fi" type="number" value={fim} onChange={(e) => setFim(e.target.value)} />
-              </div>
-            </div>
-          </div>
-        )}
-        <DialogFooter>
+              {lotePreviewTotal > 0 && (
+                <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-foreground/80">
+                  <span className="font-semibold">Pré-visualização:</span>{" "}
+                  <span className="font-mono">{prefixo}{inicio}</span>
+                  {lotePreviewTotal > 2 && (
+                    <>
+                      , <span className="font-mono">{prefixo}{ini + 1}</span>
+                      , … ,
+                    </>
+                  )}
+                  {lotePreviewTotal === 2 && <>, </>}
+                  <span className="font-mono"> {prefixo}{fim}</span>
+                </div>
+              )}
+            </Section>
+          )}
+        </SorotecaDialogBody>
+        <SDFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancelar
           </Button>
           <Button onClick={submit} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            Criar
+            <Plus className="h-4 w-4 mr-1.5" />
+            {modo === "lote" && lotePreviewTotal > 0
+              ? `Criar ${lotePreviewTotal} posições`
+              : "Criar"}
           </Button>
-        </DialogFooter>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
 
 function EditarLocalDialog({
   local,
@@ -764,6 +868,7 @@ function EditarLocalDialog({
   const [tipo, setTipo] = useState<LocalTipo>("geladeira");
   const [tmin, setTmin] = useState("");
   const [tmax, setTmax] = useState("");
+  const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -772,6 +877,7 @@ function EditarLocalDialog({
       setTipo(local.tipo);
       setTmin(local.temperatura_min != null ? String(local.temperatura_min) : "");
       setTmax(local.temperatura_max != null ? String(local.temperatura_max) : "");
+      setObservacao(local.observacao ?? "");
     }
   }, [local]);
 
@@ -787,6 +893,7 @@ function EditarLocalDialog({
       tipo,
       temperatura_min: tmin ? Number(tmin) : null,
       temperatura_max: tmax ? Number(tmax) : null,
+      observacao: observacao.trim() || null,
     });
     setSaving(false);
     if (!res.ok) {
@@ -800,44 +907,85 @@ function EditarLocalDialog({
 
   return (
     <Dialog open={!!local} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar local</DialogTitle>
-          <DialogDescription>Atualize os dados de {local?.nome}.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="edit-local-nome">Nome</Label>
-            <Input id="edit-local-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-          <div>
-            <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIPOS.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="edit-tmin">Temp. mín (°C)</Label>
-              <Input id="edit-tmin" type="number" value={tmin} onChange={(e) => setTmin(e.target.value)} />
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={Pencil}
+          title="Editar local"
+          description={local ? `Atualize os dados de ${local.nome}.` : ""}
+          tone="muted"
+        />
+        <SorotecaDialogBody>
+          <Section title="Identificação">
+            <Field label="Nome" htmlFor="edit-local-nome" required>
+              <Input
+                id="edit-local-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field label="Tipo" required>
+              <Select value={tipo} onValueChange={(v) => setTipo(v as LocalTipo)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </Section>
+
+          <Section title="Faixa de temperatura" hint="opcional">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Mínima" htmlFor="edit-tmin" hint="°C">
+                <div className="relative">
+                  <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="edit-tmin"
+                    type="number"
+                    value={tmin}
+                    onChange={(e) => setTmin(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </Field>
+              <Field label="Máxima" htmlFor="edit-tmax" hint="°C">
+                <div className="relative">
+                  <Thermometer className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="edit-tmax"
+                    type="number"
+                    value={tmax}
+                    onChange={(e) => setTmax(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </Field>
             </div>
-            <div>
-              <Label htmlFor="edit-tmax">Temp. máx (°C)</Label>
-              <Input id="edit-tmax" type="number" value={tmax} onChange={(e) => setTmax(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+          </Section>
+
+          <Section title="Observação" hint="opcional">
+            <Input
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Notas internas sobre este local."
+            />
+          </Section>
+        </SorotecaDialogBody>
+        <SDFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancelar
           </Button>
-        </DialogFooter>
+          <Button onClick={submit} disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            Salvar alterações
+          </Button>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
@@ -879,28 +1027,129 @@ function EditarGaleriaDialog({
 
   return (
     <Dialog open={!!galeria} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar galeria</DialogTitle>
-          <DialogDescription>Atualize os dados de {galeria?.nome}.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="edit-g-nome">Nome</Label>
-            <Input id="edit-g-nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="edit-g-ordem">Ordem</Label>
-            <Input id="edit-g-ordem" type="number" value={ordem} onChange={(e) => setOrdem(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={submit} disabled={saving || !nome.trim()}>
-            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}Salvar
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={Pencil}
+          title="Editar galeria"
+          description={galeria ? `Atualize os dados de ${galeria.nome}.` : ""}
+          tone="muted"
+        />
+        <SorotecaDialogBody>
+          <Section title="Identificação">
+            <Field label="Nome" htmlFor="edit-g-nome" required>
+              <Input
+                id="edit-g-nome"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                autoFocus
+              />
+            </Field>
+            <Field label="Ordem de exibição" htmlFor="edit-g-ordem">
+              <Input
+                id="edit-g-ordem"
+                type="number"
+                value={ordem}
+                onChange={(e) => setOrdem(e.target.value)}
+              />
+            </Field>
+          </Section>
+        </SorotecaDialogBody>
+        <SDFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancelar
           </Button>
-        </DialogFooter>
+          <Button onClick={submit} disabled={saving || !nome.trim()}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            Salvar alterações
+          </Button>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+function EditarPosicaoDialog({
+  posicao,
+  onOpenChange,
+  onSaved,
+}: {
+  posicao: PosicaoGaleria | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const [codigo, setCodigo] = useState("");
+  const [ordem, setOrdem] = useState("0");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (posicao) {
+      setCodigo(posicao.codigo);
+      setOrdem(String(posicao.ordem));
+    }
+  }, [posicao]);
+
+  async function submit() {
+    if (!posicao || !codigo.trim()) return;
+    setSaving(true);
+    const res = await atualizarPosicao(posicao.id, {
+      codigo,
+      ordem: Number(ordem) || 0,
+    });
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(`Falha ao salvar: ${res.error ?? "erro"}`);
+      return;
+    }
+    toast.success("Posição atualizada");
+    onSaved();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={!!posicao} onOpenChange={onOpenChange}>
+      <DialogContent className={DIALOG_CONTENT_CLS}>
+        <SorotecaDialogHeader
+          icon={Pencil}
+          title="Editar posição"
+          description={
+            posicao
+              ? `Renomeie ou reordene a posição ${posicao.codigo}.`
+              : ""
+          }
+          tone="muted"
+        />
+        <SorotecaDialogBody>
+          <Section title="Posição">
+            <Field label="Código" htmlFor="edit-p-codigo" required>
+              <Input
+                id="edit-p-codigo"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                className="font-mono"
+                autoFocus
+              />
+            </Field>
+            <Field label="Ordem de exibição" htmlFor="edit-p-ordem">
+              <Input
+                id="edit-p-ordem"
+                type="number"
+                value={ordem}
+                onChange={(e) => setOrdem(e.target.value)}
+              />
+            </Field>
+          </Section>
+        </SorotecaDialogBody>
+        <SDFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button onClick={submit} disabled={saving || !codigo.trim()}>
+            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            Salvar alterações
+          </Button>
+        </SDFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

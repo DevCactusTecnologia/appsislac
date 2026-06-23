@@ -36,6 +36,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  SorotecaDialogHeader,
+  SorotecaDialogBody,
+  SorotecaDialogFooter as SDFooter,
+  Field,
+  Section,
+} from "@/components/soroteca/SorotecaDialogShell";
 import { cn } from "@/lib/utils";
 import {
   type ExpurgoLote,
@@ -357,83 +364,89 @@ function NovoLoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Novo lote de expurgo</DialogTitle>
-          <DialogDescription>
-            Defina o critério, pré-visualize e selecione as amostras.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+        <SorotecaDialogHeader
+          icon={PackageX}
+          title="Novo lote de expurgo"
+          description="Defina o critério, pré-visualize as amostras candidatas e selecione quais entrarão no lote."
+          tone="destructive"
+        />
 
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Título</Label>
-              <Input
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                placeholder="Ex: Expurgo trimestral Q2"
-              />
-            </div>
-            <div>
-              <Label>Data programada</Label>
-              <Input
-                type="date"
-                value={dataProgramada}
-                onChange={(e) => setDataProgramada(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Descrição (opcional)</Label>
-            <Textarea
-              rows={2}
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-            />
-          </div>
-
-          <div className="border border-border rounded-lg p-3 bg-muted/30">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Critério
-            </Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              <div>
-                <Label className="text-xs">Coleta até</Label>
+        <SorotecaDialogBody>
+          <Section title="Identificação">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Título" htmlFor="exp-titulo" required>
                 <Input
+                  id="exp-titulo"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  placeholder="Ex: Expurgo trimestral Q2"
+                />
+              </Field>
+              <Field label="Data programada" htmlFor="exp-data" required>
+                <Input
+                  id="exp-data"
+                  type="date"
+                  value={dataProgramada}
+                  onChange={(e) => setDataProgramada(e.target.value)}
+                />
+              </Field>
+            </div>
+            <Field label="Descrição" htmlFor="exp-desc" hint="opcional">
+              <Textarea
+                id="exp-desc"
+                rows={2}
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Justificativa ou observações para o lote."
+              />
+            </Field>
+          </Section>
+
+          <Section title="Critério de filtragem" hint="amostras que se encaixarem serão sugeridas">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Coleta até" htmlFor="exp-coleta">
+                <Input
+                  id="exp-coleta"
                   type="date"
                   value={coletaAte}
                   onChange={(e) => setColetaAte(e.target.value)}
                 />
-              </div>
-              <div>
-                <Label className="text-xs">Validade até</Label>
+              </Field>
+              <Field label="Validade até" htmlFor="exp-validade">
                 <Input
+                  id="exp-validade"
                   type="date"
                   value={validadeAte}
                   onChange={(e) => setValidadeAte(e.target.value)}
                 />
-              </div>
+              </Field>
             </div>
-            <div className="mt-3">
-              <Label className="text-xs">Materiais (opcional)</Label>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
+            <Field
+              label="Materiais"
+              hint={
+                materialIds.length > 0
+                  ? `${materialIds.length} selecionado(s)`
+                  : "opcional · vazio = todos"
+              }
+            >
+              <div className="flex flex-wrap gap-1.5">
                 {materiais.map((m) => {
                   const on = materialIds.includes(m.id);
                   return (
                     <button
                       key={m.id}
+                      type="button"
                       onClick={() =>
                         setMaterialIds((prev) =>
-                          on ? prev.filter((x) => x !== m.id) : [...prev, m.id]
+                          on ? prev.filter((x) => x !== m.id) : [...prev, m.id],
                         )
                       }
                       className={cn(
-                        "px-2 py-0.5 rounded border text-xs",
+                        "px-2.5 py-1 rounded-md border text-xs font-medium transition-colors",
                         on
                           ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border"
+                          : "bg-background border-border hover:border-primary/40",
                       )}
                     >
                       {m.nome}
@@ -441,81 +454,96 @@ function NovoLoteDialog({
                   );
                 })}
                 {materiais.length === 0 && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground italic">
                     Nenhum material cadastrado.
                   </span>
                 )}
               </div>
-            </div>
-            <div className="mt-3 flex justify-end">
+            </Field>
+            <div className="flex justify-end">
               <Button variant="secondary" size="sm" onClick={preview} disabled={carregando}>
                 <ListChecks className="h-4 w-4 mr-2" />
-                {carregando ? "Buscando..." : "Pré-visualizar"}
+                {carregando ? "Buscando..." : "Pré-visualizar candidatas"}
               </Button>
             </div>
-          </div>
+          </Section>
 
           {candidatas.length > 0 && (
-            <div className="border border-border rounded-lg max-h-72 overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 sticky top-0">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left w-8">
-                      <input
-                        type="checkbox"
-                        checked={selecionadas.size === candidatas.length}
-                        onChange={(e) =>
-                          setSelecionadas(
-                            e.target.checked
-                              ? new Set(candidatas.map((c) => c.id))
-                              : new Set()
-                          )
-                        }
-                      />
-                    </th>
-                    <th className="px-2 py-1.5 text-left">Código</th>
-                    <th className="px-2 py-1.5 text-left">Material</th>
-                    <th className="px-2 py-1.5 text-left">Localização</th>
-                    <th className="px-2 py-1.5 text-left">Coleta</th>
-                    <th className="px-2 py-1.5 text-left">Validade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {candidatas.map((c) => (
-                    <tr key={c.id} className="border-t border-border">
-                      <td className="px-2 py-1">
+            <Section
+              title="Candidatas"
+              hint={`${selecionadas.size} de ${candidatas.length} selecionada(s)`}
+            >
+              <div className="border border-border rounded-lg max-h-72 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 sticky top-0 text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left w-8">
                         <input
                           type="checkbox"
-                          checked={selecionadas.has(c.id)}
-                          onChange={() => toggle(c.id)}
+                          checked={selecionadas.size === candidatas.length}
+                          onChange={(e) =>
+                            setSelecionadas(
+                              e.target.checked
+                                ? new Set(candidatas.map((c) => c.id))
+                                : new Set(),
+                            )
+                          }
                         />
-                      </td>
-                      <td className="px-2 py-1 font-mono text-xs">{c.codigo_barra}</td>
-                      <td className="px-2 py-1">{c.tipo_material}</td>
-                      <td className="px-2 py-1">{c.localizacao || "—"}</td>
-                      <td className="px-2 py-1">{formatDate(c.data_coleta)}</td>
-                      <td className="px-2 py-1">{formatDate(c.data_validade)}</td>
+                      </th>
+                      <th className="px-3 py-2 text-left font-medium">Código</th>
+                      <th className="px-3 py-2 text-left font-medium">Material</th>
+                      <th className="px-3 py-2 text-left font-medium">Localização</th>
+                      <th className="px-3 py-2 text-left font-medium">Coleta</th>
+                      <th className="px-3 py-2 text-left font-medium">Validade</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {candidatas.map((c) => (
+                      <tr
+                        key={c.id}
+                        className="border-t border-border hover:bg-muted/30 cursor-pointer"
+                        onClick={() => toggle(c.id)}
+                      >
+                        <td className="px-3 py-1.5">
+                          <input
+                            type="checkbox"
+                            checked={selecionadas.has(c.id)}
+                            onChange={() => toggle(c.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td className="px-3 py-1.5 font-mono text-xs">{c.codigo_barra}</td>
+                        <td className="px-3 py-1.5">{c.tipo_material}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">{c.localizacao || "—"}</td>
+                        <td className="px-3 py-1.5">{formatDate(c.data_coleta)}</td>
+                        <td className="px-3 py-1.5">{formatDate(c.data_validade)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
           )}
-        </div>
+        </SorotecaDialogBody>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={salvando}>
+        <SDFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={salvando || selecionadas.size === 0}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button
+            onClick={salvar}
+            disabled={salvando || selecionadas.size === 0}
+            variant="destructive"
+          >
+            <PackageX className="h-4 w-4 mr-2" />
             Criar lote com {selecionadas.size} amostra(s)
           </Button>
-        </DialogFooter>
+        </SDFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
 
 // ---------------------------------------------------------------------------
 // Diálogo: detalhe / execução
