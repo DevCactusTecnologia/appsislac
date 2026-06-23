@@ -984,7 +984,7 @@ function Overlay({ open, onClose, children }: { open: boolean; onClose: () => vo
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
       <div className="absolute inset-0 bg-foreground/40 backdrop-blur-[6px]" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl border border-border shadow-elevation-lg w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6 animate-fade-in-up">
+      <div className="relative bg-card rounded-2xl border border-border/60 shadow-elevation-lg w-full max-w-md max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6 animate-fade-in-up">
         {children}
       </div>
     </div>
