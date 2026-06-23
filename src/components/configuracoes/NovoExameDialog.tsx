@@ -55,7 +55,7 @@ interface NovoExameDialogProps {
   editData?: Partial<ExameCatalogo> | null;
 }
 
-// Defaults iniciais — preserva TODOS os campos do banco (zero quebra de schema).
+// Defaults iniciais — alinhados ao schema slim Exames 2.1.
 const emptyForm: ExameFormData = {
   nome: "", mnemonico: "", categoria: "", codigoCBHPM: "", codigoTUSS: "",
   material: "", tipoProcesso: "INTERNO", labApoioId: null, integracaoAtiva: false,
@@ -66,17 +66,12 @@ const emptyForm: ExameFormData = {
   grupoEtiquetas: "", quantidadeEtiquetas: 1, informacoesColeta: "",
   sinonimos: "", sexoAplicavel: "AMBOS", exibirPortal: true,
   unidadePadrao: "", requerAssinaturaMedica: true, setorId: null,
-  tussSemEquivalente: false, tipoMapa: "AUTO",
-  temperaturaTransporte: "", protegidoLuz: false, observacoesColeta: "",
+  tussSemEquivalente: false,
   providerIntegracao: "", codigoExameApoio: "", permiteEnvioApoio: false,
-  exigeProtocoloExterno: false, prazoApoioDias: 0,
-  materialApoio: "", recipienteApoio: "", volumeApoioMl: 0, preparoApoio: "",
-  textoInterpretativoPadrao: "", exibirMetodologiaLaudo: true,
-  exibirUnidadeLaudo: true, exibirMaterialLaudo: false,
-  templateLaudoId: null, grupoImpressao: "", ordemImpressao: 0,
-  idadeMinimaMeses: null, idadeMaximaMeses: null, urgenciaPadrao: false,
-  tags: [], ordemColeta: 0, ordemSetor: 0,
-  exameCalculado: false, exameOculto: false,
+  exibirMetodologiaLaudo: true, exibirUnidadeLaudo: true, exibirMaterialLaudo: false,
+  tags: [],
+  // Interface Engine readiness (Sub-fase B) — preparação, sem UI ainda.
+  codigoInterfaceamento: "", codigoHL7: "", codigoEquipamento: null,
 };
 
 const inputClass = "w-full px-3 py-2.5 bg-muted/30 border border-border/60 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all";
