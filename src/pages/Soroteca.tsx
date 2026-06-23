@@ -164,6 +164,8 @@ export default function Soroteca() {
   const [scannerAberto, setScannerAberto] = useState(false);
   const [destaqueId, setDestaqueId] = useState<string | null>(null);
   const linhasRef = useRef<Map<string, HTMLLIElement>>(new Map());
+  const [infoMap, setInfoMap] = useState<Record<string, AmostraInfo>>({});
+  
   
 
   // ---- Fase 5: Pesquisa avançada (server-side) ----
