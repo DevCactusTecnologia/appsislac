@@ -861,14 +861,6 @@ const Index = () => {
         description="Gerencie e acompanhe os atendimentos do laboratório."
         actions={
           <>
-            {paginatedEnabled && (
-              <span
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[10px] font-semibold border border-border/60 bg-muted/50 text-muted-foreground"
-                title="Listagem paginada server-side (canary). Pode ser desativado a qualquer momento."
-              >
-                modo experimental
-              </span>
-            )}
             {canCreate && (
               <button
                 onClick={() => navigate("/atendimentos/novo")}
