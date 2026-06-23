@@ -2325,69 +2325,51 @@ export type Database = {
           categoria: string
           codigo: string
           codigo_cbhpm: string
+          codigo_equipamento: Json | null
           codigo_exame_apoio: string
+          codigo_hl7: string | null
+          codigo_interfaceamento: string | null
           codigo_loinc: string
           codigo_sus: string
           codigo_tuss: string
           cor_tampa: string
           created_at: string
           estabilidade: string
-          exame_calculado: boolean
-          exame_oculto: boolean
           exibir_material_laudo: boolean
           exibir_metodologia_laudo: boolean
           exibir_portal: boolean
           exibir_unidade_laudo: boolean
-          exige_protocolo_externo: boolean
           grupo_etiquetas: string
-          grupo_impressao: string
           horas_jejum: number
           id: string
-          idade_maxima_meses: number | null
-          idade_minima_meses: number | null
           informacoes_coleta: string
           integracao_ativa: boolean
           lab_apoio_id: string | null
           material: string
-          material_apoio: string
           metodologia: string
           mnemonico: string
           nome: string
-          observacoes_coleta: string
-          ordem_coleta: number
-          ordem_impressao: number
-          ordem_setor: number
           permite_envio_apoio: boolean
           porte_cbhpm: string
-          prazo_apoio_dias: number
           prazo_entrega_dias: number
           prazo_urgencia_horas: number
-          preparo_apoio: string
           preparo_paciente: string
-          protegido_luz: boolean
           provider_integracao: string
           quantidade_etiquetas: number
           recipiente: string
-          recipiente_apoio: string
           requer_assinatura_medica: boolean
           requer_jejum: boolean
           setor_id: string | null
           sexo_aplicavel: string
           sinonimos: string
           tags: string[]
-          temperatura_transporte: string
-          template_laudo_id: string | null
           tenant_id: string
-          texto_interpretativo_padrao: string
-          tipo_mapa: string
           tipo_processo: string
           tuss_sem_equivalente: boolean
           unidade_padrao: string
           updated_at: string
           urgencia_disponivel: boolean
-          urgencia_padrao: boolean
           usado_em_atendimento: boolean
-          volume_apoio_ml: number
           volume_minimo_ml: number
         }
         Insert: {
@@ -2396,69 +2378,51 @@ export type Database = {
           categoria?: string
           codigo?: string
           codigo_cbhpm?: string
+          codigo_equipamento?: Json | null
           codigo_exame_apoio?: string
+          codigo_hl7?: string | null
+          codigo_interfaceamento?: string | null
           codigo_loinc?: string
           codigo_sus?: string
           codigo_tuss?: string
           cor_tampa?: string
           created_at?: string
           estabilidade?: string
-          exame_calculado?: boolean
-          exame_oculto?: boolean
           exibir_material_laudo?: boolean
           exibir_metodologia_laudo?: boolean
           exibir_portal?: boolean
           exibir_unidade_laudo?: boolean
-          exige_protocolo_externo?: boolean
           grupo_etiquetas?: string
-          grupo_impressao?: string
           horas_jejum?: number
           id?: string
-          idade_maxima_meses?: number | null
-          idade_minima_meses?: number | null
           informacoes_coleta?: string
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
-          material_apoio?: string
           metodologia?: string
           mnemonico: string
           nome: string
-          observacoes_coleta?: string
-          ordem_coleta?: number
-          ordem_impressao?: number
-          ordem_setor?: number
           permite_envio_apoio?: boolean
           porte_cbhpm?: string
-          prazo_apoio_dias?: number
           prazo_entrega_dias?: number
           prazo_urgencia_horas?: number
-          preparo_apoio?: string
           preparo_paciente?: string
-          protegido_luz?: boolean
           provider_integracao?: string
           quantidade_etiquetas?: number
           recipiente?: string
-          recipiente_apoio?: string
           requer_assinatura_medica?: boolean
           requer_jejum?: boolean
           setor_id?: string | null
           sexo_aplicavel?: string
           sinonimos?: string
           tags?: string[]
-          temperatura_transporte?: string
-          template_laudo_id?: string | null
           tenant_id: string
-          texto_interpretativo_padrao?: string
-          tipo_mapa?: string
           tipo_processo?: string
           tuss_sem_equivalente?: boolean
           unidade_padrao?: string
           updated_at?: string
           urgencia_disponivel?: boolean
-          urgencia_padrao?: boolean
           usado_em_atendimento?: boolean
-          volume_apoio_ml?: number
           volume_minimo_ml?: number
         }
         Update: {
@@ -2467,69 +2431,51 @@ export type Database = {
           categoria?: string
           codigo?: string
           codigo_cbhpm?: string
+          codigo_equipamento?: Json | null
           codigo_exame_apoio?: string
+          codigo_hl7?: string | null
+          codigo_interfaceamento?: string | null
           codigo_loinc?: string
           codigo_sus?: string
           codigo_tuss?: string
           cor_tampa?: string
           created_at?: string
           estabilidade?: string
-          exame_calculado?: boolean
-          exame_oculto?: boolean
           exibir_material_laudo?: boolean
           exibir_metodologia_laudo?: boolean
           exibir_portal?: boolean
           exibir_unidade_laudo?: boolean
-          exige_protocolo_externo?: boolean
           grupo_etiquetas?: string
-          grupo_impressao?: string
           horas_jejum?: number
           id?: string
-          idade_maxima_meses?: number | null
-          idade_minima_meses?: number | null
           informacoes_coleta?: string
           integracao_ativa?: boolean
           lab_apoio_id?: string | null
           material?: string
-          material_apoio?: string
           metodologia?: string
           mnemonico?: string
           nome?: string
-          observacoes_coleta?: string
-          ordem_coleta?: number
-          ordem_impressao?: number
-          ordem_setor?: number
           permite_envio_apoio?: boolean
           porte_cbhpm?: string
-          prazo_apoio_dias?: number
           prazo_entrega_dias?: number
           prazo_urgencia_horas?: number
-          preparo_apoio?: string
           preparo_paciente?: string
-          protegido_luz?: boolean
           provider_integracao?: string
           quantidade_etiquetas?: number
           recipiente?: string
-          recipiente_apoio?: string
           requer_assinatura_medica?: boolean
           requer_jejum?: boolean
           setor_id?: string | null
           sexo_aplicavel?: string
           sinonimos?: string
           tags?: string[]
-          temperatura_transporte?: string
-          template_laudo_id?: string | null
           tenant_id?: string
-          texto_interpretativo_padrao?: string
-          tipo_mapa?: string
           tipo_processo?: string
           tuss_sem_equivalente?: boolean
           unidade_padrao?: string
           updated_at?: string
           urgencia_disponivel?: boolean
-          urgencia_padrao?: boolean
           usado_em_atendimento?: boolean
-          volume_apoio_ml?: number
           volume_minimo_ml?: number
         }
         Relationships: [

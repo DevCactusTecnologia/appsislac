@@ -51,40 +51,22 @@ export interface ExameCatalogo {
   requerAssinaturaMedica: boolean;
   // Vínculo relacional com setor (setores_laboratoriais.id)
   setorId: string | null;
-  // Sinalizadores de catálogo regulatório / mapa
+  // Sinalizadores de catálogo regulatório
   tussSemEquivalente: boolean;
-  tipoMapa: string;
-  // Pré-analítico avançado
-  temperaturaTransporte: string;
-  protegidoLuz: boolean;
-  observacoesColeta: string;
   // Integração / Apoio
   providerIntegracao: string;
   codigoExameApoio: string;
   permiteEnvioApoio: boolean;
-  exigeProtocoloExterno: boolean;
-  prazoApoioDias: number;
-  materialApoio: string;
-  recipienteApoio: string;
-  volumeApoioMl: number;
-  preparoApoio: string;
   // Resultado / Laudo
-  textoInterpretativoPadrao: string;
   exibirMetodologiaLaudo: boolean;
   exibirUnidadeLaudo: boolean;
   exibirMaterialLaudo: boolean;
-  templateLaudoId: string | null;
-  grupoImpressao: string;
-  ordemImpressao: number;
-  // Operacional avançado
-  idadeMinimaMeses: number | null;
-  idadeMaximaMeses: number | null;
-  urgenciaPadrao: boolean;
   tags: string[];
-  ordemColeta: number;
-  ordemSetor: number;
-  exameCalculado: boolean;
-  exameOculto: boolean;
+  // Interface Engine readiness (Exames 2.1 Sub-fase B) — preparação, sem
+  // validação até o motor de integrações ser implementado.
+  codigoInterfaceamento: string;
+  codigoHL7: string;
+  codigoEquipamento: Record<string, string> | null;
 }
 
 let exames: ExameCatalogo[] = [];
@@ -92,23 +74,14 @@ let _listeners: Array<() => void> = [];
 function notify() { _listeners.forEach((fn) => fn()); }
 
 // ─── Cache two-tier ────────────────────────────────────────────────────────
-// Boot carrega apenas colunas leves (suficientes para listagens, filtros e
-// operações cruzadas). Campos pesados ficam com defaults vazios e são
-// preenchidos sob demanda via `getExameCatalogoCompleto(id)` antes de abrir
-// o modal de edição. Marcamos cada item com `_full` para sabermos se já tem
-// a versão completa em memória.
 const _fullLoaded = new Set<string>();
 const _fullInflight = new Map<string, Promise<ExameCatalogo | null>>();
 
-/** Colunas leves carregadas no boot. Devem cobrir TODAS as leituras feitas
- *  fora dos modais de edição/detalhes (listagens, filtros, vínculos, preços,
- *  vitrine, mapa, atendimento, laudoLayout, tabela de preços).
- */
+/** Colunas leves carregadas no boot. */
 const SLIM_COLUMNS =
   "id,mnemonico,nome,categoria,analise,codigo,codigo_cbhpm,codigo_tuss," +
   "material,ativo,usado_em_atendimento,tipo_processo,lab_apoio_id," +
-  "integracao_ativa,setor_id,exibir_portal,porte_cbhpm,tuss_sem_equivalente,codigo_exame_apoio," +
-  "tipo_mapa";
+  "integracao_ativa,setor_id,exibir_portal,porte_cbhpm,tuss_sem_equivalente,codigo_exame_apoio";
 
 function fromRow(r: any): ExameCatalogo {
   return {
@@ -150,34 +123,18 @@ function fromRow(r: any): ExameCatalogo {
     requerAssinaturaMedica: r.requer_assinatura_medica !== false,
     setorId: r.setor_id ?? null,
     tussSemEquivalente: !!r.tuss_sem_equivalente,
-    tipoMapa: r.tipo_mapa ?? "AUTO",
-    temperaturaTransporte: r.temperatura_transporte ?? "",
-    protegidoLuz: !!r.protegido_luz,
-    observacoesColeta: r.observacoes_coleta ?? "",
     providerIntegracao: r.provider_integracao ?? "",
     codigoExameApoio: r.codigo_exame_apoio ?? "",
     permiteEnvioApoio: !!r.permite_envio_apoio,
-    exigeProtocoloExterno: !!r.exige_protocolo_externo,
-    prazoApoioDias: Number(r.prazo_apoio_dias ?? 0),
-    materialApoio: r.material_apoio ?? "",
-    recipienteApoio: r.recipiente_apoio ?? "",
-    volumeApoioMl: Number(r.volume_apoio_ml ?? 0),
-    preparoApoio: r.preparo_apoio ?? "",
-    textoInterpretativoPadrao: r.texto_interpretativo_padrao ?? "",
     exibirMetodologiaLaudo: r.exibir_metodologia_laudo !== false,
     exibirUnidadeLaudo: r.exibir_unidade_laudo !== false,
     exibirMaterialLaudo: !!r.exibir_material_laudo,
-    templateLaudoId: r.template_laudo_id ?? null,
-    grupoImpressao: r.grupo_impressao ?? "",
-    ordemImpressao: Number(r.ordem_impressao ?? 0),
-    idadeMinimaMeses: r.idade_minima_meses ?? null,
-    idadeMaximaMeses: r.idade_maxima_meses ?? null,
-    urgenciaPadrao: !!r.urgencia_padrao,
     tags: Array.isArray(r.tags) ? r.tags : [],
-    ordemColeta: Number(r.ordem_coleta ?? 0),
-    ordemSetor: Number(r.ordem_setor ?? 0),
-    exameCalculado: !!r.exame_calculado,
-    exameOculto: !!r.exame_oculto,
+    codigoInterfaceamento: r.codigo_interfaceamento ?? "",
+    codigoHL7: r.codigo_hl7 ?? "",
+    codigoEquipamento: (r.codigo_equipamento && typeof r.codigo_equipamento === "object")
+      ? r.codigo_equipamento as Record<string, string>
+      : null,
   };
 }
 
@@ -220,41 +177,20 @@ function toRow(e: Partial<ExameCatalogo>): any {
   if (e.requerAssinaturaMedica !== undefined) row.requer_assinatura_medica = e.requerAssinaturaMedica;
   if (e.setorId !== undefined) row.setor_id = e.setorId;
   if (e.tussSemEquivalente !== undefined) row.tuss_sem_equivalente = e.tussSemEquivalente;
-  if (e.tipoMapa !== undefined) row.tipo_mapa = e.tipoMapa || "AUTO";
-  if (e.temperaturaTransporte !== undefined) row.temperatura_transporte = e.temperaturaTransporte;
-  if (e.protegidoLuz !== undefined) row.protegido_luz = e.protegidoLuz;
-  if (e.observacoesColeta !== undefined) row.observacoes_coleta = e.observacoesColeta;
   if (e.providerIntegracao !== undefined) row.provider_integracao = e.providerIntegracao;
   if (e.codigoExameApoio !== undefined) row.codigo_exame_apoio = e.codigoExameApoio;
   if (e.permiteEnvioApoio !== undefined) row.permite_envio_apoio = e.permiteEnvioApoio;
-  if (e.exigeProtocoloExterno !== undefined) row.exige_protocolo_externo = e.exigeProtocoloExterno;
-  if (e.prazoApoioDias !== undefined) row.prazo_apoio_dias = Math.max(0, e.prazoApoioDias || 0);
-  if (e.materialApoio !== undefined) row.material_apoio = e.materialApoio;
-  if (e.recipienteApoio !== undefined) row.recipiente_apoio = e.recipienteApoio;
-  if (e.volumeApoioMl !== undefined) row.volume_apoio_ml = e.volumeApoioMl;
-  if (e.preparoApoio !== undefined) row.preparo_apoio = e.preparoApoio;
-  if (e.textoInterpretativoPadrao !== undefined) row.texto_interpretativo_padrao = e.textoInterpretativoPadrao;
   if (e.exibirMetodologiaLaudo !== undefined) row.exibir_metodologia_laudo = e.exibirMetodologiaLaudo;
   if (e.exibirUnidadeLaudo !== undefined) row.exibir_unidade_laudo = e.exibirUnidadeLaudo;
   if (e.exibirMaterialLaudo !== undefined) row.exibir_material_laudo = e.exibirMaterialLaudo;
-  if (e.templateLaudoId !== undefined) row.template_laudo_id = e.templateLaudoId;
-  if (e.grupoImpressao !== undefined) row.grupo_impressao = e.grupoImpressao;
-  if (e.ordemImpressao !== undefined) row.ordem_impressao = Math.max(0, e.ordemImpressao || 0);
-  if (e.idadeMinimaMeses !== undefined) row.idade_minima_meses = e.idadeMinimaMeses;
-  if (e.idadeMaximaMeses !== undefined) row.idade_maxima_meses = e.idadeMaximaMeses;
-  if (e.urgenciaPadrao !== undefined) row.urgencia_padrao = e.urgenciaPadrao;
   if (e.tags !== undefined) row.tags = Array.isArray(e.tags) ? e.tags : [];
-  if (e.ordemColeta !== undefined) row.ordem_coleta = Math.max(0, e.ordemColeta || 0);
-  if (e.ordemSetor !== undefined) row.ordem_setor = Math.max(0, e.ordemSetor || 0);
-  if (e.exameCalculado !== undefined) row.exame_calculado = e.exameCalculado;
-  if (e.exameOculto !== undefined) row.exame_oculto = e.exameOculto;
+  if (e.codigoInterfaceamento !== undefined) row.codigo_interfaceamento = e.codigoInterfaceamento || null;
+  if (e.codigoHL7 !== undefined) row.codigo_hl7 = e.codigoHL7 || null;
+  if (e.codigoEquipamento !== undefined) row.codigo_equipamento = e.codigoEquipamento ?? null;
   return row;
 }
 
 export async function _initExamesCatalogoStore(): Promise<void> {
-  // Boot leve: select slim. Campos pesados (metodologia, preparo, recipiente,
-  // sinônimos etc.) ficam com defaults até o usuário abrir o modal de edição.
-  // Pagina em lotes para contornar o limite default do PostgREST (1000 linhas).
   const PAGE = 1000;
   const all: any[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -280,11 +216,6 @@ export const getExameCatalogoById = (id: string): ExameCatalogo | undefined => e
 
 /**
  * Busca a versão COMPLETA de um exame (todos os campos), atualizando o cache.
- * Use SEMPRE antes de abrir o modal de edição — nunca passe o objeto slim
- * direto para o formulário (causaria perda silenciosa de campos pesados).
- *
- * Deduplica chamadas concorrentes para o mesmo id e evita refetch quando o
- * objeto já foi promovido a completo.
  */
 export async function getExameCatalogoCompleto(id: string): Promise<ExameCatalogo | null> {
   if (_fullLoaded.has(id)) {
@@ -306,7 +237,6 @@ export async function getExameCatalogoCompleto(id: string): Promise<ExameCatalog
       const full = fromRow(data);
       const idx = exames.findIndex((e) => e.id === id);
       if (idx >= 0) {
-        // Substitui em-place mantendo a ordem do array — sem duplicação.
         exames = exames.map((e) => (e.id === id ? full : e));
       } else {
         exames = [...exames, full];
@@ -331,7 +261,6 @@ export async function addExameCatalogo(exame: Omit<ExameCatalogo, "id">): Promis
     );
     const novo = fromRow(data);
     exames = [...exames, novo];
-    // INSERT ecoa todos os campos via .select() — já é completo.
     _fullLoaded.add(novo.id);
     notify();
     return novo;
@@ -346,8 +275,6 @@ export async function updateExameCatalogo(id: string, data: Partial<ExameCatalog
   exames = exames.map(e => e.id === id ? { ...e, ...data } : e);
   notify();
   try {
-    // Persiste e relê o registro autoritativo do banco para sincronizar
-    // qualquer normalização aplicada por triggers/defaults (evita drift de cache).
     const fresh = await persistOneOrThrow<any>(
       supabase.from("exames_catalogo").update(toRow(data)).eq("id", id),
       "exameCatalogo.update",
@@ -355,7 +282,6 @@ export async function updateExameCatalogo(id: string, data: Partial<ExameCatalog
     if (fresh) {
       const norm = fromRow(fresh);
       exames = exames.map(e => e.id === id ? norm : e);
-      // UPDATE ecoa o registro completo via .select() — promove a completo.
       _fullLoaded.add(id);
       notify();
     }
