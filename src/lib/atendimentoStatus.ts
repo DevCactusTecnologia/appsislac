@@ -12,8 +12,6 @@
  * Regra: nenhum outro arquivo deve manter sua própria tabela
  * de mapeamento de status. Importe `deriveAtendimentoStatus`
  * e `derivePagamentoStatus` daqui.
- *
- * Ver: docs/architecture/simplification-master-plan.md (Fase 2)
  */
 
 import type { StatusType } from "@/data/types";
