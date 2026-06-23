@@ -276,11 +276,25 @@ export async function criarPosicoesEmLote(input: {
 }
 
 
+export async function atualizarPosicao(
+  id: string,
+  input: { codigo?: string; ordem?: number; ativo?: boolean },
+): Promise<{ ok: boolean; error?: string }> {
+  const patch: { codigo?: string; ordem?: number; ativo?: boolean } = {};
+  if (input.codigo !== undefined) patch.codigo = input.codigo.trim();
+  if (input.ordem !== undefined) patch.ordem = input.ordem;
+  if (input.ativo !== undefined) patch.ativo = input.ativo;
+  const { error } = await supabase.from("posicoes_galeria").update(patch).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function removerPosicao(id: string): Promise<{ ok: boolean; error?: string }> {
   const { error } = await supabase.from("posicoes_galeria").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
 
 // ---------- alocações (para uso da Fase 3 — Triagem) ----------
 
