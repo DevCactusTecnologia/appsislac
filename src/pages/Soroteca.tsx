@@ -409,6 +409,57 @@ export default function Soroteca() {
   const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
   const carregando = advancadoAtivo ? advLoading : loading;
 
+  // Enriquece amostras visíveis com nome do paciente + protocolo do atendimento.
+  useEffect(() => {
+    const pacIds = Array.from(
+      new Set(
+        visiveis
+          .map((a) => a.paciente_id)
+          .filter((id): id is number => typeof id === "number" && !infoMap[`p:${id}`]),
+      ),
+    );
+    const atIds = Array.from(
+      new Set(
+        visiveis
+          .map((a) => a.atendimento_id)
+          .filter((id): id is number => typeof id === "number" && !infoMap[`a:${id}`]),
+      ),
+    );
+    if (pacIds.length === 0 && atIds.length === 0) return;
+    let cancelado = false;
+    (async () => {
+      const updates: Record<string, AmostraInfo> = {};
+      if (pacIds.length > 0) {
+        const { data } = await supabase
+          .from("pacientes")
+          .select("id,nome,cpf")
+          .in("id", pacIds);
+        (data ?? []).forEach((p) => {
+          const cpf = (p.cpf || "").replace(/\D/g, "");
+          const cpfFmt = cpf.length === 11
+            ? `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`
+            : p.cpf || "";
+          updates[`p:${p.id}`] = { paciente: p.nome, cpf: cpfFmt };
+        });
+      }
+      if (atIds.length > 0) {
+        const { data } = await supabase
+          .from("atendimentos")
+          .select("id,protocolo")
+          .in("id", atIds);
+        (data ?? []).forEach((a) => {
+          updates[`a:${a.id}`] = { protocolo: a.protocolo };
+        });
+      }
+      if (!cancelado && Object.keys(updates).length > 0) {
+        setInfoMap((prev) => ({ ...prev, ...updates }));
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [visiveis, infoMap]);
+
   const counts = useMemo(() => {
     const c: Record<AmostraStatus, number> = {
       DISPONIVEL: 0,
