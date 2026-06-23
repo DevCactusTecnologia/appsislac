@@ -1030,8 +1030,13 @@ export default function Soroteca() {
                       )}
                     </div>
                     {(() => {
-                      const pac = a.paciente_id ? infoMap[`p:${a.paciente_id}`] : undefined;
+                      let pac = a.paciente_id ? infoMap[`p:${a.paciente_id}`] : undefined;
                       const at = a.atendimento_id ? infoMap[`a:${a.atendimento_id}`] : undefined;
+                      if (!pac && a.atendimento_id) {
+                        const link = infoMap[`ap:${a.atendimento_id}`];
+                        const pid = link?.paciente ? Number(link.paciente) : NaN;
+                        if (!Number.isNaN(pid)) pac = infoMap[`p:${pid}`];
+                      }
                       if (!pac && !at) return null;
                       return (
                         <div className="mt-1.5 flex items-center gap-2 flex-wrap text-sm">
