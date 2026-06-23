@@ -131,7 +131,14 @@ export async function atualizarLocal(
     ativo?: boolean;
   },
 ): Promise<{ ok: boolean; error?: string }> {
-  const patch: Record<string, unknown> = {};
+  const patch: {
+    nome?: string;
+    tipo?: LocalTipo;
+    temperatura_min?: number | null;
+    temperatura_max?: number | null;
+    observacao?: string | null;
+    ativo?: boolean;
+  } = {};
   if (input.nome !== undefined) patch.nome = input.nome.trim();
   if (input.tipo !== undefined) patch.tipo = input.tipo;
   if (input.temperatura_min !== undefined) patch.temperatura_min = input.temperatura_min;
