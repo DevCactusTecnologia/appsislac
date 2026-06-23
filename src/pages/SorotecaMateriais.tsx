@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Plus, Pencil, Trash2, Search, Loader2, FlaskConical, CheckCircle2, RotateCcw, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
