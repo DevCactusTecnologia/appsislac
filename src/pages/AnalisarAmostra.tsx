@@ -772,11 +772,11 @@ const AnalisarAmostra = () => {
           )}
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setCancelDialogOpen(false)} className="h-10 px-4 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-accent transition-colors">Voltar</button>
+            <button onClick={() => setCancelDialogOpen(false)} className="h-10 px-4 rounded-xl border border-border/60 bg-card text-xs font-medium text-foreground hover:bg-accent transition-colors">Voltar</button>
             <button
               onClick={confirmCancel}
               disabled={!cancelMotivo || (cancelMotivo === "Outro" && cancelMotivoCustom.trim().length < 5)}
-              className="h-10 px-5 bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="h-10 px-5 bg-[hsl(var(--status-danger))] text-[hsl(var(--status-danger-foreground))] rounded-full text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-elevation-xs"
             >
               Confirmar cancelamento
             </button>
