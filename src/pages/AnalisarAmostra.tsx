@@ -480,13 +480,13 @@ const AnalisarAmostra = () => {
                   <button
                     key={p.id}
                     onClick={() => { setSelectedId(p.id); setSelectedExames([]); }}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-150 group ${
-                      active ? "bg-primary/8 ring-1 ring-primary/20" : "hover:bg-accent/60"
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-150 group ${
+                      active ? "bg-primary/8 ring-1 ring-primary/25 shadow-elevation-xs" : "hover:bg-accent/60"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors ${
-                        active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                      <div className={`h-9 w-9 shrink-0 rounded-xl flex items-center justify-center text-[11px] font-semibold transition-colors ${
+                        active ? "bg-primary text-primary-foreground ring-1 ring-primary/30" : "bg-muted text-foreground"
                       }`}>
                         {initials(p.nome)}
                       </div>
