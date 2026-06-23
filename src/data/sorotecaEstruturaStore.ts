@@ -767,13 +767,14 @@ export async function listarMovimentacoes(filtro: {
   const amostraIds = Array.from(new Set(rows.map((r) => r.amostra_id)));
   const [profs, ams] = await Promise.all([
     userIds.length
-      ? supabase.from("profiles").select("user_id, nome_completo, email").in("user_id", userIds)
-      : Promise.resolve({ data: [] as Array<{ user_id: string; nome_completo: string | null; email: string | null }> }),
+      ? supabase.from("profiles").select("user_id, nome, email").in("user_id", userIds)
+      : Promise.resolve({ data: [] as Array<{ user_id: string; nome: string | null; email: string | null }> }),
     amostraIds.length
       ? supabase.from("amostras").select("id, codigo_barra, atendimento_id").in("id", amostraIds)
       : Promise.resolve({ data: [] as Array<{ id: string; codigo_barra: string; atendimento_id: number | null }> }),
   ]);
-  const profMap = new Map((profs.data ?? []).map((p) => [p.user_id, p.nome_completo || p.email]));
+  const profRows = ((profs.data ?? []) as unknown as Array<{ user_id: string; nome: string | null; email: string | null }>);
+  const profMap = new Map(profRows.map((p) => [p.user_id, p.nome || p.email] as [string, string | null]));
   const amMap = new Map((ams.data ?? []).map((a) => [a.id, a]));
   const atendIds = Array.from(new Set((ams.data ?? []).map((a) => a.atendimento_id).filter((v): v is number => v != null)));
   let pacMap = new Map<number, string | null>();
