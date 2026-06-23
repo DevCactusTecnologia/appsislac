@@ -54,6 +54,13 @@ const LayoutDialog = ({ open, onClose, exame, editData, defaultMaximized = true 
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
     top: "5", right: "10", bottom: "5", left: "10",
   });
+  // ─── Campos científicos oficiais (Exames 2.2) ─────────────────────────────
+  const [metodologia, setMetodologia] = useState("");
+  const [unidadePadrao, setUnidadePadrao] = useState("");
+  const [textoInterpretativo, setTextoInterpretativo] = useState("");
+  const [exibirMetodologia, setExibirMetodologia] = useState(true);
+  const [exibirUnidade, setExibirUnidade] = useState(true);
+  const [exibirMaterial, setExibirMaterial] = useState(false);
 
   // [DIAG-AUTOCLOSE] Investigação de fechamento espontâneo. Remover após resolver.
   useEffect(() => {
