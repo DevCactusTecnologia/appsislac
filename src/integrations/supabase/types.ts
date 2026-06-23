@@ -194,6 +194,57 @@ export type Database = {
           },
         ]
       }
+      amostra_movimentacoes: {
+        Row: {
+          amostra_id: string
+          caminho_destino: string | null
+          caminho_origem: string | null
+          created_at: string
+          desfeita: boolean
+          desfeita_em: string | null
+          desfeita_por: string | null
+          executada_por: string | null
+          id: string
+          lote_id: string | null
+          motivo: string
+          posicao_destino_id: string
+          posicao_origem_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amostra_id: string
+          caminho_destino?: string | null
+          caminho_origem?: string | null
+          created_at?: string
+          desfeita?: boolean
+          desfeita_em?: string | null
+          desfeita_por?: string | null
+          executada_por?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string
+          posicao_destino_id: string
+          posicao_origem_id?: string | null
+          tenant_id?: string
+        }
+        Update: {
+          amostra_id?: string
+          caminho_destino?: string | null
+          caminho_origem?: string | null
+          created_at?: string
+          desfeita?: boolean
+          desfeita_em?: string | null
+          desfeita_por?: string | null
+          executada_por?: string | null
+          id?: string
+          lote_id?: string | null
+          motivo?: string
+          posicao_destino_id?: string
+          posicao_origem_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       amostra_sequence: {
         Row: {
           dia: string
@@ -7922,6 +7973,7 @@ export type Database = {
         Args: { _fim: string; _inicio: string }
         Returns: Json
       }
+      desfazer_movimentacao: { Args: { p_mov: string }; Returns: string }
       enqueue_whatsapp: {
         Args: {
           p_atendimento_protocolo?: string
@@ -8111,6 +8163,16 @@ export type Database = {
           score: number
         }[]
       }
+      mover_amostra: {
+        Args: {
+          p_amostra: string
+          p_destino: string
+          p_lote?: string
+          p_motivo?: string
+          p_observacao?: string
+        }
+        Returns: string
+      }
       next_friendly_id: {
         Args: { _prefix: string; _scope: string; _tenant_id: string }
         Returns: string
@@ -8219,6 +8281,7 @@ export type Database = {
         Returns: undefined
       }
       set_audit_justificativa: { Args: { _text: string }; Returns: undefined }
+      soroteca_caminho_posicao: { Args: { p_posicao: string }; Returns: string }
       super_admin_tenants_metrics: {
         Args: never
         Returns: {
