@@ -26,6 +26,15 @@ export interface ExameLayout {
   criadoPor: string;
   criadoEm: string;
   config?: LayoutConfig;
+  // ─── Campos científicos oficiais (Exames 2.2) ─────────────────────────────
+  // Movidos de `exames_catalogo`. Esta é a FONTE DE VERDADE científica do
+  // exame (RDC 786/2023). Snapshot regulatório lê daqui na liberação.
+  metodologia: string;
+  unidadePadrao: string;
+  textoInterpretativoPadrao: string;
+  exibirMetodologiaLaudo: boolean;
+  exibirUnidadeLaudo: boolean;
+  exibirMaterialLaudo: boolean;
 }
 
 export interface LayoutMargins { top: number; right: number; bottom: number; left: number; }
@@ -33,6 +42,11 @@ export interface LayoutConfig { margins?: LayoutMargins; [k: string]: unknown; }
 
 const cache = new Map<string, ExameLayout[]>();
 const listeners = new Map<string, Set<() => void>>();
+
+const LAYOUT_COLUMNS =
+  "id, exame_id, nome, conteudo, padrao, criado_por, created_at, config, " +
+  "metodologia, unidade_padrao, texto_interpretativo_padrao, " +
+  "exibir_metodologia_laudo, exibir_unidade_laudo, exibir_material_laudo";
 
 const fromRow = (r: any): ExameLayout => ({
   id: r.id,
@@ -43,6 +57,12 @@ const fromRow = (r: any): ExameLayout => ({
   criadoPor: r.criado_por ?? "",
   criadoEm: r.created_at ?? "",
   config: (r.config && typeof r.config === "object") ? r.config : {},
+  metodologia: r.metodologia ?? "",
+  unidadePadrao: r.unidade_padrao ?? "",
+  textoInterpretativoPadrao: r.texto_interpretativo_padrao ?? "",
+  exibirMetodologiaLaudo: r.exibir_metodologia_laudo !== false,
+  exibirUnidadeLaudo: r.exibir_unidade_laudo !== false,
+  exibirMaterialLaudo: !!r.exibir_material_laudo,
 });
 
 const toRow = (l: Partial<ExameLayout>): any => ({
@@ -52,6 +72,12 @@ const toRow = (l: Partial<ExameLayout>): any => ({
   ...(l.padrao !== undefined && { padrao: l.padrao }),
   ...(l.criadoPor !== undefined && { criado_por: l.criadoPor }),
   ...(l.config !== undefined && { config: l.config }),
+  ...(l.metodologia !== undefined && { metodologia: l.metodologia }),
+  ...(l.unidadePadrao !== undefined && { unidade_padrao: l.unidadePadrao }),
+  ...(l.textoInterpretativoPadrao !== undefined && { texto_interpretativo_padrao: l.textoInterpretativoPadrao }),
+  ...(l.exibirMetodologiaLaudo !== undefined && { exibir_metodologia_laudo: l.exibirMetodologiaLaudo }),
+  ...(l.exibirUnidadeLaudo !== undefined && { exibir_unidade_laudo: l.exibirUnidadeLaudo }),
+  ...(l.exibirMaterialLaudo !== undefined && { exibir_material_laudo: l.exibirMaterialLaudo }),
 });
 
 const notify = (exameId: string) => {
@@ -59,10 +85,9 @@ const notify = (exameId: string) => {
 };
 
 export async function loadLayouts(exameId: string): Promise<ExameLayout[]> {
-  // Select explícito: campos consumidos por fromRow().
   const { data, error } = await supabase
     .from("exame_layouts")
-    .select("id, exame_id, nome, conteudo, padrao, criado_por, created_at, config")
+    .select(LAYOUT_COLUMNS)
     .eq("exame_id", exameId)
     .order("padrao", { ascending: false })
     .order("created_at", { ascending: true });
