@@ -152,7 +152,7 @@ export default function Soroteca() {
   const [search, setSearch] = useState("");
   const [confirmDescarte, setConfirmDescarte] = useState<Amostra | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [legacyPage, setLegacyPage] = useState(1);
   const [ajudaAberta, setAjudaAberta] = useState(false);
   const [scannerAberto, setScannerAberto] = useState(false);
   const [destaqueId, setDestaqueId] = useState<string | null>(null);
