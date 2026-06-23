@@ -655,7 +655,7 @@ const RegistrarColeta = () => {
                 )}
 
                 {/* Header do paciente — usa PacienteHeaderCard responsivo */}
-                <div className="px-4 sm:px-6 pt-4 sm:pt-5">
+                <div className="px-4 sm:px-6 pt-4 sm:pt-5 bg-gradient-to-br from-primary/5 via-card to-transparent border-b border-border/60 pb-4">
                   <PacienteHeaderCard
                     nome={selectedPaciente.nome}
                     sexo={selectedPaciente.sexo}
