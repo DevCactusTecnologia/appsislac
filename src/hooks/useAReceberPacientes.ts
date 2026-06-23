@@ -8,9 +8,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAppContext } from "@/contexts/AppContext";
-import { handleError } from "@/lib/errorHandling";
-import { useInterval, useMounted } from "@/hooks/useCleanupUtils";
 
 export interface AReceberRowDTO {
   id: number;
@@ -56,8 +53,10 @@ export function useAReceberPacientes(
   filters: UseAReceberFilters
 ): UseAReceberPacientesResult {
   const { user } = useAuth();
-  const { tenantId, notifyError } = useAppContext();
-  const isMounted = useMounted();
+  const tenantId = user?.tenantId;
+  const mountedRef = useRef(true);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
+  const isMounted = () => mountedRef.current;
 
   const [rows, setRows] = useState<AReceberRowDTO[]>([]);
   const [loading, setLoading] = useState(false);
@@ -72,7 +71,6 @@ export function useAReceberPacientes(
 
   const pageSize = filters.pageSize ?? 50;
 
-  // ✅ MUDANÇA 1: fetchPage com melhor error handling
   const fetchPage = useCallback(
     async (reset: boolean) => {
       if (!enabled || !tenantId) {
@@ -91,12 +89,11 @@ export function useAReceberPacientes(
       }
 
       try {
-        // ✅ MUDANÇA 2: RPC com validação de tenant
         const { data, error: rpcError } = await supabase.rpc(
           "financeiro_a_receber_v2",
           {
             p_tipo: "paciente",
-            p_tenant_id: tenantId, // ← ADICIONADO
+            p_tenant_id: tenantId,
             p_search: filters.search ?? undefined,
             p_date_from: filters.dateFrom
               ? filters.dateFrom.toISOString()
@@ -111,23 +108,14 @@ export function useAReceberPacientes(
           }
         );
 
-        // ✅ MUDANÇA 3: Verificar se request é ainda válido
         if (myReq !== reqIdRef.current) return;
 
-        // ✅ MUDANÇA 4: Error handling diferenciado
         if (rpcError) {
-          const handled = handleError(
-            rpcError,
-            "carregar a receber de pacientes"
-          );
-          if (isMounted()) {
-            setError(handled.message);
-          }
-          notifyError(rpcError, "carregar a receber de pacientes");
+          logger.warn("useAReceberPacientes", rpcError.message);
+          if (isMounted()) setError(rpcError.message);
           throw rpcError;
         }
 
-        // ✅ MUDANÇA 5: Validar dados
         const list: AReceberRowDTO[] = (data ?? []).map(
           (r: {
             ref_id: number;
@@ -162,7 +150,6 @@ export function useAReceberPacientes(
           setRows((prev) => [...prev, ...list]);
         }
 
-        // ✅ MUDANÇA 6: Atualizar cursor se há mais dados
         if (list.length > 0) {
           const last = list[list.length - 1];
           cursorRef.current = { data: last.data, id: last.id };
@@ -172,13 +159,8 @@ export function useAReceberPacientes(
         }
 
         setError(null);
-      } catch (error) {
+      } catch (err) {
         if (!isMounted()) return;
-
-        // Já foi logado pelo handleError
-        console.error("❌ [useAReceberPacientes]", error);
-        
-        // Não setar erro se request foi cancelado
         if (myReq === reqIdRef.current) {
           setError("Erro ao carregar dados");
         }
@@ -188,7 +170,7 @@ export function useAReceberPacientes(
         }
       }
     },
-    [enabled, tenantId, filters, pageSize, isMounted, notifyError]
+    [enabled, tenantId, filters, pageSize]
   );
 
   // ✅ MUDANÇA 7: loadMore com tratamento seguro
