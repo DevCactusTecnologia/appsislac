@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Snowflake, Thermometer, ListPlus, Hash } from "lucide-react";
+import { Plus, Trash2, Boxes, Layers, MapPin, Loader2, RefreshCw, Pencil, Thermometer, ListPlus, Hash } from "lucide-react";
 import {
   SorotecaDialogHeader,
   SorotecaDialogBody,
