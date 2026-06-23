@@ -86,20 +86,56 @@ if (typeof window !== "undefined") {
   try { localStorage.removeItem("sislac_auth_user"); } catch { /* noop */ }
 }
 
+/**
+ * Validar se um tenant está ativo
+ * 
+ * FALHA SEGURA: Se não conseguir validar, NEGA acesso (não permite)
+ * NUNCA: Deixar passar por erro de rede ou falta de validação
+ */
 async function isTenantActive(tenantId: string | null | undefined): Promise<boolean> {
-  if (!tenantId) return true;
+  // ❌ FALHA SEGURA: Sem tenant_id = negar acesso
+  if (!tenantId) {
+    console.error("❌ [Auth] Tenant ID ausente - acesso bloqueado");
+    return false;
+  }
+
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tenants" as never)
       .select("status")
       .eq("id", tenantId)
       .maybeSingle();
+
+    // ❌ Erro na query = negar acesso
+    if (error) {
+      console.error("❌ [Auth] Erro ao validar tenant", { tenantId, error });
+      return false;
+    }
+
     const status = (data as { status?: string } | null)?.status;
-    // Sem registro acessível → não bloqueia (evita falso-positivo por RLS).
-    if (!status) return true;
-    return status === "ativo";
-  } catch {
-    return true;
+
+    // ⚠️ Sem registro = dados inconsistentes
+    if (!status) {
+      console.warn("⚠️  [Auth] Tenant não encontrado no banco", tenantId);
+      // Aqui deixamos passar (pode ser RLS bloqueando)
+      // Mas em produção, isso seria um sinal de problema
+      return true;
+    }
+
+    const isActive = status === "ativo";
+
+    if (!isActive) {
+      console.warn("⚠️  [Auth] Tenant inativo", { tenantId, status });
+    }
+
+    return isActive;
+  } catch (error) {
+    // ❌ Erro não tratado = negar acesso (falha segura)
+    console.error("❌ [Auth] Erro inesperado ao validar tenant", {
+      tenantId,
+      error,
+    });
+    return false;
   }
 }
 
@@ -287,33 +323,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
-    if (error) {
-      return { ok: false, error: error.message };
-    }
+  const login = useCallback(
+    async (
+      email: string,
+      senha: string
+    ): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        // 1. Validar entrada
+        if (!email || !senha) {
+          return { ok: false, error: "Email e senha são obrigatórios" };
+        }
 
-    const uid = signInData.user?.id;
-    if (uid) {
-      const { data: prof } = await supabase
-        .from("profiles" as never)
-        .select("status, tenant_id")
-        .eq("user_id", uid)
-        .maybeSingle();
-      const profRow = prof as { status?: string; tenant_id?: string } | null;
-      if (profRow?.status === "Inativo") {
-        await supabase.auth.signOut();
-        return { ok: false, error: "Conta bloqueada. Entre em contato com o administrador." };
+        // 2. Tentar autenticar
+        const { data: signInData, error: authError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password: senha,
+          });
+
+        if (authError) {
+          console.warn("⚠️  [Auth] Erro de autenticação", {
+            email,
+            message: authError.message,
+          });
+
+          // Diferenciar erros para mensagem melhor
+          if (
+            authError.message?.includes("Invalid login credentials") ||
+            authError.message?.includes("credentials")
+          ) {
+            return { ok: false, error: "Email ou senha incorretos" };
+          }
+
+          return { ok: false, error: authError.message || "Erro ao fazer login" };
+        }
+
+        if (!signInData.user?.id) {
+          console.error("❌ [Auth] User ID não retornado após login");
+          return { ok: false, error: "Erro ao fazer login - tente novamente" };
+        }
+
+        const uid = signInData.user.id;
+
+        // 3. Validar status do usuário
+        const { data: prof, error: profileError } = await supabase
+          .from("profiles" as never)
+          .select("status, tenant_id")
+          .eq("user_id", uid)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error("❌ [Auth] Erro ao carregar profile", {
+            uid,
+            error: profileError,
+          });
+          await supabase.auth.signOut();
+          return { ok: false, error: "Erro ao validar sua conta" };
+        }
+
+        const profRow = prof as
+          | { status?: string; tenant_id?: string }
+          | null;
+
+        // 4. Validar se conta está ativa
+        if (profRow?.status === "Inativo") {
+          console.warn("⚠️  [Auth] Conta inativa", { uid });
+          await supabase.auth.signOut();
+          return {
+            ok: false,
+            error: "Sua conta foi desativada. Entre em contato com o administrador.",
+          };
+        }
+
+        // 5. Validar se tenant está ativo
+        if (profRow?.tenant_id) {
+          const tenantActive = await isTenantActive(profRow.tenant_id);
+          if (!tenantActive) {
+            console.warn("⚠️  [Auth] Tenant inativo", {
+              uid,
+              tenantId: profRow.tenant_id,
+            });
+            await supabase.auth.signOut();
+            return {
+              ok: false,
+              error: "Seu laboratório foi suspenso. Entre em contato com o suporte.",
+            };
+          }
+        }
+
+        return { ok: true };
+      } catch (error) {
+        console.error("❌ [Auth] Erro inesperado no login", error);
+        return {
+          ok: false,
+          error: "Erro inesperado - tente novamente em alguns instantes",
+        };
       }
-      if (profRow?.tenant_id && !(await isTenantActive(profRow.tenant_id))) {
-        await supabase.auth.signOut();
-        return { ok: false, error: "Laboratório suspenso. Entre em contato com o suporte." };
-      }
-    }
-
-
-    return { ok: true };
-  }, []);
+    },
+    []
+  );
 
   // Equipe 2.1 Fase 2.8: `signInWithPassword` agora é alias de `login`.
   // Antes existiam duas funções gêmeas com lógica idêntica.
