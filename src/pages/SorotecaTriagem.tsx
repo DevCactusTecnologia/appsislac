@@ -137,7 +137,21 @@ export default function SorotecaTriagem() {
     setPosicao(null);
     setJaArmazenada(null);
     setErro(null);
+    setSugIA(null);
+    setAltsIA([]);
+    setIaFonte(null);
     setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const aplicarSugestao = (s: SugestaoIA) => {
+    setPosicao({
+      posicao_id: s.posicao_id,
+      posicao_codigo: s.posicao_codigo,
+      galeria_id: "",
+      galeria_nome: s.galeria_nome,
+      local_id: "",
+      local_nome: s.local_nome,
+    });
   };
 
   const buscar = async (valor?: string) => {
@@ -148,6 +162,9 @@ export default function SorotecaTriagem() {
     setAmostra(null);
     setPosicao(null);
     setJaArmazenada(null);
+    setSugIA(null);
+    setAltsIA([]);
+    setIaFonte(null);
     setDados({ paciente_nome: null, setor: null });
 
     const a = await buscarAmostraPorCodigo(v);
@@ -160,7 +177,6 @@ export default function SorotecaTriagem() {
     setAmostra(a);
     setCodigo(a.codigo_barra);
 
-    // Dados auxiliares (paciente + setor do exame) — leves, 1 query cada.
     const [pacRes, exRes, alocAtiva] = await Promise.all([
       a.paciente_id
         ? supabase.from("pacientes").select("nome").eq("id", a.paciente_id).maybeSingle()
@@ -180,7 +196,6 @@ export default function SorotecaTriagem() {
       setor: (exRes.data as { setor_laboratorial?: string } | null)?.setor_laboratorial ?? null,
     });
 
-    // Já armazenada → bloqueia.
     if (alocAtiva) {
       const cam = await getPosicaoCaminho(alocAtiva.posicao_id);
       setJaArmazenada(cam);
@@ -189,17 +204,37 @@ export default function SorotecaTriagem() {
       return;
     }
 
-    // Sugestão automática de posição livre.
+    // 1) fallback determinístico imediato (sempre confiável)
     const livre = await proximaPosicaoLivre({});
-    if (!livre) {
+    if (livre) {
+      const cam = await getPosicaoCaminho(livre.id);
+      if (cam) setPosicao(cam);
+    } else {
       setErro("Nenhuma posição livre encontrada.");
-      setLoading(false);
-      return;
     }
-    const cam = await getPosicaoCaminho(livre.id);
-    setPosicao(cam);
     setLoading(false);
+
+    // 2) consulta IA em paralelo (não bloqueia o fluxo)
+    setIaLoading(true);
+    try {
+      const { data: iaData, error: iaErr } = await supabase.functions.invoke(
+        "soroteca-sugerir-posicao",
+        { body: { amostra_id: a.id } },
+      );
+      if (!iaErr && iaData?.sugestao) {
+        setSugIA(iaData.sugestao as SugestaoIA);
+        setAltsIA((iaData.alternativas as SugestaoIA[]) ?? []);
+        setIaFonte((iaData.fonte as "ia" | "fallback") ?? "ia");
+        // Adota automaticamente a sugestão da IA como posição padrão
+        if (iaData.fonte === "ia") aplicarSugestao(iaData.sugestao as SugestaoIA);
+      }
+    } catch (_e) {
+      // silencioso — fallback determinístico já está aplicado
+    } finally {
+      setIaLoading(false);
+    }
   };
+
 
   const handleArmazenar = async () => {
     if (!amostra || !posicao) return;
