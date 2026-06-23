@@ -1035,43 +1035,53 @@ export default function Soroteca() {
                       )}
                     </div>
                     {(() => {
-                      let pac = a.paciente_id ? infoMap[`p:${a.paciente_id}`] : undefined;
                       const at = a.atendimento_id ? infoMap[`a:${a.atendimento_id}`] : undefined;
-                      if (!pac && a.atendimento_id) {
-                        const link = infoMap[`ap:${a.atendimento_id}`];
-                        const pid = link?.paciente ? Number(link.paciente) : NaN;
-                        if (!Number.isNaN(pid)) pac = infoMap[`p:${pid}`];
-                      }
-                      if (!pac && !at) return null;
+                      const exId = (a as { atendimento_exame_id?: number | null }).atendimento_exame_id;
+                      const ex = exId ? infoMap[`e:${exId}`] : undefined;
                       return (
-                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-sm">
-                          {pac?.paciente && (
-                            <span className="font-semibold text-foreground truncate max-w-[260px]" title={pac.paciente}>
-                              {pac.paciente}
+                        <>
+                          {(at?.paciente || at?.protocolo) && (
+                            <div className="mt-1.5 flex items-center gap-2 flex-wrap text-sm">
+                              {at?.paciente && (
+                                <span className="font-semibold text-foreground truncate max-w-[260px]" title={at.paciente}>
+                                  {at.paciente}
+                                </span>
+                              )}
+                              {at?.cpf && (
+                                <span className="text-xs text-muted-foreground font-mono">{at.cpf}</span>
+                              )}
+                              {at?.protocolo && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
+                                  #{at.protocolo}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 flex-wrap">
+                            <span className="font-medium text-foreground/80">
+                              {a.tipo_material || "—"}
                             </span>
-                          )}
-                          {pac?.cpf && (
-                            <span className="text-xs text-muted-foreground font-mono">{pac.cpf}</span>
-                          )}
-                          {at?.protocolo && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
-                              #{at.protocolo}
-                            </span>
-                          )}
-                        </div>
+                            {a.localizacao && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {a.localizacao}
+                              </span>
+                            )}
+                            {ex?.processada && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[10px] font-semibold">
+                                ✓ Processada
+                              </span>
+                            )}
+                            {ex?.liberada && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 border border-blue-500/20 text-[10px] font-semibold">
+                                ✓ Liberada
+                              </span>
+                            )}
+                          </div>
+                        </>
                       );
                     })()}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1.5 flex-wrap">
-                      <span className="font-medium text-foreground/80">
-                        {a.tipo_material || "—"}
-                      </span>
-                      {a.localizacao && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {a.localizacao}
-                        </span>
-                      )}
-                    </div>
+
                     {(venc.nivel === "atencao" || venc.nivel === "critico") && (
                       <div
                         className={cn(
