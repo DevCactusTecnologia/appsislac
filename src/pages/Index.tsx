@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import {
   Plus, Search, ChevronLeft, ChevronRight, MoreVertical, Pencil, Ban, X, Loader2,
   Eye, Building2, Cake, Activity, CircleDollarSign, CheckCircle2, Clock3,
-  SlidersHorizontal, Filter, AlertTriangle,
+  SlidersHorizontal, Filter, AlertTriangle, Receipt,
 } from "lucide-react";
+import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
 import { getUnidadeById, getUnidades } from "@/data/unidadeStore";
@@ -472,6 +473,8 @@ const Index = () => {
   const [cancelTarget, setCancelTarget] = useState<MockAtendimento | null>(null);
 
   useEffect(() => subscribe(() => forceUpdate(n => n + 1)), []);
+  useEffect(() => subscribeOrcamentos(() => forceUpdate(n => n + 1)), []);
+  const orcamentosPendentes = getOrcamentos().filter(o => !o.convertido).length;
 
   // ── Canary: UI paginada server-side ──
   // Kill-switch global: `USE_LEGACY_STORE` força modo legado (cache global)
@@ -861,6 +864,18 @@ const Index = () => {
         description="Gerencie e acompanhe os atendimentos do laboratório."
         actions={
           <>
+            <button
+              onClick={() => navigate("/orcamentos")}
+              className="relative inline-flex items-center gap-2 h-10 px-4 bg-card text-foreground text-[13px] font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+            >
+              <Receipt className="w-4 h-4" />
+              Orçamentos
+              {orcamentosPendentes > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none shadow-sm">
+                  {orcamentosPendentes > 99 ? "99+" : orcamentosPendentes}
+                </span>
+              )}
+            </button>
             {canCreate && (
               <button
                 onClick={() => navigate("/atendimentos/novo")}
