@@ -67,6 +67,16 @@ const TIPOS: { value: LocalTipo; label: string }[] = [
   { value: "outro", label: "Outro" },
 ];
 
+function LegendDot({ cls, label }: { cls: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className={cn("inline-block h-2.5 w-2.5 rounded-sm border", cls)} />
+      {label}
+    </span>
+  );
+}
+
+
 export default function SorotecaEstrutura() {
   const navigate = useNavigate();
 
