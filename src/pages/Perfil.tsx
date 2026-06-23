@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useState, useEffect } from "react";
-import { UserCog, Mail, Lock, Loader2, Check, X } from "lucide-react";
+import { Mail, Lock, Loader2, Check, X, Phone, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import AssinaturaSection from "@/components/usuarios/AssinaturaSection";
 
 const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
@@ -14,50 +15,111 @@ const labelClass =
   "text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block";
 
 /**
- * Página de perfil do usuário.
- * Disponível para todos os perfis (admin, analista, recepcionista, financeiro)
- * — permite editar nome (display), email e senha sem dar acesso a /configuracoes.
+ * Página de perfil do usuário (Equipe 2.1 Fase 2.7).
+ * Permite ao próprio usuário editar: nome, telefone, email, senha e
+ * assinatura no laudo (carimbo eletrônico ou imagem digitalizada).
+ *
+ * RLS + trigger profiles_guard_self_update bloqueiam alterações em
+ * perfil/permissões/unidades/status/tenant — só admin altera essas.
  */
 export default function Perfil() {
   const { user } = useAuth();
   const currentEmail = user?.email ?? "";
+  const userId = (user?.id as string | undefined) ?? "";
 
   const [nome, setNome] = useState(user?.nome ?? "");
+  const [telefone, setTelefone] = useState("");
+  const [savingNome, setSavingNome] = useState(false);
+  const [savingTelefone, setSavingTelefone] = useState(false);
+
   const [editingEmail, setEditingEmail] = useState(false);
   const [novoEmail, setNovoEmail] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
+
   const [pwd, setPwd] = useState({ nova: "", confirmar: "" });
   const [savingPwd, setSavingPwd] = useState(false);
-  const [savingNome, setSavingNome] = useState(false);
+
+  // Assinatura
+  const [assinaturaTipo, setAssinaturaTipo] = useState<"carimbo" | "imagem">("carimbo");
+  const [assinaturaConselho, setAssinaturaConselho] = useState("");
+  const [assinaturaImagemKey, setAssinaturaImagemKey] = useState<string | null>(null);
+  const [savingAssinatura, setSavingAssinatura] = useState(false);
+  const [loadedAssinatura, setLoadedAssinatura] = useState(false);
 
   useEffect(() => {
     setNome(user?.nome ?? "");
   }, [user?.nome]);
+
+  // Carrega telefone + assinatura do profile
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("telefone, assinatura_tipo, assinatura_imagem_key, assinatura_conselho")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const p = data as {
+        telefone: string | null;
+        assinatura_tipo: string | null;
+        assinatura_imagem_key: string | null;
+        assinatura_conselho: string | null;
+      };
+      setTelefone(p.telefone ?? "");
+      setAssinaturaTipo(p.assinatura_tipo === "imagem" ? "imagem" : "carimbo");
+      setAssinaturaImagemKey(p.assinatura_imagem_key);
+      setAssinaturaConselho(p.assinatura_conselho ?? "");
+      setLoadedAssinatura(true);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const requireRealUser = (): boolean => {
+    if (user?.source !== "supabase" || !userId) {
+      toast({
+        title: "Indisponível no modo demo",
+        description: "Faça login com uma conta real para alterar este dado.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleSaveNome = async () => {
     if (!nome.trim()) {
       toast({ title: "Nome obrigatório", variant: "destructive" });
       return;
     }
-    if (user?.source !== "supabase") {
-      toast({
-        title: "Indisponível no modo demo",
-        description: "Faça login com uma conta real para atualizar o nome.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!requireRealUser()) return;
     setSavingNome(true);
     const { error } = await supabase
       .from("profiles")
       .update({ nome: nome.trim() })
-      .eq("id", user.id as string);
+      .eq("user_id", userId);
     setSavingNome(false);
     if (error) {
       toast({ title: "Erro ao salvar nome", description: error.message, variant: "destructive" });
       return;
     }
     toast({ title: "Nome atualizado" });
+  };
+
+  const handleSaveTelefone = async () => {
+    if (!requireRealUser()) return;
+    setSavingTelefone(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ telefone: telefone.trim() || null })
+      .eq("user_id", userId);
+    setSavingTelefone(false);
+    if (error) {
+      toast({ title: "Erro ao salvar telefone", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Telefone atualizado" });
   };
 
   const handleChangeEmail = async () => {
@@ -70,14 +132,7 @@ export default function Perfil() {
       toast({ title: "Nenhuma alteração" });
       return;
     }
-    if (user?.source !== "supabase") {
-      toast({
-        title: "Indisponível no modo demo",
-        description: "Faça login com uma conta real para trocar o email.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!requireRealUser()) return;
     setSavingEmail(true);
     const { error } = await supabase.auth.updateUser({ email: target });
     setSavingEmail(false);
@@ -102,14 +157,7 @@ export default function Perfil() {
       toast({ title: "Senhas não conferem", variant: "destructive" });
       return;
     }
-    if (user?.source !== "supabase") {
-      toast({
-        title: "Indisponível no modo demo",
-        description: "Faça login com uma conta real para alterar a senha.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!requireRealUser()) return;
     setSavingPwd(true);
     const { error } = await supabase.auth.updateUser({ password: pwd.nova });
     setSavingPwd(false);
@@ -119,6 +167,25 @@ export default function Perfil() {
     }
     toast({ title: "Senha atualizada" });
     setPwd({ nova: "", confirmar: "" });
+  };
+
+  const handleSaveAssinatura = async () => {
+    if (!requireRealUser()) return;
+    setSavingAssinatura(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        assinatura_tipo: assinaturaTipo,
+        assinatura_conselho: assinaturaConselho.trim() || null,
+        assinatura_imagem_key: assinaturaImagemKey,
+      })
+      .eq("user_id", userId);
+    setSavingAssinatura(false);
+    if (error) {
+      toast({ title: "Erro ao salvar assinatura", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Assinatura atualizada" });
   };
 
   return (
@@ -142,16 +209,38 @@ export default function Perfil() {
               className={inputClass}
               placeholder="Seu nome"
             />
+            <div className="flex justify-end mt-2">
+              <Button
+                onClick={handleSaveNome}
+                disabled={savingNome || nome.trim() === (user?.nome ?? "")}
+                className="rounded-lg px-6"
+              >
+                {savingNome ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Salvar nome
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSaveNome}
-              disabled={savingNome || nome.trim() === (user?.nome ?? "")}
-              className="rounded-lg px-6"
-            >
-              {savingNome ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Salvar nome
-            </Button>
+
+          <div>
+            <label className={labelClass}><Phone className="inline h-3 w-3 mr-1" />Telefone</label>
+            <input
+              type="tel"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              className={inputClass}
+              placeholder="(00) 00000-0000"
+            />
+            <div className="flex justify-end mt-2">
+              <Button
+                onClick={handleSaveTelefone}
+                disabled={savingTelefone}
+                variant="outline"
+                className="rounded-lg px-6"
+              >
+                {savingTelefone ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                Salvar telefone
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -258,6 +347,35 @@ export default function Perfil() {
           </div>
         </div>
       </section>
+
+      {/* Assinatura no laudo */}
+      {userId && loadedAssinatura && (
+        <section className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <PenLine className="h-4 w-4 text-muted-foreground" /> Assinatura no laudo
+          </h2>
+          <AssinaturaSection
+            userId={userId}
+            tipo={assinaturaTipo}
+            conselho={assinaturaConselho}
+            imagemKey={assinaturaImagemKey}
+            nome={nome}
+            onChangeTipo={setAssinaturaTipo}
+            onChangeConselho={setAssinaturaConselho}
+            onImagemChange={setAssinaturaImagemKey}
+          />
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={handleSaveAssinatura}
+              disabled={savingAssinatura}
+              className="rounded-lg px-6"
+            >
+              {savingAssinatura ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Salvar assinatura
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

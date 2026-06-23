@@ -72,6 +72,8 @@ export const PERMISSOES_AGRUPADAS: GrupoPermissao[] = [
       { id: "analisar_amostra", label: "Análise", descricao: "Avançar exames para análise" },
       { id: "liberar_resultado", label: "Resultados", descricao: "Assinar e liberar laudos" },
       { id: "imprimir_laudo", label: "Imprimir laudo", descricao: "Gerar PDF/impressão de laudos" },
+      { id: "gerenciar_soroteca", label: "Soroteca", descricao: "Gerenciar amostras na soroteca" },
+      { id: "armazenar_amostra", label: "Armazenar amostra", descricao: "Alocar amostras em galerias/posições" },
     ],
   },
   {
@@ -111,6 +113,7 @@ export const PERMISSOES_AGRUPADAS: GrupoPermissao[] = [
       { id: "gestao_unidades", label: "Gestão de unidades", descricao: "Sedes, filiais e pontos de coleta" },
       { id: "gestao_convenios", label: "Gestão de convênios", descricao: "Cadastro de convênios" },
       { id: "gestao_exames", label: "Gestão de exames", descricao: "Catálogo técnico de exames" },
+      { id: "integracoes.gerenciar", label: "Integrações", descricao: "Configurar provedores de integração externa" },
     ],
   },
   {

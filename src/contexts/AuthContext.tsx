@@ -315,36 +315,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, []);
 
-  // === Supabase login =====================================================
-  // Bloqueia login de usuários inativos: faz signIn, checa profile.status,
-  // se Inativo faz signOut imediatamente e devolve erro amigável.
-  const signInWithPassword = useCallback(
-    async (email: string, senha: string): Promise<{ ok: boolean; error?: string }> => {
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password: senha });
-      if (error) {
-        return { ok: false, error: error.message };
-      }
-      const uid = signInData.user?.id;
-      if (uid) {
-        const { data: prof } = await supabase
-          .from("profiles" as never)
-          .select("status, tenant_id")
-          .eq("user_id", uid)
-          .maybeSingle();
-        const profRow = prof as { status?: string; tenant_id?: string } | null;
-        if (profRow?.status === "Inativo") {
-          await supabase.auth.signOut();
-          return { ok: false, error: "Conta bloqueada. Entre em contato com o administrador." };
-        }
-        if (profRow?.tenant_id && !(await isTenantActive(profRow.tenant_id))) {
-          await supabase.auth.signOut();
-          return { ok: false, error: "Laboratório suspenso. Entre em contato com o suporte." };
-        }
-      }
-      return { ok: true };
-    },
-    [],
-  );
+  // Equipe 2.1 Fase 2.8: `signInWithPassword` agora é alias de `login`.
+  // Antes existiam duas funções gêmeas com lógica idêntica.
+  const signInWithPassword = login;
 
   const signUpWithPassword = useCallback(
     async (
