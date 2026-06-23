@@ -69,6 +69,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import AmostraDetalheDialog from "@/components/soroteca/AmostraDetalheDialog";
 import BarcodeScannerDialog from "@/components/soroteca/BarcodeScannerDialog";
+import { supabase } from "@/integrations/supabase/client";
+
+interface AmostraInfo {
+  paciente?: string;
+  cpf?: string;
+  protocolo?: string;
+}
 
 type StatusFiltro = "TODAS" | AmostraStatus;
 
