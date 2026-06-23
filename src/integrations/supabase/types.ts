@@ -3220,12 +3220,14 @@ export type Database = {
           codigo_expira_em: string | null
           codigo_validacao: string | null
           created_at: string | null
+          email: string | null
           estado: string | null
           id: string
           nome_laboratorio: string
           nome_responsavel: string
           observacoes: string | null
           quantidade_unidades: string | null
+          senha_hash: string | null
           status: Database["public"]["Enums"]["inscricao_status"] | null
           tentativas_codigo: number
           whatsapp: string
@@ -3236,12 +3238,14 @@ export type Database = {
           codigo_expira_em?: string | null
           codigo_validacao?: string | null
           created_at?: string | null
+          email?: string | null
           estado?: string | null
           id?: string
           nome_laboratorio: string
           nome_responsavel: string
           observacoes?: string | null
           quantidade_unidades?: string | null
+          senha_hash?: string | null
           status?: Database["public"]["Enums"]["inscricao_status"] | null
           tentativas_codigo?: number
           whatsapp: string
@@ -3252,12 +3256,14 @@ export type Database = {
           codigo_expira_em?: string | null
           codigo_validacao?: string | null
           created_at?: string | null
+          email?: string | null
           estado?: string | null
           id?: string
           nome_laboratorio?: string
           nome_responsavel?: string
           observacoes?: string | null
           quantidade_unidades?: string | null
+          senha_hash?: string | null
           status?: Database["public"]["Enums"]["inscricao_status"] | null
           tentativas_codigo?: number
           whatsapp?: string
