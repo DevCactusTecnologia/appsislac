@@ -225,48 +225,6 @@ export function useAReceberPacientes(
     refresh,
   };
 }
-      }) => ({
-        id:             Number(r.ref_id),
-        protocolo:      r.protocolo,
-        data:           r.data,
-        paciente_nome:  r.quem,
-        convenio_nome:  r.convenio_nome ?? "Particular",
-        valor_total:    Number(r.valor_total) || 0,
-        valor_pago:     Number(r.valor_pago)  || 0,
-        saldo:          Number(r.saldo)       || 0,
-        status:         (r.status === "parcial" ? "parcial" : "pendente"),
-      }));
-      setRows((prev) => reset ? list : [...prev, ...list]);
-      const last = list[list.length - 1];
-      if (last) {
-        cursorRef.current = { data: last.data, id: last.id };
-      }
-      setHasMore(list.length >= pageSize);
-    } catch (e: unknown) {
-      if (myReq !== reqIdRef.current) return;
-      const msg = (e as Error)?.message ?? "Falha ao carregar A Receber";
-      logger.warn("useAReceberPacientes", msg);
-      setError(msg);
-    } finally {
-      if (myReq === reqIdRef.current) setLoading(false);
-    }
-  }, [enabled, filters.search, filters.dateFrom, filters.dateTo, filters.status, pageSize]);
-
-  // Reset + primeira página sempre que filtros mudam
-  useEffect(() => {
-    cursorRef.current = { data: null, id: null };
-    void fetchPage(true);
-  }, [fetchPage]);
-
-  return {
-    rows,
-    loading,
-    hasMore,
-    error,
-    loadMore: () => { void fetchPage(false); },
-    refresh:  () => { cursorRef.current = { data: null, id: null }; void fetchPage(true); },
-  };
-}
 
 // ────────────────────────────────────────────────────────────
 // Resumo financeiro agregado (single round-trip)
