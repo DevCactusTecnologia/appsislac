@@ -138,8 +138,12 @@ export default function Inscricao() {
       {/* Header */}
       <div className="w-full max-w-6xl flex justify-between items-center mb-8 px-4">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-[#4D41F3] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
+          <div className="relative w-10 h-10 bg-[#4D41F3] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
             <FlaskConical className="w-5 h-5 text-white" />
+            <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            </span>
           </div>
           <span className="text-2xl font-bold tracking-tight text-slate-900">SISLAC</span>
         </Link>

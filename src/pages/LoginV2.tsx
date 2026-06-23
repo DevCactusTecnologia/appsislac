@@ -278,8 +278,12 @@ export default function LoginV2() {
           <div className="w-full max-w-md">
             {/* Logo mobile */}
             <Link to="/" className="mb-8 inline-flex items-center gap-3 lg:hidden">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md shadow-primary/25">
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md shadow-primary/25">
                 <FlaskConical className="h-5 w-5" />
+                <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                </span>
               </div>
               <div>
                 <p className="text-lg font-bold tracking-tight text-foreground">SISLAC</p>
