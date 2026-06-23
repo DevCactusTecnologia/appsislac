@@ -197,9 +197,9 @@ export default function Inscricao() {
           {step === "form" ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className="text-center lg:text-left">
-                <h2 className="text-3xl font-bold text-slate-900 mb-3">Dados da Inscrição</h2>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3">Transforme seu laboratório hoje</h2>
                 <p className="text-slate-500 font-medium">
-                  Comece agora sua jornada para uma gestão moderna.
+                  Preencha os dados abaixo e veja o SISLAC em ação.
                 </p>
               </div>
 
@@ -288,7 +288,7 @@ export default function Inscricao() {
                     </>
                   ) : (
                     <>
-                      Solicitar Demonstração
+                      Quero ver na prática
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
