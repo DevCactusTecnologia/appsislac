@@ -202,7 +202,6 @@ export default function SorotecaTriagem() {
 
   return (
     <SorotecaShell
-      maxWidth="max-w-3xl"
       title="Triagem e Armazenamento"
       description="Bipe a etiqueta da amostra para armazenar na próxima posição livre."
       actions={
