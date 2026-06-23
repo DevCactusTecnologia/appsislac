@@ -3,20 +3,22 @@
 // ------------------------------------------------------------
 // Regra OFICIAL SISLAC (RDC 786/2023):
 //   O laudo deve refletir a REALIDADE EXECUTADA (snapshot),
-//   NÃO o estado atual do catálogo.
+//   NÃO o estado atual do layout científico.
 //
-// Resolução:
-//   metodologia = COALESCE(snapshot, catalogo.metodologia)
-//   unidade     = COALESCE(snapshot, catalogo.unidadePadrao)
+// Resolução (Exames 2.2):
+//   metodologia = COALESCE(snapshot, layoutPadrao.metodologia)
+//   unidade     = COALESCE(snapshot, layoutPadrao.unidadePadrao)
 //
-// Flags do catálogo controlam a EXIBIÇÃO no laudo:
+// Flags do layout controlam a EXIBIÇÃO no laudo:
 //   exibirMetodologiaLaudo
 //   exibirUnidadeLaudo
 //
-// Quando vazio ou flag desligada → não renderizar (sem espaço morto).
+// Fonte de verdade científica = `exame_layouts` (padrão).
+// O catálogo NÃO contém mais metodologia/unidade desde Exames 2.2.
 // ============================================================
 
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
+import { getLayouts } from "@/data/exameLayoutsStore";
 import { escapeHtml } from "@/lib/escapeHtml";
 
 export interface ResultadoRegulatorio {
@@ -36,16 +38,19 @@ export function resolveResultadoRegulatorio(
   input: ResolveRegulatorioInput,
 ): ResultadoRegulatorio {
   const catalogo = getExamesCatalogo().find((c) => c.nome === input.exameNome);
+  const layouts = catalogo?.id ? getLayouts(catalogo.id) : [];
+  const layoutPadrao = layouts.find((l) => l.padrao) ?? layouts[0];
+
   const metodologia =
     (input.metodologiaSnapshot ?? "").trim() ||
-    (catalogo?.metodologia ?? "").trim();
+    (layoutPadrao?.metodologia ?? "").trim();
   const unidade =
     (input.unidadeSnapshot ?? "").trim() ||
-    (catalogo?.unidadePadrao ?? "").trim();
+    (layoutPadrao?.unidadePadrao ?? "").trim();
 
   // Flags default = true (exibir) — só oculta quando explicitamente false.
-  const exibirMetodologia = catalogo?.exibirMetodologiaLaudo !== false && !!metodologia;
-  const exibirUnidade = catalogo?.exibirUnidadeLaudo !== false && !!unidade;
+  const exibirMetodologia = (layoutPadrao?.exibirMetodologiaLaudo !== false) && !!metodologia;
+  const exibirUnidade = (layoutPadrao?.exibirUnidadeLaudo !== false) && !!unidade;
 
   return { metodologia, unidade, exibirMetodologia, exibirUnidade };
 }
@@ -53,7 +58,6 @@ export function resolveResultadoRegulatorio(
 /**
  * Renderiza um bloco HTML discreto com metodologia/unidade para o laudo.
  * Vazio se nada deve ser exibido — não polui o layout.
- * Estilo intencionalmente sóbrio: cinza, fonte pequena, abaixo do conteúdo.
  */
 export function renderRegulatorioFooterHtml(reg: ResultadoRegulatorio): string {
   if (!reg.exibirMetodologia && !reg.exibirUnidade) return "";
