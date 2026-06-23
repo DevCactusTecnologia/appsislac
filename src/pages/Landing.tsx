@@ -198,28 +198,28 @@ const Landing = () => {
                   </div>
                 </aside>
 
-                <div className="col-span-12 p-5 md:col-span-9 md:p-6">
-                  <div className="mb-5 flex items-center justify-between">
+                <div className="col-span-12 p-3 sm:p-5 md:col-span-9 md:p-6">
+                  <div className="mb-4 flex items-center justify-between sm:mb-5">
                     <div>
-                      <h3 className="text-base font-semibold">Atendimentos</h3>
-                      <p className="text-xs text-muted-foreground">Visão geral do dia</p>
+                      <h3 className="text-sm font-semibold sm:text-base">Atendimentos</h3>
+                      <p className="text-[11px] text-muted-foreground sm:text-xs">Visão geral do dia</p>
                     </div>
-                    <div className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground">
-                      + Novo atendimento
+                    <div className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-medium text-primary-foreground sm:px-3 sm:py-1.5 sm:text-[11px]">
+                      + Novo
                     </div>
                   </div>
 
-                  <div className="mb-5 grid grid-cols-4 gap-2.5">
+                  <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:grid-cols-4 sm:gap-2.5">
                     {[
                       { l: "Total", v: "248", t: "primary" as const },
                       { l: "Em andamento", v: "57", t: "warning" as const },
                       { l: "Finalizados", v: "184", t: "success" as const },
                       { l: "Críticos", v: "3", t: "danger" as const },
                     ].map((k) => (
-                      <div key={k.l} className="rounded-lg border border-border/60 bg-card p-3">
-                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{k.l}</div>
+                      <div key={k.l} className="rounded-lg border border-border/60 bg-card p-2.5 sm:p-3">
+                        <div className="text-[9px] uppercase tracking-wide text-muted-foreground sm:text-[10px]">{k.l}</div>
                         <div
-                          className={`mt-1 text-xl font-semibold tabular-nums ${
+                          className={`mt-1 text-lg font-semibold tabular-nums sm:text-xl ${
                             k.t === "primary"
                               ? "text-primary"
                               : k.t === "warning"
@@ -234,6 +234,7 @@ const Landing = () => {
                       </div>
                     ))}
                   </div>
+
 
                   <div className="overflow-hidden rounded-lg border border-border/60">
                     <div className="grid grid-cols-12 gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
