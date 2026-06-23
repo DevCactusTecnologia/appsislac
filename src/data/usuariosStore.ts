@@ -72,6 +72,8 @@ export const PERMISSOES_AGRUPADAS: GrupoPermissao[] = [
       { id: "analisar_amostra", label: "Análise", descricao: "Avançar exames para análise" },
       { id: "liberar_resultado", label: "Resultados", descricao: "Assinar e liberar laudos" },
       { id: "imprimir_laudo", label: "Imprimir laudo", descricao: "Gerar PDF/impressão de laudos" },
+      { id: "gerenciar_soroteca", label: "Soroteca", descricao: "Gerenciar amostras na soroteca" },
+      { id: "armazenar_amostra", label: "Armazenar amostra", descricao: "Alocar amostras em galerias/posições" },
     ],
   },
   {
