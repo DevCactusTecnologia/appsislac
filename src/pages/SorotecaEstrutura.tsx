@@ -38,9 +38,6 @@ import {
   type LocalArmazenamento,
   type LocalTipo,
   type PosicaoGaleria,
-  atualizarGaleria,
-  atualizarLocal,
-  atualizarPosicao,
   criarGaleria,
   criarLocal,
   criarPosicao,
@@ -708,7 +705,3 @@ function NovasPosicoesDialog({
   );
 }
 
-// Suprime warnings de imports não usados nas rotas filhas
-void atualizarLocal;
-void atualizarGaleria;
-void atualizarPosicao;
