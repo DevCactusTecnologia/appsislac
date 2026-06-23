@@ -52,8 +52,6 @@ const differentials = [
 ];
 
 const Landing = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   useEffect(() => {
     const original = document.title;
     document.title = "SISLAC — Gestão completa para laboratórios clínicos";
@@ -84,71 +82,23 @@ const Landing = () => {
         />
       </div>
 
-      {/* Header - RESPONSIVO */}
-      <header className="fixed left-1/2 top-3 z-50 w-[95%] max-w-6xl -translate-x-1/2 rounded-full border border-border/60 bg-card/70 px-3 py-2 shadow-[0_8px_30px_-12px_hsl(var(--foreground)/0.18)] backdrop-blur-xl sm:top-5 sm:px-6 sm:py-2.5">
-        <div className="flex items-center justify-between gap-2 sm:gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)] sm:h-8 sm:w-8">
-              <FlaskConical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+      {/* Header — minimalista: apenas logo + Entrar */}
+      <header className="fixed left-1/2 top-3 z-50 w-[95%] max-w-6xl -translate-x-1/2 rounded-full border border-border/60 bg-card/70 px-3 py-2 shadow-[0_8px_30px_-12px_hsl(var(--foreground)/0.18)] backdrop-blur-xl sm:top-5 sm:px-5 sm:py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <Link to="/" className="flex shrink-0 items-center gap-2" aria-label="SISLAC — início">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.6)]">
+              <FlaskConical className="h-4 w-4" />
             </div>
-            <span className="hidden text-sm font-semibold tracking-tight text-foreground sm:text-base lg:inline">SISLAC</span>
           </Link>
 
-          {/* Nav Desktop */}
-          <nav className="hidden items-center gap-5 text-xs text-muted-foreground lg:flex lg:gap-7 lg:text-sm">
-            <a href="#pilares" className="transition-colors hover:text-foreground">Pilares</a>
-            <a href="#modulos" className="transition-colors hover:text-foreground">Módulos</a>
-            <a href="#fluxo" className="transition-colors hover:text-foreground">Fluxo</a>
-            <a href="#diferenciais" className="transition-colors hover:text-foreground">Diferenciais</a>
-          </nav>
-
-          {/* CTA - Desktop e Mobile */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Link
-              to="/login"
-              className="hidden rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex sm:px-3.5 sm:py-1.5 sm:text-sm"
-            >
-              Entrar
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-transform hover:scale-[1.02] sm:hidden sm:px-4 sm:py-1.5 sm:text-sm"
-              aria-label="Entrar no sistema"
-            >
-              <span className="hidden sm:inline">Entrar</span>
-              <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            </Link>
-            <Link
-              to="/login"
-              className="hidden items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-sm font-medium text-background transition-transform hover:scale-[1.02] sm:inline-flex"
-            >
-              Entrar
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="inline-flex items-center justify-center p-1.5 text-foreground lg:hidden"
-            aria-label="Toggle menu"
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background transition-transform hover:scale-[1.02] sm:px-5 sm:py-2 sm:text-sm"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+            Entrar
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <nav className="mt-4 border-t border-border/40 pt-4 lg:hidden">
-            <div className="flex flex-col gap-3">
-              <a href="#pilares" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Pilares</a>
-              <a href="#modulos" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Módulos</a>
-              <a href="#fluxo" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Fluxo</a>
-              <a href="#diferenciais" className="text-sm text-muted-foreground transition-colors hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Diferenciais</a>
-            </div>
-          </nav>
-        )}
       </header>
 
       <main className="relative z-10">
