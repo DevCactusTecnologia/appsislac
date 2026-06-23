@@ -112,7 +112,6 @@ function fromRow(r: any): ExameCatalogo {
     sinonimos: r.sinonimos ?? "",
     sexoAplicavel: (r.sexo_aplicavel === "MASCULINO" || r.sexo_aplicavel === "FEMININO" ? r.sexo_aplicavel : "AMBOS"),
     exibirPortal: r.exibir_portal !== false,
-    unidadePadrao: r.unidade_padrao ?? "",
     requerAssinaturaMedica: r.requer_assinatura_medica !== false,
     setorId: r.setor_id ?? null,
     tussSemEquivalente: !!r.tuss_sem_equivalente,
