@@ -102,6 +102,18 @@ export default function SorotecaEstrutura() {
   const [editarPosicao, setEditarPosicao] = useState<PosicaoGaleria | null>(null);
   const [confirmar, setConfirmar] = useState<{ tipo: "local" | "galeria" | "posicao"; id: string; nome: string } | null>(null);
 
+  // Drag & drop + movimentação
+  const [draggingPos, setDraggingPos] = useState<string | null>(null);
+  const [overPos, setOverPos] = useState<string | null>(null);
+  const [moverPayload, setMoverPayload] = useState<{
+    amostra: { id: string; codigo_barra: string; paciente_nome?: string | null; tipo_material?: string };
+    origem: { id: string; codigo: string };
+    destino: { id: string; codigo: string };
+  } | null>(null);
+  const [historicoOpen, setHistoricoOpen] = useState(false);
+  const [reorgOpen, setReorgOpen] = useState(false);
+
+
   // ---------- carregamento ----------
   async function refreshLocais() {
     setLoading(true);
