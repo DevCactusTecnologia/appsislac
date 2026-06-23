@@ -11,7 +11,7 @@ import {
   updateValorReferencia, removeValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import { loadParametros, getParametros, ExameParametro } from "@/data/exameParametrosStore";
-import { parseValorReferencia, type FaixaCandidato } from "@/lib/parseValorReferencia";
+import { parseValorReferencia, type FaixaCandidato } from "@/domains/result/services/parseValorReferencia";
 import { formatFaixaIdade } from "@/lib/idadeFormat";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import FiltrosPorPerfil from "./FiltrosPorPerfil";

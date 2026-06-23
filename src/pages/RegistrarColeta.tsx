@@ -37,7 +37,7 @@ import { criarAmostraParaExame } from "@/data/sorotecaStore";
 import { imprimirEtiquetaPorAtendimentoExame } from "@/lib/imprimirEtiquetaPorAtendimentoExame";
 import LabBadge from "@/components/LabBadge";
 import ImpressaoLotePorLab from "@/components/ImpressaoLotePorLab";
-import { getCachedTenantNome } from "@/data/_tenant";
+import { getCachedTenantNome } from "@/lib/db/tenantResolver";
 import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import ExameListWithFade from "@/components/ExameListWithFade";

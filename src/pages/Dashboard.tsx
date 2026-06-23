@@ -18,7 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getAtendimentos, subscribe as subscribeAtendimentos } from "@/data/atendimentoStore";
-import heroFlower from "@/assets/hero-flower.png";
+import heroFlower from "@/assets/hero-flower.webp";
 import { getPacientes, subscribePacientes } from "@/data/pacienteStore";
 import { getSaidas, subscribeFinanceiro } from "@/data/financeiroStore";
 import type { MockAtendimento } from "@/data/types";

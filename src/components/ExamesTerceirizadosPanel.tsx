@@ -9,7 +9,7 @@ import {
 } from "@/data/atendimentoStore";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
-import { getCachedTenantNome } from "@/data/_tenant";
+import { getCachedTenantNome } from "@/lib/db/tenantResolver";
 import ImpressaoLotePorLab from "@/components/ImpressaoLotePorLab";
 import LabBadge from "@/components/LabBadge";
 import IntegrationStatusBadge from "@/components/IntegrationStatusBadge";

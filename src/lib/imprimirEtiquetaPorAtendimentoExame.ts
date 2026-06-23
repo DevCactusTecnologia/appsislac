@@ -9,7 +9,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { imprimirEtiquetaAmostra } from "@/lib/etiquetaAmostra";
 import { formatIdadeDetalhada } from "@/lib/idade";
-import { getCurrentTenantNome, getCachedTenantNome } from "@/data/_tenant";
+import { getCurrentTenantNome, getCachedTenantNome } from "@/lib/db/tenantResolver";
 import { toast } from "sonner";
 import { showError } from "@/lib/showError";
 import { resolveMaterialNome } from "@/data/materiaisAmostraStore";

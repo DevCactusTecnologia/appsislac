@@ -3,7 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import { getCurrentTenantId } from "../_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { reloadAtendimentoById } from "./queries";
 
 let _realtimeInstalled = false;

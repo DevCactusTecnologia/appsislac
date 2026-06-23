@@ -5,7 +5,7 @@
 // Mantém leituras simples sem cache reativo — telas leem sob demanda por atendimento.
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

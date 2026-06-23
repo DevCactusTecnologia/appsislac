@@ -2,7 +2,7 @@
 // Modelo novo: exame_id é a fonte de verdade. nome_exame/codigoExame ficam como cache derivado.
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { getExameCatalogoById, getExamesCatalogo } from "./exameCatalogoStore";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";

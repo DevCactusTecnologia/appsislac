@@ -10,7 +10,7 @@
 // (`loadLabConfigFromDb`) e atualizado em cada `saveLabConfig`.
 
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentTenantId } from "./_tenant";
+import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 
 const STORAGE_KEY = "sislac:labConfig";
 

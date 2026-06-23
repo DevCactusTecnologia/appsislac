@@ -1,7 +1,7 @@
 // Pipeline puro de avaliação de resultados críticos.
 // Extraído de ResultadoDetalhe.tsx (Fase 1 — Architectural Split Program).
 // Comportamento preservado literalmente.
-import { avaliarCritico, type NivelCritico } from "@/lib/criticoChecker";
+import { avaliarCritico, type NivelCritico } from "@/domains/result/services/criticoChecker";
 import type { ExameParametro } from "@/data/exameParametrosStore";
 
 /**
