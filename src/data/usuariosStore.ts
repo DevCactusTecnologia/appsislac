@@ -113,6 +113,7 @@ export const PERMISSOES_AGRUPADAS: GrupoPermissao[] = [
       { id: "gestao_unidades", label: "Gestão de unidades", descricao: "Sedes, filiais e pontos de coleta" },
       { id: "gestao_convenios", label: "Gestão de convênios", descricao: "Cadastro de convênios" },
       { id: "gestao_exames", label: "Gestão de exames", descricao: "Catálogo técnico de exames" },
+      { id: "integracoes.gerenciar", label: "Integrações", descricao: "Configurar provedores de integração externa" },
     ],
   },
   {
