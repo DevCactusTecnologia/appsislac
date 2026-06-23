@@ -72,7 +72,7 @@ import BarcodeScannerDialog from "@/components/soroteca/BarcodeScannerDialog";
 
 type StatusFiltro = "TODAS" | AmostraStatus;
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 const STATUS_TABS: { id: StatusFiltro; label: string }[] = [
   { id: "TODAS", label: "Todas" },
@@ -152,7 +152,7 @@ export default function Soroteca() {
   const [search, setSearch] = useState("");
   const [confirmDescarte, setConfirmDescarte] = useState<Amostra | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [legacyPage, setLegacyPage] = useState(1);
   const [ajudaAberta, setAjudaAberta] = useState(false);
   const [scannerAberto, setScannerAberto] = useState(false);
   const [destaqueId, setDestaqueId] = useState<string | null>(null);
@@ -175,7 +175,7 @@ export default function Soroteca() {
   const [advValidadeFim, setAdvValidadeFim] = useState("");
   const [advArmazenamento, setAdvArmazenamento] = useState<"todas" | "armazenadas" | "pendentes">("todas");
   const [advPage, setAdvPage] = useState(1);
-  const [advPageSize] = useState(30);
+  const [advPageSize] = useState(PAGE_SIZE);
   const [advItems, setAdvItems] = useState<Amostra[]>([]);
   const [advTotal, setAdvTotal] = useState(0);
   const [advLoading, setAdvLoading] = useState(false);
@@ -202,7 +202,7 @@ export default function Soroteca() {
     // Garante visibilidade na lista
     setStatusFiltro("TODAS");
     setSearch(codigo);
-    setVisibleCount((c) => Math.max(c, PAGE_SIZE));
+    setLegacyPage(1);
     setDetalheId(alvo.id);
     setDestaqueId(alvo.id);
     // scroll + remoção do highlight após uns segundos
@@ -385,16 +385,18 @@ export default function Soroteca() {
 
   // Reset paginação ao mudar filtros
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    setLegacyPage(1);
   }, [statusFiltro, search]);
 
-  const visiveisLegacy = useMemo(() => filtradas.slice(0, visibleCount), [filtradas, visibleCount]);
-  const restantesLegacy = filtradas.length - visiveisLegacy.length;
+  const legacyTotalPages = Math.max(1, Math.ceil(filtradas.length / PAGE_SIZE));
+  const visiveisLegacy = useMemo(
+    () => filtradas.slice((legacyPage - 1) * PAGE_SIZE, legacyPage * PAGE_SIZE),
+    [filtradas, legacyPage],
+  );
 
   // Lista final que vai para a UI (server-side avançado OU legado client-side).
   const visiveis = advancadoAtivo ? advItems : visiveisLegacy;
   const totalListagem = advancadoAtivo ? advTotal : filtradas.length;
-  const restantes = advancadoAtivo ? 0 : restantesLegacy;
   const listaVazia = advancadoAtivo ? advItems.length === 0 : filtradas.length === 0;
   const carregando = advancadoAtivo ? advLoading : loading;
 
@@ -1055,19 +1057,31 @@ export default function Soroteca() {
               </div>
             )
           ) : (
-            restantes > 0 && (
+            filtradas.length > PAGE_SIZE && (
               <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
-                  Mostrando <span className="font-semibold text-foreground">{visiveis.length}</span> de{" "}
-                  <span className="font-semibold text-foreground">{totalListagem}</span> amostras
+                  Página <span className="font-semibold text-foreground">{legacyPage}</span> de{" "}
+                  <span className="font-semibold text-foreground">{legacyTotalPages}</span> ·{" "}
+                  <span className="font-semibold text-foreground">{filtradas.length}</span> amostra(s)
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                >
-                  Carregar mais ({Math.min(PAGE_SIZE, restantes)})
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={legacyPage <= 1}
+                    onClick={() => setLegacyPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={legacyPage >= legacyTotalPages}
+                    onClick={() => setLegacyPage((p) => p + 1)}
+                  >
+                    Próxima
+                  </Button>
+                </div>
               </div>
             )
           )}
