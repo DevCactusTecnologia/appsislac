@@ -30,6 +30,45 @@ const slugify = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50);
 
+/**
+ * Validar CNPJ usando dígito verificador
+ * CNPJ deve ter 14 dígitos
+ */
+function isValidCNPJ(cnpj: string): boolean {
+  if (!cnpj || cnpj.length !== 14 || !/^\d+$/.test(cnpj)) {
+    return false;
+  }
+
+  // Validar dígitos verificadores
+  // Primeiro dígito
+  let sum = 0;
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(cnpj[i]) * weights1[i];
+  }
+  const digit1 = 11 - (sum % 11);
+  const d1 = digit1 >= 10 ? 0 : digit1;
+
+  if (parseInt(cnpj[12]) !== d1) {
+    return false;
+  }
+
+  // Segundo dígito
+  sum = 0;
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3];
+  for (let i = 0; i < 13; i++) {
+    sum += parseInt(cnpj[i]) * weights2[i];
+  }
+  const digit2 = 11 - (sum % 11);
+  const d2 = digit2 >= 10 ? 0 : digit2;
+
+  if (parseInt(cnpj[13]) !== d2) {
+    return false;
+  }
+
+  return true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   const requestId = newRequestId(req);
@@ -68,15 +107,72 @@ Deno.serve(async (req) => {
   const adminEmail = typeof body.adminEmail === "string" ? body.adminEmail.trim().toLowerCase() : "";
   const adminNome = typeof body.adminNome === "string" ? body.adminNome.trim() : "";
   const adminSenha = typeof body.adminSenha === "string" ? body.adminSenha : "";
+  
+  // ✅ VALIDAÇÃO 1: Nome obrigatório
   if (!nome) return errorResponse(400, "Nome do laboratório obrigatório", requestId, log);
-  if (!adminEmail || !adminEmail.includes("@")) return errorResponse(400, "Email do admin inválido", requestId, log);
+  
+  // ✅ VALIDAÇÃO 2: Email válido (regex rigoroso)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!adminEmail || !emailRegex.test(adminEmail)) {
+    return errorResponse(400, "Email do admin inválido (ex: usuario@empresa.com.br)", requestId, log);
+  }
+  
+  // ✅ VALIDAÇÃO 3: Nome do admin
   if (!adminNome) return errorResponse(400, "Nome do admin obrigatório", requestId, log);
-  if (adminSenha && adminSenha.length < 6) {
-    return errorResponse(400, "Senha do admin deve ter pelo menos 6 caracteres", requestId, log);
+  
+  // ✅ VALIDAÇÃO 4: Senha FORTE (se fornecida)
+  // Senha deve ter:
+  // - Mínimo 12 caracteres
+  // - Pelo menos 1 maiúscula
+  // - Pelo menos 1 minúscula
+  // - Pelo menos 1 número
+  // - Pelo menos 1 símbolo especial
+  if (adminSenha) {
+    const MIN_LENGTH = 12;
+    const hasUpper = /[A-Z]/.test(adminSenha);
+    const hasLower = /[a-z]/.test(adminSenha);
+    const hasNumber = /[0-9]/.test(adminSenha);
+    const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(adminSenha);
+
+    if (adminSenha.length < MIN_LENGTH) {
+      return errorResponse(
+        400,
+        `Senha deve ter no mínimo ${MIN_LENGTH} caracteres (atual: ${adminSenha.length})`,
+        requestId,
+        log
+      );
+    }
+    if (!hasUpper || !hasLower || !hasNumber || !hasSymbol) {
+      return errorResponse(
+        400,
+        "Senha deve conter: maiúscula, minúscula, número e símbolo especial (ex: P@ssw0rd123)",
+        requestId,
+        log
+      );
+    }
   }
 
   const slug = slugify(slugInput || nome);
-  const cnpj = typeof body.cnpj === "string" ? body.cnpj.trim() : "";
+  
+  // ✅ VALIDAÇÃO 5: CNPJ válido (se fornecido)
+  let cnpj = typeof body.cnpj === "string" ? body.cnpj.trim() : "";
+  if (cnpj) {
+    // Remover caracteres especiais
+    const cnpjDigits = cnpj.replace(/[^\d]/g, "");
+    
+    // Validar tamanho
+    if (cnpjDigits.length !== 14) {
+      return errorResponse(400, "CNPJ deve ter 14 dígitos", requestId, log);
+    }
+    
+    // Validar dígito verificador (simples - poderia ser mais rigoroso)
+    if (!isValidCNPJ(cnpjDigits)) {
+      return errorResponse(400, "CNPJ inválido (dígito verificador incorreto)", requestId, log);
+    }
+    
+    cnpj = cnpjDigits; // Armazenar apenas dígitos
+  }
+  
   const emailContato = typeof body.emailContato === "string" ? body.emailContato.trim() : adminEmail;
   const telefone = typeof body.telefone === "string" ? body.telefone.trim() : "";
   const plano = typeof body.plano === "string" ? body.plano : "free";
@@ -162,8 +258,9 @@ Deno.serve(async (req) => {
 
   // 7. Cria o admin: se senha foi fornecida, cria já com senha (sem convite por e-mail);
   //    caso contrário, envia convite por e-mail para o admin definir a própria senha.
+  //
+  //    IMPORTANTE: Se admin falhar, TODA a operação falha (não continuamos!)
   let adminUserId: string | null = null;
-  let warning: string | undefined;
 
   if (adminSenha) {
     const { data: created, error: cErr } = await admin.auth.admin.createUser({
@@ -173,11 +270,19 @@ Deno.serve(async (req) => {
       user_metadata: { full_name: adminNome, tenant_id: tenant.id, perfil: "admin" },
     });
     if (cErr || !created?.user) {
-      log.warn("createUser falhou", { err: cErr?.message });
-      return jsonResponse(200, {
-        ok: true, tenant,
-        warning: "Tenant criado, mas criação do admin falhou: " + (cErr?.message ?? "?"),
-      }, requestId);
+      // ✅ CRÍTICO: Falhar aqui! Admin é essencial!
+      // Fazer ROLLBACK: deletar tenant que foi criado
+      log.error("createUser falhou", { err: cErr?.message, tenantId: tenant.id });
+      
+      await admin.from("tenants").delete().eq("id", tenant.id);
+      
+      return errorResponse(
+        500,
+        `Falha ao criar admin: ${cErr?.message ?? "desconhecido"}. Tenant foi deletado para manter consistência.`,
+        requestId,
+        log,
+        cErr
+      );
     }
     adminUserId = created.user.id;
   } else {
@@ -187,26 +292,68 @@ Deno.serve(async (req) => {
       redirectTo,
     });
     if (invErr || !inviteData?.user) {
-      log.warn("invite falhou", { err: invErr?.message });
-      return jsonResponse(200, {
-        ok: true, tenant, warning: "Tenant criado, mas convite falhou: " + (invErr?.message ?? "?"),
-      }, requestId);
+      // ✅ CRÍTICO: Falhar aqui também!
+      log.error("invite falhou", { err: invErr?.message, tenantId: tenant.id });
+      
+      await admin.from("tenants").delete().eq("id", tenant.id);
+      
+      return errorResponse(
+        500,
+        `Falha ao enviar convite: ${invErr?.message ?? "desconhecido"}. Tenant foi deletado para manter consistência.`,
+        requestId,
+        log,
+        invErr
+      );
     }
     adminUserId = inviteData.user.id;
   }
 
-  // 8. Garante role 'admin' para o usuário criado
-  await admin.from("user_roles").upsert(
+  // 8. Validar que user_id foi realmente criado
+  if (!adminUserId) {
+    log.error("adminUserId é null após criação", { tenantId: tenant.id });
+    await admin.from("tenants").delete().eq("id", tenant.id);
+    
+    return errorResponse(
+      500,
+      "Falha crítica: user ID não foi retornado. Tenant foi deletado.",
+      requestId,
+      log
+    );
+  }
+
+  // 9. Garante role 'admin' para o usuário criado
+  const { error: roleErr } = await admin.from("user_roles").upsert(
     { user_id: adminUserId, role: "admin" },
     { onConflict: "user_id,role" },
   );
 
-  log.info("tenant criado", { tenantId: tenant.id, adminEmail, viaSenha: !!adminSenha });
+  if (roleErr) {
+    log.error("falha ao criar role admin", { err: roleErr.message, userId: adminUserId, tenantId: tenant.id });
+    
+    // ✅ Limpar: deletar user criado
+    await admin.auth.admin.deleteUser(adminUserId);
+    await admin.from("tenants").delete().eq("id", tenant.id);
+    
+    return errorResponse(
+      500,
+      "Falha ao atribuir role admin. Tenant e user foram deletados.",
+      requestId,
+      log,
+      roleErr
+    );
+  }
+
+  log.info("tenant criado com sucesso", { 
+    tenantId: tenant.id, 
+    adminEmail, 
+    adminUserId,
+    labCode: finalLabCode 
+  });
+  
   return jsonResponse(200, {
     ok: true,
     tenant: { ...tenant, lab_code: finalLabCode },
     labCode: finalLabCode,
     adminUserId,
-    warning,
   }, requestId);
 });
