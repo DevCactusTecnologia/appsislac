@@ -879,6 +879,20 @@ const Index = () => {
                 </span>
               )}
             </button>
+            {canPedidosSite && (
+              <button
+                onClick={() => navigate("/pedidos-site")}
+                className="relative inline-flex items-center gap-2 h-10 px-4 bg-card text-foreground text-[13px] font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                Pedidos do site
+                {pedidosNaoLidos > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none shadow-sm">
+                    {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
+                  </span>
+                )}
+              </button>
+            )}
             {canCreate && (
               <button
                 onClick={() => navigate("/atendimentos/novo")}
