@@ -126,6 +126,8 @@ export default function SuperAdminInscricoes() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadLeads = async () => {
     setLoading(true);
