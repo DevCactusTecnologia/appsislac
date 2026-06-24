@@ -430,7 +430,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/30 text-left">
-                    {["Parâmetro", "Sexo", "Idade", "Mín.", "Máx.", "Unid.", ""].map(h => (
+                    {["Parâmetro", "Sexo", "Idade", "Mín.", "Máx.", "Crít. mín.", "Crít. máx.", "Unid.", ""].map(h => (
                       <th key={h} className="py-2.5 px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
