@@ -280,6 +280,15 @@ const Orcamentos = () => {
           eyebrow="Comercial"
           title="Orçamentos"
           description={`Pipeline inteligente · validade ${VALIDADE_DIAS} dias.`}
+          actions={
+            <button
+              onClick={() => navigate("/atendimentos")}
+              className="inline-flex items-center gap-2 h-10 px-4 bg-card text-foreground text-[13px] font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar para atendimentos
+            </button>
+          }
         />
 
         {/* KPI Strip */}
