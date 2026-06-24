@@ -19,6 +19,8 @@ export interface ExameParametro {
   exibirMapa: string;
   obrigatorio: string;
   valorReferencia: string;
+  /** Expressão da fórmula (apenas tipo "Formula"). Ex.: `##HCT##/##HEM##`. */
+  formula: string;
   visivel: boolean;
   ordem: number;
   /** Opções para parâmetros do tipo "Select" (lista suspensa). */
