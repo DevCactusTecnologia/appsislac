@@ -139,6 +139,20 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       toast({ title: "Opções obrigatórias", description: "Adicione ao menos uma opção para o tipo Select.", variant: "destructive" });
       return;
     }
+    if (tipoSelecionado === "Formula") {
+      if (!formula.trim()) {
+        toast({ title: "Expressão obrigatória", description: "Informe a expressão da fórmula (ex.: ##HCT##/##HEM##).", variant: "destructive" });
+        return;
+      }
+      if (!/##[^#\s]+##/.test(formula)) {
+        toast({ title: "Expressão inválida", description: "A fórmula precisa referenciar ao menos uma chave no formato ##CHAVE##.", variant: "destructive" });
+        return;
+      }
+      if (!valorReferencia.trim()) {
+        toast({ title: "Valor de referência obrigatório", description: "Informe o texto descritivo do valor de referência para o tipo Fórmula.", variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
     const payload = {
       tipo: tipoSelecionado, rotulo, chave: chave.toUpperCase(), abreviacao,
