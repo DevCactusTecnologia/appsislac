@@ -23,6 +23,7 @@ type FormData = Omit<ValorReferencia, "id">;
 const emptyForm = (exameNome: string): FormData => ({
   exameNome, parametroNome: "", sexo: "Ambos", idadeMin: "", idadeMax: "",
   unidadeIdade: "Anos", valorMin: "", valorMax: "", unidade: "", descricao: "",
+  criticoMin: "", criticoMax: "",
 });
 
 const idadeParaAnos = (valor: string, unidade: string): number => {
