@@ -6913,6 +6913,8 @@ export type Database = {
       valores_referencia: {
         Row: {
           created_at: string
+          critico_max: string | null
+          critico_min: string | null
           descricao: string
           exame_nome: string
           id: number
@@ -6929,6 +6931,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          critico_max?: string | null
+          critico_min?: string | null
           descricao?: string
           exame_nome: string
           id?: number
@@ -6945,6 +6949,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          critico_max?: string | null
+          critico_min?: string | null
           descricao?: string
           exame_nome?: string
           id?: number
