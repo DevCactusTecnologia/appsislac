@@ -92,7 +92,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setSelectedId(null); setRotulo(""); setChave(""); setChaveAutoGen(true);
     setAbreviacao(""); setQtdCaracteres(""); setChaveApoio("");
     setExibirAnterior(false); setExibirMapa(false); setObrigatorio(false);
-    setValorReferencia(""); setOpcoesSelect([]); setNovaOpcao("");
+    setValorReferencia(""); setFormula(""); setOpcoesSelect([]); setNovaOpcao("");
     setCasasDecimais(2);
     setSeparadorDecimal(".");
     setQtdDigitos(0);
