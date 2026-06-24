@@ -148,10 +148,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
         toast({ title: "Expressão inválida", description: "A fórmula precisa referenciar ao menos uma chave no formato ##CHAVE##.", variant: "destructive" });
         return;
       }
-      if (!valorReferencia.trim()) {
-        toast({ title: "Valor de referência obrigatório", description: "Informe o texto descritivo do valor de referência para o tipo Fórmula.", variant: "destructive" });
-        return;
-      }
+      // Valor de referência é opcional para Fórmula (igual aos demais tipos).
     }
     setSaving(true);
     const payload = {
