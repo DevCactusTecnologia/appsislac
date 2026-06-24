@@ -371,10 +371,12 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-3xl">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 max-w-[1600px] mx-auto">
 
             {/* STEP 1 — Type */}
-            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado.">
+            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado." className="xl:col-span-2">
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {tiposComponente.map((t) => {
                   const Icon = t.icon;
@@ -703,7 +705,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             </FormSection>
 
             {/* Advanced */}
-            <details className="group rounded-2xl border border-border/60 bg-background overflow-hidden">
+            <details className="group rounded-2xl border border-border/60 bg-background overflow-hidden xl:col-span-2">
               <summary className="px-3.5 py-2.5 text-[12px] font-semibold text-foreground/80 cursor-pointer select-none hover:bg-muted/30 transition-colors flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
@@ -734,7 +736,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 </div>
               </div>
             </details>
+            </div>
           </div>
+
         </section>
       </div>
     </StandardDialog>
@@ -769,9 +773,9 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 );
 
 const FormSection = ({
-  step, title, desc, children,
-}: { step: number; title: string; desc: string; children: React.ReactNode }) => (
-  <section className="space-y-3">
+  step, title, desc, children, className = "",
+}: { step: number; title: string; desc: string; children: React.ReactNode; className?: string }) => (
+  <section className={`space-y-3 rounded-2xl border border-border/60 bg-background/60 p-4 ${className}`}>
     <header className="flex items-start gap-3">
       <div className="h-6 w-6 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
         {step}
