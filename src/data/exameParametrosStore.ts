@@ -53,6 +53,7 @@ const fromRow = (r: any): ExameParametro => ({
   exibirMapa: r.exibir_mapa ?? "",
   obrigatorio: r.obrigatorio ?? "",
   valorReferencia: r.valor_referencia ?? "",
+  formula: r.formula ?? "",
   visivel: !!r.visivel,
   ordem: r.ordem ?? 0,
   opcoesSelect: normalizeOpcoesSelect(r.opcoes_select),
