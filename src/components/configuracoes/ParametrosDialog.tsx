@@ -53,6 +53,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const [exibirMapa, setExibirMapa] = useState(false);
   const [obrigatorio, setObrigatorio] = useState(false);
   const [valorReferencia, setValorReferencia] = useState("");
+  const [formula, setFormula] = useState("");
   const [opcoesSelect, setOpcoesSelect] = useState<string[]>([]);
   const [novaOpcao, setNovaOpcao] = useState("");
   const [casasDecimais, setCasasDecimais] = useState<number>(2);
