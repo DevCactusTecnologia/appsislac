@@ -631,7 +631,7 @@ const ResultadoDetalhe = () => {
     if (contParam) {
       const valuesByChave = buildValuesByChave(selectedExame.parametros);
       const contValor = contParam.tipo === "Formula"
-        ? evaluateFormula(contParam.valorReferencia, valuesByChave, contParam.casasDecimais ?? 0)
+        ? evaluateFormula(contParam.formula || contParam.valorReferencia, valuesByChave, contParam.casasDecimais ?? 0)
         : contParam.valor;
       const contN = parseFloat((contValor || "").replace(",", "."));
       if (!isFinite(contN) || contN !== 100) {
@@ -718,7 +718,7 @@ const ResultadoDetalhe = () => {
       if (contParam) {
         const vbc = buildValuesByChave(ex.parametros);
         const cv = contParam.tipo === "Formula"
-          ? evaluateFormula(contParam.valorReferencia, vbc, contParam.casasDecimais ?? 0)
+          ? evaluateFormula(contParam.formula || contParam.valorReferencia, vbc, contParam.casasDecimais ?? 0)
           : contParam.valor;
         const cn = parseFloat((cv || "").replace(",", "."));
         if (!isFinite(cn) || cn !== 100) {
@@ -1283,7 +1283,7 @@ const ResultadoDetalhe = () => {
                       const ref = getResolvedRef(exame.nome, param);
                       const valuesByChave = buildValuesByChave(exame.parametros);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
+                        ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
@@ -1843,7 +1843,7 @@ const ResultadoDetalhe = () => {
                     const renderResultCard = (param: Param, idx: number) => {
                       const ref = getResolvedRef(selectedExame.nome, param);
                       const computedFormula = param.tipo === "Formula"
-                        ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
+                        ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
                       const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
@@ -1987,7 +1987,7 @@ const ResultadoDetalhe = () => {
                           const param = row.main;
                           const idx = row.mainIdx;
                           const displayValorMain = param.tipo === "Formula"
-                            ? evaluateFormula(param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
+                            ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                             : param.valor;
                           const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValorMain);
                           const isCriticoParam = nivelCritico !== "normal";

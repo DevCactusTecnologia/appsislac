@@ -118,6 +118,7 @@ export function buildExamesFromDB(
           criticoMax: parametro.criticoMax,
           parametroId: parametro.id,
           valorReferencia: parametro.valorReferencia,
+          formula: parametro.formula,
           headerAntes,
         });
         pendingHeader = undefined;

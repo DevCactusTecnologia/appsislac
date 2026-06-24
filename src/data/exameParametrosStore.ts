@@ -19,6 +19,8 @@ export interface ExameParametro {
   exibirMapa: string;
   obrigatorio: string;
   valorReferencia: string;
+  /** Expressão da fórmula (apenas tipo "Formula"). Ex.: `##HCT##/##HEM##`. */
+  formula: string;
   visivel: boolean;
   ordem: number;
   /** Opções para parâmetros do tipo "Select" (lista suspensa). */
@@ -51,6 +53,7 @@ const fromRow = (r: any): ExameParametro => ({
   exibirMapa: r.exibir_mapa ?? "",
   obrigatorio: r.obrigatorio ?? "",
   valorReferencia: r.valor_referencia ?? "",
+  formula: r.formula ?? "",
   visivel: !!r.visivel,
   ordem: r.ordem ?? 0,
   opcoesSelect: normalizeOpcoesSelect(r.opcoes_select),
@@ -73,6 +76,7 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.exibirMapa !== undefined && { exibir_mapa: p.exibirMapa }),
   ...(p.obrigatorio !== undefined && { obrigatorio: p.obrigatorio }),
   ...(p.valorReferencia !== undefined && { valor_referencia: p.valorReferencia }),
+  ...(p.formula !== undefined && { formula: p.formula }),
   ...(p.visivel !== undefined && { visivel: p.visivel }),
   ...(p.ordem !== undefined && { ordem: p.ordem }),
   ...(p.opcoesSelect !== undefined && { opcoes_select: normalizeOpcoesSelect(p.opcoesSelect) }),

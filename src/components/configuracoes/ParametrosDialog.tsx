@@ -53,6 +53,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const [exibirMapa, setExibirMapa] = useState(false);
   const [obrigatorio, setObrigatorio] = useState(false);
   const [valorReferencia, setValorReferencia] = useState("");
+  const [formula, setFormula] = useState("");
   const [opcoesSelect, setOpcoesSelect] = useState<string[]>([]);
   const [novaOpcao, setNovaOpcao] = useState("");
   const [casasDecimais, setCasasDecimais] = useState<number>(2);
@@ -91,7 +92,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setSelectedId(null); setRotulo(""); setChave(""); setChaveAutoGen(true);
     setAbreviacao(""); setQtdCaracteres(""); setChaveApoio("");
     setExibirAnterior(false); setExibirMapa(false); setObrigatorio(false);
-    setValorReferencia(""); setOpcoesSelect([]); setNovaOpcao("");
+    setValorReferencia(""); setFormula(""); setOpcoesSelect([]); setNovaOpcao("");
     setCasasDecimais(2);
     setSeparadorDecimal(".");
     setQtdDigitos(0);
@@ -108,6 +109,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setExibirMapa(p.exibirMapa === "SIM");
     setObrigatorio(p.obrigatorio === "SIM");
     setValorReferencia(p.valorReferencia);
+    setFormula(p.formula ?? "");
     const opcoesUpper = (p.opcoesSelect ?? []).map((o) => o.toUpperCase());
     setOpcoesSelect(opcoesUpper);
     setNovaOpcao(opcoesUpper.join(", "));
@@ -145,6 +147,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       exibirMapa: exibirMapa ? "SIM" : "NAO",
       obrigatorio: obrigatorio ? "SIM" : "NAO",
       valorReferencia,
+      formula: tipoSelecionado === "Formula" ? formula : "",
       visivel: true,
       ordem: selectedId ? (parametros.find((p) => p.id === selectedId)?.ordem ?? parametros.length) : parametros.length,
       opcoesSelect,
@@ -646,51 +649,57 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   </div>
                 )}
 
-                {tipoSelecionado === "Formula" && chavesDisponiveis.length > 0 && (
-                  <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
-                    <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Wand2 className="h-3 w-3" /> Inserir chaves
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {chavesDisponiveis.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setValorReferencia((v) => `${v}##${c}##`)}
-                          className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
-                        >
-                          ##{c}##
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[10.5px] text-muted-foreground mt-2">
-                      Ex.: <code className="font-mono">##HCT##/##HEM##</code>
-                    </p>
+                {tipoSelecionado === "Formula" && (
+                  <div className="space-y-2">
+                    <label className={labelClass}>
+                      <Sigma className="h-3 w-3 text-muted-foreground" /> Expressão da fórmula
+                    </label>
+                    <textarea
+                      value={formula}
+                      onChange={(e) => setFormula(e.target.value)}
+                      rows={2}
+                      className={`${textareaClass} font-mono`}
+                      placeholder="##CHAVE1##*0.5+##CHAVE2##"
+                    />
+                    {chavesDisponiveis.length > 0 && (
+                      <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
+                        <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Wand2 className="h-3 w-3" /> Inserir chaves
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {chavesDisponiveis.map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setFormula((v) => `${v}##${c}##`)}
+                              className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                            >
+                              ##{c}##
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10.5px] text-muted-foreground mt-2">
+                          Ex.: <code className="font-mono">##HCT##/##HEM##</code>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </FormSection>
             )}
 
-            {/* STEP 4 — Reference / Formula */}
+            {/* STEP 4 — Valor de referência (texto descritivo) — disponível para todos os tipos */}
             <FormSection
               step={tipoSelecionado === "Texto" ? 3 : 4}
-              title={tipoSelecionado === "Formula" ? "Fórmula" : "Valor de referência"}
-              desc={
-                tipoSelecionado === "Formula"
-                  ? "Expressão que será calculada automaticamente."
-                  : "Texto descritivo exibido junto ao resultado."
-              }
+              title="Valor de referência"
+              desc="Texto descritivo exibido junto ao resultado."
             >
               <textarea
                 value={valorReferencia}
                 onChange={(e) => setValorReferencia(e.target.value)}
                 rows={2}
-                className={`${textareaClass} ${tipoSelecionado === "Formula" ? "font-mono" : ""}`}
-                placeholder={
-                  tipoSelecionado === "Formula"
-                    ? "##CHAVE1##*0.5+##CHAVE2##"
-                    : "Ex: 12.0 a 16.0 g/dL"
-                }
+                className={textareaClass}
+                placeholder="Ex: 12.0 a 16.0 g/dL"
               />
             </FormSection>
 
@@ -700,6 +709,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               title="Comportamento"
               desc="Como este parâmetro se comporta no atendimento e na bancada."
             >
+
               <div className="rounded-2xl border border-border/60 bg-background divide-y divide-border/60 overflow-hidden">
                 {[
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },

@@ -40,6 +40,8 @@ export interface Parametro {
    * Usado como fallback descritivo quando não há faixa estruturada em `valores_referencia`.
    */
   valorReferencia?: string;
+  /** Expressão da fórmula (tipo "Formula") salva em `exame_parametros.formula`. */
+  formula?: string;
   /**
    * Cabeçalho de seção (texto do layout) a ser renderizado ANTES deste parâmetro.
    * Preserva a estrutura visual do layout científico (ex.: "CARACTERÍSTICAS FÍSICAS").
