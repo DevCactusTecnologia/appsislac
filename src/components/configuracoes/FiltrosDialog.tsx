@@ -87,7 +87,26 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
     [form, todasReferencias, editando?.id],
   );
 
+  // Sincronização: parâmetro selecionado → defaults críticos vindos de exame_parametros.
+  // Mostrado como placeholder/hint nos inputs; usuário pode sobrescrever.
+  const parametroSelecionado = useMemo(
+    () => parametros.find((p) => p.rotulo === form.parametroNome) ?? null,
+    [parametros, form.parametroNome],
+  );
+  const criticoPadraoMin = parametroSelecionado?.criticoMin?.trim() || "";
+  const criticoPadraoMax = parametroSelecionado?.criticoMax?.trim() || "";
+
   const handleNovo = () => { setEditando(null); setForm(emptyForm(exameNome)); };
+
+  // Limpa todos os filtros do diálogo: form de edição, painéis auxiliares
+  // (copiar/importar) e seleção em curso. Não apaga dados persistidos.
+  const handleLimparFiltros = () => {
+    setEditando(null);
+    setForm(emptyForm(exameNome));
+    setShowCopiar(false); setCopiarOrigem("");
+    setShowImportar(false); setImportarParametro(""); setCandidatos([]);
+    toast({ title: "Filtros limpos" });
+  };
   const handleEditar = (ref: ValorReferencia) => { setEditando(ref); const { id, ...rest } = ref; setForm(rest); };
   const handleRemover = async (id: number) => {
     const ok = await removeValorReferencia(id);
