@@ -38,7 +38,7 @@ export async function queryAppointmentsWithExams(
     offset?: number;
   }
 ) {
-  const query = supabase
+  const query = (supabase as any)
     .from("atendimentos")
     .select(`
       id,
@@ -90,7 +90,7 @@ export async function queryPatientsPaginated(
 ) {
   const offset = (page - 1) * pageSize;
 
-  const { data, count, error } = await supabase
+  const { data, count, error } = await (supabase as any)
     .from("pacientes")
     .select(
       `
@@ -129,28 +129,28 @@ export async function queryPatientsPaginated(
 export async function queryFinanceiroData(tenantId: string) {
   const [entradas, saidas, aReceberData, faturadasData] = await Promise.all([
     // Entradas (faturamento)
-    supabase
+    (supabase as any)
       .from("financeiro_entradas")
       .select("*")
       .eq("tenant_id", tenantId)
       .gte("data", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
 
     // Saídas (despesas)
-    supabase
+    (supabase as any)
       .from("financeiro_saidas")
       .select("*")
       .eq("tenant_id", tenantId)
       .gte("data", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
 
     // A receber
-    supabase
+    (supabase as any)
       .from("atendimentos")
       .select("id, valor_total, status")
       .eq("tenant_id", tenantId)
       .eq("status", "a_receber"),
 
     // Faturadas
-    supabase
+    (supabase as any)
       .from("atendimentos")
       .select("id, valor_total, status")
       .eq("tenant_id", tenantId)
@@ -188,7 +188,7 @@ export async function insertMultipleExams(
     return [];
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("examesCobranca")
     .insert(exams)
     .select();
@@ -213,7 +213,7 @@ export async function updateMultipleStatus(
     return [];
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("atendimentos")
     .update({ status: newStatus })
     .eq("tenant_id", tenantId)
@@ -236,7 +236,7 @@ export async function deleteMultipleExams(tenantId: string, ids: string[]) {
     return;
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("examesCobranca")
     .delete()
     .eq("tenant_id", tenantId)
@@ -255,7 +255,7 @@ export async function countAppointments(
   tenantId: string,
   filters?: { status?: string }
 ): Promise<number> {
-  let query = supabase
+  let query = (supabase as any)
     .from("atendimentos")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId);
@@ -282,7 +282,7 @@ export async function searchPatients(
   searchTerm: string,
   limit: number = 10
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("pacientes")
     .select("id, nome, cpf, email")
     .eq("tenant_id", tenantId)
