@@ -736,7 +736,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 </div>
               </div>
             </details>
+            </div>
           </div>
+
         </section>
       </div>
     </StandardDialog>
