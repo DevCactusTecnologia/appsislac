@@ -22,6 +22,7 @@ import {
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getAtendimentos, subscribe as subscribeAtendimentos } from "@/data/atendimentoStore";
 import { getOrcamentos, subscribeOrcamentos, type Orcamento } from "@/data/orcamentoStore";
+import { ensureLazyStore } from "@/data/lazyStores";
 import heroFlower from "@/assets/hero-flower.webp";
 import { getPacientes, subscribePacientes } from "@/data/pacienteStore";
 import { getSaidas, subscribeFinanceiro } from "@/data/financeiroStore";
