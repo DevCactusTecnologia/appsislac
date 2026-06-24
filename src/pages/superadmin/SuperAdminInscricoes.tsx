@@ -43,6 +43,16 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type InscricaoStatus = 'Nova' | 'Confirmada' | 'Em contato' | 'Qualificada' | 'Implantação' | 'Convertida' | 'Descartada';
 
@@ -116,6 +126,8 @@ export default function SuperAdminInscricoes() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -186,21 +198,34 @@ export default function SuperAdminInscricoes() {
     }
   };
 
-  const handleDelete = async (leadId: string) => {
-    if (!confirm("Deseja realmente excluir esta inscrição?")) return;
+  const handleDelete = (lead: Lead) => {
+    setDeleteTarget(lead);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from("inscricoes")
         .delete()
-        .eq("id", leadId);
+        .eq("id", deleteTarget.id);
 
       if (error) throw error;
       toast.success("Inscrição excluída");
-      setLeads(prev => prev.filter(l => l.id !== leadId));
+      setLeads(prev => prev.filter(l => l.id !== deleteTarget.id));
+      if (selectedLead?.id === deleteTarget.id) {
+        setIsDetailOpen(false);
+        setSelectedLead(null);
+      }
+      setDeleteTarget(null);
     } catch (err: any) {
       toast.error("Erro ao excluir: " + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const convertToClient = async (lead: Lead) => {
     toast.info("A funcionalidade de conversão direta será implementada em breve. Por enquanto, utilize o fluxo de Novo Laboratório.");
@@ -325,7 +350,7 @@ export default function SuperAdminInscricoes() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
-                          onClick={() => handleDelete(lead.id)}
+                          onClick={() => handleDelete(lead)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Excluir
@@ -357,7 +382,7 @@ export default function SuperAdminInscricoes() {
               <Button
                 variant="outline"
                 className="h-9 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
-                onClick={() => handleDelete(selectedLead.id)}
+                onClick={() => handleDelete(selectedLead)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir Lead
@@ -506,6 +531,33 @@ export default function SuperAdminInscricoes() {
           </div>
         </StandardDialog>
       )}
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => !o && !isDeleting && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta inscrição?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  Esta ação é irreversível. O lead{" "}
+                  <span className="font-semibold text-foreground">{deleteTarget.nome_responsavel}</span>
+                  {" "}({deleteTarget.nome_laboratorio}) será removido permanentemente do sistema.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir Lead"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
