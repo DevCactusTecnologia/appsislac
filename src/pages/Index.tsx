@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
+import { ensureLazyStore } from "@/data/lazyStores";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
 import { getUnidadeById, getUnidades } from "@/data/unidadeStore";
@@ -475,6 +476,7 @@ const Index = () => {
 
   useEffect(() => subscribe(() => forceUpdate(n => n + 1)), []);
   useEffect(() => subscribeOrcamentos(() => forceUpdate(n => n + 1)), []);
+  useEffect(() => { void ensureLazyStore("orcamentos"); }, []);
   const orcamentosPendentes = getOrcamentos().filter(o => !o.convertido).length;
   const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
   const canPedidosSite = hasPermission("solicitacoes_site_acesso");
