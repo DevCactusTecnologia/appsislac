@@ -302,8 +302,8 @@ function Panel({ title, hint, action, children, className = "" }: PanelProps) {
 function QuickShortcuts() {
   const { hasPermission } = useAuth();
   const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
-  const orcamentos = useSyncExternalStore(subscribeOrcamentos, getOrcamentos, getOrcamentos);
-  const orcamentosPendentes = orcamentos.filter((o) => !o.convertido).length;
+  const orcamentos = useSyncExternalStore<Orcamento[]>(subscribeOrcamentos, getOrcamentos, getOrcamentos);
+  const orcamentosPendentes = orcamentos.filter((o: Orcamento) => !o.convertido).length;
 
   const canOrcamento = hasPermission?.("visualizar_orcamentos") ?? true;
   const canPedidos = hasPermission?.("solicitacoes_site_acesso") ?? true;
