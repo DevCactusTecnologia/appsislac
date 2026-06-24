@@ -649,51 +649,57 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   </div>
                 )}
 
-                {tipoSelecionado === "Formula" && chavesDisponiveis.length > 0 && (
-                  <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
-                    <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Wand2 className="h-3 w-3" /> Inserir chaves
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {chavesDisponiveis.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setValorReferencia((v) => `${v}##${c}##`)}
-                          className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
-                        >
-                          ##{c}##
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[10.5px] text-muted-foreground mt-2">
-                      Ex.: <code className="font-mono">##HCT##/##HEM##</code>
-                    </p>
+                {tipoSelecionado === "Formula" && (
+                  <div className="space-y-2">
+                    <label className={labelClass}>
+                      <Sigma className="h-3 w-3 text-muted-foreground" /> Expressão da fórmula
+                    </label>
+                    <textarea
+                      value={formula}
+                      onChange={(e) => setFormula(e.target.value)}
+                      rows={2}
+                      className={`${textareaClass} font-mono`}
+                      placeholder="##CHAVE1##*0.5+##CHAVE2##"
+                    />
+                    {chavesDisponiveis.length > 0 && (
+                      <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
+                        <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                          <Wand2 className="h-3 w-3" /> Inserir chaves
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {chavesDisponiveis.map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setFormula((v) => `${v}##${c}##`)}
+                              className="text-[10.5px] font-mono px-2 py-1 rounded-lg bg-background border border-border/60 text-foreground/80 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                            >
+                              ##{c}##
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10.5px] text-muted-foreground mt-2">
+                          Ex.: <code className="font-mono">##HCT##/##HEM##</code>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </FormSection>
             )}
 
-            {/* STEP 4 — Reference / Formula */}
+            {/* STEP 4 — Valor de referência (texto descritivo) — disponível para todos os tipos */}
             <FormSection
               step={tipoSelecionado === "Texto" ? 3 : 4}
-              title={tipoSelecionado === "Formula" ? "Fórmula" : "Valor de referência"}
-              desc={
-                tipoSelecionado === "Formula"
-                  ? "Expressão que será calculada automaticamente."
-                  : "Texto descritivo exibido junto ao resultado."
-              }
+              title="Valor de referência"
+              desc="Texto descritivo exibido junto ao resultado."
             >
               <textarea
                 value={valorReferencia}
                 onChange={(e) => setValorReferencia(e.target.value)}
                 rows={2}
-                className={`${textareaClass} ${tipoSelecionado === "Formula" ? "font-mono" : ""}`}
-                placeholder={
-                  tipoSelecionado === "Formula"
-                    ? "##CHAVE1##*0.5+##CHAVE2##"
-                    : "Ex: 12.0 a 16.0 g/dL"
-                }
+                className={textareaClass}
+                placeholder="Ex: 12.0 a 16.0 g/dL"
               />
             </FormSection>
 
@@ -703,6 +709,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               title="Comportamento"
               desc="Como este parâmetro se comporta no atendimento e na bancada."
             >
+
               <div className="rounded-2xl border border-border/60 bg-background divide-y divide-border/60 overflow-hidden">
                 {[
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
