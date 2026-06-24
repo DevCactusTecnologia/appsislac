@@ -499,6 +499,20 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
             <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Unidade</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.unidade} onChange={(e) => setForm((f) => ({ ...f, unidade: e.target.value }))} placeholder="mg/dL" /></div>
             <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Descrição</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Adulto masculino" /></div>
 
+            <div className="pt-2 mt-1 border-t border-border/40">
+              <div className="flex items-center gap-1.5 mb-2">
+                <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-danger))]" />
+                <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Valores críticos (pânico)</Label>
+              </div>
+              <p className="text-[10px] text-muted-foreground mb-2 leading-relaxed">
+                Específicos para esta faixa de sexo/idade. Deixe em branco para usar o crítico padrão do parâmetro.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico mín.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMin ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMin: e.target.value }))} placeholder="—" /></div>
+                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico máx.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMax ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMax: e.target.value }))} placeholder="—" /></div>
+              </div>
+            </div>
+
             {sobreposicoes.length > 0 && (
               <div className="rounded-xl border border-[hsl(var(--status-warning))]/40 bg-[hsl(var(--status-warning))]/10 p-3 flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-[hsl(var(--status-warning))] shrink-0 mt-0.5" />
