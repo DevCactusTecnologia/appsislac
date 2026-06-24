@@ -76,6 +76,7 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.exibirMapa !== undefined && { exibir_mapa: p.exibirMapa }),
   ...(p.obrigatorio !== undefined && { obrigatorio: p.obrigatorio }),
   ...(p.valorReferencia !== undefined && { valor_referencia: p.valorReferencia }),
+  ...(p.formula !== undefined && { formula: p.formula }),
   ...(p.visivel !== undefined && { visivel: p.visivel }),
   ...(p.ordem !== undefined && { ordem: p.ordem }),
   ...(p.opcoesSelect !== undefined && { opcoes_select: normalizeOpcoesSelect(p.opcoesSelect) }),
