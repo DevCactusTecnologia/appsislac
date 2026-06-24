@@ -311,44 +311,42 @@ function QuickShortcuts() {
   if (!canOrcamento && !canPedidos) return null;
 
   return (
-    <section
-      className="flex flex-wrap gap-2 animate-fade-in-up"
-      style={{ animationDelay: "90ms" }}
-    >
+    <>
       {canOrcamento && (
         <Link
           to="/orcamentos"
-          className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
+          className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-2 text-xs font-medium text-white/90 hover:bg-white/20 hover:text-white transition-colors"
         >
           <Receipt className="h-3.5 w-3.5" />
           <span>Orçamentos</span>
           {orcamentosPendentes > 0 && (
-            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-foreground">
               {orcamentosPendentes > 99 ? "99+" : orcamentosPendentes}
             </span>
           )}
-          <ArrowUpRight className="h-3 w-3 opacity-50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <ArrowUpRight className="h-3 w-3 opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </Link>
       )}
 
       {canPedidos && (
         <Link
           to="/pedidos-site"
-          className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
+          className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm px-3 py-2 text-xs font-medium text-white/90 hover:bg-white/20 hover:text-white transition-colors"
         >
           <Globe className="h-3.5 w-3.5" />
           <span>Pedidos do site</span>
           {pedidosNaoLidos > 0 && (
-            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
               {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
             </span>
           )}
-          <ArrowUpRight className="h-3 w-3 opacity-50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <ArrowUpRight className="h-3 w-3 opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </Link>
       )}
-    </section>
+    </>
   );
 }
+
 
 /* ───────────────────────── page ───────────────────────── */
 
