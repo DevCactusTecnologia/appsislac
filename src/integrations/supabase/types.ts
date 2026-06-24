@@ -2182,6 +2182,7 @@ export type Database = {
           exame_id: string
           exibir_anterior: string
           exibir_mapa: string
+          formula: string
           id: number
           obrigatorio: string
           opcoes_select: string[]
@@ -2207,6 +2208,7 @@ export type Database = {
           exame_id: string
           exibir_anterior?: string
           exibir_mapa?: string
+          formula?: string
           id?: number
           obrigatorio?: string
           opcoes_select?: string[]
@@ -2232,6 +2234,7 @@ export type Database = {
           exame_id?: string
           exibir_anterior?: string
           exibir_mapa?: string
+          formula?: string
           id?: number
           obrigatorio?: string
           opcoes_select?: string[]
