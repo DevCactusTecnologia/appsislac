@@ -61,6 +61,8 @@ type PendenciaItem = {
   descricao?: string;
   resolvido?: boolean;
   data?: string;
+  codigoExame?: string;
+  dataRegistro?: string;
 };
 
 type RastreabilidadeEvento = {
@@ -69,6 +71,9 @@ type RastreabilidadeEvento = {
   descricao?: string;
   timestamp?: string;
   usuario?: string;
+  data?: string;
+  etapa?: string;
+  observacao?: string;
 };
 
 type LaudoPayload = {
