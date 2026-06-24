@@ -769,9 +769,9 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 );
 
 const FormSection = ({
-  step, title, desc, children,
-}: { step: number; title: string; desc: string; children: React.ReactNode }) => (
-  <section className="space-y-3">
+  step, title, desc, children, className = "",
+}: { step: number; title: string; desc: string; children: React.ReactNode; className?: string }) => (
+  <section className={`space-y-3 rounded-2xl border border-border/60 bg-background/60 p-4 ${className}`}>
     <header className="flex items-start gap-3">
       <div className="h-6 w-6 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
         {step}
