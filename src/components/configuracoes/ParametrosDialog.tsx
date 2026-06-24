@@ -109,6 +109,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setExibirMapa(p.exibirMapa === "SIM");
     setObrigatorio(p.obrigatorio === "SIM");
     setValorReferencia(p.valorReferencia);
+    setFormula(p.formula ?? "");
     const opcoesUpper = (p.opcoesSelect ?? []).map((o) => o.toUpperCase());
     setOpcoesSelect(opcoesUpper);
     setNovaOpcao(opcoesUpper.join(", "));
