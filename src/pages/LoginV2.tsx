@@ -181,6 +181,17 @@ export default function LoginV2() {
         </p>
       </div>
 
+      <div className="mt-6 border-t border-border/60 pt-5 text-center">
+        <p className="text-sm text-muted-foreground">
+          Ainda não tem uma conta?{" "}
+          <Link
+            to="/inscricao"
+            className="font-semibold text-primary hover:text-primary/80 hover:underline"
+          >
+            Criar conta
+          </Link>
+        </p>
+      </div>
     </>
   );
 
