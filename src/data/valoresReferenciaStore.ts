@@ -17,6 +17,10 @@ export interface ValorReferencia {
   valorMax: string;
   unidade: string;
   descricao: string;
+  /** Limite crítico inferior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
+  criticoMin?: string;
+  /** Limite crítico superior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
+  criticoMax?: string;
 }
 
 let valoresReferencia: ValorReferencia[] = [];
