@@ -362,6 +362,18 @@ export default function Inscricao() {
                   </Link>
                   .
                 </p>
+
+                <div className="pt-2 text-center">
+                  <p className="text-sm text-slate-500">
+                    Já tem uma conta?{" "}
+                    <Link
+                      to="/login"
+                      className="font-semibold text-[#4D41F3] hover:underline"
+                    >
+                      Entrar
+                    </Link>
+                  </p>
+                </div>
               </form>
 
               <div className="pt-6 border-t border-slate-100 flex items-center justify-center gap-2 text-slate-400">
