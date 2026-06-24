@@ -155,7 +155,7 @@ export const resolverReferencia = (
   parametroNome: string,
   sexoPaciente: string,
   idadePaciente: string
-): { refMin: string; refMax: string; refUnidade: string; descricao: string } | null => {
+): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string } | null => {
   const idadeAnos = parseIdadeAnos(idadePaciente);
 
   const candidatos = valoresReferencia.filter(
@@ -191,9 +191,15 @@ export const resolverReferencia = (
 
   if (!melhor) {
     const fallback = candidatos.find((c) => c.sexo === "Ambos");
-    if (fallback) return { refMin: fallback.valorMin, refMax: fallback.valorMax, refUnidade: fallback.unidade, descricao: fallback.descricao };
+    if (fallback) return {
+      refMin: fallback.valorMin, refMax: fallback.valorMax, refUnidade: fallback.unidade, descricao: fallback.descricao,
+      criticoMin: fallback.criticoMin || undefined, criticoMax: fallback.criticoMax || undefined,
+    };
     return null;
   }
 
-  return { refMin: melhor.valorMin, refMax: melhor.valorMax, refUnidade: melhor.unidade, descricao: melhor.descricao };
+  return {
+    refMin: melhor.valorMin, refMax: melhor.valorMax, refUnidade: melhor.unidade, descricao: melhor.descricao,
+    criticoMin: melhor.criticoMin || undefined, criticoMax: melhor.criticoMax || undefined,
+  };
 };
