@@ -443,6 +443,8 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
                       <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{formatFaixaIdade(ref.idadeMin, ref.idadeMax, ref.unidadeIdade)}</td>
                       <td className="py-2.5 px-3 text-[13px] text-foreground">{ref.valorMin || "—"}</td>
                       <td className="py-2.5 px-3 text-[13px] text-foreground">{ref.valorMax || "—"}</td>
+                      <td className={`py-2.5 px-3 text-[13px] ${ref.criticoMin ? "text-[hsl(var(--status-danger))] font-medium" : "text-muted-foreground/50"}`}>{ref.criticoMin || "—"}</td>
+                      <td className={`py-2.5 px-3 text-[13px] ${ref.criticoMax ? "text-[hsl(var(--status-danger))] font-medium" : "text-muted-foreground/50"}`}>{ref.criticoMax || "—"}</td>
                       <td className="py-2.5 px-3 text-[12px] text-muted-foreground">{ref.unidade}</td>
                       <td className="py-2.5 px-3">
                         <button onClick={(e) => { e.stopPropagation(); handleRemover(ref.id); }} className="p-1 rounded-lg hover:bg-destructive/10 transition-all duration-200 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
