@@ -428,12 +428,20 @@ const ResultadoDetalhe = () => {
   const getResolvedRef = (exameNome: string, param: Parametro) => {
     const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade);
     if (resolved) return resolved;
-    // Parâmetros do tipo Formula gravam a expressão em valor_referencia
-    // (ex.: "(##HEMOG##/##HEMACI##)*10"). Isso NÃO é uma faixa clínica, então
-    // descartamos o fallback descritivo nesse caso — mas mantemos a busca em
-    // `valores_referencia` (acima) para exibir a faixa real quando existir.
+    // Parâmetros do tipo Formula: a expressão fica em `param.formula`
+    // (coluna dedicada). O `valor_referencia` agora é texto descritivo
+    // como nos demais tipos. Para retro-compat, se ainda houver fórmula
+    // legada armazenada em `valor_referencia` (contém `##CHAVE##`),
+    // não exibimos como descrição clínica.
     if (param.tipo === "Formula") {
-      return { refMin: "", refMax: "", refUnidade: "", descricao: "" };
+      const vr = param.valorReferencia ?? "";
+      const looksLikeLegacyFormula = /##[^#]+##/.test(vr);
+      return {
+        refMin: "",
+        refMax: "",
+        refUnidade: "",
+        descricao: looksLikeLegacyFormula ? "" : vr,
+      };
     }
     return {
       refMin: param.refMin,
