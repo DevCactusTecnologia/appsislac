@@ -296,7 +296,84 @@ function Panel({ title, hint, action, children, className = "" }: PanelProps) {
   );
 }
 
+/* ───────────────────────── quick shortcuts ───────────────────────── */
+
+function QuickShortcuts() {
+  const { hasPermission } = useAuth();
+  const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
+
+  const canOrcamento = hasPermission?.("visualizar_orcamentos") ?? true;
+  const canPedidos = hasPermission?.("solicitacoes_site_acesso") ?? true;
+
+  if (!canOrcamento && !canPedidos) return null;
+
+  return (
+    <section
+      className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 animate-fade-in-up"
+      style={{ animationDelay: "90ms" }}
+    >
+      {canOrcamento && (
+        <Link
+          to="/orcamentos"
+          className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-soft hover:border-primary/40 hover:bg-accent/30 transition-all card-tactile"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Receipt className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Orçamentos</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                Atalho
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground truncate">
+              Gerar e acompanhar orçamentos de exames.
+            </p>
+          </div>
+          <ArrowUpRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
+      )}
+
+      {canPedidos && (
+        <Link
+          to="/pedidos-site"
+          className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-soft hover:border-primary/40 hover:bg-accent/30 transition-all card-tactile"
+        >
+          <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Globe className="h-6 w-6" />
+            {pedidosNaoLidos > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow">
+                {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
+              </span>
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Pedidos do site</span>
+              {pedidosNaoLidos > 0 ? (
+                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 uppercase tracking-wider">
+                  {pedidosNaoLidos} novo{pedidosNaoLidos === 1 ? "" : "s"}
+                </span>
+              ) : (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Atalho
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground truncate">
+              Solicitações de pacientes recebidas pelo site público.
+            </p>
+          </div>
+          <ArrowUpRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
+      )}
+    </section>
+  );
+}
+
 /* ───────────────────────── page ───────────────────────── */
+
 
 const Dashboard = () => {
   const { user } = useAuth();
