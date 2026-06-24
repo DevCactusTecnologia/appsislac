@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler, Users } from "lucide-react";
+import { X, Filter, Plus, Pencil, Trash2, Save, AlertTriangle, Copy, Sparkles, Wand2, Check, Grid3x3, List, Ruler, Users, RotateCcw } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,7 +87,26 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
     [form, todasReferencias, editando?.id],
   );
 
+  // Sincronização: parâmetro selecionado → defaults críticos vindos de exame_parametros.
+  // Mostrado como placeholder/hint nos inputs; usuário pode sobrescrever.
+  const parametroSelecionado = useMemo(
+    () => parametros.find((p) => p.rotulo === form.parametroNome) ?? null,
+    [parametros, form.parametroNome],
+  );
+  const criticoPadraoMin = parametroSelecionado?.criticoMin?.trim() || "";
+  const criticoPadraoMax = parametroSelecionado?.criticoMax?.trim() || "";
+
   const handleNovo = () => { setEditando(null); setForm(emptyForm(exameNome)); };
+
+  // Limpa todos os filtros do diálogo: form de edição, painéis auxiliares
+  // (copiar/importar) e seleção em curso. Não apaga dados persistidos.
+  const handleLimparFiltros = () => {
+    setEditando(null);
+    setForm(emptyForm(exameNome));
+    setShowCopiar(false); setCopiarOrigem("");
+    setShowImportar(false); setImportarParametro(""); setCandidatos([]);
+    toast({ title: "Filtros limpos" });
+  };
   const handleEditar = (ref: ValorReferencia) => { setEditando(ref); const { id, ...rest } = ref; setForm(rest); };
   const handleRemover = async (id: number) => {
     const ok = await removeValorReferencia(id);
@@ -204,6 +223,13 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
           <Copy className="h-3.5 w-3.5" /> Copiar de…
         </button>
       )}
+      <button
+        onClick={handleLimparFiltros}
+        className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
+        title="Restaura criticidade, parâmetro e valores ao padrão neste formulário"
+      >
+        <RotateCcw className="h-3.5 w-3.5" /> Limpar filtros
+      </button>
       <button
         onClick={handleNovo}
         className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
@@ -502,16 +528,51 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
             <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Descrição</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Adulto masculino" /></div>
 
             <div className="pt-2 mt-1 border-t border-border/40">
-              <div className="flex items-center gap-1.5 mb-2">
-                <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-danger))]" />
-                <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Valores críticos (pânico)</Label>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-danger))]" />
+                  <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Valores críticos (pânico)</Label>
+                </div>
+                {(form.criticoMin || form.criticoMax) && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, criticoMin: "", criticoMax: "" }))}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    usar padrão
+                  </button>
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground mb-2 leading-relaxed">
-                Específicos para esta faixa de sexo/idade. Deixe em branco para usar o crítico padrão do parâmetro.
+              <p className="text-[10px] text-muted-foreground mb-1 leading-relaxed">
+                Aplicados a pacientes <strong>{form.sexo === "Ambos" ? "de qualquer sexo" : form.sexo}</strong>
+                {(form.idadeMin || form.idadeMax) && (
+                  <> com idade <strong>{formatFaixaIdade(form.idadeMin, form.idadeMax, form.unidadeIdade)}</strong></>
+                )}.
               </p>
+              {parametroSelecionado && (criticoPadraoMin || criticoPadraoMax) && (
+                <p className="text-[10px] text-muted-foreground mb-2 leading-relaxed">
+                  Padrão do parâmetro: <span className="font-medium text-foreground/80">{criticoPadraoMin || "—"} a {criticoPadraoMax || "—"}</span>
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico mín.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMin ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMin: e.target.value }))} placeholder="—" /></div>
-                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico máx.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMax ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMax: e.target.value }))} placeholder="—" /></div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Crítico mín.</Label>
+                  <Input
+                    className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"
+                    value={form.criticoMin ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, criticoMin: e.target.value }))}
+                    placeholder={criticoPadraoMin || "—"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Crítico máx.</Label>
+                  <Input
+                    className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"
+                    value={form.criticoMax ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, criticoMax: e.target.value }))}
+                    placeholder={criticoPadraoMax || "—"}
+                  />
+                </div>
               </div>
             </div>
 

@@ -47,7 +47,9 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
     return subscribeLayouts(exame.id, () => setLayouts([...getLayouts(exame.id)]));
   }, [open, exame?.id, layoutOpen]);
 
-  useEffect(() => { if (open) setTab("layouts"); }, [open, exame?.id]);
+  // Reseta a aba APENAS quando o exame muda — preserva contexto ao
+  // abrir/fechar sub-dialogs (Parâmetros, VR, LayoutDialog).
+  useEffect(() => { setTab("layouts"); }, [exame?.id]);
 
   if (!exame) return null;
 
