@@ -224,6 +224,13 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
         </button>
       )}
       <button
+        onClick={handleLimparFiltros}
+        className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
+        title="Restaura criticidade, parâmetro e valores ao padrão neste formulário"
+      >
+        <RotateCcw className="h-3.5 w-3.5" /> Limpar filtros
+      </button>
+      <button
         onClick={handleNovo}
         className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
       >
