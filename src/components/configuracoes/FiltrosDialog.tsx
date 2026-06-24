@@ -209,7 +209,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       </button>
       {exameId && parametrosComTexto.length > 0 && (
         <button
-          onClick={() => setShowImportar((v) => !v)}
+          onClick={() => { setAba("lista"); setShowCopiar(false); setShowImportar((v) => !v); }}
           className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
         >
           <Wand2 className="h-3.5 w-3.5" /> Importar do texto
@@ -217,7 +217,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       )}
       {exameNome && examesComReferencia.length > 0 && (
         <button
-          onClick={() => setShowCopiar((v) => !v)}
+          onClick={() => { setAba("lista"); setShowImportar(false); setShowCopiar((v) => !v); }}
           className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
         >
           <Copy className="h-3.5 w-3.5" /> Copiar de…
