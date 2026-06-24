@@ -357,7 +357,7 @@ export default function Inscricao() {
 
                 <p className="text-center text-[11px] leading-relaxed text-slate-400 px-4">
                   Suas informações estão protegidas por criptografia e seguem nossa{" "}
-                  <Link to="#" className="text-[#4D41F3] underline font-semibold">
+                  <Link to="/privacidade" className="text-[#4D41F3] underline font-semibold">
                     Política de Privacidade
                   </Link>
                   .
