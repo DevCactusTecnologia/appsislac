@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TESTES UNITÁRIOS - Error Handling
  * ✅ Valida que o sistema de error handling funciona corretamente

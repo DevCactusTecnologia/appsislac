@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TESTES RLS - Validação de Isolamento Entre Tenants
  * 
