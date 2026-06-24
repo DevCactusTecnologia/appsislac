@@ -66,8 +66,21 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 
   useEffect(() => {
     if (!open || !exameId) return;
-    loadParametros(exameId).then(setParametros);
-    return subscribeParametros(exameId, () => setParametros([...getParametros(exameId)]));
+    // Limpa imediatamente para não exibir parâmetros do exame anterior
+    // enquanto o load do novo exame está em voo.
+    setParametros([]);
+    setSelectedId(null);
+    let cancelled = false;
+    const currentExameId = exameId;
+    loadParametros(currentExameId).then((list) => {
+      if (!cancelled && currentExameId === exameId) setParametros(list);
+    });
+    const unsub = subscribeParametros(currentExameId, () => {
+      if (!cancelled && currentExameId === exameId) {
+        setParametros([...getParametros(currentExameId)]);
+      }
+    });
+    return () => { cancelled = true; unsub(); };
   }, [open, exameId]);
 
   useEffect(() => {
