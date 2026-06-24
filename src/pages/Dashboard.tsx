@@ -16,7 +16,10 @@ import {
   Users,
   Wallet,
   Sparkles,
+  Receipt,
+  Globe,
 } from "lucide-react";
+import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getAtendimentos, subscribe as subscribeAtendimentos } from "@/data/atendimentoStore";
 import heroFlower from "@/assets/hero-flower.webp";
 import { getPacientes, subscribePacientes } from "@/data/pacienteStore";
