@@ -70,7 +70,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     // Limpa imediatamente para não exibir parâmetros do exame anterior
     // enquanto o load do novo exame está em voo.
     setParametros([]);
-    setSelectedId(null);
+    resetForm();
     let cancelled = false;
     const currentExameId = exameId;
     loadParametros(currentExameId).then((list) => {
