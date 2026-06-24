@@ -69,7 +69,7 @@ export async function listarCriticosPorAtendimento(atendimentoId: number): Promi
     parametro: r.parametro,
     valor: r.valor,
     faixaCritica: r.faixa_critica,
-    canal: r.canal,
+    canal: r.canal as CriticoCanal,
     destinatarioNome: r.destinatario_nome,
     destinatarioContato: r.destinatario_contato,
     observacao: r.observacao,
