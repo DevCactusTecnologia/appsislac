@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import {
   Plus, Search, ChevronLeft, ChevronRight, MoreVertical, Pencil, Ban, X, Loader2,
   Eye, Building2, Cake, Activity, CircleDollarSign, CheckCircle2, Clock3,
-  SlidersHorizontal, Filter, AlertTriangle, Receipt,
+  SlidersHorizontal, Filter, AlertTriangle, Receipt, Globe,
 } from "lucide-react";
+import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
