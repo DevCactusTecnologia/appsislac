@@ -147,6 +147,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       exibirMapa: exibirMapa ? "SIM" : "NAO",
       obrigatorio: obrigatorio ? "SIM" : "NAO",
       valorReferencia,
+      formula: tipoSelecionado === "Formula" ? formula : "",
       visivel: true,
       ordem: selectedId ? (parametros.find((p) => p.id === selectedId)?.ordem ?? parametros.length) : parametros.length,
       opcoesSelect,
