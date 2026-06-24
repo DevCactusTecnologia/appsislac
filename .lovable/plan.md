@@ -1,85 +1,67 @@
-# Equipe 2.1 — Hardening e Simplificação
+## Fase 1 — Críticos por sexo+idade (reuso de `valores_referencia`)
 
-Plano em 8 fases, executadas em ordem. Sem RH, sem cargos, sem ponto. Apenas fechar furos, unificar catálogo e enxugar a UI.
+### Banco
+Migration adicionando 2 colunas opcionais em `valores_referencia`:
+- `critico_min text NULL`
+- `critico_max text NULL`
 
-## Fase 2.1 — Fechar auto-escalonamento (RLS)
+Sem nova tabela. Sem RLS nova (herda as policies existentes).
 
-**Migration:**
-- Substituir policy `profiles_update_self` por trigger `BEFORE UPDATE` em `public.profiles` que, quando `auth.uid() = user_id` e o caller NÃO é admin/super_admin, **bloqueia mudanças** em: `perfil`, `permissoes_extras`, `permissoes_revogadas`, `unidade_ids`, `unidade_ativa`, `status`, `tenant_id`.
-- Usuário comum só consegue alterar: `nome`, `telefone`, `avatar_url`, `assinatura_*`.
+### Resolver
+`resolverReferencia()` em `src/data/valoresReferenciaStore.ts` passa a retornar também `criticoMin`/`criticoMax` (quando preenchidos na linha vencedora). Assinatura existente preservada — campos novos opcionais.
 
-## Fase 2.2 — Bloquear auto-exclusão server-side
+### Pipeline de crítico
+`src/pages/ResultadoDetalhe/services/criticoPipeline.ts`:
+1. Tenta `resolverReferencia(exame, parametro, sexo, idade)` → se vier `criticoMin/Max`, usa.
+2. Fallback: `exame_parametros.critico_min/max` (comportamento atual).
 
-**Edge `admin-delete-user`:** já tem o check `userId === caller.id`. Confirmar e endurecer mensagem. *(Verificado: já implementado — manter e adicionar log.)*
+Sem mudança em `criticoChecker.ts` (continua recebendo min/max numéricos).
 
-## Fase 2.3 — Validar unidades no convite
+### UI — `FiltrosDialog` (valores de referência)
+Cada linha de VR ganha 2 inputs opcionais: **Crítico mín.** e **Crítico máx.**, ao lado de Valor mín./máx. Texto de ajuda: "Deixe em branco para usar o crítico padrão do parâmetro."
 
-**Edge `admin-invite-user`:**
-- Antes de gravar `unidade_ids`, consultar `public.unidades` filtrando por `tenant_id = callerTenantId` e validar que TODO id do array pertence ao tenant.
-- Se inválido → 400 com mensagem clara. Super admin bypassa.
+### Sem mudança nesta fase
+- Sem flag `gestante` em `pacientes` (LGPD/estrutura — fase futura, só se pedido).
+- Sem nova UI em `ParametrosDialog` (críticos padrão continuam ali).
 
-## Fase 2.4 — Permissões fantasmas
+---
 
-Decisão por permissão (apenas em SQL `has_permission`, ausentes do catálogo TS):
+## Redesign — Modal "Detalhes do exame"
 
-| Permissão | Decisão | Justificativa |
-|---|---|---|
-| `integracoes.gerenciar` | **Adicionar ao catálogo TS** (grupo Configurações) | Usada em rotas/edge de integrações |
-| `gerenciar_soroteca` | **Adicionar ao catálogo TS** (grupo Rotina) | Usada nas rotas `/soroteca/*` |
-| `armazenar_amostra` | **Adicionar ao catálogo TS** (grupo Rotina) | Usada em fluxo de armazenamento |
+Hoje: 3 cards abrem 3 modais aninhados → muito clique, sem contexto.
 
-Resultado: 0 permissões órfãs. Catálogo TS passa de 32 → 35.
+Novo: **modal único com abas internas**, sem aninhamento.
 
-## Fase 2.5 — Catálogo único
-
-Fonte oficial: **TypeScript** (`src/data/usuariosStore.ts:PERMISSOES_AGRUPADAS` + `DEFAULTS_POR_PERFIL`). SQL `has_permission` deriva — mantemos a função, mas adicionamos comentário SQL apontando a SSOT e checklist no PR. Não dá para gerar SQL automaticamente sem build step novo (proibido por escopo); a regra escrita + comentário é suficiente.
-
-## Fase 2.6 — UX: permissões avançadas colapsadas
-
-**`src/pages/Usuarios.tsx` (ou dialog):**
-- Topo do dialog: campos básicos (nome, email, perfil, admin toggle, unidades).
-- Bloco "Permissões avançadas" em `<details>`/`Collapsible` fechado por padrão. Texto: "Ajustes finos — só altere se souber o que está fazendo."
-- Sem mudança de lógica de salvamento.
-
-## Fase 2.7 — Assinatura no /perfil
-
-- Criar rota `/perfil` (`src/pages/Perfil.tsx`) com: nome, telefone, avatar, **assinatura** (imagem + carimbo + texto), botão Salvar.
-- Usar policy do 2.1 (usuário pode editar esses campos próprios).
-- Remover bloco de assinatura do `UsuarioDialog` (admin não edita assinatura alheia — princípio de propriedade).
-- Adicionar link "Meu perfil" no menu do usuário (avatar no header).
-
-## Fase 2.8 — Limpeza
-
-- Unificar `AuthContext.login()` e `signInWithPassword()` em uma única função.
-- Remover policy duplicada `unidades_public_read` (manter `und_select`).
-- Coluna `profiles.telefone` — passa a ser usada em `/perfil`. Não remove.
-- Confirmar que nenhuma referência ao bloco antigo de assinatura sobrou.
-
-## Menu final
-
-```
-Equipe
-├─ Usuários       (existente)
-└─ Convites       (subaba/filtro em Usuários — não criar rota nova)
+```text
+┌─ FlaskConical  Nome do exame                    [Editar exame] [X] ─┐
+│  mnemônico • setor                                                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ [ Layouts ] [ Parâmetros ] [ Valores de referência ]                │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  (conteúdo da aba ativa, inline — sem novo modal)                   │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-*Convites não é tela separada — fica como filtro/aba dentro de Usuários para evitar inflar o menu.*
+### Mudanças
+- `DetalhesExameDialog.tsx`: substituir os 3 quick-action cards + lista de layouts por um `Tabs` (shadcn) com 3 abas. Header e botão "Editar exame" permanecem.
+- **Aba Layouts**: a lista atual + botão "Adicionar". Editar/duplicar/remover continuam disparando ações inline; o editor de layout (`LayoutDialog`) **continua sendo dialog separado** porque é um editor pesado em tela cheia (CKEditor) — não cabe inline. Justificativa: editor full-screen ≠ navegação.
+- **Aba Parâmetros**: renderiza o conteúdo de `ParametrosDialog` inline. Refatorar `ParametrosDialog` para extrair o corpo (`ParametrosPanel`) reaproveitável; o dialog antigo continua existindo como wrapper para outros usos (se houver), mas o `DetalhesExameDialog` usa o painel direto.
+- **Aba Valores de referência**: idem — extrair `FiltrosPanel` do `FiltrosDialog`.
+- Largura do modal aumenta de `3xl` para `5xl` para acomodar tabelas.
+- Aba lembrada na sessão (estado local; sem persistência).
+
+### Resultado
+- 1 clique para abrir o exame, 1 clique para trocar de aba (antes: 2 cliques para entrar + fechar para sair + reabrir).
+- Sem perda de contexto entre Parâmetros ↔ VR ↔ Layouts.
+- Edição pesada de layout continua em modal próprio (intencional).
+
+---
 
 ## Ordem de execução
+1. Migration `valores_referencia` (aguarda aprovação).
+2. Após aprovação: atualizar resolver + criticoPipeline + UI do FiltrosDialog/Panel.
+3. Refator do `DetalhesExameDialog` para tabs + extração dos painéis.
 
-1. Migration (2.1 + remover policy duplicada da 2.8) — **requer aprovação**.
-2. Edge functions (2.2 confirmação + 2.3 validação tenant).
-3. Catálogo TS (2.4 + 2.5).
-4. UI: colapsar avançado (2.6).
-5. Página `/perfil` + remover bloco do dialog (2.7).
-6. Limpeza login duplicado (2.8).
-7. Smoke tests manuais (Playwright opcional para fluxo crítico).
-8. Relatório `docs/equipe-2.1/equipe-hardening-report.md`.
-
-## Riscos / pontos de atenção
-
-- **Trigger BEFORE UPDATE em profiles** precisa permitir o trigger `handle_new_user` e edges com service-role passarem. Solução: checar `auth.role() = 'authenticated'` E `auth.uid() = user_id` antes de bloquear. Service-role (edge functions) usa role `service_role` → não cai no bloqueio.
-- **Adicionar 3 permissões ao catálogo TS** muda defaults visíveis. Admins existentes têm wildcard `*` — sem impacto. Perfis não-admin não recebem essas novas por default.
-- **`/perfil` nova rota** = mudança estrutural. Incluída neste plano para sua aprovação explícita junto com o resto.
-
-Aguardando **"ok"** para executar.
+Confirma para eu disparar a migration?
