@@ -39,7 +39,27 @@ export async function listarCriticosPorAtendimento(atendimentoId: number): Promi
     .eq("atendimento_id", atendimentoId)
     .order("comunicado_em", { ascending: false });
   if (error) { showError(error, { scope: "rastreabilidade.criticos", silent: true }); return []; }
-  return (data ?? []).map((r: any) => ({
+  
+  // ✅ Tipo seguro - Supabase retorna este tipo
+  type CriticoRow = {
+    id: number;
+    atendimento_id: number;
+    atendimento_exame_id: number;
+    protocolo: string;
+    paciente_nome: string;
+    exame_nome: string;
+    parametro: string;
+    valor: string;
+    faixa_critica: string;
+    canal: string;
+    destinatario_nome: string;
+    destinatario_contato: string;
+    observacao: string;
+    comunicado_por_email: string;
+    comunicado_em: string;
+  };
+  
+  return (data as CriticoRow[] ?? []).map((r) => ({
     id: r.id,
     atendimentoId: r.atendimento_id,
     atendimentoExameId: r.atendimento_exame_id,

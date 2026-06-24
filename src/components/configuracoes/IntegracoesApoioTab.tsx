@@ -46,14 +46,46 @@ type JobRow = {
   payload: Record<string, unknown> | null;
   result: Record<string, unknown> | null;
 };
+// ✅ Tipos para Resultado - Remover 'any'
+type ExameResult = {
+  id?: string;
+  nomeExame?: string;
+  valor?: string | number;
+  referenciaLinhas?: Array<{ minVal: number; maxVal: number; label: string }>;
+  referencia?: string;
+};
+
+type PendenciaItem = {
+  id?: string;
+  tipo?: string;
+  descricao?: string;
+  resolvido?: boolean;
+  data?: string;
+};
+
+type RastreabilidadeEvento = {
+  id?: string;
+  tipo?: string;
+  descricao?: string;
+  timestamp?: string;
+  usuario?: string;
+};
+
+type LaudoPayload = {
+  laudoPdfUrl?: string;
+  laudoPdfBase64?: string;
+  exames?: ExameResult[];
+  [key: string]: unknown; // Para campos desconhecidos
+};
+
 type ResultRow = {
   id: string;
   external_protocol: string;
   status: string;
   liberado_em: string | null;
-  resultado: any;
-  pendencias: any;
-  rastreabilidade: any;
+  resultado: LaudoPayload | null;
+  pendencias: PendenciaItem[] | null;
+  rastreabilidade: RastreabilidadeEvento[] | null;
 };
 type PdfRow = { id: string; external_protocol: string; storage_path: string; size_bytes: number | null; mime_type: string | null; created_at: string };
 
@@ -175,9 +207,9 @@ const IntegracoesApoioTab = () => {
     () => jobFilter === "ALL" ? jobs : jobs.filter((j) => j.status === jobFilter),
     [jobs, jobFilter],
   );
-  const exames: any[] = resultRow?.resultado?.exames ?? [];
-  const pendencias: any[] = Array.isArray(resultRow?.pendencias) ? (resultRow!.pendencias as any[]) : [];
-  const eventos: any[] = Array.isArray(resultRow?.rastreabilidade) ? (resultRow!.rastreabilidade as any[]) : [];
+  const exames: ExameResult[] = resultRow?.resultado?.exames ?? [];
+  const pendencias: PendenciaItem[] = Array.isArray(resultRow?.pendencias) ? (resultRow!.pendencias) : [];
+  const eventos: RastreabilidadeEvento[] = Array.isArray(resultRow?.rastreabilidade) ? (resultRow!.rastreabilidade) : [];
 
   const consultActions: ProviderActionDef[] = useMemo(() => {
     if (!activeOperationalProvider) return [];
@@ -591,7 +623,7 @@ const ReferenciaCell = ({ ex }: { ex: any }) => {
   return <span className="text-muted-foreground">—</span>;
 };
 
-function abrirLaudoDoPayload(resultado: any) {
+function abrirLaudoDoPayload(resultado: LaudoPayload | null | undefined) {
   if (!resultado) return;
   if (resultado.laudoPdfUrl) { window.open(resultado.laudoPdfUrl, "_blank", "noopener,noreferrer"); return; }
   if (resultado.laudoPdfBase64) {
