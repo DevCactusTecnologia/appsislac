@@ -528,16 +528,51 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
             <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Descrição</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Adulto masculino" /></div>
 
             <div className="pt-2 mt-1 border-t border-border/40">
-              <div className="flex items-center gap-1.5 mb-2">
-                <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-danger))]" />
-                <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Valores críticos (pânico)</Label>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-danger))]" />
+                  <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Valores críticos (pânico)</Label>
+                </div>
+                {(form.criticoMin || form.criticoMax) && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, criticoMin: "", criticoMax: "" }))}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    usar padrão
+                  </button>
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground mb-2 leading-relaxed">
-                Específicos para esta faixa de sexo/idade. Deixe em branco para usar o crítico padrão do parâmetro.
+              <p className="text-[10px] text-muted-foreground mb-1 leading-relaxed">
+                Aplicados a pacientes <strong>{form.sexo === "Ambos" ? "de qualquer sexo" : form.sexo}</strong>
+                {(form.idadeMin || form.idadeMax) && (
+                  <> com idade <strong>{formatFaixaIdade(form.idadeMin, form.idadeMax, form.unidadeIdade)}</strong></>
+                )}.
               </p>
+              {parametroSelecionado && (criticoPadraoMin || criticoPadraoMax) && (
+                <p className="text-[10px] text-muted-foreground mb-2 leading-relaxed">
+                  Padrão do parâmetro: <span className="font-medium text-foreground/80">{criticoPadraoMin || "—"} a {criticoPadraoMax || "—"}</span>
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico mín.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMin ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMin: e.target.value }))} placeholder="—" /></div>
-                <div className="space-y-1.5"><Label className="text-[11px] text-muted-foreground">Crítico máx.</Label><Input className="rounded-xl h-9 text-sm bg-muted/30 border-border/60" value={form.criticoMax ?? ""} onChange={(e) => setForm((f) => ({ ...f, criticoMax: e.target.value }))} placeholder="—" /></div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Crítico mín.</Label>
+                  <Input
+                    className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"
+                    value={form.criticoMin ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, criticoMin: e.target.value }))}
+                    placeholder={criticoPadraoMin || "—"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Crítico máx.</Label>
+                  <Input
+                    className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"
+                    value={form.criticoMax ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, criticoMax: e.target.value }))}
+                    placeholder={criticoPadraoMax || "—"}
+                  />
+                </div>
               </div>
             </div>
 
