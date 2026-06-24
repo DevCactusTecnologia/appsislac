@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, ArrowRightLeft, Receipt, Search, Phone, MessageCircle, Tag, Send, Printer, FileText, Flame, Clock, AlertTriangle, CheckCircle2, TrendingUp, DollarSign, Wallet, Activity, CalendarClock, Sparkles, Cake } from "lucide-react";
+import { Eye, ArrowRightLeft, Receipt, Search, Phone, MessageCircle, Tag, Send, Printer, FileText, Flame, Clock, AlertTriangle, CheckCircle2, TrendingUp, DollarSign, Wallet, Activity, CalendarClock, Sparkles, Cake, ArrowLeft } from "lucide-react";
 import { getOrcamentos, markAsConverted, subscribeOrcamentos, updateOrcamentoDesconto, type Orcamento } from "@/data/orcamentoStore";
 import { addAtendimento, getNextProtocolo } from "@/data/atendimentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
@@ -280,6 +280,15 @@ const Orcamentos = () => {
           eyebrow="Comercial"
           title="Orçamentos"
           description={`Pipeline inteligente · validade ${VALIDADE_DIAS} dias.`}
+          actions={
+            <button
+              onClick={() => navigate("/atendimentos")}
+              className="inline-flex items-center gap-2 h-10 px-4 bg-card text-foreground text-[13px] font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar para atendimentos
+            </button>
+          }
         />
 
         {/* KPI Strip */}
