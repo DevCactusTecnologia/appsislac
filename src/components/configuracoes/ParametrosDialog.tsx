@@ -667,6 +667,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   <div className="space-y-2">
                     <label className={labelClass}>
                       <Sigma className="h-3 w-3 text-muted-foreground" /> Expressão da fórmula
+                      <span className="text-destructive">*</span>
                     </label>
                     <textarea
                       value={formula}
@@ -675,6 +676,16 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                       className={`${textareaClass} font-mono`}
                       placeholder="##CHAVE1##*0.5+##CHAVE2##"
                     />
+                    <div className="rounded-xl bg-muted/30 border border-border/40 p-2.5 text-[10.5px] text-muted-foreground leading-relaxed">
+                      <p className="font-semibold text-foreground/70 mb-1">Formato</p>
+                      <p>Use chaves entre <code className="font-mono">##</code> e operadores <code className="font-mono">+ - * / ( )</code>.</p>
+                      <p className="mt-1">Exemplos:</p>
+                      <ul className="ml-3 mt-0.5 space-y-0.5 font-mono">
+                        <li>• <code>##HCT##/##HEM##</code></li>
+                        <li>• <code>(##HCT##/##HEM##)*10</code></li>
+                        <li>• <code>##SEGM##+##BAST##+##LINF##</code></li>
+                      </ul>
+                    </div>
                     {chavesDisponiveis.length > 0 && (
                       <div className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-3.5">
                         <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1.5 uppercase tracking-wider">
@@ -693,7 +704,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                           ))}
                         </div>
                         <p className="text-[10.5px] text-muted-foreground mt-2">
-                          Ex.: <code className="font-mono">##HCT##/##HEM##</code>
+                          Clique para inserir na expressão.
                         </p>
                       </div>
                     )}
