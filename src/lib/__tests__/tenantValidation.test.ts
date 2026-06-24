@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TESTES UNITÁRIOS - Multi-Tenancy Validation
  * ✅ CRÍTICO: Valida isolamento de dados entre tenants

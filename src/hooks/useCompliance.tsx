@@ -220,7 +220,7 @@ export function useCompliance() {
 
     try {
       // Buscar acessos ao resultado
-      const { data: acessos, error: err1 } = await supabase
+      const { data: acessos, error: err1 } = await (supabase as any)
         .from("resultado_acesso_log")
         .select("*")
         .eq("resultado_id", pacienteId)
@@ -229,7 +229,7 @@ export function useCompliance() {
       if (err1) throw err1;
 
       // Buscar consentimentos
-      const { data: consentimentos, error: err2 } = await supabase
+      const { data: consentimentos, error: err2 } = await (supabase as any)
         .from("consentimento_paciente")
         .select("*")
         .eq("paciente_id", pacienteId);
