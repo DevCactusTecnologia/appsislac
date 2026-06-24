@@ -17,6 +17,10 @@ export interface ValorReferencia {
   valorMax: string;
   unidade: string;
   descricao: string;
+  /** Limite crítico inferior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
+  criticoMin?: string;
+  /** Limite crítico superior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
+  criticoMax?: string;
 }
 
 let valoresReferencia: ValorReferencia[] = [];
@@ -36,6 +40,8 @@ function fromRow(r: any): ValorReferencia {
     valorMax: r.valor_max ?? "",
     unidade: r.unidade ?? "",
     descricao: r.descricao ?? "",
+    criticoMin: r.critico_min ?? "",
+    criticoMax: r.critico_max ?? "",
   };
 }
 
@@ -51,6 +57,8 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.valorMax !== undefined) row.valor_max = v.valorMax;
   if (v.unidade !== undefined) row.unidade = v.unidade;
   if (v.descricao !== undefined) row.descricao = v.descricao;
+  if (v.criticoMin !== undefined) row.critico_min = v.criticoMin || null;
+  if (v.criticoMax !== undefined) row.critico_max = v.criticoMax || null;
   return row;
 }
 
@@ -147,7 +155,7 @@ export const resolverReferencia = (
   parametroNome: string,
   sexoPaciente: string,
   idadePaciente: string
-): { refMin: string; refMax: string; refUnidade: string; descricao: string } | null => {
+): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string } | null => {
   const idadeAnos = parseIdadeAnos(idadePaciente);
 
   const candidatos = valoresReferencia.filter(
@@ -183,9 +191,15 @@ export const resolverReferencia = (
 
   if (!melhor) {
     const fallback = candidatos.find((c) => c.sexo === "Ambos");
-    if (fallback) return { refMin: fallback.valorMin, refMax: fallback.valorMax, refUnidade: fallback.unidade, descricao: fallback.descricao };
+    if (fallback) return {
+      refMin: fallback.valorMin, refMax: fallback.valorMax, refUnidade: fallback.unidade, descricao: fallback.descricao,
+      criticoMin: fallback.criticoMin || undefined, criticoMax: fallback.criticoMax || undefined,
+    };
     return null;
   }
 
-  return { refMin: melhor.valorMin, refMax: melhor.valorMax, refUnidade: melhor.unidade, descricao: melhor.descricao };
+  return {
+    refMin: melhor.valorMin, refMax: melhor.valorMax, refUnidade: melhor.unidade, descricao: melhor.descricao,
+    criticoMin: melhor.criticoMin || undefined, criticoMax: melhor.criticoMax || undefined,
+  };
 };

@@ -359,16 +359,27 @@ const ResultadoDetalhe = () => {
     return () => { cancel = true; };
   }, [paciente.exames]);
 
-  // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts
+  // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts.
+  // Fase 1 — Críticos por sexo/idade: passa override que consulta valores_referencia
+  // (critico_min/critico_max) usando sexo+idade do paciente. Fallback automático
+  // para o crítico padrão de exame_parametros quando override vazio.
+  const criticoOverride = useCallback(
+    (exameNome: string, paramNome: string) => {
+      const r = resolverReferencia(exameNome, paramNome, paciente.sexo, paciente.idade);
+      if (!r) return undefined;
+      return { criticoMin: r.criticoMin, criticoMax: r.criticoMax };
+    },
+    [paciente.sexo, paciente.idade],
+  );
   const avaliarNivelCritico = useCallback(
     (exameNome: string, paramNome: string, valor: string): NivelCritico =>
-      avaliarNivelCriticoPure(parametrosConfigPorExame, exameNome, paramNome, valor),
-    [parametrosConfigPorExame],
+      avaliarNivelCriticoPure(parametrosConfigPorExame, exameNome, paramNome, valor, criticoOverride),
+    [parametrosConfigPorExame, criticoOverride],
   );
   const getParametrosCriticosDoExame = useCallback(
     (exame: { nome: string; parametros: Array<{ nome: string; valor: string }> } | undefined) =>
-      getParametrosCriticosDoExamePure(parametrosConfigPorExame, exame),
-    [parametrosConfigPorExame],
+      getParametrosCriticosDoExamePure(parametrosConfigPorExame, exame, criticoOverride),
+    [parametrosConfigPorExame, criticoOverride],
   );
 
   const addAuditEntry = (exameId: number, acao: string, dados?: string) => {
