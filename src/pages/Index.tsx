@@ -476,6 +476,8 @@ const Index = () => {
   useEffect(() => subscribe(() => forceUpdate(n => n + 1)), []);
   useEffect(() => subscribeOrcamentos(() => forceUpdate(n => n + 1)), []);
   const orcamentosPendentes = getOrcamentos().filter(o => !o.convertido).length;
+  const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
+  const canPedidosSite = hasPermission("solicitacoes_site_acesso");
 
   // ── Canary: UI paginada server-side ──
   // Kill-switch global: `USE_LEGACY_STORE` força modo legado (cache global)
