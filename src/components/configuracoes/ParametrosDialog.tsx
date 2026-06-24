@@ -371,10 +371,12 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-3xl">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 max-w-[1600px] mx-auto">
 
             {/* STEP 1 — Type */}
-            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado.">
+            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado." className="xl:col-span-2">
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {tiposComponente.map((t) => {
                   const Icon = t.icon;
