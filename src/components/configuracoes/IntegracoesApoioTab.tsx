@@ -363,7 +363,7 @@ const IntegracoesApoioTab = () => {
                       <div className="text-xs space-y-1">
                         <Kv k="Status" v={<span className="px-1.5 py-0.5 rounded border bg-muted text-foreground">{resultRow.status}</span>} />
                         <Kv k="Liberado" v={resultRow.liberado_em ? new Date(resultRow.liberado_em).toLocaleString() : "—"} />
-                        <Kv k="Paciente" v={resultRow.resultado?.pacienteNome ?? "—"} />
+                        <Kv k="Paciente" v={(resultRow.resultado?.pacienteNome as string) ?? "—"} />
                         <Kv k="Exames" v={String(exames.length)} />
                       </div>
                       {(resultRow?.resultado?.laudoPdfUrl || resultRow?.resultado?.laudoPdfBase64) && (
