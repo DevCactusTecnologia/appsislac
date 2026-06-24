@@ -350,7 +350,7 @@ export default function SuperAdminInscricoes() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-destructive"
-                          onClick={() => handleDelete(lead.id)}
+                          onClick={() => handleDelete(lead)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Excluir
@@ -382,7 +382,7 @@ export default function SuperAdminInscricoes() {
               <Button
                 variant="outline"
                 className="h-9 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
-                onClick={() => handleDelete(selectedLead.id)}
+                onClick={() => handleDelete(selectedLead)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir Lead
