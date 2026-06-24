@@ -620,18 +620,19 @@ const Dashboard = () => {
                 {operacional.atendimentosHoje} atendimento{operacional.atendimentosHoje === 1 ? "" : "s"} hoje · {operacional.liberadosHoje} liberado{operacional.liberadosHoje === 1 ? "" : "s"}.
               </p>
             </div>
-            <Link
-              to="/atendimentos"
-              className="self-start inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lg"
-            >
-              Ver atendimentos
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                to="/atendimentos"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-lg"
+              >
+                Ver atendimentos
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <QuickShortcuts />
+            </div>
           </div>
         </section>
 
-        {/* Atalhos: Orçamentos & Pedidos do Site */}
-        <QuickShortcuts />
 
         {/* Hero KPIs — os 4 indicadores que importam */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
