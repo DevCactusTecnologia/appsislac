@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import {
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getAtendimentos, subscribe as subscribeAtendimentos } from "@/data/atendimentoStore";
+import { getOrcamentos, subscribeOrcamentos, type Orcamento } from "@/data/orcamentoStore";
 import heroFlower from "@/assets/hero-flower.webp";
 import { getPacientes, subscribePacientes } from "@/data/pacienteStore";
 import { getSaidas, subscribeFinanceiro } from "@/data/financeiroStore";
@@ -301,6 +302,8 @@ function Panel({ title, hint, action, children, className = "" }: PanelProps) {
 function QuickShortcuts() {
   const { hasPermission } = useAuth();
   const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
+  const orcamentos = useSyncExternalStore<Orcamento[]>(subscribeOrcamentos, getOrcamentos, getOrcamentos);
+  const orcamentosPendentes = orcamentos.filter((o: Orcamento) => !o.convertido).length;
 
   const canOrcamento = hasPermission?.("visualizar_orcamentos") ?? true;
   const canPedidos = hasPermission?.("solicitacoes_site_acesso") ?? true;
@@ -309,63 +312,38 @@ function QuickShortcuts() {
 
   return (
     <section
-      className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 animate-fade-in-up"
+      className="flex flex-wrap gap-2 animate-fade-in-up"
       style={{ animationDelay: "90ms" }}
     >
       {canOrcamento && (
         <Link
           to="/orcamentos"
-          className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-soft hover:border-primary/40 hover:bg-accent/30 transition-all card-tactile"
+          className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
         >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Receipt className="h-6 w-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">Orçamentos</span>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                Atalho
-              </span>
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground truncate">
-              Gerar e acompanhar orçamentos de exames.
-            </p>
-          </div>
-          <ArrowUpRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <Receipt className="h-3.5 w-3.5" />
+          <span>Orçamentos</span>
+          {orcamentosPendentes > 0 && (
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
+              {orcamentosPendentes > 99 ? "99+" : orcamentosPendentes}
+            </span>
+          )}
+          <ArrowUpRight className="h-3 w-3 opacity-50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </Link>
       )}
 
       {canPedidos && (
         <Link
           to="/pedidos-site"
-          className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-soft hover:border-primary/40 hover:bg-accent/30 transition-all card-tactile"
+          className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-accent/30 transition-colors"
         >
-          <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Globe className="h-6 w-6" />
-            {pedidosNaoLidos > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow">
-                {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
-              </span>
-            )}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">Pedidos do site</span>
-              {pedidosNaoLidos > 0 ? (
-                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700 uppercase tracking-wider">
-                  {pedidosNaoLidos} novo{pedidosNaoLidos === 1 ? "" : "s"}
-                </span>
-              ) : (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Atalho
-                </span>
-              )}
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground truncate">
-              Solicitações de pacientes recebidas pelo site público.
-            </p>
-          </div>
-          <ArrowUpRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <Globe className="h-3.5 w-3.5" />
+          <span>Pedidos do site</span>
+          {pedidosNaoLidos > 0 && (
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
+              {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
+            </span>
+          )}
+          <ArrowUpRight className="h-3 w-3 opacity-50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </Link>
       )}
     </section>
