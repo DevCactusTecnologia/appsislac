@@ -40,6 +40,8 @@ function fromRow(r: any): ValorReferencia {
     valorMax: r.valor_max ?? "",
     unidade: r.unidade ?? "",
     descricao: r.descricao ?? "",
+    criticoMin: r.critico_min ?? "",
+    criticoMax: r.critico_max ?? "",
   };
 }
 
