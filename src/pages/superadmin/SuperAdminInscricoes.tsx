@@ -198,21 +198,34 @@ export default function SuperAdminInscricoes() {
     }
   };
 
-  const handleDelete = async (leadId: string) => {
-    if (!confirm("Deseja realmente excluir esta inscrição?")) return;
+  const handleDelete = (lead: Lead) => {
+    setDeleteTarget(lead);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
       const { error } = await supabase
         .from("inscricoes")
         .delete()
-        .eq("id", leadId);
+        .eq("id", deleteTarget.id);
 
       if (error) throw error;
       toast.success("Inscrição excluída");
-      setLeads(prev => prev.filter(l => l.id !== leadId));
+      setLeads(prev => prev.filter(l => l.id !== deleteTarget.id));
+      if (selectedLead?.id === deleteTarget.id) {
+        setIsDetailOpen(false);
+        setSelectedLead(null);
+      }
+      setDeleteTarget(null);
     } catch (err: any) {
       toast.error("Erro ao excluir: " + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const convertToClient = async (lead: Lead) => {
     toast.info("A funcionalidade de conversão direta será implementada em breve. Por enquanto, utilize o fluxo de Novo Laboratório.");
