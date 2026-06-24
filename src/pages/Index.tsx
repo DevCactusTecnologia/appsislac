@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import {
   Plus, Search, ChevronLeft, ChevronRight, MoreVertical, Pencil, Ban, X, Loader2,
   Eye, Building2, Cake, Activity, CircleDollarSign, CheckCircle2, Clock3,
-  SlidersHorizontal, Filter, AlertTriangle, Receipt,
+  SlidersHorizontal, Filter, AlertTriangle, Receipt, Globe,
 } from "lucide-react";
+import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
@@ -475,6 +476,8 @@ const Index = () => {
   useEffect(() => subscribe(() => forceUpdate(n => n + 1)), []);
   useEffect(() => subscribeOrcamentos(() => forceUpdate(n => n + 1)), []);
   const orcamentosPendentes = getOrcamentos().filter(o => !o.convertido).length;
+  const { count: pedidosNaoLidos } = useSolicitacoesNaoLidas({ notify: false });
+  const canPedidosSite = hasPermission("solicitacoes_site_acesso");
 
   // ── Canary: UI paginada server-side ──
   // Kill-switch global: `USE_LEGACY_STORE` força modo legado (cache global)
@@ -876,6 +879,20 @@ const Index = () => {
                 </span>
               )}
             </button>
+            {canPedidosSite && (
+              <button
+                onClick={() => navigate("/pedidos-site")}
+                className="relative inline-flex items-center gap-2 h-10 px-4 bg-card text-foreground text-[13px] font-semibold rounded-xl border border-border hover:bg-muted transition-colors"
+              >
+                <Globe className="w-4 h-4" />
+                Pedidos do site
+                {pedidosNaoLidos > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold leading-none shadow-sm">
+                    {pedidosNaoLidos > 99 ? "99+" : pedidosNaoLidos}
+                  </span>
+                )}
+              </button>
+            )}
             {canCreate && (
               <button
                 onClick={() => navigate("/atendimentos/novo")}
