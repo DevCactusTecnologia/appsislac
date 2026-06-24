@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
+import { ensureLazyStore } from "@/data/lazyStores";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
 import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
 import { getUnidadeById, getUnidades } from "@/data/unidadeStore";
