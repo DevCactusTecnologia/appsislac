@@ -575,6 +575,9 @@ const Dashboard = () => {
           </div>
         </section>
 
+        {/* Atalhos: Orçamentos & Pedidos do Site */}
+        <QuickShortcuts />
+
         {/* Hero KPIs — os 4 indicadores que importam */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <HeroKpi
