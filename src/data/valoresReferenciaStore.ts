@@ -57,6 +57,8 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.valorMax !== undefined) row.valor_max = v.valorMax;
   if (v.unidade !== undefined) row.unidade = v.unidade;
   if (v.descricao !== undefined) row.descricao = v.descricao;
+  if (v.criticoMin !== undefined) row.critico_min = v.criticoMin || null;
+  if (v.criticoMax !== undefined) row.critico_max = v.criticoMax || null;
   return row;
 }
 
