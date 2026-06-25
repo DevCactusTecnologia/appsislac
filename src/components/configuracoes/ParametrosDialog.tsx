@@ -28,6 +28,7 @@ const tiposComponente: { value: ParametroTipo; label: string; desc: string; icon
   { value: "Número", label: "Número", desc: "Inteiro / decimal", icon: Hash },
   { value: "Select", label: "Lista", desc: "Opções fixas", icon: ListChecks },
   { value: "Formula", label: "Fórmula", desc: "Cálculo automático", icon: Sigma },
+  { value: "Tempo", label: "Tempo", desc: "Min/seg ou hh:mm:ss", icon: Clock },
 ];
 
 const tipoIcon = (t: ParametroTipo) => tiposComponente.find((x) => x.value === t)?.icon ?? Type;
