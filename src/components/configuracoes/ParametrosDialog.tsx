@@ -64,6 +64,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const [qtdDigitos, setQtdDigitos] = useState<number>(0);
   const [criticoMin, setCriticoMin] = useState<string>("");
   const [criticoMax, setCriticoMax] = useState<string>("");
+  const [formatoTempo, setFormatoTempo] = useState<FormatoTempo>("min_seg");
   const [saving, setSaving] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [busca, setBusca] = useState("");
