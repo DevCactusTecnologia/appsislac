@@ -12,6 +12,17 @@ import {
 import {
   analisarCobertura, fromDias, labelFaixa, MAX_DIAS, toDias, type FaixaEtaria, type UnidadeIdade,
 } from "@/lib/idadeFaixas";
+import { diasParaYMD } from "@/lib/idadeFormat";
+
+const humano = (dias: number): string => {
+  if (dias >= MAX_DIAS) return "máx (150a)";
+  const { a, m, d } = diasParaYMD(dias);
+  const parts: string[] = [];
+  if (a) parts.push(`${a}a`);
+  if (m) parts.push(`${m}m`);
+  if (d) parts.push(`${d}d`);
+  return parts.length ? parts.join(" ") : "0d";
+};
 
 interface Props {
   open: boolean;
