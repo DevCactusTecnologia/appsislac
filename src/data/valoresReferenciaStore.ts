@@ -161,7 +161,15 @@ export function subscribeValoresReferencia(listener: () => void) {
 }
 
 /**
- * Converte idade do paciente para a unidade desejada (em anos).
+ * Resolve os valores de referência mais adequados para um parâmetro,
+ * considerando sexo, idade e gestação do paciente. Nova lógica:
+ *
+ *  1) Filtra VRs pelo exame+parâmetro.
+ *  2) Para cada VR, checa se é COMPATÍVEL com o paciente (sexo, idade,
+ *     categoria — gestante exige `gestante=true`).
+ *  3) Escolhe a maior prioridade compatível. Empate: VR com sexo específico
+ *     vence VR com sexo Ambos.
+ *  4) Se nada bate → null (sem fallback silencioso).
  */
 const parseIdadeAnos = (idadeStr: string): number | null => {
   const anosMatch = idadeStr.match(/(\d+)\s*ano/i);
@@ -172,60 +180,90 @@ const parseIdadeAnos = (idadeStr: string): number | null => {
   return anos;
 };
 
-/**
- * Resolve os valores de referência mais adequados para um parâmetro,
- * considerando sexo e idade do paciente.
- */
+const idadeStrParaDias = (idadeStr: string): number | null => {
+  const a = parseIdadeAnos(idadeStr);
+  if (a === null) return null;
+  return Math.round(a * 365);
+};
+
+const compativel = (
+  vr: ValorReferencia,
+  sexoNorm: "Masculino" | "Feminino" | null,
+  idadeDias: number | null,
+  gestante: boolean,
+): boolean => {
+  const cat: CategoriaVR = (vr.categoria as CategoriaVR) ?? "custom";
+  const meta = CATEGORIA_META[cat];
+
+  // Padrão é sempre compatível
+  if (cat === "padrao") return true;
+
+  // Gestante: só vale se paciente está marcada como gestante
+  if (cat === "gestante") return gestante === true && sexoNorm === "Feminino";
+
+  // Sexo da categoria precisa bater
+  if (meta.sexo !== "Ambos" && sexoNorm && meta.sexo !== sexoNorm) return false;
+
+  // Faixa etária da categoria (quando definida)
+  if (idadeDias !== null) {
+    if (meta.idadeMinDias !== null && idadeDias < meta.idadeMinDias) return false;
+    if (meta.idadeMaxDias !== null && idadeDias > meta.idadeMaxDias) return false;
+  }
+
+  // 'custom' usa os campos legados (sexo + idadeMin/idadeMax + unidadeIdade)
+  if (cat === "custom") {
+    if (vr.sexo !== "Ambos" && sexoNorm && vr.sexo !== sexoNorm) return false;
+    if (idadeDias !== null && vr.idadeMin && vr.idadeMax) {
+      const fator = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
+      const minD = (parseFloat(vr.idadeMin) || 0) * fator;
+      const maxD = (parseFloat(vr.idadeMax) || 99999) * fator;
+      if (idadeDias < minD || idadeDias > maxD) return false;
+    }
+  }
+
+  return true;
+};
+
+export interface ResolverContexto {
+  sexo: string;
+  idade: string;
+  gestante?: boolean;
+}
+
 export const resolverReferencia = (
   exameNome: string,
   parametroNome: string,
   sexoPaciente: string,
-  idadePaciente: string
+  idadePaciente: string,
+  gestante: boolean = false,
 ): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string } | null => {
-  const idadeAnos = parseIdadeAnos(idadePaciente);
-
   const candidatos = valoresReferencia.filter(
     (v) => v.exameNome.toLowerCase() === exameNome.toLowerCase() &&
            v.parametroNome.toLowerCase() === parametroNome.toLowerCase()
   );
   if (candidatos.length === 0) return null;
 
-  const sexoNorm = sexoPaciente.toLowerCase().startsWith("m") ? "Masculino" : "Feminino";
+  const s = (sexoPaciente || "").toLowerCase();
+  const sexoNorm: "Masculino" | "Feminino" | null =
+    s.startsWith("m") ? "Masculino" : s.startsWith("f") ? "Feminino" : null;
+  const idadeDias = idadeStrParaDias(idadePaciente);
 
-  let melhor: ValorReferencia | null = null;
-  let melhorScore = -1;
+  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante));
+  if (compats.length === 0) return null;
 
-  for (const c of candidatos) {
-    let score = 0;
-    if (c.sexo === sexoNorm) score += 2;
-    else if (c.sexo === "Ambos") score += 1;
-    else continue;
+  compats.sort((a, b) => {
+    const pa = CATEGORIA_META[(a.categoria as CategoriaVR) ?? "custom"].prioridade;
+    const pb = CATEGORIA_META[(b.categoria as CategoriaVR) ?? "custom"].prioridade;
+    if (pb !== pa) return pb - pa;
+    const sa = a.sexo !== "Ambos" ? 1 : 0;
+    const sb = b.sexo !== "Ambos" ? 1 : 0;
+    return sb - sa;
+  });
 
-    if (idadeAnos !== null) {
-      const min = parseFloat(c.idadeMin) || 0;
-      const max = parseFloat(c.idadeMax) || 999;
-      let minAnos = min;
-      let maxAnos = max;
-      if (c.unidadeIdade === "Meses") { minAnos = min / 12; maxAnos = max / 12; }
-      if (c.unidadeIdade === "Dias") { minAnos = min / 365; maxAnos = max / 365; }
-      if (idadeAnos >= minAnos && idadeAnos <= maxAnos) score += 3;
-      else continue;
-    }
-
-    if (score > melhorScore) { melhorScore = score; melhor = c; }
-  }
-
-  if (!melhor) {
-    const fallback = candidatos.find((c) => c.sexo === "Ambos");
-    if (fallback) return {
-      refMin: fallback.valorMin, refMax: fallback.valorMax, refUnidade: fallback.unidade, descricao: fallback.descricao,
-      criticoMin: fallback.criticoMin || undefined, criticoMax: fallback.criticoMax || undefined,
-    };
-    return null;
-  }
-
+  const m = compats[0];
   return {
-    refMin: melhor.valorMin, refMax: melhor.valorMax, refUnidade: melhor.unidade, descricao: melhor.descricao,
-    criticoMin: melhor.criticoMin || undefined, criticoMax: melhor.criticoMax || undefined,
+    refMin: m.valorMin, refMax: m.valorMax, refUnidade: m.unidade, descricao: m.descricao,
+    criticoMin: m.criticoMin || undefined, criticoMax: m.criticoMax || undefined,
   };
+};
 };
