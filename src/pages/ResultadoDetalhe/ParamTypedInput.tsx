@@ -79,7 +79,8 @@ export const ParamTypedInput = ({
   }
   if (param.tipo === "Número") {
     const casas = typeof param.casasDecimais === "number" ? param.casasDecimais : 2;
-    const sep: "." | "," = param.separadorDecimal === "," ? "," : ".";
+    // Regra numérica brasileira: vírgula como separador decimal por padrão.
+    const sep: "." | "," = param.separadorDecimal === "." ? "." : ",";
     const totalDig = typeof param.qtdDigitos === "number" ? param.qtdDigitos : 0;
     const maxIntDig = totalDig > 0 ? Math.max(0, totalDig - casas) : Infinity;
     const handleChange = (raw: string) => {
@@ -104,15 +105,34 @@ export const ParamTypedInput = ({
       const out = (negative ? "-" : "") + intP + (body.includes(sep) ? sep + decP : "");
       onChange(out);
     };
+    // Ao sair do campo, ajusta automaticamente para a quantidade de casas decimais
+    // configurada, seguindo a regra numérica brasileira (vírgula como separador).
+    const handleBlur = () => {
+      const v = (param.valor ?? "").trim();
+      if (!v) return;
+      const negative = v.startsWith("-");
+      const body = negative ? v.slice(1) : v;
+      let [intP = "", decP = ""] = body.split(sep);
+      if (!intP && !decP) return;
+      if (casas > 0) {
+        decP = (decP + "0".repeat(casas)).slice(0, casas);
+      } else {
+        decP = "";
+      }
+      const intNorm = intP.replace(/^0+(?=\d)/, "") || "0";
+      const out = (negative ? "-" : "") + intNorm + (casas > 0 ? sep + decP : "");
+      if (out !== v) onChange(out);
+    };
     return (
       <input
         type="text"
         inputMode="decimal"
         value={param.valor}
         onChange={(e) => handleChange(e.target.value)}
+        onBlur={handleBlur}
         disabled={disabled}
         className={base}
-        placeholder={totalDig > 0 ? `${"0".repeat(Math.min(maxIntDig, 3))}${casas > 0 ? sep + "0".repeat(casas) : ""}` : undefined}
+        placeholder={casas > 0 ? `0${sep}${"0".repeat(casas)}` : "0"}
       />
     );
   }
