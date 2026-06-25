@@ -511,25 +511,42 @@ const ParametroBloco = ({
   );
 
   const padrao = meusRefs.find((r) => r.categoria === "padrao") ?? null;
-  const variacoes = ORDEM_VARIACOES
-    .map((cat) => ({ cat, vr: meusRefs.find((r) => r.categoria === cat) ?? null }))
-    .filter((x) => x.vr !== null);
+  // Variações: TODAS as linhas que não são padrão (pode haver várias por categoria,
+  // pois o usuário define sexo+idade livres em cada linha).
+  const variacoes = meusRefs
+    .filter((r) => r.categoria && r.categoria !== "padrao")
+    .sort((a, b) => {
+      const pa = CATEGORIA_META[a.categoria as CategoriaVR].prioridade;
+      const pb = CATEGORIA_META[b.categoria as CategoriaVR].prioridade;
+      if (pb !== pa) return pb - pa;
+      return a.id - b.id;
+    })
+    .map((vr) => ({ cat: vr.categoria as CategoriaVR, vr }));
 
-  const variacoesDisponiveis = ORDEM_VARIACOES.filter(
-    (cat) => !meusRefs.some((r) => r.categoria === cat),
-  );
+  // O dropdown sempre oferece TODOS os presets — é só atalho para criar nova linha.
+  const variacoesDisponiveis = ORDEM_VARIACOES;
 
   const adicionarVariacao = async (cat: CategoriaVR) => {
     const meta = CATEGORIA_META[cat];
+    const unid: UnidIdadeBloco =
+      meta.idadeMinDias !== null && meta.idadeMinDias < 30 ? "Dias"
+        : meta.idadeMinDias !== null && meta.idadeMinDias < 365 ? "Meses" : "Anos";
+    const conv = (d: number | null): string => {
+      if (d === null) return "";
+      return String(unid === "Anos" ? Math.round(d / 365)
+        : unid === "Meses" ? Math.round(d / 30) : d);
+    };
     await addValorReferencia({
       exameNome,
       parametroNome: parametro.chave || parametro.rotulo,
       sexo: meta.sexo,
-      idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-      valorMin: padrao?.valorMin ?? "", valorMax: padrao?.valorMax ?? "",
+      idadeMin: conv(meta.idadeMinDias),
+      idadeMax: conv(meta.idadeMaxDias),
+      unidadeIdade: unid,
+      valorMin: "", valorMax: "",
       unidade: padrao?.unidade ?? "",
       descricao: "",
-      criticoMin: padrao?.criticoMin ?? "", criticoMax: padrao?.criticoMax ?? "",
+      criticoMin: "", criticoMax: "",
       categoria: cat,
     });
     onMutate();
@@ -539,9 +556,9 @@ const ParametroBloco = ({
   const [customParaRemover, setCustomParaRemover] = useState<ValorReferencia | null>(null);
 
   // Sempre exibe a linha Padrão (mesmo sem valores) para permitir edição inicial.
-  const linhas: Array<{ cat: CategoriaVR; vr: ValorReferencia | null }> = [
-    { cat: "padrao", vr: padrao },
-    ...variacoes,
+  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> = [
+    { key: "padrao", cat: "padrao", vr: padrao },
+    ...variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr })),
   ];
 
   return (
