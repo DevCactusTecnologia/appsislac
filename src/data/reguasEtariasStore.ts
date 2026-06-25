@@ -128,9 +128,25 @@ export function getReguas(tenantId?: string): ReguaEtaria[] {
   return first ?? [...PRESETS];
 }
 
+/**
+ * Réguas visíveis para um exame: presets de sistema + globais (sem exameNome)
+ * + as específicas desse exame.
+ */
+export function getReguasParaExame(exameNome: string, tenantId?: string): ReguaEtaria[] {
+  const target = normalizeExame(exameNome);
+  return getReguas(tenantId).filter((r) => {
+    const escopo = normalizeExame(r.exameNome);
+    return !escopo || escopo === target;
+  });
+}
+
 export async function addRegua(input: Omit<ReguaEtaria, "id" | "sistema">): Promise<ReguaEtaria> {
   const tenantId = await getCurrentTenantId();
-  const nova: ReguaEtaria = { ...input, id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` };
+  const nova: ReguaEtaria = {
+    ...input,
+    exameNome: normalizeExame(input.exameNome) || undefined,
+    id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  };
   const all = [...loadFromStorage(tenantId), nova];
   persistCustom(tenantId, all);
   cache.set(tenantId, all);
