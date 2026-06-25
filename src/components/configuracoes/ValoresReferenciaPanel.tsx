@@ -342,45 +342,72 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
         )}
       </div>
 
-      {/* Idade De – Até + Unidade */}
+      {/* Idade: [valor] [unid de] – [valor] [unid até] — cada lado tem sua própria unidade */}
       <div>
         {isPadrao ? (
           <div className="h-9 flex items-center justify-center text-[11px] text-muted-foreground/60">qualquer idade</div>
-        ) : (
-          <div className="flex items-center gap-1">
-            <Input
-              value={idadeMin}
-              onChange={(e) => setIdadeMin(e.target.value)}
-              onBlur={salvarSeNecessario}
-              placeholder="de"
-              className="h-9 text-center text-[12px] px-1 w-full"
-              inputMode="numeric"
-            />
-            <span className="text-muted-foreground/60 text-[10px]">–</span>
-            <Input
-              value={idadeMax}
-              onChange={(e) => setIdadeMax(e.target.value)}
-              onBlur={salvarSeNecessario}
-              placeholder="até"
-              className="h-9 text-center text-[12px] px-1 w-full"
-              inputMode="numeric"
-            />
-            <Select
-              value={unidadeIdade}
-              onValueChange={(v) => setUnidadeIdade(v as UnidIdade)}
-            >
-              <SelectTrigger className="h-9 text-[11px] px-1.5 w-[64px]" onBlur={salvarSeNecessario}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
-                <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
-                <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        ) : (() => {
+          const dMin = idadeParaDias(idadeMin, unidadeIdade);
+          const dMax = idadeParaDias(idadeMax, unidadeIdadeMax);
+          const idadeErro = dMin !== null && dMax !== null && dMin > dMax;
+          const errCls = idadeErro ? "border-destructive/70 focus-visible:ring-destructive/30" : "";
+          return (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Input
+                  value={idadeMin}
+                  onChange={(e) => setIdadeMin(e.target.value)}
+                  onBlur={salvarSeNecessario}
+                  placeholder="de"
+                  className={`h-9 text-center text-[12px] px-1 w-full ${errCls}`}
+                  inputMode="numeric"
+                />
+                <Select
+                  value={unidadeIdade}
+                  onValueChange={(v) => setUnidadeIdade(v as UnidIdade)}
+                >
+                  <SelectTrigger className={`h-9 text-[11px] px-1.5 w-[68px] ${errCls}`} onBlur={salvarSeNecessario}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
+                    <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
+                    <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-muted-foreground/60 text-[10px] px-0.5">–</span>
+                <Input
+                  value={idadeMax}
+                  onChange={(e) => setIdadeMax(e.target.value)}
+                  onBlur={salvarSeNecessario}
+                  placeholder="até"
+                  className={`h-9 text-center text-[12px] px-1 w-full ${errCls}`}
+                  inputMode="numeric"
+                />
+                <Select
+                  value={unidadeIdadeMax}
+                  onValueChange={(v) => setUnidadeIdadeMax(v as UnidIdade)}
+                >
+                  <SelectTrigger className={`h-9 text-[11px] px-1.5 w-[68px] ${errCls}`} onBlur={salvarSeNecessario}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
+                    <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
+                    <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {idadeErro && (
+                <div className="text-[10px] text-destructive text-center leading-tight">
+                  Mínimo ({idadeMin} {unidadeIdade}) maior que máximo ({idadeMax} {unidadeIdadeMax})
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
+
 
       {/* Condição: operador + jejum */}
       <div className="flex gap-1">
