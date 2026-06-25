@@ -24,6 +24,8 @@ const humano = (dias: number): string => {
   return parts.length ? parts.join(" ") : "0d";
 };
 
+const unidadesIdade: UnidadeIdade[] = ["Dias", "Meses", "Anos"];
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -136,6 +138,21 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
 
   const updateFaixa = (id: string, patch: Partial<FaixaDraft>) =>
     setFaixas((prev) => prev.map((f) => f.id === id ? { ...f, ...patch } : f));
+
+  const updateUnidadeFaixa = async (id: string, campo: "deUnidade" | "ateUnidade", unidade: UnidadeIdade) => {
+    const proximas = faixas.map((f) => f.id === id ? { ...f, [campo]: unidade } : f);
+    setFaixas(proximas);
+
+    if (!sel?.sistema) return;
+
+    const nova = await addRegua({
+      nome: `${sel.nome} (cópia)`,
+      exameNome: sel.exameNome,
+      faixas: proximas.map(draftToFaixa),
+    });
+    setSelecionadaId(nova.id);
+    toast({ title: "Régua duplicada", description: "A cópia já está editável." });
+  };
 
   return (
     <StandardDialog
@@ -270,16 +287,7 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
             </div>
 
             {/* Tabela de faixas */}
-            <div
-              className={`rounded-xl border ${isSistema ? "border-amber-500/40 cursor-pointer" : "border-border/40"} overflow-hidden`}
-              onClickCapture={isSistema ? (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toast({ title: "Régua de sistema bloqueada", description: "Duplicando para você editar…" });
-                handleDuplicar();
-              } : undefined}
-              title={isSistema ? "Régua de sistema — clique para duplicar e editar" : undefined}
-            >
+            <div className={`rounded-xl border ${isSistema ? "border-amber-500/40" : "border-border/40"} overflow-hidden`}>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/30 text-left">
@@ -307,9 +315,9 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                         <div className="text-[10px] text-muted-foreground mt-1 pl-1">= {humano(f.deDias)}</div>
                       </td>
                       <td className="py-1.5 px-2 align-top">
-                        <Select value={d.deUnidade} onValueChange={(v) => updateFaixa(d.id, { deUnidade: v as UnidadeIdade })} disabled={isSistema}>
+                        <Select value={d.deUnidade} onValueChange={(v) => updateUnidadeFaixa(d.id, "deUnidade", v as UnidadeIdade)}>
                           <SelectTrigger className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-24 px-2"><SelectValue /></SelectTrigger>
-                          <SelectContent><SelectItem value="Dias">Dias</SelectItem><SelectItem value="Meses">Meses</SelectItem><SelectItem value="Anos">Anos</SelectItem></SelectContent>
+                          <SelectContent>{unidadesIdade.map((unidade) => <SelectItem key={unidade} value={unidade}>{unidade}</SelectItem>)}</SelectContent>
                         </Select>
                       </td>
                       <td className="py-1.5 px-2 align-top">
@@ -319,9 +327,9 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                         <div className="text-[10px] text-muted-foreground mt-1 pl-1">= {humano(f.ateDias)}</div>
                       </td>
                       <td className="py-1.5 px-2 align-top">
-                        <Select value={d.ateUnidade} onValueChange={(v) => updateFaixa(d.id, { ateUnidade: v as UnidadeIdade })} disabled={isSistema}>
+                        <Select value={d.ateUnidade} onValueChange={(v) => updateUnidadeFaixa(d.id, "ateUnidade", v as UnidadeIdade)}>
                           <SelectTrigger className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-24 px-2"><SelectValue /></SelectTrigger>
-                          <SelectContent><SelectItem value="Dias">Dias</SelectItem><SelectItem value="Meses">Meses</SelectItem><SelectItem value="Anos">Anos</SelectItem></SelectContent>
+                          <SelectContent>{unidadesIdade.map((unidade) => <SelectItem key={unidade} value={unidade}>{unidade}</SelectItem>)}</SelectContent>
                         </Select>
                       </td>
                       <td className="py-1.5 px-2 text-right align-top">
