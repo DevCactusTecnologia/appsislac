@@ -510,7 +510,7 @@ const ParametroBloco = ({
     [refs, chave],
   );
 
-  const padrao = meusRefs.find((r) => r.categoria === "padrao") ?? null;
+  // (linha "Padrão" foi removida da UI — só variações)
   // Variações: TODAS as linhas que não são padrão (pode haver várias por categoria,
   // pois o usuário define sexo+idade livres em cada linha).
   const variacoes = meusRefs
