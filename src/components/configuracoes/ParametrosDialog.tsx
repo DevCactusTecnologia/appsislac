@@ -18,6 +18,7 @@ import {
   removeParametro,
   reorderParametros,
   isChaveDuplicada,
+  findExamesComChave,
 } from "@/data/exameParametrosStore";
 import { slugifyChave } from "@/lib/laudoTemplate";
 
@@ -132,9 +133,26 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       return;
     }
     if (chaveJaUsada) {
-      toast({ title: "Chave duplicada", description: "Já existe outro parâmetro com esta chave.", variant: "destructive" });
+      const desc = exameNome
+        ? `A chave "${chave.toUpperCase()}" já pertence a outro parâmetro do exame "${exameNome}".`
+        : `Já existe outro parâmetro com a chave "${chave.toUpperCase()}" neste exame.`;
+      toast({ title: "Chave duplicada", description: desc, variant: "destructive" });
       return;
     }
+    // Checagem informativa entre exames: mesma chave usada em outros exames.
+    try {
+      const outros = await findExamesComChave(chave, {
+        excluirExameId: exameId,
+        ignorarParametroId: selectedId ?? undefined,
+      });
+      if (outros.length > 0) {
+        const nomes = outros.map((o) => `"${o.exameNome}"`).join(", ");
+        toast({
+          title: "Chave já utilizada em outro exame",
+          description: `A chave "${chave.toUpperCase()}" já pertence ao(s) exame(s): ${nomes}.`,
+        });
+      }
+    } catch { /* check informativa — não bloqueia o save */ }
     if (tipoSelecionado === "Select" && opcoesSelect.length === 0) {
       toast({ title: "Opções obrigatórias", description: "Adicione ao menos uma opção para o tipo Select.", variant: "destructive" });
       return;
