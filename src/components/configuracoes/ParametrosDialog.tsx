@@ -834,6 +834,33 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 
         </section>
       </div>
+  );
+
+  if (embedded) {
+    if (!open) return null;
+    return (
+      <div className="flex flex-col h-full bg-card">
+        <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+          {headerActions}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">{body}</div>
+      </div>
+    );
+  }
+
+  return (
+    <StandardDialog
+      open={open}
+      onClose={onClose}
+      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
+      title="Parâmetros do exame"
+      subtitle={exameNome || "Defina os campos de resultado"}
+      headerActions={headerActions}
+      maxWidth="7xl"
+      allowMaximize={true}
+      defaultMaximized={defaultMaximized}
+    >
+      {body}
     </StandardDialog>
   );
 };
