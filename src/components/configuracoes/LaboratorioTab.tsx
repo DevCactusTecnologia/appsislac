@@ -117,6 +117,7 @@ const LaboratorioTab = () => {
         responsavelTecnicoUf: fresh.responsavelTecnicoUf,
       });
       setLogoKey(fresh.logoKey);
+      setWatermark(fresh.watermark ?? { ...DEFAULT_WATERMARK });
       if (fresh.logoKey && !fresh.logo) {
         const dataUrl = await ensureLabLogoLoaded();
         if (!cancelled) setLogoPreview(dataUrl ?? null);
