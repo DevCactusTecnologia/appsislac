@@ -429,7 +429,7 @@ const ResultadoDetalhe = () => {
 
   // Resolve reference values from the shared store based on patient sex/age
   const getResolvedRef = (exameNome: string, param: Parametro) => {
-    const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade);
+    const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade, false, pacienteJejum);
     if (resolved) return resolved;
     // Parâmetros do tipo Formula: a expressão fica em `param.formula`
     // (coluna dedicada). O `valor_referencia` agora é texto descritivo
