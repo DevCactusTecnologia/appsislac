@@ -23,7 +23,10 @@ export interface ValorReferencia {
   sexo: "Ambos" | "Masculino" | "Feminino";
   idadeMin: string;
   idadeMax: string;
+  /** Unidade da idade mínima (lado "de"). */
   unidadeIdade: "Anos" | "Meses" | "Dias";
+  /** Unidade da idade máxima (lado "até"). Permite faixas mistas, ex.: "3 Meses → 2 Anos". Default: igual a `unidadeIdade`. */
+  unidadeIdadeMax?: "Anos" | "Meses" | "Dias";
   valorMin: string;
   valorMax: string;
   unidade: string;
@@ -68,6 +71,7 @@ function fromRow(r: any): ValorReferencia {
     idadeMin: r.idade_min ?? "",
     idadeMax: r.idade_max ?? "",
     unidadeIdade: r.unidade_idade,
+    unidadeIdadeMax: r.unidade_idade_max ?? r.unidade_idade,
     valorMin: r.valor_min ?? "",
     valorMax: r.valor_max ?? "",
     unidade: r.unidade ?? "",
@@ -88,6 +92,7 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.idadeMin !== undefined) row.idade_min = v.idadeMin;
   if (v.idadeMax !== undefined) row.idade_max = v.idadeMax;
   if (v.unidadeIdade !== undefined) row.unidade_idade = v.unidadeIdade;
+  if (v.unidadeIdadeMax !== undefined) row.unidade_idade_max = v.unidadeIdadeMax;
   if (v.valorMin !== undefined) row.valor_min = v.valorMin;
   if (v.valorMax !== undefined) row.valor_max = v.valorMax;
   if (v.unidade !== undefined) row.unidade = v.unidade;
@@ -227,11 +232,13 @@ const compativel = (
     if (vr.sexo !== "Ambos" && sexoNorm && vr.sexo !== sexoNorm) return false;
   }
 
-  // Faixa etária da própria linha (quando preenchida)
+  // Faixa etária da própria linha (quando preenchida) — min e max podem ter unidades diferentes.
   if (idadeDias !== null && (vr.idadeMin || vr.idadeMax)) {
-    const fator = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
-    const minD = vr.idadeMin ? (parseFloat(vr.idadeMin) || 0) * fator : 0;
-    const maxD = vr.idadeMax ? (parseFloat(vr.idadeMax) || 99999) * fator : 99999;
+    const fatorMin = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
+    const unidMax = vr.unidadeIdadeMax ?? vr.unidadeIdade;
+    const fatorMax = unidMax === "Anos" ? 365 : unidMax === "Meses" ? 30 : 1;
+    const minD = vr.idadeMin ? (parseFloat(vr.idadeMin) || 0) * fatorMin : 0;
+    const maxD = vr.idadeMax ? (parseFloat(vr.idadeMax) || 99999) * fatorMax : 99999;
     if (idadeDias < minD || idadeDias > maxD) return false;
   }
 
@@ -280,12 +287,14 @@ export const resolverReferencia = (
     const sb = b.sexo !== "Ambos" ? 1 : 0;
     if (sb !== sa) return sb - sa;
     // Faixa etária mais estreita vence
-    const fa = a.unidadeIdade === "Anos" ? 365 : a.unidadeIdade === "Meses" ? 30 : 1;
-    const fb = b.unidadeIdade === "Anos" ? 365 : b.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorA = a.unidadeIdade === "Anos" ? 365 : a.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorAMax = (a.unidadeIdadeMax ?? a.unidadeIdade) === "Anos" ? 365 : (a.unidadeIdadeMax ?? a.unidadeIdade) === "Meses" ? 30 : 1;
+    const fatorB = b.unidadeIdade === "Anos" ? 365 : b.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorBMax = (b.unidadeIdadeMax ?? b.unidadeIdade) === "Anos" ? 365 : (b.unidadeIdadeMax ?? b.unidadeIdade) === "Meses" ? 30 : 1;
     const la = a.idadeMin || a.idadeMax
-      ? ((parseFloat(a.idadeMax) || 99999) - (parseFloat(a.idadeMin) || 0)) * fa : Infinity;
+      ? ((parseFloat(a.idadeMax) || 99999) * fatorAMax) - ((parseFloat(a.idadeMin) || 0) * fatorA) : Infinity;
     const lb = b.idadeMin || b.idadeMax
-      ? ((parseFloat(b.idadeMax) || 99999) - (parseFloat(b.idadeMin) || 0)) * fb : Infinity;
+      ? ((parseFloat(b.idadeMax) || 99999) * fatorBMax) - ((parseFloat(b.idadeMin) || 0) * fatorB) : Infinity;
     return la - lb;
   });
 

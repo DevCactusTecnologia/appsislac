@@ -127,7 +127,15 @@ interface RowProps {
 
 /** Template do grid de uma linha — compartilhado entre cabeçalho e linhas. */
 const ROW_TPL =
-  "grid-cols-[1.3fr_0.9fr_1.6fr_1.5fr_1.4fr_1.4fr_0.6fr_1fr_0.7fr]";
+  "grid-cols-[1.3fr_0.9fr_2.0fr_1.5fr_1.4fr_1.4fr_0.6fr_1fr_0.7fr]";
+
+/** Converte um valor + unidade em dias (para comparações de faixa etária). */
+const idadeParaDias = (val: string, unid: "Anos" | "Meses" | "Dias"): number | null => {
+  const n = parseFloat((val || "").replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  const fator = unid === "Anos" ? 365 : unid === "Meses" ? 30 : 1;
+  return n * fator;
+};
 
 type SexoVR = "Ambos" | "Masculino" | "Feminino";
 type UnidIdade = "Anos" | "Meses" | "Dias";
@@ -168,6 +176,9 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [idadeMin, setIdadeMin] = useState(defaultIdadeMin);
   const [idadeMax, setIdadeMax] = useState(defaultIdadeMax);
   const [unidadeIdade, setUnidadeIdade] = useState<UnidIdade>(defaultUnidIdade);
+  const [unidadeIdadeMax, setUnidadeIdadeMax] = useState<UnidIdade>(
+    (vr?.unidadeIdadeMax as UnidIdade) ?? defaultUnidIdade,
+  );
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
@@ -184,6 +195,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
     setIdadeMax(vr?.idadeMax ?? defaultIdadeMax);
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
+    setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vr?.id]);
 
@@ -198,7 +210,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     (vr?.sexo ?? defaultSexo) !== sexo ||
     (vr?.idadeMin ?? defaultIdadeMin) !== idadeMin ||
     (vr?.idadeMax ?? defaultIdadeMax) !== idadeMax ||
-    (vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdade;
+    (vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdade ||
+    ((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdadeMax;
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const isEntre = operador === "entre";
@@ -212,6 +225,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     idadeMin: isPadrao ? "" : idadeMin,
     idadeMax: isPadrao ? "" : idadeMax,
     unidadeIdade,
+    unidadeIdadeMax,
     valorMin: isEntre ? normMin : "",
     valorMax: normMax,
     unidade,
@@ -239,9 +253,15 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       return;
     }
     if (!isPadrao && idadeMin && idadeMax) {
-      const a = parseFloat(idadeMin), b = parseFloat(idadeMax);
-      if (Number.isFinite(a) && Number.isFinite(b) && a > b) {
-        toast({ title: "Idade mínima maior que máxima", variant: "destructive" });
+      // Converte para dias usando a unidade de cada lado — permite "3 Meses → 2 Anos".
+      const dMin = idadeParaDias(idadeMin, unidadeIdade);
+      const dMax = idadeParaDias(idadeMax, unidadeIdadeMax);
+      if (dMin !== null && dMax !== null && dMin > dMax) {
+        toast({
+          title: "Faixa etária inválida",
+          description: `Mínimo (${idadeMin} ${unidadeIdade}) é maior que máximo (${idadeMax} ${unidadeIdadeMax}).`,
+          variant: "destructive",
+        });
         return;
       }
     }
@@ -322,45 +342,72 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
         )}
       </div>
 
-      {/* Idade De – Até + Unidade */}
+      {/* Idade: [valor] [unid de] – [valor] [unid até] — cada lado tem sua própria unidade */}
       <div>
         {isPadrao ? (
           <div className="h-9 flex items-center justify-center text-[11px] text-muted-foreground/60">qualquer idade</div>
-        ) : (
-          <div className="flex items-center gap-1">
-            <Input
-              value={idadeMin}
-              onChange={(e) => setIdadeMin(e.target.value)}
-              onBlur={salvarSeNecessario}
-              placeholder="de"
-              className="h-9 text-center text-[12px] px-1 w-full"
-              inputMode="numeric"
-            />
-            <span className="text-muted-foreground/60 text-[10px]">–</span>
-            <Input
-              value={idadeMax}
-              onChange={(e) => setIdadeMax(e.target.value)}
-              onBlur={salvarSeNecessario}
-              placeholder="até"
-              className="h-9 text-center text-[12px] px-1 w-full"
-              inputMode="numeric"
-            />
-            <Select
-              value={unidadeIdade}
-              onValueChange={(v) => setUnidadeIdade(v as UnidIdade)}
-            >
-              <SelectTrigger className="h-9 text-[11px] px-1.5 w-[64px]" onBlur={salvarSeNecessario}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
-                <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
-                <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        ) : (() => {
+          const dMin = idadeParaDias(idadeMin, unidadeIdade);
+          const dMax = idadeParaDias(idadeMax, unidadeIdadeMax);
+          const idadeErro = dMin !== null && dMax !== null && dMin > dMax;
+          const errCls = idadeErro ? "border-destructive/70 focus-visible:ring-destructive/30" : "";
+          return (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <Input
+                  value={idadeMin}
+                  onChange={(e) => setIdadeMin(e.target.value)}
+                  onBlur={salvarSeNecessario}
+                  placeholder="de"
+                  className={`h-9 text-center text-[12px] px-1 w-full ${errCls}`}
+                  inputMode="numeric"
+                />
+                <Select
+                  value={unidadeIdade}
+                  onValueChange={(v) => setUnidadeIdade(v as UnidIdade)}
+                >
+                  <SelectTrigger className={`h-9 text-[11px] px-1.5 w-[68px] ${errCls}`} onBlur={salvarSeNecessario}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
+                    <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
+                    <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-muted-foreground/60 text-[10px] px-0.5">–</span>
+                <Input
+                  value={idadeMax}
+                  onChange={(e) => setIdadeMax(e.target.value)}
+                  onBlur={salvarSeNecessario}
+                  placeholder="até"
+                  className={`h-9 text-center text-[12px] px-1 w-full ${errCls}`}
+                  inputMode="numeric"
+                />
+                <Select
+                  value={unidadeIdadeMax}
+                  onValueChange={(v) => setUnidadeIdadeMax(v as UnidIdade)}
+                >
+                  <SelectTrigger className={`h-9 text-[11px] px-1.5 w-[68px] ${errCls}`} onBlur={salvarSeNecessario}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
+                    <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
+                    <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {idadeErro && (
+                <div className="text-[10px] text-destructive text-center leading-tight">
+                  Mínimo ({idadeMin} {unidadeIdade}) maior que máximo ({idadeMax} {unidadeIdadeMax})
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
+
 
       {/* Condição: operador + jejum */}
       <div className="flex gap-1">
@@ -543,6 +590,7 @@ const ParametroBloco = ({
       idadeMin: conv(meta.idadeMinDias),
       idadeMax: conv(meta.idadeMaxDias),
       unidadeIdade: unid,
+      unidadeIdadeMax: unid,
       valorMin: "", valorMax: "",
       unidade: meusRefs[0]?.unidade ?? "",
       descricao: "",

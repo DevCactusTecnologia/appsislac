@@ -6986,6 +6986,7 @@ export type Database = {
           tenant_id: string
           unidade: string
           unidade_idade: string
+          unidade_idade_max: string
           updated_at: string
           valor_max: string
           valor_min: string
@@ -7015,6 +7016,7 @@ export type Database = {
           tenant_id: string
           unidade?: string
           unidade_idade?: string
+          unidade_idade_max?: string
           updated_at?: string
           valor_max?: string
           valor_min?: string
@@ -7044,6 +7046,7 @@ export type Database = {
           tenant_id?: string
           unidade?: string
           unidade_idade?: string
+          unidade_idade_max?: string
           updated_at?: string
           valor_max?: string
           valor_min?: string
