@@ -38,6 +38,8 @@ export interface ExameParametro {
   separadorDecimal: "." | ",";
   /** Quantidade total de dígitos (inteiros + decimais). 0/undefined = sem limite. */
   qtdDigitos: number;
+  /** Formato de exibição (apenas tipo "Tempo"). */
+  formatoExibicao?: FormatoTempo;
 }
 
 const cache = new Map<string, ExameParametro[]>();
