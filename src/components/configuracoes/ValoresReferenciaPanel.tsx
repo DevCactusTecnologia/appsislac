@@ -414,10 +414,20 @@ const ParametroBloco = ({
             <div className="text-[11px] text-muted-foreground">{parametro.abreviacao}</div>
           )}
         </div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {meusRefs.length} {meusRefs.length === 1 ? "regra" : "regras"}
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {meusRefs.length} {meusRefs.length === 1 ? "regra" : "regras"}
+          </div>
+          <button
+            onClick={onHide}
+            className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center"
+            title="Ocultar este parâmetro da tela"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <ValorCard vr={padrao} categoria="padrao" exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
