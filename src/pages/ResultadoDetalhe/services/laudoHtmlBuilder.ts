@@ -195,19 +195,37 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            preserva qualquer alinhamento à direita (ex.: logo PNCQ) feito
            via text-align:right. */
         .laudo-cabecalho-wrap,
+        .laudo-cabecalho-wrap * {
+          padding-left: 0 !important;
+        }
+        /* Zera margin-left de todos os descendentes EXCETO imagens
+           (que podem usar margin-left:auto para alinhamento à direita)
+           e elementos explicitamente alinhados à direita. text-align:right
+           continua funcionando normalmente em td/p/div. */
+        .laudo-cabecalho-wrap,
         .laudo-cabecalho-wrap > *,
         .laudo-cabecalho-wrap table,
         .laudo-cabecalho-wrap tbody,
         .laudo-cabecalho-wrap tr,
-        .laudo-cabecalho-wrap td:first-child,
-        .laudo-cabecalho-wrap th:first-child {
-          padding-left: 0 !important;
+        .laudo-cabecalho-wrap td,
+        .laudo-cabecalho-wrap th,
+        .laudo-cabecalho-wrap p,
+        .laudo-cabecalho-wrap div,
+        .laudo-cabecalho-wrap span {
           margin-left: 0 !important;
         }
         .laudo-cabecalho-wrap table {
           border-collapse: collapse !important;
           border-spacing: 0 !important;
         }
+        /* Remove cellpadding/cellspacing herdados de tabelas do CKEditor
+           que empurram a primeira coluna para a direita. */
+        .laudo-cabecalho-wrap table[cellpadding],
+        .laudo-cabecalho-wrap table[cellspacing] {
+          border-spacing: 0 !important;
+        }
+        .laudo-cabecalho-wrap td,
+        .laudo-cabecalho-wrap th { padding-left: 0 !important; }
         /* Esconde parágrafos vazios deixados por templates do editor para que
            a distância entre cabeçalho e nome do exame seja de apenas 1 linha. */
         .laudo-cabecalho-wrap p:empty,
