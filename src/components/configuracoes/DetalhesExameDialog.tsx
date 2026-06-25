@@ -35,8 +35,6 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
   const { toast } = useToast();
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [editingLayout, setEditingLayout] = useState<ExameLayout | null>(null);
-  const [parametrosOpen, setParametrosOpen] = useState(false);
-  const [filtrosOpen, setFiltrosOpen] = useState(false);
   const [layouts, setLayouts] = useState<ExameLayout[]>([]);
   const [removeTarget, setRemoveTarget] = useState<ExameLayout | null>(null);
   const [tab, setTab] = useState<TabKey>("layouts");
@@ -47,8 +45,6 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
     return subscribeLayouts(exame.id, () => setLayouts([...getLayouts(exame.id)]));
   }, [open, exame?.id, layoutOpen]);
 
-  // Reseta a aba APENAS quando o exame muda — preserva contexto ao
-  // abrir/fechar sub-dialogs (Parâmetros, VR, LayoutDialog).
   useEffect(() => { setTab("layouts"); }, [exame?.id]);
 
   if (!exame) return null;
@@ -89,10 +85,10 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
     </button>
   );
 
-  const tabs: Array<{ key: TabKey; label: string; icon: typeof Layers; count?: number }> = [
-    { key: "layouts", label: "Layouts", icon: Layers, count: layouts.length || undefined },
-    { key: "parametros", label: "Parâmetros", icon: Sliders },
-    { key: "referencia", label: "Valores de referência", icon: Filter },
+  const tabs: Array<{ key: TabKey; label: string; icon: typeof Layers; hint: string; count?: number }> = [
+    { key: "layouts", label: "Layouts", icon: Layers, hint: "Motor científico do laudo", count: layouts.length || undefined },
+    { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação" },
+    { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade" },
   ];
 
   return (
@@ -104,157 +100,153 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
         title={exame.nome}
         subtitle={`${exame.mnemonico} • ${exame.setorNome || exame.categoria || "Sem setor"}`}
         headerActions={headerActions}
-        maxWidth="3xl"
+        maxWidth="7xl"
+        defaultMaximized={true}
       >
-        {/* Tab bar — substitui os 3 cards/cliques do design anterior */}
-        <div className="px-6 pt-4">
-          <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
-            {tabs.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => {
-                    if (t.key === "parametros") setParametrosOpen(true);
-                    else if (t.key === "referencia") setFiltrosOpen(true);
-                    setTab(t.key);
-                  }}
-                  className={`h-8 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all ${
-                    active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" /> {t.label}
-                  {t.count !== undefined && (
-                    <span className="ml-0.5 text-[10px] opacity-70">({t.count})</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="px-6 py-5">
-          {tab === "layouts" && (
-            <div className="rounded-2xl border border-border/40 overflow-hidden">
-              <div className="px-5 py-3 bg-muted/30 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Layouts científicos do laudo
-                  </span>
-                </div>
-                <button
-                  onClick={openNewLayout}
-                  className="h-7 px-2.5 rounded-lg text-[11px] font-medium text-primary hover:bg-primary/10 transition-all duration-200 flex items-center gap-1"
-                >
-                  <Plus className="h-3 w-3" /> Novo layout
-                </button>
-              </div>
-
-              {layouts.length === 0 ? (
-                <div className="py-12 px-5 text-center">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/5 mx-auto flex items-center justify-center mb-3">
-                    <Sparkles className="h-5 w-5 text-primary/60" />
-                  </div>
-                  <p className="text-[13px] font-medium text-foreground mb-1">Nenhum layout cadastrado</p>
-                  <p className="text-[11px] text-muted-foreground mb-4">O layout é o motor científico do laudo: define metodologia, unidade, VR, cálculos e renderização final.</p>
+        <div className="flex flex-col h-full min-h-0">
+          {/* Tab bar persistente — segmented modern */}
+          <div className="px-6 pt-4 pb-3 border-b border-border/40 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+            <div className="inline-flex items-center gap-1 rounded-2xl bg-muted/40 p-1 shadow-sm">
+              {tabs.map((t) => {
+                const Icon = t.icon;
+                const active = tab === t.key;
+                return (
                   <button
-                    onClick={openNewLayout}
-                    className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-all"
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={`group relative h-10 px-4 rounded-xl text-[12.5px] font-medium flex items-center gap-2 transition-all duration-200 ${
+                      active
+                        ? "bg-background text-foreground shadow-[0_1px_3px_hsl(var(--foreground)/0.08)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                    }`}
+                    title={t.hint}
                   >
-                    <Plus className="h-3.5 w-3.5" /> Criar primeiro layout
+                    <Icon className={`h-4 w-4 transition-colors ${active ? "text-primary" : ""}`} />
+                    <span>{t.label}</span>
+                    {t.count !== undefined && (
+                      <span className={`ml-0.5 text-[10.5px] px-1.5 py-0.5 rounded-md font-semibold ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {t.count}
+                      </span>
+                    )}
                   </button>
-                </div>
-              ) : (
-                <div className="divide-y divide-border/20">
-                  {layouts.map((layout) => (
-                    <div
-                      key={layout.id}
-                      className={`group flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-all duration-200 ${layout.padrao ? "bg-primary/[0.03]" : ""}`}
-                    >
-                      <button
-                        onClick={() => handleTogglePadrao(layout)}
-                        disabled={layout.padrao}
-                        title={layout.padrao ? "Layout padrão (em uso)" : "Definir como padrão"}
-                        className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
-                          layout.padrao
-                            ? "text-primary bg-primary/10 cursor-default"
-                            : "text-muted-foreground/40 hover:text-primary hover:bg-primary/10"
-                        }`}
-                      >
-                        <Star className={`h-4 w-4 ${layout.padrao ? "fill-primary" : ""}`} />
-                      </button>
+                );
+              })}
+            </div>
+          </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[13px] font-medium text-foreground truncate">{layout.nome}</p>
-                          {layout.padrao && (
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">Padrão</span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                          {layout.criadoPor || "—"} • {formatarData(layout.criadoEm)}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button onClick={() => openEditLayout(layout)} className="p-1.5 rounded-lg hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground" title="Editar">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={() => handleDuplicar(layout)} className="p-1.5 rounded-lg hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground" title="Duplicar">
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                        {!layout.padrao && (
-                          <button onClick={() => setRemoveTarget(layout)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-all duration-200 text-muted-foreground hover:text-destructive" title="Remover">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
+          {/* Conteúdo da aba ativa */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {tab === "layouts" && (
+              <div className="h-full overflow-auto px-6 py-5">
+                <div className="rounded-2xl border border-border/40 overflow-hidden">
+                  <div className="px-5 py-3 bg-muted/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Layouts científicos do laudo
+                      </span>
                     </div>
-                  ))}
+                    <button
+                      onClick={openNewLayout}
+                      className="h-7 px-2.5 rounded-lg text-[11px] font-medium text-primary hover:bg-primary/10 transition-all duration-200 flex items-center gap-1"
+                    >
+                      <Plus className="h-3 w-3" /> Novo layout
+                    </button>
+                  </div>
+
+                  {layouts.length === 0 ? (
+                    <div className="py-12 px-5 text-center">
+                      <div className="h-12 w-12 rounded-2xl bg-primary/5 mx-auto flex items-center justify-center mb-3">
+                        <Sparkles className="h-5 w-5 text-primary/60" />
+                      </div>
+                      <p className="text-[13px] font-medium text-foreground mb-1">Nenhum layout cadastrado</p>
+                      <p className="text-[11px] text-muted-foreground mb-4">O layout é o motor científico do laudo: define metodologia, unidade, VR, cálculos e renderização final.</p>
+                      <button
+                        onClick={openNewLayout}
+                        className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-[12px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-all"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Criar primeiro layout
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/20">
+                      {layouts.map((layout) => (
+                        <div
+                          key={layout.id}
+                          className={`group flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-all duration-200 ${layout.padrao ? "bg-primary/[0.03]" : ""}`}
+                        >
+                          <button
+                            onClick={() => handleTogglePadrao(layout)}
+                            disabled={layout.padrao}
+                            title={layout.padrao ? "Layout padrão (em uso)" : "Definir como padrão"}
+                            className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
+                              layout.padrao
+                                ? "text-primary bg-primary/10 cursor-default"
+                                : "text-muted-foreground/40 hover:text-primary hover:bg-primary/10"
+                            }`}
+                          >
+                            <Star className={`h-4 w-4 ${layout.padrao ? "fill-primary" : ""}`} />
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[13px] font-medium text-foreground truncate">{layout.nome}</p>
+                              {layout.padrao && (
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">Padrão</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                              {layout.criadoPor || "—"} • {formatarData(layout.criadoEm)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onClick={() => openEditLayout(layout)} className="p-1.5 rounded-lg hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground" title="Editar">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => handleDuplicar(layout)} className="p-1.5 rounded-lg hover:bg-muted/80 transition-all duration-200 text-muted-foreground hover:text-foreground" title="Duplicar">
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                            {!layout.padrao && (
+                              <button onClick={() => setRemoveTarget(layout)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-all duration-200 text-muted-foreground hover:text-destructive" title="Remover">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
-
-          {tab === "parametros" && (
-            <div className="rounded-2xl border border-border/40 bg-muted/10 px-5 py-8 text-center">
-              <div className="h-12 w-12 rounded-2xl bg-accent/10 mx-auto flex items-center justify-center mb-3">
-                <Sliders className="h-5 w-5 text-accent" />
               </div>
-              <p className="text-[13px] font-medium text-foreground mb-1">Parâmetros do exame</p>
-              <p className="text-[11px] text-muted-foreground mb-4">Campos de resultado, valores críticos e formatação dos inputs.</p>
-              <button
-                onClick={() => setParametrosOpen(true)}
-                className="h-9 px-4 rounded-xl bg-accent text-accent-foreground text-[12px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-all"
-              >
-                <Sliders className="h-3.5 w-3.5" /> Abrir parâmetros
-              </button>
-            </div>
-          )}
+            )}
 
-          {tab === "referencia" && (
-            <div className="rounded-2xl border border-border/40 bg-muted/10 px-5 py-8 text-center">
-              <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--status-info))]/10 mx-auto flex items-center justify-center mb-3">
-                <Filter className="h-5 w-5 text-[hsl(var(--status-info))]" />
-              </div>
-              <p className="text-[13px] font-medium text-foreground mb-1">Valores de referência</p>
-              <p className="text-[11px] text-muted-foreground mb-4">Faixas por sexo/idade, incluindo limites críticos de pânico.</p>
-              <button
-                onClick={() => setFiltrosOpen(true)}
-                className="h-9 px-4 rounded-xl bg-[hsl(var(--status-info))] text-white text-[12px] font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition-all"
-              >
-                <Filter className="h-3.5 w-3.5" /> Abrir valores de referência
-              </button>
-            </div>
-          )}
+            {tab === "parametros" && (
+              <ParametrosDialog
+                key={`params-${exame.id}`}
+                open={true}
+                onClose={onClose}
+                exameId={exame.id}
+                exameNome={exame.nome}
+                embedded
+              />
+            )}
+
+            {tab === "referencia" && (
+              <FiltrosDialog
+                key={`vr-${exame.id}`}
+                open={true}
+                onClose={onClose}
+                exameId={exame.id}
+                exameNome={exame.nome}
+                embedded
+              />
+            )}
+          </div>
         </div>
       </StandardDialog>
 
       <LayoutDialog open={layoutOpen} onClose={() => setLayoutOpen(false)} exame={exame} editData={editingLayout} defaultMaximized={true} />
-      <ParametrosDialog open={parametrosOpen} onClose={() => setParametrosOpen(false)} exameId={exame.id} exameNome={exame.nome} defaultMaximized={true} />
-      <FiltrosDialog open={filtrosOpen} onClose={() => setFiltrosOpen(false)} exameId={exame.id} exameNome={exame.nome} defaultMaximized={true} />
 
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && setRemoveTarget(null)}>
         <AlertDialogContent>

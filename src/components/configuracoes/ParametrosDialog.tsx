@@ -39,9 +39,11 @@ interface ParametrosDialogProps {
   exameId?: string;
   exameNome?: string;
   defaultMaximized?: boolean;
+  /** Quando true, renderiza apenas o conteúdo (sem StandardDialog). */
+  embedded?: boolean;
 }
 
-const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized = true }: ParametrosDialogProps) => {
+const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized = true, embedded = false }: ParametrosDialogProps) => {
   const { toast } = useToast();
   const [parametros, setParametros] = useState<ExameParametro[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -300,20 +302,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const totalVisiveis = parametros.filter((p) => p.visivel).length;
   const totalObrigatorios = parametros.filter((p) => p.obrigatorio === "SIM").length;
 
-  return (
-    <StandardDialog
-      open={open}
-      onClose={onClose}
-      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
-      title="Parâmetros do exame"
-      subtitle={exameNome || "Defina os campos de resultado"}
-      headerActions={headerActions}
-      
-      maxWidth="7xl"
-      allowMaximize={true}
-      defaultMaximized={defaultMaximized}
-    >
+  const body = (
       <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] grid-rows-1 h-full min-h-[600px] overflow-hidden">
+
         {/* LEFT: List panel */}
         <aside className="border-r border-border/60 bg-muted/20 flex flex-col overflow-hidden">
           {/* Search + stats */}
@@ -843,6 +834,33 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 
         </section>
       </div>
+  );
+
+  if (embedded) {
+    if (!open) return null;
+    return (
+      <div className="flex flex-col h-full bg-card">
+        <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+          {headerActions}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">{body}</div>
+      </div>
+    );
+  }
+
+  return (
+    <StandardDialog
+      open={open}
+      onClose={onClose}
+      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
+      title="Parâmetros do exame"
+      subtitle={exameNome || "Defina os campos de resultado"}
+      headerActions={headerActions}
+      maxWidth="7xl"
+      allowMaximize={true}
+      defaultMaximized={defaultMaximized}
+    >
+      {body}
     </StandardDialog>
   );
 };

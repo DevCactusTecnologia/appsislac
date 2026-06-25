@@ -17,7 +17,7 @@ import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import FiltrosPorPerfil from "./FiltrosPorPerfil";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
-interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; }
+interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; embedded?: boolean; }
 type FormData = Omit<ValorReferencia, "id">;
 
 const emptyForm = (exameNome: string): FormData => ({
@@ -49,7 +49,7 @@ const detectarSobreposicao = (
   });
 };
 
-const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximized = true }: FiltrosDialogProps) => {
+const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximized = true, embedded = false }: FiltrosDialogProps) => {
   const { toast } = useToast();
   const [referencias, setReferencias] = useState<ValorReferencia[]>([]);
   const [editando, setEditando] = useState<ValorReferencia | null>(null);
@@ -265,20 +265,8 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
     </button>
   );
 
-  return (
+  const body = (
     <>
-    <StandardDialog
-      open={open}
-      onClose={onClose}
-      icon={<Filter className="h-5 w-5 text-[hsl(var(--status-info))]" />}
-      title="Valores de referência"
-      subtitle={exameNome || "Todos os exames"}
-      headerActions={headerActions}
-      footer={footer}
-      maxWidth="7xl"
-      allowMaximize={true}
-      defaultMaximized={defaultMaximized}
-    >
       {/* Tabs */}
       <div className="px-6 pt-4">
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
@@ -588,8 +576,44 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
         </div>
       </div>
       </>}
-    </StandardDialog>
-    <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+    </>
+  );
+
+  if (embedded) {
+    if (!open) return null;
+    return (
+      <>
+        <div className="flex flex-col h-full bg-card">
+          <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+            {headerActions}
+          </div>
+          <div className="flex-1 min-h-0 overflow-auto">{body}</div>
+          <div className="px-6 py-3 border-t border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+            {footer}
+          </div>
+        </div>
+        <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <StandardDialog
+        open={open}
+        onClose={onClose}
+        icon={<Filter className="h-5 w-5 text-[hsl(var(--status-info))]" />}
+        title="Valores de referência"
+        subtitle={exameNome || "Todos os exames"}
+        headerActions={headerActions}
+        footer={footer}
+        maxWidth="7xl"
+        allowMaximize={true}
+        defaultMaximized={defaultMaximized}
+      >
+        {body}
+      </StandardDialog>
+      <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
     </>
   );
 };
