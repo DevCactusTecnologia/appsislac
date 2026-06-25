@@ -218,9 +218,13 @@ export function usePaginatedAtendimentos(
     setHasMore(false);
     (async () => {
       try {
+        // KPIs ignoram o filtro de STATUS para que os cards sempre reflitam
+        // a totalidade do escopo atual (unidade/pagamento/busca). Sem isso,
+        // ao clicar em "Em andamento" o próprio card zeraria os demais.
+        const kpiFilters: PaginatedFilters = { ...effectiveFilters, status: null };
         const [pageItems, k] = await Promise.all([
           fetchPage(effectiveFilters, null),
-          fetchKpis(effectiveFilters),
+          fetchKpis(kpiFilters),
         ]);
         if (reqTokenRef.current !== token) return;
         setItems(pageItems);
