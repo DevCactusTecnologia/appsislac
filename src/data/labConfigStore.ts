@@ -11,6 +11,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { DEFAULT_WATERMARK, normalizeWatermark, type WatermarkConfig } from "@/lib/watermark";
 
 const STORAGE_KEY = "sislac:labConfig";
 
@@ -41,6 +42,8 @@ export interface LabConfig {
   responsavelTecnicoNumero: string;
   /** UF do conselho do RT */
   responsavelTecnicoUf: string;
+  /** Marca d'água global (laudos, comprovantes, orçamentos…). */
+  watermark: WatermarkConfig;
 }
 
 const defaultConfig: LabConfig = {
@@ -60,6 +63,7 @@ const defaultConfig: LabConfig = {
   responsavelTecnicoConselho: "",
   responsavelTecnicoNumero: "",
   responsavelTecnicoUf: "",
+  watermark: { ...DEFAULT_WATERMARK },
 };
 
 let _listeners: Array<() => void> = [];
@@ -107,6 +111,7 @@ function rowToConfig(row: Record<string, unknown>): LabConfig {
     responsavelTecnicoConselho: (row.responsavel_tecnico_conselho as string) ?? "",
     responsavelTecnicoNumero: (row.responsavel_tecnico_numero as string) ?? "",
     responsavelTecnicoUf: (row.responsavel_tecnico_uf as string) ?? "",
+    watermark: normalizeWatermark(row.watermark),
   };
 }
 
@@ -129,6 +134,7 @@ function configToRow(config: LabConfig, tenantId: string) {
     responsavel_tecnico_conselho: config.responsavelTecnicoConselho ?? "",
     responsavel_tecnico_numero: config.responsavelTecnicoNumero ?? "",
     responsavel_tecnico_uf: config.responsavelTecnicoUf ?? "",
+    watermark: normalizeWatermark(config.watermark),
   };
 }
 
