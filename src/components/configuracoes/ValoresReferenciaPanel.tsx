@@ -204,11 +204,18 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   return (
     <div className={`rounded-xl border ${borderClass} p-3 transition-all`}>
       <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="text-base leading-none">{meta.icon}</span>
-          <div>
-            <div className="text-[13px] font-semibold text-foreground leading-tight">{meta.label}</div>
-            <div className="text-[10px] text-muted-foreground">
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
+              {meta.label}
+              {jejum !== "qualquer" && (
+                <span className="ml-1.5 inline-flex items-center gap-1 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-[1px] text-[10px] font-medium align-middle">
+                  <Coffee className="h-2.5 w-2.5" /> {JEJUM_LABEL[jejum]}
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
               {isPadrao
                 ? "Vale para todos os pacientes"
                 : meta.sexo !== "Ambos" ? `${meta.sexo}${meta.idadeMinDias !== null ? ` • ${meta.idadeMinDias}–${meta.idadeMaxDias ?? "∞"}d` : ""}`
@@ -216,7 +223,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {exists && hasAnyValue && (
             <button
               onClick={() => setConfirmOpen("clear")} disabled={saving}
@@ -238,11 +245,48 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
         </div>
       </div>
 
+      {/* Operador + Jejum (controles avançados, compactos) */}
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Operador</div>
+          <Select value={operador} onValueChange={(v) => setOperador(v as OperadorVR)}>
+            <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(OPERADOR_LABEL) as OperadorVR[]).map((op) => (
+                <SelectItem key={op} value={op} className="text-[12px]">{OPERADOR_LABEL[op]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Jejum</div>
+          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+            <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-[88px_1fr_8px_1fr_60px] gap-1.5 items-center text-[12px]">
-        <div className="text-[11px] text-muted-foreground font-medium">Normal</div>
-        <Input value={normMin} onChange={(e) => setNormMin(e.target.value)} placeholder="min" className="h-8 text-[12px]" />
-        <span className="text-muted-foreground text-center">–</span>
-        <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
+        <div className="text-[11px] text-muted-foreground font-medium">
+          {isEntre ? "Normal" : `Limite ${OPERADOR_SIMBOLO[operador]}`}
+        </div>
+        {isEntre ? (
+          <>
+            <Input value={normMin} onChange={(e) => setNormMin(e.target.value)} placeholder="min" className="h-8 text-[12px]" />
+            <span className="text-muted-foreground text-center">–</span>
+            <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
+          </>
+        ) : (
+          <>
+            <div className="col-span-2 flex items-center justify-center text-muted-foreground text-[12px] font-medium">{OPERADOR_SIMBOLO[operador]}</div>
+            <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="valor" className="h-8 text-[12px]" />
+          </>
+        )}
         <Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="un." className="h-8 text-[11px] px-1.5" />
 
         <div className="text-[11px] text-muted-foreground font-medium">Crítico</div>
@@ -251,6 +295,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
         <Input value={critMax} onChange={(e) => setCritMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
         <div />
       </div>
+
 
       {(nMin !== null && nMax !== null) && (
         <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-3 text-[11px]">
