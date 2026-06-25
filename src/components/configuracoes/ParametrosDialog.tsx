@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ExameParametro,
   ParametroTipo,
+  FormatoTempo,
   loadParametros,
   getParametros,
   subscribeParametros,
