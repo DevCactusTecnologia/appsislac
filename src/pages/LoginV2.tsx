@@ -355,15 +355,13 @@ export default function LoginV2() {
                           </span>
                           <input
                             type="text"
-                            inputMode="text"
-                            autoCapitalize="characters"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             maxLength={9}
                             value={codigo.replace(/^LAB/, "")}
                             onChange={(e) => {
                               const raw = e.target.value
-                                .toUpperCase()
-                                .replace(/[^A-Z0-9]/g, "")
-                                .replace(/^LAB/, "")
+                                .replace(/\D/g, "")
                                 .slice(0, 9);
                               setCodigo("LAB" + raw);
                             }}
