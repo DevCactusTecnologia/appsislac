@@ -12,8 +12,7 @@
 //   - Permite CSS adicional opt-in via `css`.
 
 import { escapeHtml } from "./escapeHtml";
-import { getLabConfig } from "@/data/labConfigStore";
-import { buildWatermarkCss } from "./watermark";
+
 
 export type PrintOrientation = "portrait" | "landscape";
 
@@ -50,7 +49,6 @@ export function wrapA4Document({
   css = "",
   lang = "pt-BR",
 }: WrapA4DocumentOptions): string {
-  const watermarkCss = buildWatermarkCss(getLabConfig().watermark);
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(lang)}">
 <head>
@@ -60,7 +58,6 @@ export function wrapA4Document({
     @page { size: A4 ${orientation}; margin: ${margin}; }
     ${BASE_CSS}
     ${css}
-    ${watermarkCss}
   </style>
 </head>
 <body>
@@ -68,3 +65,4 @@ ${bodyHtml}
 </body>
 </html>`;
 }
+

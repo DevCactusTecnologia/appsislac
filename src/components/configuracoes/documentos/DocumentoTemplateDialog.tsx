@@ -22,10 +22,12 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getTemplatePadraoHtml, removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { getLabConfig } from "@/data/labConfigStore";
+import { buildWatermarkCss } from "@/lib/watermark";
 import { fmtBRL } from "@/lib/utils";
 import {
-  Eye, Pencil, FileText, Save, Scaling, ChevronDown, CheckCircle2,
+  Eye, Pencil, FileText, Save, Scaling, ChevronDown, CheckCircle2, Droplet,
 } from "lucide-react";
+
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface Props {
@@ -61,6 +63,8 @@ const DocumentoTemplateDialog = ({
   const [margins, setMargins] = useState<{ top: string; right: string; bottom: string; left: string }>({
     top: "5", right: "10", bottom: "5", left: "10",
   });
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+
   const editorApiRef = useRef<CKEditorApi | null>(null);
 
   useEffect(() => {
@@ -79,6 +83,7 @@ const DocumentoTemplateDialog = ({
         bottom: String(m?.bottom ?? 5),
         left: String(m?.left ?? 10),
       });
+      setWatermarkEnabled(((template.config as Record<string, unknown>)?.watermarkEnabled as boolean) ?? false);
     } else {
       const t = tipoInicial ?? "comprovante_pagamento";
       setTipo(t);
@@ -87,8 +92,10 @@ const DocumentoTemplateDialog = ({
       setAtivo(true);
       setPadrao(false);
       setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
+      setWatermarkEnabled(false);
     }
   }, [open, template, tipoInicial]);
+
 
   const handleTipoChange = (novo: DocumentoTipo) => {
     setTipo(novo);
@@ -128,7 +135,7 @@ const DocumentoTemplateDialog = ({
         const ok = await updateDocumentoTemplate(template.id, {
           tipo, nome: nome.trim(), descricao: template.descricao ?? "",
           conteudo: removerLinhasHorizontaisDocumento(conteudo), ativo, padrao,
-          config: { ...prevConfig, margins: marginsConfig },
+          config: { ...prevConfig, margins: marginsConfig, watermarkEnabled },
         });
         if (ok) {
           toast({ title: "Template atualizado" });
@@ -140,7 +147,7 @@ const DocumentoTemplateDialog = ({
         const novo = await addDocumentoTemplate({
           tipo, nome: nome.trim(), descricao: "",
           conteudo: removerLinhasHorizontaisDocumento(conteudo),
-          config: { margins: marginsConfig },
+          config: { margins: marginsConfig, watermarkEnabled },
           ativo, padrao, criadoPor,
         });
         if (novo) {
@@ -307,13 +314,18 @@ const DocumentoTemplateDialog = ({
     const header = cfg?.exibirCabecalho ? renderCabecalhoPadrao(ctx) : "";
     const footer = cfg?.exibirRodape ? renderRodapePadrao(ctx) : "";
 
+    const wmCss = watermarkEnabled ? buildWatermarkCss(getLabConfig().watermark) : "";
+    const wmStyle = wmCss ? `<style>${wmCss}</style>` : "";
+
     return `
+      ${wmStyle}
       ${header}
       <div class="documento-corpo" style="margin:0;padding:0;">${corpo}</div>
       ${rodapePadrao}
       ${footer}
     `;
-  }, [conteudo, tipo, template?.config]);
+  }, [conteudo, tipo, template?.config, watermarkEnabled]);
+
 
   const headerActions = (
     <div className="flex items-center gap-2 flex-wrap">
@@ -418,6 +430,25 @@ const DocumentoTemplateDialog = ({
                   }))}
                   onInsert={(tag) => editorApiRef.current?.insertHtml(`{{${tag}}}`)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setWatermarkEnabled((v) => !v)}
+                  title={
+                    getLabConfig().watermark?.url
+                      ? "Ativar marca d'água global neste documento (pré-visualização e impressão)"
+                      : "Configure a marca d'água global em Configurações → Laboratório"
+                  }
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 h-7 rounded-md transition-colors ${
+                    watermarkEnabled
+                      ? "bg-primary/10 text-primary hover:bg-primary/15"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  <Droplet className="h-3.5 w-3.5" />
+                  Marca d'água
+                  {watermarkEnabled && <CheckCircle2 className="h-3 w-3" />}
+                </button>
+
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
