@@ -39,9 +39,11 @@ interface ParametrosDialogProps {
   exameId?: string;
   exameNome?: string;
   defaultMaximized?: boolean;
+  /** Quando true, renderiza apenas o conteúdo (sem StandardDialog). */
+  embedded?: boolean;
 }
 
-const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized = true }: ParametrosDialogProps) => {
+const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized = true, embedded = false }: ParametrosDialogProps) => {
   const { toast } = useToast();
   const [parametros, setParametros] = useState<ExameParametro[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
