@@ -6963,6 +6963,7 @@ export type Database = {
       valores_referencia: {
         Row: {
           ativo: boolean
+          categoria: string
           created_at: string
           critico_max: string | null
           critico_min: string | null
@@ -6978,6 +6979,7 @@ export type Database = {
           ordem: number
           parametro_id: number | null
           parametro_nome: string
+          prioridade: number
           sexo: string
           tenant_id: string
           unidade: string
@@ -6988,6 +6990,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          categoria?: string
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
@@ -7003,6 +7006,7 @@ export type Database = {
           ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
+          prioridade?: number
           sexo?: string
           tenant_id: string
           unidade?: string
@@ -7013,6 +7017,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          categoria?: string
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
@@ -7028,6 +7033,7 @@ export type Database = {
           ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
+          prioridade?: number
           sexo?: string
           tenant_id?: string
           unidade?: string
