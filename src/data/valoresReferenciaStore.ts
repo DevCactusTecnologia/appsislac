@@ -5,6 +5,14 @@ import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 
+/**
+ * Categorias do redesign "Padrão + Variações". Resolver usa a maior prioridade
+ * compatível com o paciente; 'padrao' é fallback.
+ */
+export type CategoriaVR =
+  | "padrao" | "gestante" | "recem_nascido" | "crianca" | "adolescente"
+  | "adulto" | "idoso" | "masculino" | "feminino" | "custom";
+
 export interface ValorReferencia {
   id: number;
   exameNome: string;
@@ -17,11 +25,27 @@ export interface ValorReferencia {
   valorMax: string;
   unidade: string;
   descricao: string;
-  /** Limite crítico inferior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
   criticoMin?: string;
-  /** Limite crítico superior (pânico) específico para esta faixa de sexo/idade. Vazio = usar fallback de exame_parametros. */
   criticoMax?: string;
+  /** Categoria do redesign Padrão+Variações. Default 'custom' para registros legados. */
+  categoria?: CategoriaVR;
 }
+
+export const CATEGORIA_META: Record<CategoriaVR, {
+  label: string; icon: string; idadeMinDias: number | null; idadeMaxDias: number | null;
+  sexo: "Ambos" | "Masculino" | "Feminino"; prioridade: number;
+}> = {
+  gestante:      { label: "Gestante",       icon: "🤰", idadeMinDias: null, idadeMaxDias: null, sexo: "Feminino",  prioridade: 100 },
+  recem_nascido: { label: "Recém-nascido",  icon: "👶", idadeMinDias: 0,      idadeMaxDias: 28,     sexo: "Ambos",     prioridade: 90 },
+  crianca:       { label: "Criança",        icon: "🧒", idadeMinDias: 29,     idadeMaxDias: 12*365, sexo: "Ambos",     prioridade: 80 },
+  adolescente:   { label: "Adolescente",    icon: "🧑", idadeMinDias: 13*365, idadeMaxDias: 18*365, sexo: "Ambos",     prioridade: 70 },
+  idoso:         { label: "Idoso",          icon: "🧓", idadeMinDias: 65*365, idadeMaxDias: null,   sexo: "Ambos",     prioridade: 60 },
+  adulto:        { label: "Adulto",         icon: "🧑‍⚕️", idadeMinDias: 19*365, idadeMaxDias: 64*365, sexo: "Ambos",  prioridade: 50 },
+  masculino:     { label: "Masculino",      icon: "♂️", idadeMinDias: null, idadeMaxDias: null, sexo: "Masculino", prioridade: 40 },
+  feminino:      { label: "Feminino",       icon: "♀️", idadeMinDias: null, idadeMaxDias: null, sexo: "Feminino",  prioridade: 40 },
+  custom:        { label: "Personalizada",  icon: "⚙️", idadeMinDias: null, idadeMaxDias: null, sexo: "Ambos",     prioridade: 30 },
+  padrao:        { label: "Padrão",         icon: "📍", idadeMinDias: null, idadeMaxDias: null, sexo: "Ambos",     prioridade: 1  },
+};
 
 let valoresReferencia: ValorReferencia[] = [];
 let _listeners: Array<() => void> = [];
