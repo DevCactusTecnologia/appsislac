@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { Filter, Ruler, Info } from "lucide-react";
+import { Filter, Ruler, Info, Settings2 } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { getValoresReferencia, type ValorReferencia } from "@/data/valoresReferenciaStore";
 import { loadParametros, getParametros, ExameParametro } from "@/data/exameParametrosStore";
+import ValoresReferenciaPanel from "./ValoresReferenciaPanel";
 import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
@@ -16,16 +17,14 @@ interface FiltrosDialogProps {
 }
 
 /**
- * Valores de Referência — interface única (Matriz).
+ * Valores de Referência — interface "Padrão + Variações".
  *
- * Decisão (Fase 2 — OECV): as 3 abas anteriores (Por filtro / Matriz / Lista)
- * mostravam o mesmo dado em formatos diferentes e confundiam o usuário novo.
- * A matriz é a única visão canônica: cobre o modelo mental real (1 parâmetro
- * por vez, cruzando sexo × faixa etária) e é a única que mostra a cobertura
- * (gaps por sexo), prevenindo o erro silencioso de faltar faixa.
+ * Redesign (REDESIGN_VALORES_REFERENCIA.md): cada parâmetro mostra 1 card
+ * "Padrão" + cards de variação por categoria (Gestante, Criança, Idoso…).
+ * O resolver escolhe a categoria de maior prioridade compatível com o paciente.
  *
- * "Nova faixa" deixou de ser ação global: cada célula vazia da matriz JÁ é
- * o ponto de criação (basta digitar min/max e sair do campo).
+ * O modo "Avançado" (Matriz por sexo × régua etária) fica colapsável para
+ * casos exóticos (Sysmex/Lareval) sem poluir o caminho principal.
  */
 const FiltrosDialog = ({
   open, onClose, exameNome = "", exameId, defaultMaximized = true, embedded = false,
@@ -33,6 +32,7 @@ const FiltrosDialog = ({
   const [referencias, setReferencias] = useState<ValorReferencia[]>([]);
   const [parametros, setParametros] = useState<ExameParametro[]>([]);
   const [reguasOpen, setReguasOpen] = useState(false);
+  const [avancado, setAvancado] = useState(false);
 
   const refreshReferencias = () => {
     const all = getValoresReferencia();
@@ -51,12 +51,26 @@ const FiltrosDialog = ({
   const nomesParametros = useMemo(() => parametros.map((p) => p.rotulo), [parametros]);
 
   const headerActions = (
-    <button
-      onClick={() => setReguasOpen(true)}
-      className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
-    >
-      <Ruler className="h-3.5 w-3.5" /> Réguas
-    </button>
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => setAvancado((v) => !v)}
+        className={`h-9 px-3 rounded-xl border text-[12px] font-medium flex items-center gap-1.5 transition-all ${
+          avancado
+            ? "border-primary/50 bg-primary/10 text-primary"
+            : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground hover:border-border"
+        }`}
+      >
+        <Settings2 className="h-3.5 w-3.5" /> {avancado ? "Modo simples" : "Avançado"}
+      </button>
+      {avancado && (
+        <button
+          onClick={() => setReguasOpen(true)}
+          className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border flex items-center gap-1.5"
+        >
+          <Ruler className="h-3.5 w-3.5" /> Réguas
+        </button>
+      )}
+    </div>
   );
 
   const footer = (
@@ -70,27 +84,43 @@ const FiltrosDialog = ({
 
   const body = (
     <div className="px-6 py-5 space-y-4">
-      {/* Onboarding leve — explica em 1 frase o que esta tela faz. */}
-      <div className="rounded-2xl border border-[hsl(var(--status-info))]/30 bg-[hsl(var(--status-info))]/5 p-3 flex gap-2.5 items-start">
-        <Info className="h-4 w-4 text-[hsl(var(--status-info))] shrink-0 mt-0.5" />
-        <div className="text-[12px] text-foreground/85 leading-relaxed">
-          Configure os limites de cada parâmetro por <strong>sexo</strong> e <strong>idade</strong>.
-          A barra de cobertura mostra em <span className="text-[hsl(var(--status-success))] font-medium">verde</span> as faixas
-          atendidas e em <span className="text-[hsl(var(--status-danger))] font-medium">vermelho</span> os intervalos sem regra.
-          Digite os valores nas células e clique fora — o salvamento é automático.
-          {embedded && (
-            <div className="mt-2 flex justify-end">{headerActions}</div>
-          )}
-        </div>
-      </div>
-
-      <MatrizValoresReferencia
-        exameNome={exameNome}
-        parametros={nomesParametros}
-        referencias={referencias}
-        onAbrirGerenciador={() => setReguasOpen(true)}
-        onMutate={refreshReferencias}
-      />
+      {!avancado ? (
+        <>
+          <div className="rounded-2xl border border-[hsl(var(--status-info))]/30 bg-[hsl(var(--status-info))]/5 p-3 flex gap-2.5 items-start">
+            <Info className="h-4 w-4 text-[hsl(var(--status-info))] shrink-0 mt-0.5" />
+            <div className="text-[12px] text-foreground/85 leading-relaxed">
+              Cada parâmetro tem um <strong>Padrão</strong> (vale para todos) e variações opcionais por categoria
+              (Gestante, Criança, Idoso…). Na hora de validar o resultado, o sistema escolhe a categoria
+              compatível com o paciente <em>de maior prioridade</em>.
+              {embedded && <div className="mt-2 flex justify-end">{headerActions}</div>}
+            </div>
+          </div>
+          <ValoresReferenciaPanel
+            exameNome={exameNome}
+            parametros={parametros}
+            referencias={referencias}
+            onMutate={refreshReferencias}
+          />
+        </>
+      ) : (
+        <>
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3 flex gap-2.5 items-start">
+            <Settings2 className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-[12px] text-foreground/85 leading-relaxed">
+              <strong>Modo Avançado</strong>: matriz por sexo × régua etária livre. Use só para protocolos
+              específicos (Sysmex, Lareval) que exigem faixas etárias customizadas.
+              {embedded && <div className="mt-2 flex justify-end">{headerActions}</div>}
+            </div>
+          </div>
+          <MatrizValoresReferencia
+            exameNome={exameNome}
+            parametros={nomesParametros}
+            referencias={referencias}
+            onAbrirGerenciador={() => setReguasOpen(true)}
+            onMutate={refreshReferencias}
+          />
+        </>
+      )}
     </div>
   );
 
