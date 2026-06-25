@@ -429,7 +429,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado.">
 
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {tiposComponente.map((t) => {
                   const Icon = t.icon;
                   const active = tipoSelecionado === t.value;
