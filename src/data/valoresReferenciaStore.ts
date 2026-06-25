@@ -13,6 +13,9 @@ export type CategoriaVR =
   | "padrao" | "gestante" | "recem_nascido" | "crianca" | "adolescente"
   | "adulto" | "idoso" | "masculino" | "feminino" | "custom";
 
+export type JejumVR = "qualquer" | "com_jejum" | "sem_jejum";
+export type OperadorVR = "entre" | "menor" | "menor_igual" | "maior" | "maior_igual" | "igual";
+
 export interface ValorReferencia {
   id: number;
   exameNome: string;
@@ -29,7 +32,12 @@ export interface ValorReferencia {
   criticoMax?: string;
   /** Categoria do redesign Padrão+Variações. Default 'custom' para registros legados. */
   categoria?: CategoriaVR;
+  /** Condição de jejum exigida. 'qualquer' = não filtra. */
+  jejum?: JejumVR;
+  /** Operador comparativo do limite. 'entre' usa valorMin–valorMax. */
+  operador?: OperadorVR;
 }
+
 
 export const CATEGORIA_META: Record<CategoriaVR, {
   label: string; icon: string; idadeMinDias: number | null; idadeMaxDias: number | null;
