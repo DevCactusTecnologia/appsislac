@@ -287,12 +287,14 @@ export const resolverReferencia = (
     const sb = b.sexo !== "Ambos" ? 1 : 0;
     if (sb !== sa) return sb - sa;
     // Faixa etária mais estreita vence
-    const fa = a.unidadeIdade === "Anos" ? 365 : a.unidadeIdade === "Meses" ? 30 : 1;
-    const fb = b.unidadeIdade === "Anos" ? 365 : b.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorA = a.unidadeIdade === "Anos" ? 365 : a.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorAMax = (a.unidadeIdadeMax ?? a.unidadeIdade) === "Anos" ? 365 : (a.unidadeIdadeMax ?? a.unidadeIdade) === "Meses" ? 30 : 1;
+    const fatorB = b.unidadeIdade === "Anos" ? 365 : b.unidadeIdade === "Meses" ? 30 : 1;
+    const fatorBMax = (b.unidadeIdadeMax ?? b.unidadeIdade) === "Anos" ? 365 : (b.unidadeIdadeMax ?? b.unidadeIdade) === "Meses" ? 30 : 1;
     const la = a.idadeMin || a.idadeMax
-      ? ((parseFloat(a.idadeMax) || 99999) - (parseFloat(a.idadeMin) || 0)) * fa : Infinity;
+      ? ((parseFloat(a.idadeMax) || 99999) * fatorAMax) - ((parseFloat(a.idadeMin) || 0) * fatorA) : Infinity;
     const lb = b.idadeMin || b.idadeMax
-      ? ((parseFloat(b.idadeMax) || 99999) - (parseFloat(b.idadeMin) || 0)) * fb : Infinity;
+      ? ((parseFloat(b.idadeMax) || 99999) * fatorBMax) - ((parseFloat(b.idadeMin) || 0) * fatorB) : Infinity;
     return la - lb;
   });
 
