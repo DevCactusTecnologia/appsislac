@@ -844,13 +844,11 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     if (!open) return null;
     return (
       <div className="flex flex-col h-full bg-card">
-        <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
-          {headerActions}
-        </div>
         <div className="flex-1 min-h-0 overflow-hidden">{body}</div>
       </div>
     );
   }
+
 
   return (
     <StandardDialog
