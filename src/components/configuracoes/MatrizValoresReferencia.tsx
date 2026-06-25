@@ -436,7 +436,9 @@ const MatrizValoresReferencia = ({
             {foraDaRegua.length} faixa(s) fora da régua atual
           </div>
           <p className="text-[11px] text-muted-foreground mb-2">
-            Estas faixas existem para o parâmetro mas não encaixam nas colunas desta régua (sexo "Ambos" ou intervalo cruzando faixas). Trocar a régua não as altera; edite-as na aba <strong>Lista</strong>.
+            Estas faixas existem para o parâmetro mas não encaixam nas colunas desta régua
+            (sexo "Ambos" ou intervalo cruzando faixas). Troque a régua em <strong>Réguas</strong> ou
+            ajuste o intervalo para que coincida com uma das colunas.
           </p>
           <ul className="space-y-1">
             {foraDaRegua.map((r) => (
