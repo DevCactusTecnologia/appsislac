@@ -9,7 +9,8 @@
 // Resolver: maior prioridade compatível com sexo+idade+gestante vence.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee, EyeOff, Eye } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
