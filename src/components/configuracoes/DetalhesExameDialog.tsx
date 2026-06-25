@@ -95,8 +95,8 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
 
   const tabs: Array<{ key: TabKey; label: string; icon: typeof Layers; hint: string; count?: number }> = [
     { key: "layouts", label: "Layouts", icon: Layers, hint: "Motor científico do laudo", count: layouts.length || undefined },
-    { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação" },
-    { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade" },
+    { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação", count: parametros.length || undefined },
+    { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade", count: refsCount || undefined },
   ];
 
   const headerActions = (
