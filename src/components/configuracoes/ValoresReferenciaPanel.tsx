@@ -544,7 +544,7 @@ const ParametroBloco = ({
       idadeMax: conv(meta.idadeMaxDias),
       unidadeIdade: unid,
       valorMin: "", valorMax: "",
-      unidade: padrao?.unidade ?? "",
+      unidade: meusRefs[0]?.unidade ?? "",
       descricao: "",
       criticoMin: "", criticoMax: "",
       categoria: cat,
