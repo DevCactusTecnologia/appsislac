@@ -302,20 +302,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const totalVisiveis = parametros.filter((p) => p.visivel).length;
   const totalObrigatorios = parametros.filter((p) => p.obrigatorio === "SIM").length;
 
-  return (
-    <StandardDialog
-      open={open}
-      onClose={onClose}
-      icon={<Settings2 className="h-5 w-5 text-[hsl(var(--status-info))]" />}
-      title="Parâmetros do exame"
-      subtitle={exameNome || "Defina os campos de resultado"}
-      headerActions={headerActions}
-      
-      maxWidth="7xl"
-      allowMaximize={true}
-      defaultMaximized={defaultMaximized}
-    >
+  const body = (
       <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] grid-rows-1 h-full min-h-[600px] overflow-hidden">
+
         {/* LEFT: List panel */}
         <aside className="border-r border-border/60 bg-muted/20 flex flex-col overflow-hidden">
           {/* Search + stats */}
