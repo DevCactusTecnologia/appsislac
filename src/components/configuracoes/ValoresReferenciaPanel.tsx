@@ -10,7 +10,7 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, AlertTriangle, Eraser, EyeOff, Eye } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -125,10 +125,37 @@ interface RowProps {
   onMutate: () => void;
 }
 
+/** Template do grid de uma linha — compartilhado entre cabeçalho e linhas. */
+const ROW_TPL =
+  "grid-cols-[1.3fr_0.9fr_1.6fr_1.5fr_1.4fr_1.4fr_0.6fr_1fr_0.7fr]";
+
+type SexoVR = "Ambos" | "Masculino" | "Feminino";
+type UnidIdade = "Anos" | "Meses" | "Dias";
+
 const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps) => {
   const { toast } = useToast();
   const meta = CATEGORIA_META[categoria];
   const exists = !!vr;
+  const isPadrao = categoria === "padrao";
+  const isGestante = categoria === "gestante";
+
+  // Defaults para uma linha NOVA — se for variação por preset, herda sexo/idade do meta.
+  const defaultSexo: SexoVR = vr?.sexo ?? meta.sexo;
+  const defaultUnidIdade: UnidIdade = vr?.unidadeIdade
+    ?? (meta.idadeMinDias !== null && meta.idadeMinDias < 30 ? "Dias"
+        : meta.idadeMinDias !== null && meta.idadeMinDias < 365 ? "Meses" : "Anos");
+  const defaultIdadeMin = vr?.idadeMin
+    ?? (meta.idadeMinDias !== null
+        ? String(defaultUnidIdade === "Anos" ? Math.round(meta.idadeMinDias / 365)
+            : defaultUnidIdade === "Meses" ? Math.round(meta.idadeMinDias / 30)
+            : meta.idadeMinDias)
+        : "");
+  const defaultIdadeMax = vr?.idadeMax
+    ?? (meta.idadeMaxDias !== null
+        ? String(defaultUnidIdade === "Anos" ? Math.round(meta.idadeMaxDias / 365)
+            : defaultUnidIdade === "Meses" ? Math.round(meta.idadeMaxDias / 30)
+            : meta.idadeMaxDias)
+        : "");
 
   const [normMin, setNormMin] = useState(vr?.valorMin ?? "");
   const [normMax, setNormMax] = useState(vr?.valorMax ?? "");
@@ -137,6 +164,10 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
   const [jejum, setJejum] = useState<JejumVR>((vr?.jejum as JejumVR) ?? "qualquer");
   const [operador, setOperador] = useState<OperadorVR>((vr?.operador as OperadorVR) ?? "entre");
+  const [sexo, setSexo] = useState<SexoVR>(defaultSexo);
+  const [idadeMin, setIdadeMin] = useState(defaultIdadeMin);
+  const [idadeMax, setIdadeMax] = useState(defaultIdadeMax);
+  const [unidadeIdade, setUnidadeIdade] = useState<UnidIdade>(defaultUnidIdade);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
@@ -149,6 +180,11 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setUnidade(vr?.unidade ?? "");
     setJejum((vr?.jejum as JejumVR) ?? "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
+    setSexo(vr?.sexo ?? defaultSexo);
+    setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
+    setIdadeMax(vr?.idadeMax ?? defaultIdadeMax);
+    setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vr?.id]);
 
   const dirty =
@@ -158,19 +194,24 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     (vr?.criticoMax ?? "") !== critMax ||
     (vr?.unidade ?? "") !== unidade ||
     (((vr?.jejum as JejumVR) ?? "qualquer")) !== jejum ||
-    (((vr?.operador as OperadorVR) ?? "entre")) !== operador;
+    (((vr?.operador as OperadorVR) ?? "entre")) !== operador ||
+    (vr?.sexo ?? defaultSexo) !== sexo ||
+    (vr?.idadeMin ?? defaultIdadeMin) !== idadeMin ||
+    (vr?.idadeMax ?? defaultIdadeMax) !== idadeMax ||
+    (vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdade;
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const isEntre = operador === "entre";
-  const isPadrao = categoria === "padrao";
 
   const previewVal = isEntre && nMin !== null && nMax !== null ? (nMin + nMax) / 2 : nMax;
 
   const buildPayload = (overrides?: Partial<ValorReferencia>): Omit<ValorReferencia, "id"> => ({
     exameNome,
     parametroNome: parametro.chave || parametro.rotulo,
-    sexo: meta.sexo,
-    idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
+    sexo: isGestante ? "Feminino" : (isPadrao ? "Ambos" : sexo),
+    idadeMin: isPadrao ? "" : idadeMin,
+    idadeMax: isPadrao ? "" : idadeMax,
+    unidadeIdade,
     valorMin: isEntre ? normMin : "",
     valorMax: normMax,
     unidade,
@@ -189,17 +230,21 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 
   const salvarSeNecessario = async () => {
     if (!dirty) return;
-    if (isEntre) {
-      if (nMin !== null && nMax !== null && nMin > nMax) {
-        toast({ title: "Mínimo normal maior que máximo", variant: "destructive" });
-        return;
-      }
+    if (isEntre && nMin !== null && nMax !== null && nMin > nMax) {
+      toast({ title: "Mínimo normal maior que máximo", variant: "destructive" });
+      return;
     }
     if (cMin !== null && cMax !== null && cMin > cMax) {
       toast({ title: "Mínimo crítico maior que máximo", variant: "destructive" });
       return;
     }
-    // Sem valores: só persiste se já existe (não cria registro vazio automaticamente)
+    if (!isPadrao && idadeMin && idadeMax) {
+      const a = parseFloat(idadeMin), b = parseFloat(idadeMax);
+      if (Number.isFinite(a) && Number.isFinite(b) && a > b) {
+        toast({ title: "Idade mínima maior que máxima", variant: "destructive" });
+        return;
+      }
+    }
     if (!exists && !normMin && !normMax && !critMin && !critMax && !unidade) return;
     setSaving(true);
     try {
@@ -240,29 +285,87 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const rowBg = isPadrao ? "bg-primary/[0.02]" : "";
 
   return (
-    <div className={`grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-muted/30 transition-colors ${rowBg} ${saving ? "opacity-70" : ""}`}>
+    <div className={`grid ${ROW_TPL} gap-2 px-4 py-2.5 items-center hover:bg-muted/30 transition-colors ${rowBg} ${saving ? "opacity-70" : ""}`}>
       {/* Categoria */}
-      <div className="col-span-2 flex items-start gap-2 min-w-0">
-        <span className="text-sm leading-none shrink-0 mt-0.5">{meta.icon}</span>
-        <div className="flex flex-col min-w-0 gap-0.5">
-          <span
-            className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}
-            title={`${categoriaResumo(categoria).sexo} • ${categoriaResumo(categoria).idade}`}
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-sm leading-none shrink-0">{meta.icon}</span>
+        <span
+          className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}
+          title={`${categoriaResumo(categoria).sexo} • ${categoriaResumo(categoria).idade}`}
+        >
+          {meta.label}
+        </span>
+      </div>
+
+      {/* Sexo */}
+      <div>
+        {isPadrao ? (
+          <div className="h-9 flex items-center justify-center text-[11px] text-muted-foreground/60">—</div>
+        ) : (
+          <Select
+            value={sexo}
+            onValueChange={(v) => setSexo(v as SexoVR)}
+            disabled={isGestante}
           >
-            {meta.label}
-          </span>
-          <div className="text-[10px] leading-tight text-muted-foreground truncate">
-            <span className="font-medium">{categoriaResumo(categoria).sexo}</span>
-            <span className="mx-1 text-muted-foreground/50">•</span>
-            <span>{categoriaResumo(categoria).idade}</span>
+            <SelectTrigger
+              className="h-9 text-[12px] px-2"
+              onBlur={salvarSeNecessario}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Ambos" className="text-[12px]">Ambos</SelectItem>
+              <SelectItem value="Masculino" className="text-[12px]">♂ Masculino</SelectItem>
+              <SelectItem value="Feminino" className="text-[12px]">♀ Feminino</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
+      {/* Idade De – Até + Unidade */}
+      <div>
+        {isPadrao ? (
+          <div className="h-9 flex items-center justify-center text-[11px] text-muted-foreground/60">qualquer idade</div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Input
+              value={idadeMin}
+              onChange={(e) => setIdadeMin(e.target.value)}
+              onBlur={salvarSeNecessario}
+              placeholder="de"
+              className="h-9 text-center text-[12px] px-1 w-full"
+              inputMode="numeric"
+            />
+            <span className="text-muted-foreground/60 text-[10px]">–</span>
+            <Input
+              value={idadeMax}
+              onChange={(e) => setIdadeMax(e.target.value)}
+              onBlur={salvarSeNecessario}
+              placeholder="até"
+              className="h-9 text-center text-[12px] px-1 w-full"
+              inputMode="numeric"
+            />
+            <Select
+              value={unidadeIdade}
+              onValueChange={(v) => setUnidadeIdade(v as UnidIdade)}
+            >
+              <SelectTrigger className="h-9 text-[11px] px-1.5 w-[64px]" onBlur={salvarSeNecessario}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Dias" className="text-[12px]">Dias</SelectItem>
+                <SelectItem value="Meses" className="text-[12px]">Meses</SelectItem>
+                <SelectItem value="Anos" className="text-[12px]">Anos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Condição: operador + jejum */}
-      <div className="col-span-2 flex gap-1.5">
+      <div className="flex gap-1">
         <Select value={operador} onValueChange={(v) => { setOperador(v as OperadorVR); }}>
-          <SelectTrigger className="h-9 text-[12px] px-2"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.keys(OPERADOR_LABEL_LONGO) as OperadorVR[]).map((op) => (
               <SelectItem key={op} value={op} className="text-[12px]">{OPERADOR_LABEL_LONGO[op]}</SelectItem>
@@ -270,7 +373,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
           </SelectContent>
         </Select>
         <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
-          <SelectTrigger className="h-9 text-[12px] px-2"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
               <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
@@ -280,7 +383,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
       {/* Faixa Normal */}
-      <div className="col-span-2 flex items-center gap-1">
+      <div className="flex items-center gap-1">
         {isEntre ? (
           <>
             <Input
@@ -305,7 +408,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
       {/* Faixa Crítica */}
-      <div className="col-span-2 flex items-center gap-1">
+      <div className="flex items-center gap-1">
         <Input
           value={critMin} onChange={(e) => setCritMin(e.target.value)} onBlur={salvarSeNecessario}
           placeholder="min" className="h-9 text-center text-[12px] px-1 bg-destructive/[0.03] border-destructive/15 focus-visible:border-destructive/40"
@@ -318,7 +421,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
       {/* Unidade */}
-      <div className="col-span-1">
+      <div>
         <Input
           value={unidade} onChange={(e) => setUnidade(e.target.value)} onBlur={salvarSeNecessario}
           placeholder="un." className="h-9 text-center text-[11px] px-1"
@@ -326,12 +429,11 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
       {/* Preview */}
-      <div className="col-span-2 flex justify-center">
+      <div className="flex justify-center">
         {previewVal !== null && exists ? (
-          <div className="px-2.5 py-1.5 rounded-md bg-muted/50 border border-border/40 text-[11px] font-semibold flex items-center gap-1.5">
+          <div className="px-2 py-1 rounded-md bg-muted/50 border border-border/40 text-[11px] font-semibold flex items-center gap-1">
             <span className="text-foreground">{previewVal.toFixed(1)}</span>
-            <span className="text-muted-foreground/60">→</span>
-            <span className={previewClass(previewVal, nMin, nMax, cMin, cMax)}>NORMAL</span>
+            <span className={previewClass(previewVal, nMin, nMax, cMin, cMax)}>●</span>
           </div>
         ) : (
           <span className="text-[11px] text-muted-foreground/60 italic">
@@ -341,7 +443,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
       {/* Ações */}
-      <div className="col-span-1 flex items-center justify-end gap-0.5">
+      <div className="flex items-center justify-end gap-0.5">
         {exists && hasAnyValue && (
           <button
             onClick={() => setConfirmOpen("clear")} disabled={saving}
@@ -378,7 +480,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
               ) : isPadrao ? (
                 <>A regra <strong>Padrão</strong> deste parâmetro será removida. Sem ela, apenas variações específicas (sexo / idade / gestante) serão aplicadas.</>
               ) : (
-                <>A variação <strong>{meta.label}</strong> deste parâmetro será removida. Esta ação não pode ser desfeita.</>
+                <>Esta variação <strong>{meta.label}</strong> será removida. Esta ação não pode ser desfeita.</>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -409,37 +511,52 @@ const ParametroBloco = ({
   );
 
   const padrao = meusRefs.find((r) => r.categoria === "padrao") ?? null;
-  const variacoes = ORDEM_VARIACOES
-    .map((cat) => ({ cat, vr: meusRefs.find((r) => r.categoria === cat) ?? null }))
-    .filter((x) => x.vr !== null);
+  // Variações: TODAS as linhas que não são padrão (pode haver várias por categoria,
+  // pois o usuário define sexo+idade livres em cada linha).
+  const variacoes = meusRefs
+    .filter((r) => r.categoria && r.categoria !== "padrao")
+    .sort((a, b) => {
+      const pa = CATEGORIA_META[a.categoria as CategoriaVR].prioridade;
+      const pb = CATEGORIA_META[b.categoria as CategoriaVR].prioridade;
+      if (pb !== pa) return pb - pa;
+      return a.id - b.id;
+    })
+    .map((vr) => ({ cat: vr.categoria as CategoriaVR, vr }));
 
-  const variacoesDisponiveis = ORDEM_VARIACOES.filter(
-    (cat) => !meusRefs.some((r) => r.categoria === cat),
-  );
+  // O dropdown sempre oferece TODOS os presets — é só atalho para criar nova linha.
+  const variacoesDisponiveis = ORDEM_VARIACOES;
 
   const adicionarVariacao = async (cat: CategoriaVR) => {
     const meta = CATEGORIA_META[cat];
+    const unid: "Anos" | "Meses" | "Dias" =
+      meta.idadeMinDias !== null && meta.idadeMinDias < 30 ? "Dias"
+        : meta.idadeMinDias !== null && meta.idadeMinDias < 365 ? "Meses" : "Anos";
+    const conv = (d: number | null): string => {
+      if (d === null) return "";
+      return String(unid === "Anos" ? Math.round(d / 365)
+        : unid === "Meses" ? Math.round(d / 30) : d);
+    };
     await addValorReferencia({
       exameNome,
       parametroNome: parametro.chave || parametro.rotulo,
       sexo: meta.sexo,
-      idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-      valorMin: padrao?.valorMin ?? "", valorMax: padrao?.valorMax ?? "",
+      idadeMin: conv(meta.idadeMinDias),
+      idadeMax: conv(meta.idadeMaxDias),
+      unidadeIdade: unid,
+      valorMin: "", valorMax: "",
       unidade: padrao?.unidade ?? "",
       descricao: "",
-      criticoMin: padrao?.criticoMin ?? "", criticoMax: padrao?.criticoMax ?? "",
+      criticoMin: "", criticoMax: "",
       categoria: cat,
     });
     onMutate();
   };
 
-  const customs = meusRefs.filter((r) => r.categoria === "custom");
-  const [customParaRemover, setCustomParaRemover] = useState<ValorReferencia | null>(null);
 
   // Sempre exibe a linha Padrão (mesmo sem valores) para permitir edição inicial.
-  const linhas: Array<{ cat: CategoriaVR; vr: ValorReferencia | null }> = [
-    { cat: "padrao", vr: padrao },
-    ...variacoes,
+  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> = [
+    { key: "padrao", cat: "padrao", vr: padrao },
+    ...variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr })),
   ];
 
   return (
@@ -465,116 +582,66 @@ const ParametroBloco = ({
       </header>
 
       {/* Cabeçalho da tabela */}
-      <div className="grid grid-cols-12 gap-3 px-5 py-2.5 bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30">
-        <div className="col-span-2">Categoria</div>
-        <div className="col-span-2">Condição</div>
-        <div className="col-span-2 text-center">Faixa Normal</div>
-        <div className="col-span-2 text-center">Faixa Crítica</div>
-        <div className="col-span-1 text-center">Unidade</div>
-        <div className="col-span-2 text-center">Preview</div>
-        <div className="col-span-1 text-right">Ações</div>
+      <div className={`grid ${ROW_TPL} gap-2 px-4 py-2.5 bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30`}>
+        <div>Categoria</div>
+        <div className="text-center">Sexo</div>
+        <div className="text-center">Faixa Etária</div>
+        <div>Condição</div>
+        <div className="text-center">Faixa Normal</div>
+        <div className="text-center">Faixa Crítica</div>
+        <div className="text-center">Un.</div>
+        <div className="text-center">Preview</div>
+        <div className="text-right">Ações</div>
       </div>
 
       {/* Linhas */}
-      <div className="divide-y divide-border/30">
-        {linhas.map(({ cat, vr }) => (
-          <RegraLinha key={cat} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
+      <div className="divide-y divide-border/30 overflow-x-auto">
+        {linhas.map(({ key, cat, vr }) => (
+          <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
 
-      {/* Personalizadas (custom) */}
-      {customs.length > 0 && (
-        <div className="px-5 py-3 bg-amber-500/[0.04] border-t border-amber-500/20 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-            <div className="text-[11px] text-foreground/80">
-              <strong>{customs.length}</strong> regra(s) personalizada(s) (faixa etária livre):
-            </div>
-          </div>
-          <div className="space-y-1 pl-5">
-            {customs.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-[11px] bg-background/60 rounded px-2 py-1 border border-border/40">
-                <span className="truncate">
-                  {c.sexo} • {c.idadeMin || "0"}–{c.idadeMax || "∞"} {c.unidadeIdade} • {c.valorMin}–{c.valorMax} {c.unidade}
-                </span>
-                <button
-                  onClick={() => setCustomParaRemover(c)}
-                  className="h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0 ml-2"
-                  title="Remover"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <footer className="px-5 py-3 bg-muted/30 border-t border-border/40 flex items-center justify-between">
-        {variacoesDisponiveis.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-[13px] transition-colors group">
-                <span className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Plus className="h-3.5 w-3.5" />
-                </span>
-                Adicionar variação
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              {variacoesDisponiveis.map((cat) => {
-                const m = CATEGORIA_META[cat];
-                const r = categoriaResumo(cat);
-                return (
-                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
-                    <span className="text-base leading-none">{m.icon}</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-medium">{m.label}</span>
-                      <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <span className="text-[11px] text-muted-foreground">Todas as variações configuradas.</span>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-[13px] transition-colors group">
+              <span className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
+              Adicionar variação
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+              Presets (você pode editar Sexo e Idade depois)
+            </div>
+            {variacoesDisponiveis.map((cat) => {
+              const m = CATEGORIA_META[cat];
+              const r = categoriaResumo(cat);
+              return (
+                <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
+                  <span className="text-base leading-none">{m.icon}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium">{m.label}</span>
+                    <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
+            <div className="border-t my-1" />
+            <DropdownMenuItem onClick={() => adicionarVariacao("custom")} className="gap-2 text-[13px] py-2">
+              <span className="text-base leading-none">⚙️</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium">Personalizada (em branco)</span>
+                <span className="text-[10px] text-muted-foreground truncate">Sexo e idade definidos por você</span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="text-[11px] text-muted-foreground/70">Alterações salvas automaticamente ao sair do campo.</span>
       </footer>
-
-      <AlertDialog open={customParaRemover !== null} onOpenChange={(o) => !o && setCustomParaRemover(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-4 w-4 text-destructive" /> Remover regra personalizada?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {customParaRemover && (
-                <>A regra <strong>{customParaRemover.sexo} • {customParaRemover.idadeMin || "0"}–{customParaRemover.idadeMax || "∞"} {customParaRemover.unidadeIdade}</strong> será removida deste parâmetro. Esta ação não pode ser desfeita.</>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                const id = customParaRemover?.id;
-                setCustomParaRemover(null);
-                if (id) {
-                  const ok = await removeValorReferencia(id);
-                  if (ok) onMutate();
-                }
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </section>
   );
 };

@@ -1,65 +1,49 @@
-# Plano OECV — Resolução Inteligente de Valores de Referência
+# Sexo e Idade editáveis por linha
 
-## Objetivo
-Estender o resolver de Valores de Referência para cobrir os 3 padrões reais observados (só número, sexo+idade, idade+condição clínica como jejum), mantendo retrocompatibilidade total e UI moderna.
+## Problema
 
-## Fase 1 — OLHOU (já concluída)
-Mapeados 3 padrões em uso:
-- **A.** Só número (ex.: Ácido Úrico por sexo)
-- **B.** Sexo + Faixa Etária (ex.: Ferro RN/Lactente/Criança/Adulto M/F)
-- **C.** Idade + Condição clínica (ex.: Triglicérides com/sem jejum, Colesterol HDL/LDL por faixa de risco)
+Hoje cada variação (Gestante, Recém-nascido, Criança, Adulto, Idoso, Masculino, Feminino…) tem **sexo e faixa etária fixos no código** (`CATEGORIA_META`). Isso não funciona na prática clínica: para "Hemácias" o usuário precisa de ~10 linhas — 5 Masculino e 5 Feminino — com faixas etárias específicas do exame, que mudam entre parâmetros.
 
-Estado atual: `valores_referencia` já tem `sexo`, `idade_min_dias`, `idade_max_dias`, `categoria` (enum), `prioridade`. Resolver já prioriza Gestante > Idade > Sexo > Padrão.
+A solução é simples: **cada linha vira uma regra livre** onde o próprio usuário escolhe o sexo e a faixa etária (de / até / unidade). As categorias atuais viram apenas atalhos para criar uma linha pré-preenchida que o usuário pode editar.
 
-Lacunas:
-1. **Jejum** não é dimensão de filtro (só Gestante existe como condição).
-2. **Operador comparativo** (`< 100`, `≥ 190`) não é primeira-classe — hoje é texto livre em `texto_laudo`.
-3. Painel não permite criar variação por jejum nem operadores.
+## O que muda na UI
 
-## Fase 2 — ENTENDEU
-Decisão arquitetural: **aditiva, sem breaking changes**.
-- Novas colunas com default neutro ("qualquer" / "entre") preservam todas as regras existentes.
-- Resolver ganha 1 nível extra na chave de prioridade (jejum) e 1 modo de exibição (operador).
-- UI ganha 2 controles novos no editor de variação; nada muda para quem não usa.
+Cada linha do bloco de um parâmetro passa a ter, antes da "Condição":
 
-## Fase 3 — CONFIGURAR
+- **Sexo** (select): Ambos / Masculino / Feminino
+- **Idade De** (input numérico) + **Idade Até** (input numérico) + **Unidade** (Dias / Meses / Anos)
 
-### 3.1 Banco
-Migração aditiva em `public.valores_referencia`:
-```sql
-ALTER TABLE public.valores_referencia
-  ADD COLUMN jejum text NOT NULL DEFAULT 'qualquer'
-    CHECK (jejum IN ('qualquer','com_jejum','sem_jejum')),
-  ADD COLUMN operador text NOT NULL DEFAULT 'entre'
-    CHECK (operador IN ('entre','menor','menor_igual','maior','maior_igual','igual'));
+Tudo editável e auto-salvo no blur, igual aos outros campos da matriz.
+
+O chip colorido da categoria continua existindo (Gestante, Adulto, Masculino…) como **rótulo/atalho**, mas o sexo e a idade reais são os que o usuário digitou na linha — não mais os fixos do `CATEGORIA_META`.
+
+O menu "Adicionar variação" continua oferecendo os presets (Recém-nascido 0–28d, Idoso ≥65a, etc.), mas agora eles **pré-preenchem** sexo + idade da nova linha; o usuário pode ajustar livremente em seguida. Acrescenta-se também a opção "Personalizada" para criar uma linha em branco.
+
+Layout proposto da linha (grid 14 colunas, leve aumento da densidade):
+
+```text
+Categoria | Sexo | Idade De–Até + Un. | Condição | Normal | Crítica | Un. | Preview | Ações
 ```
-Atualizar trigger de `prioridade` para somar +1 quando `jejum <> 'qualquer'`.
-Índice parcial para acelerar lookups com jejum.
 
-### 3.2 Resolver (`src/data/valoresReferenciaStore.ts`)
-- Função `resolverReferencia(...)` recebe novo parâmetro opcional `jejum?: boolean`.
-- Ranking atualizado: **Gestante > Jejum específico > Idade > Sexo > Padrão**.
-- Filtragem: regras com `jejum='qualquer'` sempre elegíveis; regras com `jejum` específico só entram se contexto bate.
+## O que muda no resolver
 
-### 3.3 Integração com Resultado
-- `ResultadoDetalhe.tsx` já tem `jejum` no atendimento (memória existente). Passar valor ao resolver.
+`resolverReferencia` em `valoresReferenciaStore.ts` passa a usar, **para todas as categorias**, os campos `sexo`, `idadeMin`, `idadeMax`, `unidadeIdade` da própria linha (igual à categoria `custom` faz hoje). `CATEGORIA_META.idadeMinDias/idadeMaxDias/sexo` deixam de ser fonte da verdade — viram apenas defaults na criação.
 
-### 3.4 UI — `ValoresReferenciaPanel.tsx`
-Adicionar no editor de cada card de variação:
-- **Select "Jejum"**: Qualquer / Com jejum / Sem jejum.
-- **Select "Operador"**: Entre (default, mostra Min/Max) / < / ≤ / > / ≥ / =.
-  - Quando operador ≠ "entre": esconde Min, renomeia Max para "Valor".
-- Badge contextual no card resumindo as condições ativas (ex.: "Adulto • Com jejum • < 150").
+Prioridade continua: Gestante > variações por sexo+idade > Padrão. Empate: linha com sexo específico vence "Ambos"; faixa etária mais estreita vence mais larga.
 
-### 3.5 Menu "Adicionar variação"
-Adicionar opção **"Por jejum"** que cria card pré-configurado com `jejum='com_jejum'`.
+## Migração de dados
 
-## Fase 4 — VALIDAR
-- Cadastrar Triglicérides Adulto com jejum (< 150) e sem jejum (< 175); abrir resultado com `jejum=true` e conferir referência exibida.
-- Cadastrar Colesterol HDL com operador `≥ 40` (homem) e `≥ 50` (mulher); validar resolução por sexo + operador.
-- Regressão: abrir Hemograma (regras antigas sem jejum) e confirmar que continua resolvendo idêntico.
-- Conferir trigger de prioridade: regra com jejum específico vence regra sem jejum em empate de idade/sexo.
+Para regras já cadastradas hoje sem `idadeMin/idadeMax` (recém-nascido, idoso, etc., que dependem do meta), uma migração SQL preenche esses campos a partir do `CATEGORIA_META` correspondente — assim nada muda de comportamento para o que já existe.
 
-## Fora de escopo (próxima fase, se aprovado)
-- Parser HTML que extrai faixas dos layouts antigos do Hemograma e migra para `valores_referencia` automaticamente.
-- Dimensão "Etnia" (não apareceu nos exemplos reais).
+## Arquivos afetados
+
+- `src/data/valoresReferenciaStore.ts` — resolver passa a ler sexo/idade da linha; manter compatibilidade.
+- `src/components/configuracoes/ValoresReferenciaPanel.tsx` — `RegraLinha` ganha campos editáveis Sexo + Idade De/Até/Unidade; grid passa de 12 para 14 colunas; menu de adicionar usa presets como defaults; nova opção "Personalizada".
+- Migração SQL — backfill de `idade_min/idade_max/unidade_idade/sexo` nas linhas existentes onde estão vazios.
+
+## Fora do escopo
+
+- Não mexer em catálogo de exames, parâmetros, layout do laudo, ou crítico global.
+- Não remover as categorias existentes — continuam como presets visuais e rótulos.
+
+Confirma para eu implementar?
