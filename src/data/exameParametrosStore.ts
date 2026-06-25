@@ -4,7 +4,10 @@ import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 
-export type ParametroTipo = "Texto" | "Número" | "Select" | "Formula";
+export type ParametroTipo = "Texto" | "Número" | "Select" | "Formula" | "Tempo";
+
+/** Formato de exibição para parâmetros do tipo "Tempo". */
+export type FormatoTempo = "min_seg" | "hh_mm_ss";
 
 export interface ExameParametro {
   id: number;
@@ -35,6 +38,8 @@ export interface ExameParametro {
   separadorDecimal: "." | ",";
   /** Quantidade total de dígitos (inteiros + decimais). 0/undefined = sem limite. */
   qtdDigitos: number;
+  /** Formato de exibição (apenas tipo "Tempo"). */
+  formatoExibicao?: FormatoTempo;
 }
 
 const cache = new Map<string, ExameParametro[]>();
@@ -62,6 +67,7 @@ const fromRow = (r: any): ExameParametro => ({
   criticoMax: r.critico_max ?? "",
   separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
   qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
+  formatoExibicao: (r.formato_exibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg") as FormatoTempo,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
@@ -85,6 +91,7 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.criticoMax !== undefined && { critico_max: p.criticoMax }),
   ...(p.separadorDecimal !== undefined && { separador_decimal: p.separadorDecimal }),
   ...(p.qtdDigitos !== undefined && { qtd_digitos: p.qtdDigitos || null }),
+  ...(p.formatoExibicao !== undefined && { formato_exibicao: p.formatoExibicao }),
 });
 
 /**

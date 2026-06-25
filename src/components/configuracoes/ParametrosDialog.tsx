@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Settings2, Eye, EyeOff, Save, Trash2, GripVertical, Wand2, Plus, X,
   Sparkles, AlertOctagon, Search, Type, Hash, ListChecks, Sigma, Tag,
-  KeyRound, ChevronDown, FlaskConical, Asterisk,
+  KeyRound, ChevronDown, FlaskConical, Asterisk, Clock,
 } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Switch } from "@/components/ui/switch";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ExameParametro,
   ParametroTipo,
+  FormatoTempo,
   loadParametros,
   getParametros,
   subscribeParametros,
@@ -27,6 +28,7 @@ const tiposComponente: { value: ParametroTipo; label: string; desc: string; icon
   { value: "Número", label: "Número", desc: "Inteiro / decimal", icon: Hash },
   { value: "Select", label: "Lista", desc: "Opções fixas", icon: ListChecks },
   { value: "Formula", label: "Fórmula", desc: "Cálculo automático", icon: Sigma },
+  { value: "Tempo", label: "Tempo", desc: "Min/seg ou hh:mm:ss", icon: Clock },
 ];
 
 const tipoIcon = (t: ParametroTipo) => tiposComponente.find((x) => x.value === t)?.icon ?? Type;
@@ -62,6 +64,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const [qtdDigitos, setQtdDigitos] = useState<number>(0);
   const [criticoMin, setCriticoMin] = useState<string>("");
   const [criticoMax, setCriticoMax] = useState<string>("");
+  const [formatoTempo, setFormatoTempo] = useState<FormatoTempo>("min_seg");
   const [saving, setSaving] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [busca, setBusca] = useState("");
@@ -98,6 +101,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setSeparadorDecimal(".");
     setQtdDigitos(0);
     setCriticoMin(""); setCriticoMax("");
+    setFormatoTempo("min_seg");
     setTipoSelecionado("Texto");
   };
 
@@ -119,6 +123,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setQtdDigitos(typeof p.qtdDigitos === "number" ? p.qtdDigitos : 0);
     setCriticoMin(p.criticoMin ?? "");
     setCriticoMax(p.criticoMax ?? "");
+    setFormatoTempo(p.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg");
   };
 
   const chaveJaUsada = useMemo(
@@ -185,6 +190,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       criticoMax: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? criticoMax.trim() : "",
       separadorDecimal: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? separadorDecimal : ".",
       qtdDigitos: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? qtdDigitos : 0,
+      formatoExibicao: tipoSelecionado === "Tempo" ? formatoTempo : undefined,
     };
     let ok = false;
     if (selectedId) ok = await updateParametro(selectedId, exameId, payload);
@@ -507,7 +513,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             {/* STEP 3 — Type specific */}
             {(tipoSelecionado === "Select" ||
               tipoSelecionado === "Número" ||
-              tipoSelecionado === "Formula") && (
+              tipoSelecionado === "Formula" ||
+              tipoSelecionado === "Tempo") && (
               <FormSection
                 step={3}
                 title="Configuração específica"
@@ -547,6 +554,36 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {tipoSelecionado === "Tempo" && (
+                  <div>
+                    <label className={labelClass}>Formato de exibição</label>
+                    <div className="flex gap-1.5">
+                      {([
+                        { v: "min_seg" as const, lbl: "Min / Seg", sample: "12 min 30 s" },
+                        { v: "hh_mm_ss" as const, lbl: "HH:MM:SS", sample: "00:12:30" },
+                      ]).map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setFormatoTempo(opt.v)}
+                          className={`flex-1 h-10 rounded-xl border text-[12px] font-semibold transition-all duration-200 flex flex-col items-center justify-center ${
+                            formatoTempo === opt.v
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                          }`}
+                        >
+                          <span>{opt.lbl}</span>
+                          <span className="font-mono text-[10.5px] opacity-70">{opt.sample}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10.5px] text-muted-foreground mt-2 leading-relaxed">
+                      Na digitação, o operador preenche dois campos (minutos e segundos).
+                      Campos vazios são omitidos no laudo. Ex.: só segundos → "30 s".
+                    </p>
                   </div>
                 )}
 
