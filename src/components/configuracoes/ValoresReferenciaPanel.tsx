@@ -9,7 +9,7 @@
 // Resolver: maior prioridade compatível com sexo+idade+gestante vence.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,10 @@ import type { ExameParametro } from "@/data/exameParametrosStore";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   exameNome: string;
@@ -66,6 +70,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
 
   useEffect(() => {
     setNormMin(vr?.valorMin ?? "");
@@ -84,6 +89,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const previewOk = nMin !== null ? (nMin + nMax!) / 2 : null;
+  const isPadrao = categoria === "padrao";
 
   const validar = (): string | null => {
     if (!normMin && !normMax) return "Informe ao menos um limite normal";
@@ -92,44 +98,59 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     return null;
   };
 
+  const persistir = async (payload: Omit<ValorReferencia, "id">) => {
+    if (vr) await updateValorReferencia(vr.id, payload);
+    else await addValorReferencia(payload);
+  };
+
+  const buildPayload = (overrides?: Partial<ValorReferencia>): Omit<ValorReferencia, "id"> => ({
+    exameNome,
+    parametroNome: parametro.chave || parametro.rotulo,
+    sexo: meta.sexo,
+    idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
+    valorMin: normMin, valorMax: normMax,
+    unidade,
+    descricao: "",
+    criticoMin: critMin, criticoMax: critMax,
+    categoria,
+    ...overrides,
+  });
+
   const salvar = async () => {
     const err = validar();
     if (err) { toast({ title: err, variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const payload: Omit<ValorReferencia, "id"> = {
-        exameNome,
-        parametroNome: parametro.chave || parametro.rotulo,
-        sexo: meta.sexo,
-        idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-        valorMin: normMin, valorMax: normMax,
-        unidade,
-        descricao: "",
-        criticoMin: critMin, criticoMax: critMax,
-        categoria,
-      };
-      if (vr) await updateValorReferencia(vr.id, payload);
-      else await addValorReferencia(payload);
+      await persistir(buildPayload());
       onMutate();
       toast({ title: vr ? "Atualizado" : "Adicionado" });
     } finally { setSaving(false); }
   };
 
-  const remover = async () => {
-    if (!vr) return;
-    const msg = isPadrao
-      ? "Remover a regra PADRÃO deste parâmetro? Sem ela, só as variações específicas (sexo/idade) ficam ativas."
-      : `Remover a variação "${meta.label}"?`;
-    if (!window.confirm(msg)) return;
-    setRemoving(true);
-    try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
-    finally { setRemoving(false); }
+  const limparESalvar = async () => {
+    setSaving(true);
+    try {
+      await persistir(buildPayload({
+        valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
+      }));
+      setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
+      onMutate();
+      toast({ title: "Valores limpos" });
+    } finally { setSaving(false); setConfirmOpen(null); }
   };
 
-  const isPadrao = categoria === "padrao";
+  const remover = async () => {
+    if (!vr) return;
+    setRemoving(true);
+    try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
+    finally { setRemoving(false); setConfirmOpen(null); }
+  };
+
   const borderClass = isPadrao
     ? "border-primary/30 bg-primary/5"
     : exists ? "border-border/60" : "border-dashed border-border/40 bg-muted/10";
+
+  const hasAnyValue = !!(normMin || normMax || critMin || critMax || unidade);
 
   return (
     <div className={`rounded-xl border ${borderClass} p-3 transition-all`}>
@@ -146,15 +167,26 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        {exists && (
-          <button
-            onClick={remover} disabled={removing}
-            className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
-            title={isPadrao ? "Remover regra padrão" : "Remover variação"}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {exists && hasAnyValue && (
+            <button
+              onClick={() => setConfirmOpen("clear")} disabled={saving}
+              className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center"
+              title="Limpar valores (salvar em branco)"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {exists && (
+            <button
+              onClick={() => setConfirmOpen("remove")} disabled={removing}
+              className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title={isPadrao ? "Remover regra padrão" : "Remover variação"}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-[88px_1fr_8px_1fr_60px] gap-1.5 items-center text-[12px]">
@@ -201,6 +233,38 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmOpen !== null} onOpenChange={(o) => !o && setConfirmOpen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {confirmOpen === "clear" ? (
+                <><Eraser className="h-4 w-4 text-muted-foreground" /> Limpar valores?</>
+              ) : (
+                <><Trash2 className="h-4 w-4 text-destructive" /> {isPadrao ? "Remover regra padrão?" : `Remover variação "${meta.label}"?`}</>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmOpen === "clear" ? (
+                <>Os limites <strong>Normal</strong>, <strong>Crítico</strong> e <strong>Unidade</strong> desta regra ficarão em branco. O cartão continua salvo, sem valores. Você pode preenchê-los novamente a qualquer momento.</>
+              ) : isPadrao ? (
+                <>A regra <strong>Padrão</strong> deste parâmetro será removida. Sem ela, apenas variações específicas (sexo / idade / gestante) serão aplicadas.</>
+              ) : (
+                <>A variação <strong>{meta.label}</strong> deste parâmetro será removida. Esta ação não pode ser desfeita.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmOpen === "clear" ? limparESalvar : remover}
+              className={confirmOpen === "clear" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {confirmOpen === "clear" ? "Limpar" : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -241,6 +305,8 @@ const ParametroBloco = ({
 
   // Variações "custom" (faixas etárias arbitrárias do modo Avançado) — exibidas como cards somente-leitura com link.
   const customs = meusRefs.filter((r) => r.categoria === "custom");
+  const [customParaRemover, setCustomParaRemover] = useState<ValorReferencia | null>(null);
+
 
   return (
     <div className="rounded-2xl border border-border/40 bg-background p-4 space-y-3">
@@ -278,11 +344,7 @@ const ParametroBloco = ({
                   {c.sexo} • {c.idadeMin || "0"}–{c.idadeMax || "∞"} {c.unidadeIdade} • {c.valorMin}–{c.valorMax} {c.unidade}
                 </span>
                 <button
-                  onClick={async () => {
-                    if (!window.confirm("Remover esta regra personalizada?")) return;
-                    await removeValorReferencia(c.id);
-                    onMutate();
-                  }}
+                  onClick={() => setCustomParaRemover(c)}
                   className="h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0 ml-2"
                   title="Remover"
                 >
@@ -313,6 +375,33 @@ const ParametroBloco = ({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      <AlertDialog open={customParaRemover !== null} onOpenChange={(o) => !o && setCustomParaRemover(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" /> Remover regra personalizada?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {customParaRemover && (
+                <>A regra <strong>{customParaRemover.sexo} • {customParaRemover.idadeMin || "0"}–{customParaRemover.idadeMax || "∞"} {customParaRemover.unidadeIdade}</strong> será removida deste parâmetro. Esta ação não pode ser desfeita.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (customParaRemover) { await removeValorReferencia(customParaRemover.id); onMutate(); }
+                setCustomParaRemover(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
