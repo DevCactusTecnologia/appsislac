@@ -5335,6 +5335,36 @@ export type Database = {
           },
         ]
       }
+      reguas_etarias: {
+        Row: {
+          created_at: string
+          faixas: Json
+          id: string
+          nome: string
+          sistema: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          faixas?: Json
+          id?: string
+          nome: string
+          sistema?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          faixas?: Json
+          id?: string
+          nome?: string
+          sistema?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resultados_entregas: {
         Row: {
           atendimento_exame_id: number | null
@@ -6921,14 +6951,21 @@ export type Database = {
       }
       valores_referencia: {
         Row: {
+          ativo: boolean
           created_at: string
           critico_max: string | null
           critico_min: string | null
           descricao: string
+          exame_id: string | null
           exame_nome: string
           id: number
           idade_max: string
+          idade_max_dias: number | null
           idade_min: string
+          idade_min_dias: number | null
+          observacao: string | null
+          ordem: number
+          parametro_id: number | null
           parametro_nome: string
           sexo: string
           tenant_id: string
@@ -6939,14 +6976,21 @@ export type Database = {
           valor_min: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
           descricao?: string
+          exame_id?: string | null
           exame_nome: string
           id?: number
           idade_max?: string
+          idade_max_dias?: number | null
           idade_min?: string
+          idade_min_dias?: number | null
+          observacao?: string | null
+          ordem?: number
+          parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
           tenant_id: string
@@ -6957,14 +7001,21 @@ export type Database = {
           valor_min?: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
           descricao?: string
+          exame_id?: string | null
           exame_nome?: string
           id?: number
           idade_max?: string
+          idade_max_dias?: number | null
           idade_min?: string
+          idade_min_dias?: number | null
+          observacao?: string | null
+          ordem?: number
+          parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
           tenant_id?: string
@@ -6975,6 +7026,20 @@ export type Database = {
           valor_min?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "valores_referencia_exame_fk"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "valores_referencia_parametro_fk"
+            columns: ["parametro_id"]
+            isOneToOne: false
+            referencedRelation: "exame_parametros"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "valores_referencia_tenant_id_fkey"
             columns: ["tenant_id"]
