@@ -272,7 +272,6 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                   {faixas.map((d) => (
                     <tr key={d.id} className="border-b border-border/20">
                       <td className="py-1.5 px-2">
-                      <td className="py-1.5 px-2">
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-32 px-2"
                           disabled={isSistema}
                           value={d.label} onChange={(e) => updateFaixa(d.id, { label: e.target.value })}
