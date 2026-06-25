@@ -114,6 +114,7 @@ export function buildExamesFromDB(
           casasDecimais: parametro.casasDecimais,
           separadorDecimal: parametro.separadorDecimal,
           qtdDigitos: parametro.qtdDigitos,
+          formatoExibicao: parametro.formatoExibicao,
           criticoMin: parametro.criticoMin,
           criticoMax: parametro.criticoMax,
           parametroId: parametro.id,
