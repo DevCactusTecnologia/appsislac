@@ -1886,7 +1886,7 @@ const ResultadoDetalhe = () => {
                         ? (contStatus === "success" ? "ring-1 ring-status-success/40" : contStatus === "warning" ? "ring-1 ring-status-warning/50" : "ring-1 ring-status-danger/40")
                         : isCriticoParam ? "ring-1 ring-status-danger/30" : "";
                       return (
-                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${ringClass}`}>
+                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-all focus-within:bg-primary/10 focus-within:ring-2 focus-within:ring-primary focus-within:shadow-md ${ringClass}`}>
 
                           <span className="shrink-0 inline-flex items-center justify-center h-4 w-4">
                             {inRange === true && <CheckCircle2 className="h-3.5 w-3.5 text-status-success" />}
