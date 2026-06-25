@@ -275,9 +275,18 @@ export const resolverReferencia = (
     const ja = ((a.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     const jb = ((b.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     if (jb !== ja) return jb - ja;
+    // Sexo específico vence Ambos
     const sa = a.sexo !== "Ambos" ? 1 : 0;
     const sb = b.sexo !== "Ambos" ? 1 : 0;
-    return sb - sa;
+    if (sb !== sa) return sb - sa;
+    // Faixa etária mais estreita vence
+    const fa = a.unidadeIdade === "Anos" ? 365 : a.unidadeIdade === "Meses" ? 30 : 1;
+    const fb = b.unidadeIdade === "Anos" ? 365 : b.unidadeIdade === "Meses" ? 30 : 1;
+    const la = a.idadeMin || a.idadeMax
+      ? ((parseFloat(a.idadeMax) || 99999) - (parseFloat(a.idadeMin) || 0)) * fa : Infinity;
+    const lb = b.idadeMin || b.idadeMax
+      ? ((parseFloat(b.idadeMax) || 99999) - (parseFloat(b.idadeMin) || 0)) * fb : Infinity;
+    return la - lb;
   });
 
   const m = compats[0];
