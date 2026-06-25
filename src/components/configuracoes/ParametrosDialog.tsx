@@ -557,6 +557,36 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   </div>
                 )}
 
+                {tipoSelecionado === "Tempo" && (
+                  <div>
+                    <label className={labelClass}>Formato de exibição</label>
+                    <div className="flex gap-1.5">
+                      {([
+                        { v: "min_seg" as const, lbl: "Min / Seg", sample: "12 min 30 s" },
+                        { v: "hh_mm_ss" as const, lbl: "HH:MM:SS", sample: "00:12:30" },
+                      ]).map((opt) => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setFormatoTempo(opt.v)}
+                          className={`flex-1 h-10 rounded-xl border text-[12px] font-semibold transition-all duration-200 flex flex-col items-center justify-center ${
+                            formatoTempo === opt.v
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border/60 text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                          }`}
+                        >
+                          <span>{opt.lbl}</span>
+                          <span className="font-mono text-[10.5px] opacity-70">{opt.sample}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10.5px] text-muted-foreground mt-2 leading-relaxed">
+                      Na digitação, o operador preenche dois campos (minutos e segundos).
+                      Campos vazios são omitidos no laudo. Ex.: só segundos → "30 s".
+                    </p>
+                  </div>
+                )}
+
                 {(tipoSelecionado === "Número" || tipoSelecionado === "Formula") && (
                   <div className="space-y-3">
                     <div>
