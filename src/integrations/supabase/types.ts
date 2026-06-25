@@ -6925,10 +6925,12 @@ export type Database = {
           critico_max: string | null
           critico_min: string | null
           descricao: string
+          exame_id: string | null
           exame_nome: string
           id: number
           idade_max: string
           idade_min: string
+          parametro_id: number | null
           parametro_nome: string
           sexo: string
           tenant_id: string
@@ -6943,10 +6945,12 @@ export type Database = {
           critico_max?: string | null
           critico_min?: string | null
           descricao?: string
+          exame_id?: string | null
           exame_nome: string
           id?: number
           idade_max?: string
           idade_min?: string
+          parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
           tenant_id: string
@@ -6961,10 +6965,12 @@ export type Database = {
           critico_max?: string | null
           critico_min?: string | null
           descricao?: string
+          exame_id?: string | null
           exame_nome?: string
           id?: number
           idade_max?: string
           idade_min?: string
+          parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
           tenant_id?: string
@@ -6975,6 +6981,20 @@ export type Database = {
           valor_min?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "valores_referencia_exame_fk"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "valores_referencia_parametro_fk"
+            columns: ["parametro_id"]
+            isOneToOne: false
+            referencedRelation: "exame_parametros"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "valores_referencia_tenant_id_fkey"
             columns: ["tenant_id"]
