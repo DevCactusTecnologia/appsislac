@@ -171,14 +171,17 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     try {
       const ok = await persistir(buildPayload({
         valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
+        jejum: "qualquer", operador: "entre",
       }));
       if (ok) {
         setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
+        setJejum("qualquer"); setOperador("entre");
         onMutate();
         toast({ title: "Valores limpos" });
       }
     } finally { setSaving(false); }
   };
+
 
   const remover = async () => {
     if (!vr) return;
