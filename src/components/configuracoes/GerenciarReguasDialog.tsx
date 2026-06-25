@@ -12,6 +12,17 @@ import {
 import {
   analisarCobertura, fromDias, labelFaixa, MAX_DIAS, toDias, type FaixaEtaria, type UnidadeIdade,
 } from "@/lib/idadeFaixas";
+import { diasParaYMD } from "@/lib/idadeFormat";
+
+const humano = (dias: number): string => {
+  if (dias >= MAX_DIAS) return "máx (150a)";
+  const { a, m, d } = diasParaYMD(dias);
+  const parts: string[] = [];
+  if (a) parts.push(`${a}a`);
+  if (m) parts.push(`${m}m`);
+  if (d) parts.push(`${d}d`);
+  return parts.length ? parts.join(" ") : "0d";
+};
 
 interface Props {
   open: boolean;
@@ -269,38 +280,42 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {faixas.map((d) => (
+                  {faixas.map((d) => {
+                    const f = draftToFaixa(d);
+                    return (
                     <tr key={d.id} className="border-b border-border/20">
                       <td className="py-1.5 px-2">
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-32 px-2"
                           disabled={isSistema}
                           value={d.label} onChange={(e) => updateFaixa(d.id, { label: e.target.value })}
-                          placeholder="auto (ex.: 0–3m)"
+                          placeholder={labelFaixa(f.deDias, f.ateDias)}
                           title="Texto curto exibido como cabeçalho da coluna na matriz de valores de referência. Deixe em branco para gerar automaticamente." />
                       </td>
-                      <td className="py-1.5 px-2">
+                      <td className="py-1.5 px-2 align-top">
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-20 px-2"
                           disabled={isSistema}
                           value={d.deValor} onChange={(e) => updateFaixa(d.id, { deValor: e.target.value })} />
+                        <div className="text-[10px] text-muted-foreground mt-1 pl-1">= {humano(f.deDias)}</div>
                       </td>
-                      <td className="py-1.5 px-2">
+                      <td className="py-1.5 px-2 align-top">
                         <Select value={d.deUnidade} onValueChange={(v) => updateFaixa(d.id, { deUnidade: v as UnidadeIdade })} disabled={isSistema}>
                           <SelectTrigger className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-24 px-2"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="Dias">Dias</SelectItem><SelectItem value="Meses">Meses</SelectItem><SelectItem value="Anos">Anos</SelectItem></SelectContent>
                         </Select>
                       </td>
-                      <td className="py-1.5 px-2">
+                      <td className="py-1.5 px-2 align-top">
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-20 px-2"
                           disabled={isSistema}
                           value={d.ateValor} onChange={(e) => updateFaixa(d.id, { ateValor: e.target.value })} />
+                        <div className="text-[10px] text-muted-foreground mt-1 pl-1">= {humano(f.ateDias)}</div>
                       </td>
-                      <td className="py-1.5 px-2">
+                      <td className="py-1.5 px-2 align-top">
                         <Select value={d.ateUnidade} onValueChange={(v) => updateFaixa(d.id, { ateUnidade: v as UnidadeIdade })} disabled={isSistema}>
                           <SelectTrigger className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-24 px-2"><SelectValue /></SelectTrigger>
                           <SelectContent><SelectItem value="Dias">Dias</SelectItem><SelectItem value="Meses">Meses</SelectItem><SelectItem value="Anos">Anos</SelectItem></SelectContent>
                         </Select>
                       </td>
-                      <td className="py-1.5 px-2 text-right">
+                      <td className="py-1.5 px-2 text-right align-top">
                         {!isSistema && (
                           <button onClick={() => removeFaixa(d.id)} className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
                             <X className="h-3.5 w-3.5" />
@@ -308,7 +323,8 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {!isSistema && (
