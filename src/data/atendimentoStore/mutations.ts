@@ -359,6 +359,17 @@ async function persistUpdateAtendimentoTx(
       );
     }
     notify();
+
+    // Persistência direta de `jejum` (não passa pelo edge function transacional).
+    if (updates.jejum !== undefined) {
+      const { error: jErr } = await supabase
+        .from("atendimentos")
+        .update({ jejum: updates.jejum })
+        .eq("id", id);
+      if (jErr) {
+        logger.warn("atendimentoStore", "falha ao persistir jejum", { id, error: jErr.message });
+      }
+    }
   } catch (e) {
     cache.atendimentos = prev;
     notify();
