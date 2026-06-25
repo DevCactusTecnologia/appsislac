@@ -8,6 +8,24 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ExameParametro } from "@/data/exameParametrosStore";
 
+/**
+ * Navegação por ENTER entre campos do resultado.
+ * Procura o próximo elemento marcado com `data-result-nav="true"` na ordem
+ * do DOM (inputs, selects e o botão SALVAR) e move o foco para ele.
+ */
+const focusNextResultField = (current: HTMLElement) => {
+  const all = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-result-nav="true"]')
+  ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+  const idx = all.indexOf(current);
+  if (idx === -1) return;
+  const next = all[idx + 1];
+  if (next) {
+    next.focus();
+    if (next instanceof HTMLInputElement) next.select();
+  }
+};
+
 export const ParamTypedInput = ({
   param,
   isCritico,
@@ -29,15 +47,24 @@ export const ParamTypedInput = ({
 }) => {
   const statusClasses =
     statusColor === "success"
-      ? "border-status-success/60 ring-2 ring-status-success/30 text-status-success"
+      ? "border-status-success/60 focus:ring-status-success/40 focus:border-status-success text-status-success"
       : statusColor === "warning"
-      ? "border-status-warning/60 ring-2 ring-status-warning/30 text-status-warning"
+      ? "border-status-warning/60 focus:ring-status-warning/40 focus:border-status-warning text-status-warning"
       : statusColor === "danger"
-      ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
+      ? "border-status-danger/60 focus:ring-status-danger/40 focus:border-status-danger text-status-danger"
       : isCritico
-      ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
-      : "focus:ring-ring/20";
-  const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 font-semibold text-foreground ${statusClasses} ${className ?? ""}`;
+      ? "border-status-danger/60 focus:ring-status-danger/40 focus:border-status-danger text-status-danger"
+      : "focus:ring-primary/40 focus:border-primary";
+  // Destaque forte no campo focado: ring + borda primária + leve bg.
+  const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:bg-primary/5 focus:shadow-sm font-semibold text-foreground transition-colors ${statusClasses} ${className ?? ""}`;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      focusNextResultField(e.currentTarget);
+    }
+  };
+
   if (param.tipo === "Select" && (param.opcoesSelect?.length ?? 0) > 0) {
     return (
       <Select
@@ -46,7 +73,8 @@ export const ParamTypedInput = ({
         disabled={disabled}
       >
         <SelectTrigger
-          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left ${
+          data-result-nav="true"
+          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left focus:ring-2 focus:ring-primary/40 focus:border-primary focus:bg-primary/5 ${
             isCritico
               ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
               : ""
@@ -65,6 +93,7 @@ export const ParamTypedInput = ({
     );
   }
   if (param.tipo === "Formula") {
+    // Campos calculados não recebem foco/navegação — são pulados pelo ENTER.
     return (
       <input
         type="text"
@@ -109,8 +138,10 @@ export const ParamTypedInput = ({
       <input
         type="text"
         inputMode="decimal"
+        data-result-nav="true"
         value={param.valor}
         onChange={(e) => handleChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         disabled={disabled}
         className={base}
         placeholder={casas > 0 ? `0${sep}${"0".repeat(casas)}` : "0"}
@@ -120,8 +151,10 @@ export const ParamTypedInput = ({
   return (
     <input
       type="text"
+      data-result-nav="true"
       value={param.valor}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={handleKeyDown}
       disabled={disabled}
       className={base}
     />
