@@ -242,11 +242,21 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   return (
     <div className={`grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-muted/30 transition-colors ${rowBg} ${saving ? "opacity-70" : ""}`}>
       {/* Categoria */}
-      <div className="col-span-2 flex items-center gap-2 min-w-0">
-        <span className="text-sm leading-none shrink-0">{meta.icon}</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}>
-          {meta.label}
-        </span>
+      <div className="col-span-2 flex items-start gap-2 min-w-0">
+        <span className="text-sm leading-none shrink-0 mt-0.5">{meta.icon}</span>
+        <div className="flex flex-col min-w-0 gap-0.5">
+          <span
+            className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}
+            title={`${categoriaResumo(categoria).sexo} • ${categoriaResumo(categoria).idade}`}
+          >
+            {meta.label}
+          </span>
+          <div className="text-[10px] leading-tight text-muted-foreground truncate">
+            <span className="font-medium">{categoriaResumo(categoria).sexo}</span>
+            <span className="mx-1 text-muted-foreground/50">•</span>
+            <span>{categoriaResumo(categoria).idade}</span>
+          </div>
+        </div>
       </div>
 
       {/* Condição: operador + jejum */}
