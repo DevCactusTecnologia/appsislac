@@ -55,9 +55,10 @@ export const ParamTypedInput = ({
       : isCritico
       ? "border-status-danger/60 focus:ring-status-danger focus:border-status-danger text-status-danger"
       : "focus:ring-primary focus:border-primary";
-  // Destaque forte no campo focado: ring grosso + borda primária + bg tintado.
-  // Usa ring-offset para o anel não ser cortado por containers com overflow.
-  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background focus:outline-none focus:ring-4 focus:ring-offset-1 focus:ring-offset-background focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
+  // Destaque forte no campo focado: ring inset (não é cortado por containers)
+  // + borda primária + bg tintado. ring-inset garante que o contorno fique
+  // dentro dos limites do próprio input, envolvendo o campo por completo.
+  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background focus:outline-none focus:ring-4 focus:ring-inset focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter") {
@@ -75,7 +76,7 @@ export const ParamTypedInput = ({
       >
         <SelectTrigger
           data-result-nav="true"
-          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 focus:ring-4 focus:ring-primary focus:ring-offset-1 focus:ring-offset-background focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
+          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 focus:ring-4 focus:ring-inset focus:ring-primary focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
             isCritico
               ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
               : ""
