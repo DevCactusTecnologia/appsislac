@@ -944,9 +944,28 @@ const ResultadoDetalhe = () => {
     const entries = await Promise.all(
       printable.map(async (exame) => {
         const resultados: Record<string, string> = {};
+        // Valores digitados (para resolver placeholders das fórmulas)
+        const valuesByChave = buildValuesByChave(exame.parametros);
         exame.parametros.forEach((p) => {
-          const v = p.valor || "";
-          resultados[p.nome] = p.tipo === "Select" ? v.toUpperCase() : v;
+          let v = p.valor || "";
+          // Parâmetros do tipo Fórmula: substituir pelo resultado calculado
+          if (p.tipo === "Formula") {
+            const isCont = (p.chave ?? "").toUpperCase() === "CONT";
+            v = evaluateFormula(
+              p.formula || p.valorReferencia,
+              valuesByChave,
+              p.casasDecimais ?? 2,
+              isCont,
+            );
+          } else if (p.tipo === "Select") {
+            v = v.toUpperCase();
+          }
+          // Indexa por nome, rótulo, chave e abreviação (dual-read tolerante)
+          if (p.nome) resultados[p.nome] = v;
+          if (p.rotulo) resultados[p.rotulo] = v;
+          if (p.chave) resultados[p.chave] = v;
+          const abrev = (p as { abreviacao?: string }).abreviacao;
+          if (abrev) resultados[abrev] = v;
         });
         const { html, margins } = await renderExameComLayout(
           exame.nome,
