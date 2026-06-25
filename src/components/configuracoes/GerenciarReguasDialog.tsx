@@ -104,7 +104,11 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
 
   const handleSalvar = async () => {
     if (!sel || sel.sistema) return;
-    const ok = await updateRegua(sel.id, { nome: nome.trim() || sel.nome, faixas: faixas.map(draftToFaixa) });
+    const ok = await updateRegua(sel.id, {
+      nome: nome.trim() || sel.nome,
+      faixas: faixas.map(draftToFaixa),
+      exameNome: escopo === "exame" ? (exameNorm || sel.exameNome) : undefined,
+    });
     if (ok) toast({ title: "Régua salva" });
     else toast({ title: "Erro ao salvar", variant: "destructive" });
   };
@@ -170,7 +174,8 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                 >
                   <div className="text-[13px] font-medium text-foreground">{r.nome}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    {r.faixas.length} faixa(s){r.sistema ? " • sistema" : ""}
+                    {r.faixas.length} faixa(s)
+                    {r.sistema ? " • sistema" : r.exameNome ? " • deste exame" : " • global"}
                   </div>
                 </button>
               </li>
