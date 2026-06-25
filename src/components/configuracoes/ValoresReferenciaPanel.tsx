@@ -584,20 +584,22 @@ const ParametroBloco = ({
       </header>
 
       {/* Cabeçalho da tabela */}
-      <div className="grid grid-cols-12 gap-3 px-5 py-2.5 bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30">
-        <div className="col-span-2">Categoria</div>
-        <div className="col-span-2">Condição</div>
-        <div className="col-span-2 text-center">Faixa Normal</div>
-        <div className="col-span-2 text-center">Faixa Crítica</div>
-        <div className="col-span-1 text-center">Unidade</div>
-        <div className="col-span-2 text-center">Preview</div>
-        <div className="col-span-1 text-right">Ações</div>
+      <div className={`grid ${ROW_TPL} gap-2 px-4 py-2.5 bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30`}>
+        <div>Categoria</div>
+        <div className="text-center">Sexo</div>
+        <div className="text-center">Faixa Etária</div>
+        <div>Condição</div>
+        <div className="text-center">Faixa Normal</div>
+        <div className="text-center">Faixa Crítica</div>
+        <div className="text-center">Un.</div>
+        <div className="text-center">Preview</div>
+        <div className="text-right">Ações</div>
       </div>
 
       {/* Linhas */}
-      <div className="divide-y divide-border/30">
-        {linhas.map(({ cat, vr }) => (
-          <RegraLinha key={cat} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
+      <div className="divide-y divide-border/30 overflow-x-auto">
+        {linhas.map(({ key, cat, vr }) => (
+          <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
 
