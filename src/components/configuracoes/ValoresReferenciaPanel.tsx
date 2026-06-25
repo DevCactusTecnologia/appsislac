@@ -167,15 +167,26 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        {exists && (
-          <button
-            onClick={remover} disabled={removing}
-            className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
-            title={isPadrao ? "Remover regra padrão" : "Remover variação"}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {exists && hasAnyValue && (
+            <button
+              onClick={() => setConfirmOpen("clear")} disabled={saving}
+              className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center"
+              title="Limpar valores (salvar em branco)"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {exists && (
+            <button
+              onClick={() => setConfirmOpen("remove")} disabled={removing}
+              className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title={isPadrao ? "Remover regra padrão" : "Remover variação"}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-[88px_1fr_8px_1fr_60px] gap-1.5 items-center text-[12px]">
