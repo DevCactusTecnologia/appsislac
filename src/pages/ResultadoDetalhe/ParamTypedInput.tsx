@@ -94,6 +94,71 @@ export const ParamTypedInput = ({
       </Select>
     );
   }
+  if (param.tipo === "Tempo") {
+    const formato = param.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg";
+    // Persistência canônica:
+    //  • "min_seg"   → "12 min 30 s" | "12 min" | "30 s" | ""
+    //  • "hh_mm_ss"  → "HH:MM:SS" (zero-padded) | ""
+    const parseStored = (raw: string): { h: string; m: string; s: string } => {
+      if (!raw) return { h: "", m: "", s: "" };
+      if (formato === "hh_mm_ss") {
+        const m = raw.match(/^(\d{1,2}):(\d{1,2}):(\d{1,2})$/);
+        if (m) return { h: m[1], m: m[2], s: m[3] };
+        return { h: "", m: "", s: "" };
+      }
+      const minMatch = raw.match(/(\d+)\s*min/i);
+      const segMatch = raw.match(/(\d+)\s*s/i);
+      return { h: "", m: minMatch?.[1] ?? "", s: segMatch?.[1] ?? "" };
+    };
+    const buildStored = (h: string, m: string, s: string): string => {
+      const clean = (v: string) => v.replace(/\D/g, "");
+      h = clean(h); m = clean(m); s = clean(s);
+      if (formato === "hh_mm_ss") {
+        if (!h && !m && !s) return "";
+        const pad = (v: string) => (v ? v.padStart(2, "0").slice(-2) : "00");
+        return `${pad(h)}:${pad(m)}:${pad(s)}`;
+      }
+      const parts: string[] = [];
+      if (m) parts.push(`${parseInt(m, 10)} min`);
+      if (s) parts.push(`${parseInt(s, 10)} s`);
+      return parts.join(" ");
+    };
+    const cur = parseStored(param.valor);
+    const onPart = (key: "h" | "m" | "s", v: string) => {
+      const next = { ...cur, [key]: v.replace(/\D/g, "") };
+      onChange(buildStored(next.h, next.m, next.s));
+    };
+    const inputCls = `${base} w-16 text-center`;
+    if (formato === "hh_mm_ss") {
+      return (
+        <div className="flex items-center gap-1.5">
+          <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.h}
+            onChange={(e) => onPart("h", e.target.value)} onKeyDown={handleKeyDown}
+            disabled={disabled} className={inputCls} placeholder="hh" />
+          <span className="text-muted-foreground font-semibold">:</span>
+          <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.m}
+            onChange={(e) => onPart("m", e.target.value)} onKeyDown={handleKeyDown}
+            disabled={disabled} className={inputCls} placeholder="mm" />
+          <span className="text-muted-foreground font-semibold">:</span>
+          <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.s}
+            onChange={(e) => onPart("s", e.target.value)} onKeyDown={handleKeyDown}
+            disabled={disabled} className={inputCls} placeholder="ss" />
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2">
+        <input data-result-nav="true" inputMode="numeric" maxLength={3} value={cur.m}
+          onChange={(e) => onPart("m", e.target.value)} onKeyDown={handleKeyDown}
+          disabled={disabled} className={inputCls} placeholder="0" />
+        <span className="text-xs font-semibold text-muted-foreground">min</span>
+        <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.s}
+          onChange={(e) => onPart("s", e.target.value)} onKeyDown={handleKeyDown}
+          disabled={disabled} className={inputCls} placeholder="0" />
+        <span className="text-xs font-semibold text-muted-foreground">s</span>
+      </div>
+    );
+  }
   if (param.tipo === "Formula") {
     // Campos calculados não recebem foco/navegação — são pulados pelo ENTER.
     return (
