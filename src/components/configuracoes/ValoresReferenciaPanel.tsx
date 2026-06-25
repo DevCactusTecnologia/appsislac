@@ -594,7 +594,11 @@ const ParametroBloco = ({
 
       {/* Linhas */}
       <div className="divide-y divide-border/30 overflow-x-auto">
-        {linhas.map(({ key, cat, vr }) => (
+        {linhas.length === 0 ? (
+          <div className="px-5 py-6 text-center text-[12px] text-muted-foreground">
+            Nenhuma regra cadastrada. Use <strong>Adicionar variação</strong> abaixo.
+          </div>
+        ) : linhas.map(({ key, cat, vr }) => (
           <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
