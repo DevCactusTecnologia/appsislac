@@ -146,11 +146,11 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        {!isPadrao && exists && (
+        {exists && (
           <button
             onClick={remover} disabled={removing}
             className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
-            title="Remover variação"
+            title={isPadrao ? "Remover regra padrão" : "Remover variação"}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
