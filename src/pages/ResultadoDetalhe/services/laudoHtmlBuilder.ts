@@ -186,6 +186,28 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-cabecalho-wrap > *, .laudo-rodape-wrap > * { margin-top:0 !important; margin-bottom:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
         .laudo-cabecalho-wrap > * > *:first-child, .laudo-rodape-wrap > * > *:first-child { margin-top:0 !important; padding-top:0 !important; }
         .laudo-cabecalho-wrap > * > *:last-child, .laudo-rodape-wrap > * > *:last-child { margin-bottom:0 !important; padding-bottom:0 !important; }
+        /* Alinhamento horizontal do cabeçalho com o corpo do laudo (nome do
+           exame). Templates configurados em /configuracoes → Documentos
+           costumam usar uma tabela wrapper com cellpadding/cellspacing e a
+           primeira coluna com padding-left. Isso empurrava a logomarca
+           para a direita em relação ao corpo. Zeramos só o lado esquerdo
+           dos containers de 1º nível e da primeira célula de cada linha —
+           preserva qualquer alinhamento à direita (ex.: logo PNCQ) feito
+           via text-align:right. */
+        .laudo-cabecalho-wrap,
+        .laudo-cabecalho-wrap > *,
+        .laudo-cabecalho-wrap table,
+        .laudo-cabecalho-wrap tbody,
+        .laudo-cabecalho-wrap tr,
+        .laudo-cabecalho-wrap td:first-child,
+        .laudo-cabecalho-wrap th:first-child {
+          padding-left: 0 !important;
+          margin-left: 0 !important;
+        }
+        .laudo-cabecalho-wrap table {
+          border-collapse: collapse !important;
+          border-spacing: 0 !important;
+        }
         /* Esconde parágrafos vazios deixados por templates do editor para que
            a distância entre cabeçalho e nome do exame seja de apenas 1 linha. */
         .laudo-cabecalho-wrap p:empty,
