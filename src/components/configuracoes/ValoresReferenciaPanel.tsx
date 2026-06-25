@@ -210,7 +210,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     (vr?.sexo ?? defaultSexo) !== sexo ||
     (vr?.idadeMin ?? defaultIdadeMin) !== idadeMin ||
     (vr?.idadeMax ?? defaultIdadeMax) !== idadeMax ||
-    (vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdade;
+    (vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdade ||
+    ((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade) !== unidadeIdadeMax;
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const isEntre = operador === "entre";
