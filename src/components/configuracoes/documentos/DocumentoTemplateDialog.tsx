@@ -83,6 +83,7 @@ const DocumentoTemplateDialog = ({
         bottom: String(m?.bottom ?? 5),
         left: String(m?.left ?? 10),
       });
+      setWatermarkEnabled(((template.config as Record<string, unknown>)?.watermarkEnabled as boolean) ?? false);
     } else {
       const t = tipoInicial ?? "comprovante_pagamento";
       setTipo(t);
@@ -91,8 +92,10 @@ const DocumentoTemplateDialog = ({
       setAtivo(true);
       setPadrao(false);
       setMargins({ top: "5", right: "10", bottom: "5", left: "10" });
+      setWatermarkEnabled(false);
     }
   }, [open, template, tipoInicial]);
+
 
   const handleTipoChange = (novo: DocumentoTipo) => {
     setTipo(novo);
