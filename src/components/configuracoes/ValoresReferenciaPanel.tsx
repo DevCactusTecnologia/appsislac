@@ -375,6 +375,33 @@ const ParametroBloco = ({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      <AlertDialog open={customParaRemover !== null} onOpenChange={(o) => !o && setCustomParaRemover(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" /> Remover regra personalizada?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {customParaRemover && (
+                <>A regra <strong>{customParaRemover.sexo} • {customParaRemover.idadeMin || "0"}–{customParaRemover.idadeMax || "∞"} {customParaRemover.unidadeIdade}</strong> será removida deste parâmetro. Esta ação não pode ser desfeita.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (customParaRemover) { await removeValorReferencia(customParaRemover.id); onMutate(); }
+                setCustomParaRemover(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
