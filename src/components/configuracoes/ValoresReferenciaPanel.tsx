@@ -89,6 +89,8 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   const [critMin, setCritMin] = useState(vr?.criticoMin ?? "");
   const [critMax, setCritMax] = useState(vr?.criticoMax ?? "");
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
+  const [jejum, setJejum] = useState<JejumVR>((vr?.jejum as JejumVR) ?? "qualquer");
+  const [operador, setOperador] = useState<OperadorVR>((vr?.operador as OperadorVR) ?? "entre");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
@@ -99,6 +101,8 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
+    setJejum((vr?.jejum as JejumVR) ?? "qualquer");
+    setOperador((vr?.operador as OperadorVR) ?? "entre");
   }, [vr?.id]);
 
   const dirty =
@@ -106,15 +110,22 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     (vr?.valorMax ?? "") !== normMax ||
     (vr?.criticoMin ?? "") !== critMin ||
     (vr?.criticoMax ?? "") !== critMax ||
-    (vr?.unidade ?? "") !== unidade;
+    (vr?.unidade ?? "") !== unidade ||
+    (((vr?.jejum as JejumVR) ?? "qualquer")) !== jejum ||
+    (((vr?.operador as OperadorVR) ?? "entre")) !== operador;
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const previewOk = nMin !== null ? (nMin + nMax!) / 2 : null;
   const isPadrao = categoria === "padrao";
+  const isEntre = operador === "entre";
 
   const validar = (): string | null => {
-    if (!normMin && !normMax) return "Informe ao menos um limite normal";
-    if (nMin !== null && nMax !== null && nMin > nMax) return "Mínimo normal > máximo";
+    if (isEntre) {
+      if (!normMin && !normMax) return "Informe ao menos um limite normal";
+      if (nMin !== null && nMax !== null && nMin > nMax) return "Mínimo normal > máximo";
+    } else {
+      if (!normMax) return "Informe o valor de referência";
+    }
     if (cMin !== null && cMax !== null && cMin > cMax) return "Mínimo crítico > máximo";
     return null;
   };
@@ -129,13 +140,17 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     parametroNome: parametro.chave || parametro.rotulo,
     sexo: meta.sexo,
     idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-    valorMin: normMin, valorMax: normMax,
+    valorMin: isEntre ? normMin : "",
+    valorMax: normMax,
     unidade,
     descricao: "",
     criticoMin: critMin, criticoMax: critMax,
     categoria,
+    jejum,
+    operador,
     ...overrides,
   });
+
 
   const salvar = async () => {
     const err = validar();
