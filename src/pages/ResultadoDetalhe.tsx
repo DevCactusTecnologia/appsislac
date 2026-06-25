@@ -301,6 +301,7 @@ const ResultadoDetalhe = () => {
       // silencioso — mantém defaults se a busca falhar
     }
     setPaciente(pac);
+    setPacienteJejum(!!atFromDb?.jejum);
     setDbIdMap(idMap);
     setSelectedExameId(prev => prev || (exames[0]?.id ?? 0));
 
