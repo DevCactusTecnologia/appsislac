@@ -314,13 +314,18 @@ const DocumentoTemplateDialog = ({
     const header = cfg?.exibirCabecalho ? renderCabecalhoPadrao(ctx) : "";
     const footer = cfg?.exibirRodape ? renderRodapePadrao(ctx) : "";
 
+    const wmCss = watermarkEnabled ? buildWatermarkCss(getLabConfig().watermark) : "";
+    const wmStyle = wmCss ? `<style>${wmCss}</style>` : "";
+
     return `
+      ${wmStyle}
       ${header}
       <div class="documento-corpo" style="margin:0;padding:0;">${corpo}</div>
       ${rodapePadrao}
       ${footer}
     `;
-  }, [conteudo, tipo, template?.config]);
+  }, [conteudo, tipo, template?.config, watermarkEnabled]);
+
 
   const headerActions = (
     <div className="flex items-center gap-2 flex-wrap">
