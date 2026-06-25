@@ -101,7 +101,7 @@ const FiltrosDialog = ({
         <div className="flex flex-col h-full bg-card">
           <div className="flex-1 min-h-0 overflow-auto">{body}</div>
         </div>
-        <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+        <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} exameNome={exameNome} />
       </>
     );
   }
@@ -122,7 +122,7 @@ const FiltrosDialog = ({
       >
         {body}
       </StandardDialog>
-      <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+      <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} exameNome={exameNome} />
     </>
   );
 };

@@ -8,7 +8,7 @@ import {
   type ValorReferencia, addValorReferencia, removeValorReferencia, updateValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import {
-  loadReguas, getReguas, subscribeReguas, type ReguaEtaria,
+  loadReguas, getReguasParaExame, subscribeReguas, type ReguaEtaria,
 } from "@/data/reguasEtariasStore";
 import { fromDias, labelFaixa, toDias, vrCabeNaFaixa, type FaixaEtaria } from "@/lib/idadeFaixas";
 import { formatFaixaIdade } from "@/lib/idadeFormat";
@@ -65,24 +65,33 @@ const MatrizValoresReferencia = ({
   exameNome, parametros, referencias, onAbrirGerenciador, onMutate,
 }: Props) => {
   const { toast } = useToast();
+  const reguaSelKey = `sislac:regua-sel:${(exameNome || "").toLowerCase()}`;
   const [reguas, setReguas] = useState<ReguaEtaria[]>([]);
-  const [reguaId, setReguaId] = useState<string>("sys:pediatrica-sysmex");
+  const [reguaId, setReguaId] = useState<string>(() => {
+    try { return localStorage.getItem(reguaSelKey) || "sys:pediatrica-sysmex"; } catch { return "sys:pediatrica-sysmex"; }
+  });
   const [parametro, setParametro] = useState<string>(parametros[0] ?? "");
   const [unidade, setUnidade] = useState<string>("");
   const [draft, setDraft] = useState<Record<string, { min: string; max: string; descricao?: string }>>({});
-  // Marca o "descricao" auto-gerado (ex.: "Masculino • 12a+") como vazio para o usuário,
-  // evitando que ele apareça como texto livre quando ainda não foi customizado.
   const isAutoDescricao = (d?: string) =>
     !d ? true : /^(Masculino|Feminino|Ambos)\s*•/i.test(d.trim());
 
+  const refreshReguas = () => setReguas(getReguasParaExame(exameNome));
+
   useEffect(() => {
-    loadReguas().then(setReguas);
-    return subscribeReguas(() => setReguas(getReguas()));
-  }, []);
+    loadReguas().then(() => refreshReguas());
+    return subscribeReguas(refreshReguas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exameNome]);
 
   useEffect(() => {
     if (!parametro && parametros.length > 0) setParametro(parametros[0]);
   }, [parametros, parametro]);
+
+  // Persist régua selecionada por exame.
+  useEffect(() => {
+    try { localStorage.setItem(reguaSelKey, reguaId); } catch { /* noop */ }
+  }, [reguaId, reguaSelKey]);
 
   const regua = useMemo(
     () => reguas.find((r) => r.id === reguaId) ?? reguas[0],
@@ -288,11 +297,14 @@ const MatrizValoresReferencia = ({
           <Select value={reguaId} onValueChange={setReguaId}>
             <SelectTrigger className="rounded-xl h-9 text-sm bg-background border-border/60"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {reguas.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.nome}{r.sistema ? " (sistema)" : ""}
-                </SelectItem>
-              ))}
+              {reguas.map((r) => {
+                const tag = r.sistema ? " (sistema)" : r.exameNome ? " • deste exame" : " • global";
+                return (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.nome}{tag}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

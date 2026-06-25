@@ -13,7 +13,12 @@ import {
   analisarCobertura, fromDias, labelFaixa, MAX_DIAS, toDias, type FaixaEtaria, type UnidadeIdade,
 } from "@/lib/idadeFaixas";
 
-interface Props { open: boolean; onClose: () => void; }
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  /** Quando informado, filtra/cria réguas no escopo desse exame (estilo Lareval). */
+  exameNome?: string;
+}
 
 interface FaixaDraft {
   id: string;
@@ -39,17 +44,24 @@ const draftToFaixa = (d: FaixaDraft): FaixaEtaria => {
   return { id: d.id, label: d.label || labelFaixa(de, ate), deDias: de, ateDias: ate };
 };
 
-const GerenciarReguasDialog = ({ open, onClose }: Props) => {
+const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
   const { toast } = useToast();
-  const [reguas, setReguas] = useState<ReguaEtaria[]>([]);
+  const exameNorm = (exameNome ?? "").trim().toLowerCase();
+  const [todas, setTodas] = useState<ReguaEtaria[]>([]);
   const [selecionadaId, setSelecionadaId] = useState<string>("");
   const [nome, setNome] = useState("");
+  const [escopo, setEscopo] = useState<"global" | "exame">(exameNorm ? "exame" : "global");
   const [faixas, setFaixas] = useState<FaixaDraft[]>([]);
+
+  // Filtra a lista para o contexto atual: presets + globais + as desse exame.
+  const reguas = exameNorm
+    ? todas.filter((r) => !r.exameNome || r.exameNome === exameNorm)
+    : todas;
 
   useEffect(() => {
     if (!open) return;
-    loadReguas().then((r) => { setReguas(r); if (!selecionadaId) setSelecionadaId(r[0]?.id ?? ""); });
-    return subscribeReguas(() => setReguas(getReguas()));
+    loadReguas().then((r) => { setTodas(r); if (!selecionadaId) setSelecionadaId(r[0]?.id ?? ""); });
+    return subscribeReguas(() => setTodas(getReguas()));
   }, [open, selecionadaId]);
 
   const sel = reguas.find((r) => r.id === selecionadaId);
@@ -57,6 +69,7 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
   useEffect(() => {
     if (!sel) { setNome(""); setFaixas([]); return; }
     setNome(sel.nome);
+    setEscopo(sel.exameNome ? "exame" : "global");
     setFaixas(sel.faixas.map(draftFromFaixa));
   }, [selecionadaId, reguas.length]);
 
@@ -68,11 +81,13 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
   })();
 
   const handleNova = async () => {
-    const nova = await addRegua({ nome: "Nova régua", faixas: [
-      { id: "f1", label: "0–150a", deDias: 0, ateDias: MAX_DIAS },
-    ]});
+    const nova = await addRegua({
+      nome: exameNorm ? `Faixas ${exameNome}` : "Nova régua",
+      exameNome: exameNorm || undefined,
+      faixas: [{ id: "f1", label: "0–150a", deDias: 0, ateDias: MAX_DIAS }],
+    });
     setSelecionadaId(nova.id);
-    toast({ title: "Régua criada" });
+    toast({ title: exameNorm ? `Régua criada para ${exameNome}` : "Régua criada" });
   };
 
   const handleDuplicar = async () => {
@@ -89,7 +104,11 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
 
   const handleSalvar = async () => {
     if (!sel || sel.sistema) return;
-    const ok = await updateRegua(sel.id, { nome: nome.trim() || sel.nome, faixas: faixas.map(draftToFaixa) });
+    const ok = await updateRegua(sel.id, {
+      nome: nome.trim() || sel.nome,
+      faixas: faixas.map(draftToFaixa),
+      exameNome: escopo === "exame" ? (exameNorm || sel.exameNome) : undefined,
+    });
     if (ok) toast({ title: "Régua salva" });
     else toast({ title: "Erro ao salvar", variant: "destructive" });
   };
@@ -155,7 +174,8 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
                 >
                   <div className="text-[13px] font-medium text-foreground">{r.nome}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    {r.faixas.length} faixa(s){r.sistema ? " • sistema" : ""}
+                    {r.faixas.length} faixa(s)
+                    {r.sistema ? " • sistema" : r.exameNome ? " • deste exame" : " • global"}
                   </div>
                 </button>
               </li>
@@ -175,6 +195,18 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
                   disabled={isSistema}
                 />
               </div>
+              {exameNorm && !isSistema && (
+                <div className="space-y-1.5 w-[200px]">
+                  <Label className="text-[11px] text-muted-foreground">Escopo</Label>
+                  <Select value={escopo} onValueChange={(v) => setEscopo(v as "global" | "exame")}>
+                    <SelectTrigger className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exame">Apenas {exameNome}</SelectItem>
+                      <SelectItem value="global">Global (todos os exames)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <button
                 onClick={handleDuplicar}
                 className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all flex items-center gap-1.5"

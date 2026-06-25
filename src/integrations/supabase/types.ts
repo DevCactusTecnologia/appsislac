@@ -5338,6 +5338,7 @@ export type Database = {
       reguas_etarias: {
         Row: {
           created_at: string
+          exame_id: string | null
           faixas: Json
           id: string
           nome: string
@@ -5347,6 +5348,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          exame_id?: string | null
           faixas?: Json
           id?: string
           nome: string
@@ -5356,6 +5358,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          exame_id?: string | null
           faixas?: Json
           id?: string
           nome?: string
@@ -5363,7 +5366,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reguas_etarias_exame_id_fkey"
+            columns: ["exame_id"]
+            isOneToOne: false
+            referencedRelation: "exames_catalogo"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resultados_entregas: {
         Row: {

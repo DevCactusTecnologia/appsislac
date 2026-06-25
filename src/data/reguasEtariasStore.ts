@@ -14,8 +14,16 @@ export interface ReguaEtaria {
   nome: string;
   /** Réguas de fábrica não podem ser editadas/removidas, só duplicadas. */
   sistema?: boolean;
+  /**
+   * Quando preenchido, a régua é exclusiva desse exame (estilo Lareval).
+   * Quando vazio/undefined, a régua é global (visível em todos os exames).
+   * Normalizado em lowercase para casamento case-insensitive.
+   */
+  exameNome?: string;
   faixas: FaixaEtaria[];
 }
+
+const normalizeExame = (s?: string) => (s ?? "").trim().toLowerCase();
 
 const STORAGE_PREFIX = "sislac:reguas:";
 
@@ -120,9 +128,25 @@ export function getReguas(tenantId?: string): ReguaEtaria[] {
   return first ?? [...PRESETS];
 }
 
+/**
+ * Réguas visíveis para um exame: presets de sistema + globais (sem exameNome)
+ * + as específicas desse exame.
+ */
+export function getReguasParaExame(exameNome: string, tenantId?: string): ReguaEtaria[] {
+  const target = normalizeExame(exameNome);
+  return getReguas(tenantId).filter((r) => {
+    const escopo = normalizeExame(r.exameNome);
+    return !escopo || escopo === target;
+  });
+}
+
 export async function addRegua(input: Omit<ReguaEtaria, "id" | "sistema">): Promise<ReguaEtaria> {
   const tenantId = await getCurrentTenantId();
-  const nova: ReguaEtaria = { ...input, id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` };
+  const nova: ReguaEtaria = {
+    ...input,
+    exameNome: normalizeExame(input.exameNome) || undefined,
+    id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  };
   const all = [...loadFromStorage(tenantId), nova];
   persistCustom(tenantId, all);
   cache.set(tenantId, all);
@@ -135,7 +159,9 @@ export async function updateRegua(id: string, patch: Partial<Omit<ReguaEtaria, "
   const all = loadFromStorage(tenantId);
   const idx = all.findIndex((r) => r.id === id);
   if (idx < 0 || all[idx].sistema) return false;
-  all[idx] = { ...all[idx], ...patch };
+  const merged: ReguaEtaria = { ...all[idx], ...patch };
+  if ("exameNome" in patch) merged.exameNome = normalizeExame(patch.exameNome) || undefined;
+  all[idx] = merged;
   persistCustom(tenantId, all);
   cache.set(tenantId, all);
   notify();
@@ -161,6 +187,7 @@ export async function duplicarRegua(id: string, novoNome?: string): Promise<Regu
   if (!origem) return null;
   return addRegua({
     nome: novoNome ?? `${origem.nome} (cópia)`,
+    exameNome: origem.exameNome,
     faixas: origem.faixas.map((f, i) => ({ ...f, id: `f_${Date.now()}_${i}` })),
   });
 }
