@@ -367,12 +367,13 @@ const ResultadoDetalhe = () => {
   // para o crítico padrão de exame_parametros quando override vazio.
   const criticoOverride = useCallback(
     (exameNome: string, paramNome: string) => {
-      const r = resolverReferencia(exameNome, paramNome, paciente.sexo, paciente.idade);
+      const r = resolverReferencia(exameNome, paramNome, paciente.sexo, paciente.idade, false, pacienteJejum);
       if (!r) return undefined;
       return { criticoMin: r.criticoMin, criticoMax: r.criticoMax };
     },
-    [paciente.sexo, paciente.idade],
+    [paciente.sexo, paciente.idade, pacienteJejum],
   );
+
   const avaliarNivelCritico = useCallback(
     (exameNome: string, paramNome: string, valor: string): NivelCritico =>
       avaliarNivelCriticoPure(parametrosConfigPorExame, exameNome, paramNome, valor, criticoOverride),
