@@ -1942,11 +1942,14 @@ const ResultadoDetalhe = () => {
                           </div>
                         );
                       }
+                      const hasRange = Boolean(ref.refMin || ref.refMax);
+                      const descMultiline = !!ref.descricao && /\n/.test(ref.descricao);
+                      const isDescOnly = !hasRange && !!ref.descricao;
                       return (
                         <>
-                          <div className="relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30">
+                          <div className={`relative flex gap-2 pl-3 pr-4 py-1.5 rounded-lg bg-muted/50 dark:bg-muted/30 ${descMultiline || isDescOnly ? "items-start min-h-9" : "items-center h-9"}`}>
                             <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-                              {(ref.refMin || ref.refMax) ? (
+                              {hasRange ? (
                                 <>
                                   <span className="text-[13px] font-medium text-foreground tabular-nums truncate">
                                     {ref.refMin}{ref.refMin && ref.refMax ? " - " : ""}{ref.refMax}
@@ -1954,13 +1957,13 @@ const ResultadoDetalhe = () => {
                                   <span className="text-xs text-muted-foreground shrink-0">{ref.refUnidade}</span>
                                 </>
                               ) : (
-                                <span className="text-xs text-foreground whitespace-pre-line truncate">{ref.descricao}</span>
+                                <span className="text-[11px] leading-snug text-foreground whitespace-pre-line break-words">{ref.descricao}</span>
                               )}
                             </div>
                             <span className="absolute right-1 top-1 bottom-1 w-1 rounded-full bg-foreground/85" />
                           </div>
-                          {(ref.refMin || ref.refMax) && ref.descricao && (
-                            <p className="text-[10px] text-muted-foreground italic mt-0.5 pl-3 whitespace-pre-line">{ref.descricao}</p>
+                          {hasRange && ref.descricao && (
+                            <p className="text-[10px] text-muted-foreground italic mt-0.5 pl-3 whitespace-pre-line break-words">{ref.descricao}</p>
                           )}
                         </>
                       );
