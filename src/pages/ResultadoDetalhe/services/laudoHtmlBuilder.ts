@@ -353,12 +353,11 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           margin: 0 !important;
         }
         #laudo-content br { line-height: 1.4 !important; }
-        /* O corpo do laudo começa imediatamente após o cabeçalho — sem
-           respiro extra (apenas o line-height padrão de 1 parágrafo). */
+        /* Espaçamento de 16px entre o cabeçalho do laudo e o primeiro exame. */
         .laudo-a4-corpo > #laudo-content > *:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco-custom:first-child {
-          margin-top: 0 !important;
+          margin-top: 16px !important;
           padding-top: 0 !important;
         }
         /* Evita quebra de exame e assinatura entre páginas. */
