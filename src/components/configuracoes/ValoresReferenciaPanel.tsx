@@ -510,7 +510,7 @@ const ParametroBloco = ({
     [refs, chave],
   );
 
-  const padrao = meusRefs.find((r) => r.categoria === "padrao") ?? null;
+  // (linha "Padrão" foi removida da UI — só variações)
   // Variações: TODAS as linhas que não são padrão (pode haver várias por categoria,
   // pois o usuário define sexo+idade livres em cada linha).
   const variacoes = meusRefs
@@ -544,7 +544,7 @@ const ParametroBloco = ({
       idadeMax: conv(meta.idadeMaxDias),
       unidadeIdade: unid,
       valorMin: "", valorMax: "",
-      unidade: padrao?.unidade ?? "",
+      unidade: meusRefs[0]?.unidade ?? "",
       descricao: "",
       criticoMin: "", criticoMax: "",
       categoria: cat,
@@ -553,11 +553,9 @@ const ParametroBloco = ({
   };
 
 
-  // Sempre exibe a linha Padrão (mesmo sem valores) para permitir edição inicial.
-  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> = [
-    { key: "padrao", cat: "padrao", vr: padrao },
-    ...variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr })),
-  ];
+  // Apenas variações (sem linha "Padrão"). Usuário define sexo+idade em cada linha.
+  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> =
+    variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr }));
 
   return (
     <section className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
@@ -596,7 +594,11 @@ const ParametroBloco = ({
 
       {/* Linhas */}
       <div className="divide-y divide-border/30 overflow-x-auto">
-        {linhas.map(({ key, cat, vr }) => (
+        {linhas.length === 0 ? (
+          <div className="px-5 py-6 text-center text-[12px] text-muted-foreground">
+            Nenhuma regra cadastrada. Use <strong>Adicionar variação</strong> abaixo.
+          </div>
+        ) : linhas.map(({ key, cat, vr }) => (
           <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
