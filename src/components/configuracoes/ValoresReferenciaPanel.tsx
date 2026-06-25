@@ -603,68 +603,48 @@ const ParametroBloco = ({
         ))}
       </div>
 
-      {/* Personalizadas (custom) */}
-      {customs.length > 0 && (
-        <div className="px-5 py-3 bg-amber-500/[0.04] border-t border-amber-500/20 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-            <div className="text-[11px] text-foreground/80">
-              <strong>{customs.length}</strong> regra(s) personalizada(s) (faixa etária livre):
-            </div>
-          </div>
-          <div className="space-y-1 pl-5">
-            {customs.map((c) => (
-              <div key={c.id} className="flex items-center justify-between text-[11px] bg-background/60 rounded px-2 py-1 border border-border/40">
-                <span className="truncate">
-                  {c.sexo} • {c.idadeMin || "0"}–{c.idadeMax || "∞"} {c.unidadeIdade} • {c.valorMin}–{c.valorMax} {c.unidade}
-                </span>
-                <button
-                  onClick={() => setCustomParaRemover(c)}
-                  className="h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0 ml-2"
-                  title="Remover"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <footer className="px-5 py-3 bg-muted/30 border-t border-border/40 flex items-center justify-between">
-        {variacoesDisponiveis.length > 0 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-[13px] transition-colors group">
-                <span className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Plus className="h-3.5 w-3.5" />
-                </span>
-                Adicionar variação
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-72">
-              {variacoesDisponiveis.map((cat) => {
-                const m = CATEGORIA_META[cat];
-                const r = categoriaResumo(cat);
-                return (
-                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
-                    <span className="text-base leading-none">{m.icon}</span>
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-medium">{m.label}</span>
-                      <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <span className="text-[11px] text-muted-foreground">Todas as variações configuradas.</span>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-[13px] transition-colors group">
+              <span className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
+              Adicionar variação
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+              Presets (você pode editar Sexo e Idade depois)
+            </div>
+            {variacoesDisponiveis.map((cat) => {
+              const m = CATEGORIA_META[cat];
+              const r = categoriaResumo(cat);
+              return (
+                <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
+                  <span className="text-base leading-none">{m.icon}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium">{m.label}</span>
+                    <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
+            <div className="border-t my-1" />
+            <DropdownMenuItem onClick={() => adicionarVariacao("custom")} className="gap-2 text-[13px] py-2">
+              <span className="text-base leading-none">⚙️</span>
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium">Personalizada (em branco)</span>
+                <span className="text-[10px] text-muted-foreground truncate">Sexo e idade definidos por você</span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="text-[11px] text-muted-foreground/70">Alterações salvas automaticamente ao sair do campo.</span>
       </footer>
+
 
       <AlertDialog open={customParaRemover !== null} onOpenChange={(o) => !o && setCustomParaRemover(null)}>
         <AlertDialogContent>
