@@ -552,8 +552,6 @@ const ParametroBloco = ({
     onMutate();
   };
 
-  const customs = meusRefs.filter((r) => r.categoria === "custom");
-  const [customParaRemover, setCustomParaRemover] = useState<ValorReferencia | null>(null);
 
   // Sempre exibe a linha Padrão (mesmo sem valores) para permitir edição inicial.
   const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> = [
