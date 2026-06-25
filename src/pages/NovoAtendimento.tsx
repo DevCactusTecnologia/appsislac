@@ -686,6 +686,7 @@ const NovoAtendimento = () => {
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
+        jejum: jejum === "sim",
       };
       await addAtendimento(novoAt);
       setLastGuiaNumero(novoAt.guiaNumero ?? null);
