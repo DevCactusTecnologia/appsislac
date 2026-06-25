@@ -265,20 +265,8 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
     </button>
   );
 
-  return (
+  const body = (
     <>
-    <StandardDialog
-      open={open}
-      onClose={onClose}
-      icon={<Filter className="h-5 w-5 text-[hsl(var(--status-info))]" />}
-      title="Valores de referência"
-      subtitle={exameNome || "Todos os exames"}
-      headerActions={headerActions}
-      footer={footer}
-      maxWidth="7xl"
-      allowMaximize={true}
-      defaultMaximized={defaultMaximized}
-    >
       {/* Tabs */}
       <div className="px-6 pt-4">
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
