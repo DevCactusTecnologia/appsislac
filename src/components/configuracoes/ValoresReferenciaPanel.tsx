@@ -523,12 +523,17 @@ const ParametroBloco = ({
                 <ChevronDown className="h-3 w-3 opacity-60" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-72">
               {variacoesDisponiveis.map((cat) => {
                 const m = CATEGORIA_META[cat];
+                const r = categoriaResumo(cat);
                 return (
-                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px]">
-                    <span>{m.icon}</span> <span>{m.label}</span>
+                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
+                    <span className="text-base leading-none">{m.icon}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium">{m.label}</span>
+                      <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
+                    </div>
                   </DropdownMenuItem>
                 );
               })}
