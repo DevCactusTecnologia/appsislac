@@ -2152,8 +2152,9 @@ const ResultadoDetalhe = () => {
                 <div className="flex items-center gap-2">
                   {canAnalisar && (
                     <button
+                      data-result-nav="true"
                       onClick={handleSalvar}
-                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium text-foreground border border-border bg-card hover:bg-accent transition-colors"
+                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                       title="Salvar parcialmente sem liberar"
                     >
                       <Save className="h-4 w-4" />
