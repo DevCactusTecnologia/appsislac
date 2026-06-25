@@ -76,7 +76,7 @@ export const ParamTypedInput = ({
       >
         <SelectTrigger
           data-result-nav="true"
-          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 focus:ring-4 focus:ring-primary focus:ring-offset-1 focus:ring-offset-background focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
+          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 focus:ring-4 focus:ring-inset focus:ring-primary focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
             isCritico
               ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
               : ""
