@@ -209,8 +209,7 @@ export async function addRegua(
 ): Promise<ReguaEtaria> {
   const tenantId = await getCurrentTenantId();
   const exameId = resolveExameId(input.exameNome);
-  const { data, error } = await supabase
-    .from("reguas_etarias")
+  const { data, error } = await (supabase.from("reguas_etarias") as any)
     .insert({
       tenant_id: tenantId,
       nome: input.nome,
