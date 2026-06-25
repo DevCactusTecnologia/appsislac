@@ -350,24 +350,27 @@ export default function LoginV2() {
                         <label className="text-xs font-semibold text-foreground">Código do laboratório</label>
                         <div className="group relative">
                           <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                          <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                            LAB
+                          </span>
                           <input
                             type="text"
                             inputMode="text"
                             autoCapitalize="characters"
-                            maxLength={12}
-                            value={codigo}
-                            onChange={(e) =>
-                              setCodigo(
-                                e.target.value
-                                  .toUpperCase()
-                                  .replace(/[^A-Z0-9]/g, "")
-                                  .slice(0, 12),
-                              )
-                            }
-                            placeholder="LAB905"
+                            maxLength={9}
+                            value={codigo.replace(/^LAB/, "")}
+                            onChange={(e) => {
+                              const raw = e.target.value
+                                .toUpperCase()
+                                .replace(/[^A-Z0-9]/g, "")
+                                .replace(/^LAB/, "")
+                                .slice(0, 9);
+                              setCodigo("LAB" + raw);
+                            }}
+                            placeholder="0001"
                             autoComplete="off"
                             autoFocus
-                            className="h-11 w-full rounded-2xl border border-input bg-background pl-10 pr-4 text-sm font-semibold tracking-[0.18em] uppercase text-foreground outline-none transition-all placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60 placeholder:normal-case focus:border-primary focus:ring-4 focus:ring-primary/10"
+                            className="h-11 w-full rounded-2xl border border-input bg-background pl-[4.25rem] pr-4 text-sm font-semibold tracking-[0.18em] uppercase text-foreground outline-none transition-all placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:border-primary focus:ring-4 focus:ring-primary/10"
                           />
                         </div>
                         <div className="flex items-center justify-between pl-1 text-[11px] text-muted-foreground">
