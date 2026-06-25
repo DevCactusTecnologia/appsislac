@@ -18,6 +18,7 @@ import {
   removeParametro,
   reorderParametros,
   isChaveDuplicada,
+  findExamesComChave,
 } from "@/data/exameParametrosStore";
 import { slugifyChave } from "@/lib/laudoTemplate";
 
