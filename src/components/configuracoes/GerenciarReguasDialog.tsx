@@ -13,7 +13,12 @@ import {
   analisarCobertura, fromDias, labelFaixa, MAX_DIAS, toDias, type FaixaEtaria, type UnidadeIdade,
 } from "@/lib/idadeFaixas";
 
-interface Props { open: boolean; onClose: () => void; }
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  /** Quando informado, filtra/cria réguas no escopo desse exame (estilo Lareval). */
+  exameNome?: string;
+}
 
 interface FaixaDraft {
   id: string;
@@ -39,17 +44,24 @@ const draftToFaixa = (d: FaixaDraft): FaixaEtaria => {
   return { id: d.id, label: d.label || labelFaixa(de, ate), deDias: de, ateDias: ate };
 };
 
-const GerenciarReguasDialog = ({ open, onClose }: Props) => {
+const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
   const { toast } = useToast();
-  const [reguas, setReguas] = useState<ReguaEtaria[]>([]);
+  const exameNorm = (exameNome ?? "").trim().toLowerCase();
+  const [todas, setTodas] = useState<ReguaEtaria[]>([]);
   const [selecionadaId, setSelecionadaId] = useState<string>("");
   const [nome, setNome] = useState("");
+  const [escopo, setEscopo] = useState<"global" | "exame">(exameNorm ? "exame" : "global");
   const [faixas, setFaixas] = useState<FaixaDraft[]>([]);
+
+  // Filtra a lista para o contexto atual: presets + globais + as desse exame.
+  const reguas = exameNorm
+    ? todas.filter((r) => !r.exameNome || r.exameNome === exameNorm)
+    : todas;
 
   useEffect(() => {
     if (!open) return;
-    loadReguas().then((r) => { setReguas(r); if (!selecionadaId) setSelecionadaId(r[0]?.id ?? ""); });
-    return subscribeReguas(() => setReguas(getReguas()));
+    loadReguas().then((r) => { setTodas(r); if (!selecionadaId) setSelecionadaId(r[0]?.id ?? ""); });
+    return subscribeReguas(() => setTodas(getReguas()));
   }, [open, selecionadaId]);
 
   const sel = reguas.find((r) => r.id === selecionadaId);
@@ -57,6 +69,7 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
   useEffect(() => {
     if (!sel) { setNome(""); setFaixas([]); return; }
     setNome(sel.nome);
+    setEscopo(sel.exameNome ? "exame" : "global");
     setFaixas(sel.faixas.map(draftFromFaixa));
   }, [selecionadaId, reguas.length]);
 
@@ -68,11 +81,13 @@ const GerenciarReguasDialog = ({ open, onClose }: Props) => {
   })();
 
   const handleNova = async () => {
-    const nova = await addRegua({ nome: "Nova régua", faixas: [
-      { id: "f1", label: "0–150a", deDias: 0, ateDias: MAX_DIAS },
-    ]});
+    const nova = await addRegua({
+      nome: exameNorm ? `Faixas ${exameNome}` : "Nova régua",
+      exameNome: exameNorm || undefined,
+      faixas: [{ id: "f1", label: "0–150a", deDias: 0, ateDias: MAX_DIAS }],
+    });
     setSelecionadaId(nova.id);
-    toast({ title: "Régua criada" });
+    toast({ title: exameNorm ? `Régua criada para ${exameNome}` : "Régua criada" });
   };
 
   const handleDuplicar = async () => {
