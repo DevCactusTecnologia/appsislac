@@ -366,8 +366,9 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 };
 
 const ParametroBloco = ({
-  exameNome, parametro, refs, onMutate,
-}: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void }) => {
+  exameNome, parametro, refs, onMutate, onHide,
+}: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
+
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
   const meusRefs = useMemo(
     () => refs.filter((r) => (r.parametroNome || "").toLowerCase() === chave),
