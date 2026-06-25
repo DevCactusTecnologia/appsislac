@@ -10,7 +10,7 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, AlertTriangle, Eraser, EyeOff, Eye } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
