@@ -719,10 +719,13 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               <textarea
                 value={valorReferencia}
                 onChange={(e) => setValorReferencia(e.target.value)}
-                rows={2}
-                className={textareaClass}
-                placeholder="Ex: 12.0 a 16.0 g/dL"
+                rows={6}
+                className={`${textareaClass} min-h-[140px] resize-y leading-relaxed font-mono text-[13px] whitespace-pre-wrap`}
+                placeholder={"Ex:\n12.0 a 16.0 g/dL\nDesejável: < 200 mg/dL\nLimítrofe: 200 - 239 mg/dL\nElevado: ≥ 240 mg/dL"}
               />
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Use quebras de linha para separar múltiplas faixas. O texto será exibido exatamente como digitado.
+              </p>
             </FormSection>
 
             {/* STEP 5 — Behavior */}
