@@ -117,8 +117,12 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 
   const remover = async () => {
     if (!vr) return;
+    const msg = isPadrao
+      ? "Remover a regra PADRÃO deste parâmetro? Sem ela, só as variações específicas (sexo/idade) ficam ativas."
+      : `Remover a variação "${meta.label}"?`;
+    if (!window.confirm(msg)) return;
     setRemoving(true);
-    try { await removeValorReferencia(vr.id); onMutate(); }
+    try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
     finally { setRemoving(false); }
   };
 
