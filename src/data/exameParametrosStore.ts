@@ -67,6 +67,7 @@ const fromRow = (r: any): ExameParametro => ({
   criticoMax: r.critico_max ?? "",
   separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
   qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
+  formatoExibicao: (r.formato_exibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg") as FormatoTempo,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
