@@ -266,4 +266,3 @@ export const resolverReferencia = (
     criticoMin: m.criticoMin || undefined, criticoMax: m.criticoMax || undefined,
   };
 };
-};
