@@ -270,7 +270,16 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
             </div>
 
             {/* Tabela de faixas */}
-            <div className="rounded-xl border border-border/40 overflow-hidden">
+            <div
+              className={`rounded-xl border ${isSistema ? "border-amber-500/40 cursor-pointer" : "border-border/40"} overflow-hidden`}
+              onClickCapture={isSistema ? (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toast({ title: "Régua de sistema bloqueada", description: "Duplicando para você editar…" });
+                handleDuplicar();
+              } : undefined}
+              title={isSistema ? "Régua de sistema — clique para duplicar e editar" : undefined}
+            >
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/30 text-left">
