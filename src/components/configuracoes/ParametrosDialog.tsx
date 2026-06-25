@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Settings2, Eye, EyeOff, Save, Trash2, GripVertical, Wand2, Plus, X,
   Sparkles, AlertOctagon, Search, Type, Hash, ListChecks, Sigma, Tag,
-  KeyRound, ChevronDown, FlaskConical, Asterisk,
+  KeyRound, ChevronDown, FlaskConical, Asterisk, Clock,
 } from "lucide-react";
 import StandardDialog from "@/components/ui/standard-dialog";
 import { Switch } from "@/components/ui/switch";
