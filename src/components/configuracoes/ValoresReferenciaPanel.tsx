@@ -146,10 +146,11 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     finally { setRemoving(false); setConfirmOpen(null); }
   };
 
-  const isPadrao = categoria === "padrao";
   const borderClass = isPadrao
     ? "border-primary/30 bg-primary/5"
     : exists ? "border-border/60" : "border-dashed border-border/40 bg-muted/10";
+
+  const hasAnyValue = !!(normMin || normMax || critMin || critMax || unidade);
 
   return (
     <div className={`rounded-xl border ${borderClass} p-3 transition-all`}>
