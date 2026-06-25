@@ -117,8 +117,12 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 
   const remover = async () => {
     if (!vr) return;
+    const msg = isPadrao
+      ? "Remover a regra PADRÃO deste parâmetro? Sem ela, só as variações específicas (sexo/idade) ficam ativas."
+      : `Remover a variação "${meta.label}"?`;
+    if (!window.confirm(msg)) return;
     setRemoving(true);
-    try { await removeValorReferencia(vr.id); onMutate(); }
+    try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
     finally { setRemoving(false); }
   };
 
@@ -142,11 +146,11 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        {!isPadrao && exists && (
+        {exists && (
           <button
             onClick={remover} disabled={removing}
             className="h-7 w-7 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
-            title="Remover variação"
+            title={isPadrao ? "Remover regra padrão" : "Remover variação"}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -260,10 +264,32 @@ const ParametroBloco = ({
       </div>
 
       {customs.length > 0 && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 flex items-start gap-2">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-[11px] text-foreground/80">
-            <strong>{customs.length}</strong> regra(s) personalizada(s) ativas para este parâmetro (faixa etária livre). Edite no modo Avançado.
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1.5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-[11px] text-foreground/80">
+              <strong>{customs.length}</strong> regra(s) personalizada(s) (faixa etária livre):
+            </div>
+          </div>
+          <div className="space-y-1 pl-5">
+            {customs.map((c) => (
+              <div key={c.id} className="flex items-center justify-between text-[11px] bg-background/60 rounded px-2 py-1 border border-border/40">
+                <span className="truncate">
+                  {c.sexo} • {c.idadeMin || "0"}–{c.idadeMax || "∞"} {c.unidadeIdade} • {c.valorMin}–{c.valorMax} {c.unidade}
+                </span>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm("Remover esta regra personalizada?")) return;
+                    await removeValorReferencia(c.id);
+                    onMutate();
+                  }}
+                  className="h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0 ml-2"
+                  title="Remover"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
