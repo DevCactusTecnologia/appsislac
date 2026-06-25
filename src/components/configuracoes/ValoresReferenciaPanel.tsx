@@ -98,9 +98,9 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     return null;
   };
 
-  const persistir = async (payload: Omit<ValorReferencia, "id">) => {
-    if (vr) await updateValorReferencia(vr.id, payload);
-    else await addValorReferencia(payload);
+  const persistir = async (payload: Omit<ValorReferencia, "id">): Promise<boolean> => {
+    if (vr) return updateValorReferencia(vr.id, payload);
+    return (await addValorReferencia(payload)) !== null;
   };
 
   const buildPayload = (overrides?: Partial<ValorReferencia>): Omit<ValorReferencia, "id"> => ({
@@ -121,29 +121,39 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     if (err) { toast({ title: err, variant: "destructive" }); return; }
     setSaving(true);
     try {
-      await persistir(buildPayload());
-      onMutate();
-      toast({ title: vr ? "Atualizado" : "Adicionado" });
+      const ok = await persistir(buildPayload());
+      if (ok) {
+        onMutate();
+        toast({ title: vr ? "Atualizado" : "Adicionado" });
+      }
     } finally { setSaving(false); }
   };
 
   const limparESalvar = async () => {
+    setConfirmOpen(null);
     setSaving(true);
     try {
-      await persistir(buildPayload({
+      const ok = await persistir(buildPayload({
         valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
       }));
-      setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
-      onMutate();
-      toast({ title: "Valores limpos" });
-    } finally { setSaving(false); setConfirmOpen(null); }
+      if (ok) {
+        setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
+        onMutate();
+        toast({ title: "Valores limpos" });
+      }
+    } finally { setSaving(false); }
   };
 
   const remover = async () => {
     if (!vr) return;
+    const id = vr.id;
+    setConfirmOpen(null);
     setRemoving(true);
-    try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
-    finally { setRemoving(false); setConfirmOpen(null); }
+    try {
+      const ok = await removeValorReferencia(id);
+      if (ok) { onMutate(); toast({ title: "Removido" }); }
+    }
+    finally { setRemoving(false); }
   };
 
   const borderClass = isPadrao
@@ -258,6 +268,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmOpen === "clear" ? limparESalvar : remover}
+              disabled={saving || removing}
               className={confirmOpen === "clear" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
             >
               {confirmOpen === "clear" ? "Limpar" : "Remover"}
@@ -392,8 +403,12 @@ const ParametroBloco = ({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                if (customParaRemover) { await removeValorReferencia(customParaRemover.id); onMutate(); }
+                const id = customParaRemover?.id;
                 setCustomParaRemover(null);
+                if (id) {
+                  const ok = await removeValorReferencia(id);
+                  if (ok) onMutate();
+                }
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
