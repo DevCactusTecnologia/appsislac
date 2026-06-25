@@ -49,7 +49,7 @@ const detectarSobreposicao = (
   });
 };
 
-const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximized = true }: FiltrosDialogProps) => {
+const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximized = true, embedded = false }: FiltrosDialogProps) => {
   const { toast } = useToast();
   const [referencias, setReferencias] = useState<ValorReferencia[]>([]);
   const [editando, setEditando] = useState<ValorReferencia | null>(null);
