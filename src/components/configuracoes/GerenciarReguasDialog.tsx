@@ -195,6 +195,18 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                   disabled={isSistema}
                 />
               </div>
+              {exameNorm && !isSistema && (
+                <div className="space-y-1.5 w-[200px]">
+                  <Label className="text-[11px] text-muted-foreground">Escopo</Label>
+                  <Select value={escopo} onValueChange={(v) => setEscopo(v as "global" | "exame")}>
+                    <SelectTrigger className="rounded-xl h-9 text-sm bg-muted/30 border-border/60"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exame">Apenas {exameNome}</SelectItem>
+                      <SelectItem value="global">Global (todos os exames)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <button
                 onClick={handleDuplicar}
                 className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all flex items-center gap-1.5"
