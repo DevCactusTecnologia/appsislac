@@ -232,11 +232,13 @@ const compativel = (
     if (vr.sexo !== "Ambos" && sexoNorm && vr.sexo !== sexoNorm) return false;
   }
 
-  // Faixa etária da própria linha (quando preenchida)
+  // Faixa etária da própria linha (quando preenchida) — min e max podem ter unidades diferentes.
   if (idadeDias !== null && (vr.idadeMin || vr.idadeMax)) {
-    const fator = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
-    const minD = vr.idadeMin ? (parseFloat(vr.idadeMin) || 0) * fator : 0;
-    const maxD = vr.idadeMax ? (parseFloat(vr.idadeMax) || 99999) * fator : 99999;
+    const fatorMin = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
+    const unidMax = vr.unidadeIdadeMax ?? vr.unidadeIdade;
+    const fatorMax = unidMax === "Anos" ? 365 : unidMax === "Meses" ? 30 : 1;
+    const minD = vr.idadeMin ? (parseFloat(vr.idadeMin) || 0) * fatorMin : 0;
+    const maxD = vr.idadeMax ? (parseFloat(vr.idadeMax) || 99999) * fatorMax : 99999;
     if (idadeDias < minD || idadeDias > maxD) return false;
   }
 
