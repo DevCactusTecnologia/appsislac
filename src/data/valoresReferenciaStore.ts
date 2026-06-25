@@ -25,8 +25,8 @@ export interface ValorReferencia {
   idadeMax: string;
   /** Unidade da idade mínima (lado "de"). */
   unidadeIdade: "Anos" | "Meses" | "Dias";
-  /** Unidade da idade máxima (lado "até"). Permite faixas mistas, ex.: "3 Meses → 2 Anos". */
-  unidadeIdadeMax: "Anos" | "Meses" | "Dias";
+  /** Unidade da idade máxima (lado "até"). Permite faixas mistas, ex.: "3 Meses → 2 Anos". Default: igual a `unidadeIdade`. */
+  unidadeIdadeMax?: "Anos" | "Meses" | "Dias";
   valorMin: string;
   valorMax: string;
   unidade: string;
