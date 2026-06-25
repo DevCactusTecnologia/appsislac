@@ -96,7 +96,7 @@ export function brToIso(br: string | undefined): string | null {
 export const ATENDIMENTO_COLS =
   "id,protocolo,data,paciente_nome,paciente_cpf,paciente_nascimento," +
   "solicitante,convenio_nome,unidade_id,status_atendimento,status_pagamento," +
-  "motivo_cancelamento,updated_at,origem_atendimento";
+  "motivo_cancelamento,updated_at,origem_atendimento,jejum";
 export const EXAME_COLS =
   "id,atendimento_id,nome_exame,exame_id,ordem,valor,valor_original,analista,status," +
   "cobranca_destino,convenio_cobranca_id,amostra_seq,grupo_exame_id," +
