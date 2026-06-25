@@ -268,7 +268,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
   const body = (
     <>
       {/* Tabs */}
-      <div className="px-6 pt-4">
+      <div className="px-6 pt-4 flex items-center justify-between gap-3 flex-wrap">
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
           <button
             onClick={() => setAba("perfil")}
@@ -289,7 +289,14 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
             <List className="h-3.5 w-3.5" /> Lista
           </button>
         </div>
+        {embedded && (
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {headerActions}
+            {footer}
+          </div>
+        )}
       </div>
+
 
       {aba === "perfil" && (
         <div className="px-6 py-5">
@@ -584,18 +591,14 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
     return (
       <>
         <div className="flex flex-col h-full bg-card">
-          <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
-            {headerActions}
-          </div>
           <div className="flex-1 min-h-0 overflow-auto">{body}</div>
-          <div className="px-6 py-3 border-t border-border/60 flex items-center justify-end gap-2 bg-muted/10">
-            {footer}
-          </div>
         </div>
         <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
       </>
     );
   }
+
+
 
   return (
     <>

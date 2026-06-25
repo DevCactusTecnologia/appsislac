@@ -394,8 +394,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
         {/* RIGHT: Form */}
         <section className="flex flex-col overflow-hidden min-h-0">
           {/* Sticky header */}
-          <div className="shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between">
-            <div>
+          <div className="shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/60 px-6 py-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <h3 className="text-[14px] font-semibold text-foreground">
                 {selectedId ? "Editar parâmetro" : "Novo parâmetro"}
               </h3>
@@ -403,15 +403,19 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                 {selectedId ? `ID #${selectedId}` : "Defina como o resultado será preenchido e exibido"}
               </p>
             </div>
-            {selectedId && (
-              <button
-                onClick={handleRemover}
-                className="h-8 px-3 rounded-lg border border-destructive/30 text-destructive text-[12px] font-medium flex items-center gap-1.5 hover:bg-destructive/10 transition-all duration-200"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Remover parâmetro
-              </button>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {selectedId && (
+                <button
+                  onClick={handleRemover}
+                  className="h-9 px-3 rounded-xl border border-destructive/30 text-destructive text-[12px] font-medium flex items-center gap-1.5 hover:bg-destructive/10 transition-all duration-200"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remover
+                </button>
+              )}
+              {headerActions}
+            </div>
           </div>
+
 
           <div className="flex-1 overflow-y-auto p-6">
             <div className="flex flex-col gap-4 max-w-[1100px] mx-auto">
@@ -840,13 +844,11 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     if (!open) return null;
     return (
       <div className="flex flex-col h-full bg-card">
-        <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
-          {headerActions}
-        </div>
         <div className="flex-1 min-h-0 overflow-hidden">{body}</div>
       </div>
     );
   }
+
 
   return (
     <StandardDialog
