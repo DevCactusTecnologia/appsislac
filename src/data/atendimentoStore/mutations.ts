@@ -162,7 +162,7 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
 
     // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO) e jejum.
     if (atendimentoId) {
-      const extraPatch: Record<string, unknown> = {};
+      const extraPatch: { origem_atendimento?: string; jejum?: boolean } = {};
       if (at.origem && at.origem !== "INTERNO") extraPatch.origem_atendimento = at.origem;
       if (typeof at.jejum === "boolean") extraPatch.jejum = at.jejum;
       if (Object.keys(extraPatch).length > 0) {
