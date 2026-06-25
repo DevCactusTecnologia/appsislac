@@ -1315,7 +1315,7 @@ const ResultadoDetalhe = () => {
                             {param.headerAntes}
                           </p>
                         )}
-                        <div className="border rounded-lg p-3 space-y-2 bg-background">
+                        <div className="border-2 rounded-lg p-3 space-y-2 bg-background transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/30 focus-within:bg-primary/5 focus-within:shadow-md">
                           <p className="text-sm font-medium text-foreground">
                             {param.nome}
                             {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
