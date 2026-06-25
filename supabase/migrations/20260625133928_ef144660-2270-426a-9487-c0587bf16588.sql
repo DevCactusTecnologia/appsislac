@@ -1,0 +1,1 @@
+ALTER TABLE public.exame_parametros ADD COLUMN IF NOT EXISTS formato_exibicao text;
