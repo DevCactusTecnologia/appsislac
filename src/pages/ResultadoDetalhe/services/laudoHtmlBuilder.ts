@@ -14,6 +14,8 @@
 import { isValueInRange } from "@/components/ResultadoValidationBar";
 import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRenderer";
 import { resolveResultadoRegulatorio, renderRegulatorioFooterHtml } from "@/lib/regulatorioResolver";
+import { getLabConfig } from "@/data/labConfigStore";
+import { buildWatermarkCss } from "@/lib/watermark";
 import type { Exame, Paciente, Parametro } from "../types";
 
 export interface AnalistaAtual {
@@ -384,6 +386,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; }
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
         }
+        /* Marca d'água global (configurada em /configuracoes → Laboratório). */
+        ${buildWatermarkCss(getLabConfig().watermark)}
       </style>
 
       <div class="laudo-a4-page">
