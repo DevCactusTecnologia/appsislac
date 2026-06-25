@@ -5335,6 +5335,36 @@ export type Database = {
           },
         ]
       }
+      reguas_etarias: {
+        Row: {
+          created_at: string
+          faixas: Json
+          id: string
+          nome: string
+          sistema: boolean
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          faixas?: Json
+          id?: string
+          nome: string
+          sistema?: boolean
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          faixas?: Json
+          id?: string
+          nome?: string
+          sistema?: boolean
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resultados_entregas: {
         Row: {
           atendimento_exame_id: number | null
