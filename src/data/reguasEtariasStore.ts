@@ -159,7 +159,9 @@ export async function updateRegua(id: string, patch: Partial<Omit<ReguaEtaria, "
   const all = loadFromStorage(tenantId);
   const idx = all.findIndex((r) => r.id === id);
   if (idx < 0 || all[idx].sistema) return false;
-  all[idx] = { ...all[idx], ...patch };
+  const merged: ReguaEtaria = { ...all[idx], ...patch };
+  if ("exameNome" in patch) merged.exameNome = normalizeExame(patch.exameNome) || undefined;
+  all[idx] = merged;
   persistCustom(tenantId, all);
   cache.set(tenantId, all);
   notify();
@@ -185,6 +187,7 @@ export async function duplicarRegua(id: string, novoNome?: string): Promise<Regu
   if (!origem) return null;
   return addRegua({
     nome: novoNome ?? `${origem.nome} (cópia)`,
+    exameNome: origem.exameNome,
     faixas: origem.faixas.map((f, i) => ({ ...f, id: `f_${Date.now()}_${i}` })),
   });
 }
