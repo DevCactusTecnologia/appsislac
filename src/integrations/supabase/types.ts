@@ -6921,6 +6921,7 @@ export type Database = {
       }
       valores_referencia: {
         Row: {
+          ativo: boolean
           created_at: string
           critico_max: string | null
           critico_min: string | null
@@ -6932,6 +6933,8 @@ export type Database = {
           idade_max_dias: number | null
           idade_min: string
           idade_min_dias: number | null
+          observacao: string | null
+          ordem: number
           parametro_id: number | null
           parametro_nome: string
           sexo: string
@@ -6943,6 +6946,7 @@ export type Database = {
           valor_min: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
@@ -6954,6 +6958,8 @@ export type Database = {
           idade_max_dias?: number | null
           idade_min?: string
           idade_min_dias?: number | null
+          observacao?: string | null
+          ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
@@ -6965,6 +6971,7 @@ export type Database = {
           valor_min?: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
           critico_max?: string | null
           critico_min?: string | null
@@ -6976,6 +6983,8 @@ export type Database = {
           idade_max_dias?: number | null
           idade_min?: string
           idade_min_dias?: number | null
+          observacao?: string | null
+          ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
