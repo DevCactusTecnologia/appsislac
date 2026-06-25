@@ -247,6 +247,7 @@ async function persistUpdateAtendimentoTx(
   }
   if (updates.unidadeId !== undefined) patch.unidade_id = updates.unidadeId;
   if (updates.motivoCancelamento !== undefined) patch.motivo_cancelamento = updates.motivoCancelamento ?? "";
+  if (updates.jejum !== undefined) patch.jejum = updates.jejum;
 
   // 3) Monta payload de exames (somente se substituição explícita)
   let examesPayload: Array<Record<string, unknown>> | null = null;
