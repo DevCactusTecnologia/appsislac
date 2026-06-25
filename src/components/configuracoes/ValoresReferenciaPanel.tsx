@@ -9,22 +9,43 @@
 // Resolver: maior prioridade compatível com sexo+idade+gestante vence.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
-  type ValorReferencia, type CategoriaVR, CATEGORIA_META,
+  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, CATEGORIA_META,
   addValorReferencia, updateValorReferencia, removeValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import type { ExameParametro } from "@/data/exameParametrosStore";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const JEJUM_LABEL: Record<JejumVR, string> = {
+  qualquer: "Qualquer",
+  com_jejum: "Com jejum",
+  sem_jejum: "Sem jejum",
+};
+const OPERADOR_LABEL: Record<OperadorVR, string> = {
+  entre: "Entre (min–max)",
+  menor: "< menor que",
+  menor_igual: "≤ menor ou igual",
+  maior: "> maior que",
+  maior_igual: "≥ maior ou igual",
+  igual: "= igual a",
+};
+const OPERADOR_SIMBOLO: Record<OperadorVR, string> = {
+  entre: "–", menor: "<", menor_igual: "≤", maior: ">", maior_igual: "≥", igual: "=",
+};
+
 
 interface Props {
   exameNome: string;
