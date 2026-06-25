@@ -241,3 +241,30 @@ export const isChaveDuplicada = (
   return lista.some((p) => p.chave.trim().toUpperCase() === k && p.id !== ignoreId);
 };
 
+/**
+ * Busca em TODOS os exames quais usam a chave informada (case-insensitive).
+ * Retorna nomes dos exames (e id) — útil para informar ao usuário a qual
+ * exame uma chave já pertence quando ele tenta duplicá-la.
+ */
+export async function findExamesComChave(
+  chave: string,
+  opts?: { excluirExameId?: string; ignorarParametroId?: number },
+): Promise<Array<{ exameId: string; exameNome: string }>> {
+  const k = chave.trim().toUpperCase();
+  if (!k) return [];
+  const { data, error } = await supabase
+    .from("exame_parametros")
+    .select("id,exame_id,chave,exames_catalogo:exame_id(nome)")
+    .ilike("chave", k);
+  if (error || !data) return [];
+  const out = new Map<string, string>();
+  for (const r of data as any[]) {
+    if ((r.chave ?? "").trim().toUpperCase() !== k) continue;
+    if (opts?.ignorarParametroId && r.id === opts.ignorarParametroId) continue;
+    if (opts?.excluirExameId && r.exame_id === opts.excluirExameId) continue;
+    const nome = r.exames_catalogo?.nome ?? "(exame sem nome)";
+    if (!out.has(r.exame_id)) out.set(r.exame_id, nome);
+  }
+  return Array.from(out.entries()).map(([exameId, exameNome]) => ({ exameId, exameNome }));
+}
+
