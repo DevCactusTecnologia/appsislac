@@ -344,11 +344,7 @@ const ParametroBloco = ({
                   {c.sexo} • {c.idadeMin || "0"}–{c.idadeMax || "∞"} {c.unidadeIdade} • {c.valorMin}–{c.valorMax} {c.unidade}
                 </span>
                 <button
-                  onClick={async () => {
-                    if (!window.confirm("Remover esta regra personalizada?")) return;
-                    await removeValorReferencia(c.id);
-                    onMutate();
-                  }}
+                  onClick={() => setCustomParaRemover(c)}
                   className="h-6 w-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center shrink-0 ml-2"
                   title="Remover"
                 >
