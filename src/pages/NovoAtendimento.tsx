@@ -660,6 +660,7 @@ const NovoAtendimento = () => {
         // por trigger em atendimento_pagamentos (registros pós-deploy exigem estorno).
         ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
+        jejum: jejum === "sim",
       });
       } else {
       const protocolo = getNextProtocolo();
