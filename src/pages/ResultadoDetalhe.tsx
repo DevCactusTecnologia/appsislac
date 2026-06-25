@@ -1442,8 +1442,9 @@ const ResultadoDetalhe = () => {
                       <div className="flex gap-2">
                         {canAnalisar && (
                           <button
+                            data-result-nav="true"
                             onClick={handleSalvar}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent transition-colors"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                           >
                             <Save className="h-3.5 w-3.5" />
                             Salvar
