@@ -70,6 +70,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
 
   useEffect(() => {
     setNormMin(vr?.valorMin ?? "");
@@ -88,6 +89,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const previewOk = nMin !== null ? (nMin + nMax!) / 2 : null;
+  const isPadrao = categoria === "padrao";
 
   const validar = (): string | null => {
     if (!normMin && !normMax) return "Informe ao menos um limite normal";
@@ -96,38 +98,52 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     return null;
   };
 
+  const persistir = async (payload: Omit<ValorReferencia, "id">) => {
+    if (vr) await updateValorReferencia(vr.id, payload);
+    else await addValorReferencia(payload);
+  };
+
+  const buildPayload = (overrides?: Partial<ValorReferencia>): Omit<ValorReferencia, "id"> => ({
+    exameNome,
+    parametroNome: parametro.chave || parametro.rotulo,
+    sexo: meta.sexo,
+    idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
+    valorMin: normMin, valorMax: normMax,
+    unidade,
+    descricao: "",
+    criticoMin: critMin, criticoMax: critMax,
+    categoria,
+    ...overrides,
+  });
+
   const salvar = async () => {
     const err = validar();
     if (err) { toast({ title: err, variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const payload: Omit<ValorReferencia, "id"> = {
-        exameNome,
-        parametroNome: parametro.chave || parametro.rotulo,
-        sexo: meta.sexo,
-        idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-        valorMin: normMin, valorMax: normMax,
-        unidade,
-        descricao: "",
-        criticoMin: critMin, criticoMax: critMax,
-        categoria,
-      };
-      if (vr) await updateValorReferencia(vr.id, payload);
-      else await addValorReferencia(payload);
+      await persistir(buildPayload());
       onMutate();
       toast({ title: vr ? "Atualizado" : "Adicionado" });
     } finally { setSaving(false); }
   };
 
+  const limparESalvar = async () => {
+    setSaving(true);
+    try {
+      await persistir(buildPayload({
+        valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
+      }));
+      setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
+      onMutate();
+      toast({ title: "Valores limpos" });
+    } finally { setSaving(false); setConfirmOpen(null); }
+  };
+
   const remover = async () => {
     if (!vr) return;
-    const msg = isPadrao
-      ? "Remover a regra PADRÃO deste parâmetro? Sem ela, só as variações específicas (sexo/idade) ficam ativas."
-      : `Remover a variação "${meta.label}"?`;
-    if (!window.confirm(msg)) return;
     setRemoving(true);
     try { await removeValorReferencia(vr.id); onMutate(); toast({ title: "Removido" }); }
-    finally { setRemoving(false); }
+    finally { setRemoving(false); setConfirmOpen(null); }
   };
 
   const isPadrao = categoria === "padrao";
