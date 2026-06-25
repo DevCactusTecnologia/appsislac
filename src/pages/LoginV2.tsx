@@ -374,7 +374,7 @@ export default function LoginV2() {
                           />
                         </div>
                         <div className="flex items-center justify-between pl-1 text-[11px] text-muted-foreground">
-                          <span>Letras e números (ex.: LAB905, SJMED)</span>
+                          <span>Apenas números (ex.: 0001, 0999)</span>
                           <button
                             type="button"
                             onClick={() => setShowHelp((v) => !v)}
