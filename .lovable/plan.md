@@ -1,92 +1,65 @@
-## Redesign — Valores de Referência (modelo "Padrão + Variações")
+# Plano OECV — Resolução Inteligente de Valores de Referência
 
-Aplicar a proposta do documento anexado: trocar a interface atual (Matriz + Régua etária + Sexo) por **um card "Padrão" + cards de "Variações por categoria"**, com lógica de prioridade clara.
+## Objetivo
+Estender o resolver de Valores de Referência para cobrir os 3 padrões reais observados (só número, sexo+idade, idade+condição clínica como jejum), mantendo retrocompatibilidade total e UI moderna.
 
-Mudança estrutural — precisa de aprovação explícita antes de executar (regra do projeto).
+## Fase 1 — OLHOU (já concluída)
+Mapeados 3 padrões em uso:
+- **A.** Só número (ex.: Ácido Úrico por sexo)
+- **B.** Sexo + Faixa Etária (ex.: Ferro RN/Lactente/Criança/Adulto M/F)
+- **C.** Idade + Condição clínica (ex.: Triglicérides com/sem jejum, Colesterol HDL/LDL por faixa de risco)
 
----
+Estado atual: `valores_referencia` já tem `sexo`, `idade_min_dias`, `idade_max_dias`, `categoria` (enum), `prioridade`. Resolver já prioriza Gestante > Idade > Sexo > Padrão.
 
-### O que vai mudar — visão do usuário
+Lacunas:
+1. **Jejum** não é dimensão de filtro (só Gestante existe como condição).
+2. **Operador comparativo** (`< 100`, `≥ 190`) não é primeira-classe — hoje é texto livre em `texto_laudo`.
+3. Painel não permite criar variação por jejum nem operadores.
 
-Para cada parâmetro do exame:
+## Fase 2 — ENTENDEU
+Decisão arquitetural: **aditiva, sem breaking changes**.
+- Novas colunas com default neutro ("qualquer" / "entre") preservam todas as regras existentes.
+- Resolver ganha 1 nível extra na chave de prioridade (jejum) e 1 modo de exibição (operador).
+- UI ganha 2 controles novos no editor de variação; nada muda para quem não usa.
 
-```text
-┌─ PADRÃO (todos os pacientes) ───────────────┐
-│ Normal:   [min] – [max]  unid.              │
-│ Crítico:  [min] – [max]  unid.              │
-└─────────────────────────────────────────────┘
+## Fase 3 — CONFIGURAR
 
-[+ Adicionar variação]   → Gestante · Criança · Adolescente · Idoso · Recém-nascido · Masculino · Feminino · Personalizada
-
-┌─ 🤰 GESTANTE ──────────────────────── 🗑 ───┐
-│ Normal:   [min] – [max]                     │
-│ Crítico:  [min] – [max]                     │
-└─────────────────────────────────────────────┘
+### 3.1 Banco
+Migração aditiva em `public.valores_referencia`:
+```sql
+ALTER TABLE public.valores_referencia
+  ADD COLUMN jejum text NOT NULL DEFAULT 'qualquer'
+    CHECK (jejum IN ('qualquer','com_jejum','sem_jejum')),
+  ADD COLUMN operador text NOT NULL DEFAULT 'entre'
+    CHECK (operador IN ('entre','menor','menor_igual','maior','maior_igual','igual'));
 ```
+Atualizar trigger de `prioridade` para somar +1 quando `jejum <> 'qualquer'`.
+Índice parcial para acelerar lookups com jejum.
 
-Cada card mostra um preview ("12.5 g/dL → NORMAL", "8.0 g/dL → CRÍTICO") com os próprios valores.
+### 3.2 Resolver (`src/data/valoresReferenciaStore.ts`)
+- Função `resolverReferencia(...)` recebe novo parâmetro opcional `jejum?: boolean`.
+- Ranking atualizado: **Gestante > Jejum específico > Idade > Sexo > Padrão**.
+- Filtragem: regras com `jejum='qualquer'` sempre elegíveis; regras com `jejum` específico só entram se contexto bate.
 
----
+### 3.3 Integração com Resultado
+- `ResultadoDetalhe.tsx` já tem `jejum` no atendimento (memória existente). Passar valor ao resolver.
 
-### Lógica de aplicação (resolver)
+### 3.4 UI — `ValoresReferenciaPanel.tsx`
+Adicionar no editor de cada card de variação:
+- **Select "Jejum"**: Qualquer / Com jejum / Sem jejum.
+- **Select "Operador"**: Entre (default, mostra Min/Max) / < / ≤ / > / ≥ / =.
+  - Quando operador ≠ "entre": esconde Min, renomeia Max para "Valor".
+- Badge contextual no card resumindo as condições ativas (ex.: "Adulto • Com jejum • < 150").
 
-Prioridade na hora de validar resultado:
+### 3.5 Menu "Adicionar variação"
+Adicionar opção **"Por jejum"** que cria card pré-configurado com `jejum='com_jejum'`.
 
-1. **Situação clínica** (gestante) — se marcada no atendimento
-2. **Categoria etária** (Recém-nascido <28d, Criança 1–12a, Adolescente 13–18a, Adulto 19–64a, Idoso 65+)
-3. **Sexo** (Masculino/Feminino) — só se variação por sexo existir
-4. **Padrão** — fallback final
+## Fase 4 — VALIDAR
+- Cadastrar Triglicérides Adulto com jejum (< 150) e sem jejum (< 175); abrir resultado com `jejum=true` e conferir referência exibida.
+- Cadastrar Colesterol HDL com operador `≥ 40` (homem) e `≥ 50` (mulher); validar resolução por sexo + operador.
+- Regressão: abrir Hemograma (regras antigas sem jejum) e confirmar que continua resolvendo idêntico.
+- Conferir trigger de prioridade: regra com jejum específico vence regra sem jejum em empate de idade/sexo.
 
-Primeira categoria que tem VR cadastrado vence. Mantém compatível com `criticoChecker` e `##REF_X##`/`##FLAG_X##` no laudo.
-
----
-
-### Mudanças técnicas (resumo)
-
-**Banco** (`valores_referencia`):
-- Adiciona coluna `categoria text` (enum check: `padrao`, `gestante`, `recem_nascido`, `crianca`, `adolescente`, `adulto`, `idoso`, `masculino`, `feminino`, `custom`).
-- Adiciona `prioridade int` (calculado server-side a partir da categoria, usado para ordenar).
-- `idade_min_dias`/`idade_max_dias` continuam — preenchidos automaticamente pela categoria.
-- Backfill: linhas existentes viram `categoria='custom'` preservando faixa etária + sexo atuais (zero perda).
-- GRANTs + RLS preservados.
-
-**Stores / lógica**:
-- `valoresReferenciaStore`: novo campo `categoria`; helper `resolverPorCategoria(parametroId, paciente)` substitui o resolver por sexo+idade (mantém shim).
-- `criticoChecker` / `parseValorReferencia` / `laudoResolver` passam pelo novo resolver.
-
-**UI**:
-- Novo `ValoresReferenciaPanel.tsx` (card Padrão + cards de variação + botão "+ Adicionar variação" com menu de categorias).
-- `EditarValorReferenciaDialog.tsx`: modal único com Normal Min/Max, Crítico Min/Max, unidade, preview ao vivo.
-- `DetalhesExameDialog` / `FiltrosDialog`: substituem a Matriz atual pelo novo painel. "Avançado" (lista crua + faixa etária custom) fica colapsável para casos exóticos.
-- `MatrizValoresReferencia.tsx` vira o modo Avançado.
-
-**Régua etária**:
-- Continua existindo, mas só aparece dentro do modo Avançado / categoria "Personalizada". Deixa de ser o caminho principal.
-
----
-
-### Ordem de execução
-
-```text
-M1  add valores_referencia.categoria + check + index
-M2  backfill (linhas atuais → categoria='custom' com faixa preservada)
-M3  novo painel + dialog + integração em DetalhesExameDialog
-M4  novo resolver + adaptar criticoChecker / laudoResolver
-M5  modo Avançado (esconder matriz atrás de toggle)
-M6  smoke test: criar VR padrão → digitar resultado → conferir crítico → imprimir laudo
-M7  docs/valores-referencia-2.0/phase3-redesign-report.md
-```
-
-Nenhuma coluna é dropada nesta fase — tudo aditivo e reversível. Drop só em fase posterior, depois de validação real.
-
----
-
-### Riscos / decisões em aberto
-
-- Categoria "Gestante" depende de marcar gestação no atendimento. Hoje existe esse dado? Se não, vira flag manual no resultado (preciso confirmar antes de M3).
-- Categoria "Criança/Idoso" usa faixas fixas (1–12a, 65+) — usuário pode customizar via "Personalizada".
-- Mantém a régua etária como recurso avançado para não perder os usuários que já usam Sysmex/Lareval.
-
----
-
-**Confirma o redesign nesses termos para eu disparar M1?** Ou quer ajustar categorias / faixas antes?
+## Fora de escopo (próxima fase, se aprovado)
+- Parser HTML que extrai faixas dos layouts antigos do Hemograma e migra para `valores_referencia` automaticamente.
+- Dimensão "Etnia" (não apareceu nos exemplos reais).

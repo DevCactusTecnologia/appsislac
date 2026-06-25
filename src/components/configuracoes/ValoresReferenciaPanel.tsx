@@ -9,22 +9,43 @@
 // Resolver: maior prioridade compatível com sexo+idade+gestante vence.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
-  type ValorReferencia, type CategoriaVR, CATEGORIA_META,
+  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, CATEGORIA_META,
   addValorReferencia, updateValorReferencia, removeValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import type { ExameParametro } from "@/data/exameParametrosStore";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const JEJUM_LABEL: Record<JejumVR, string> = {
+  qualquer: "Qualquer",
+  com_jejum: "Com jejum",
+  sem_jejum: "Sem jejum",
+};
+const OPERADOR_LABEL: Record<OperadorVR, string> = {
+  entre: "Entre (min–max)",
+  menor: "< menor que",
+  menor_igual: "≤ menor ou igual",
+  maior: "> maior que",
+  maior_igual: "≥ maior ou igual",
+  igual: "= igual a",
+};
+const OPERADOR_SIMBOLO: Record<OperadorVR, string> = {
+  entre: "–", menor: "<", menor_igual: "≤", maior: ">", maior_igual: "≥", igual: "=",
+};
+
 
 interface Props {
   exameNome: string;
@@ -68,6 +89,8 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   const [critMin, setCritMin] = useState(vr?.criticoMin ?? "");
   const [critMax, setCritMax] = useState(vr?.criticoMax ?? "");
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
+  const [jejum, setJejum] = useState<JejumVR>((vr?.jejum as JejumVR) ?? "qualquer");
+  const [operador, setOperador] = useState<OperadorVR>((vr?.operador as OperadorVR) ?? "entre");
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
@@ -78,6 +101,8 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
+    setJejum((vr?.jejum as JejumVR) ?? "qualquer");
+    setOperador((vr?.operador as OperadorVR) ?? "entre");
   }, [vr?.id]);
 
   const dirty =
@@ -85,15 +110,22 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     (vr?.valorMax ?? "") !== normMax ||
     (vr?.criticoMin ?? "") !== critMin ||
     (vr?.criticoMax ?? "") !== critMax ||
-    (vr?.unidade ?? "") !== unidade;
+    (vr?.unidade ?? "") !== unidade ||
+    (((vr?.jejum as JejumVR) ?? "qualquer")) !== jejum ||
+    (((vr?.operador as OperadorVR) ?? "entre")) !== operador;
 
   const nMin = num(normMin), nMax = num(normMax), cMin = num(critMin), cMax = num(critMax);
   const previewOk = nMin !== null ? (nMin + nMax!) / 2 : null;
   const isPadrao = categoria === "padrao";
+  const isEntre = operador === "entre";
 
   const validar = (): string | null => {
-    if (!normMin && !normMax) return "Informe ao menos um limite normal";
-    if (nMin !== null && nMax !== null && nMin > nMax) return "Mínimo normal > máximo";
+    if (isEntre) {
+      if (!normMin && !normMax) return "Informe ao menos um limite normal";
+      if (nMin !== null && nMax !== null && nMin > nMax) return "Mínimo normal > máximo";
+    } else {
+      if (!normMax) return "Informe o valor de referência";
+    }
     if (cMin !== null && cMax !== null && cMin > cMax) return "Mínimo crítico > máximo";
     return null;
   };
@@ -108,13 +140,17 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     parametroNome: parametro.chave || parametro.rotulo,
     sexo: meta.sexo,
     idadeMin: "", idadeMax: "", unidadeIdade: "Anos",
-    valorMin: normMin, valorMax: normMax,
+    valorMin: isEntre ? normMin : "",
+    valorMax: normMax,
     unidade,
     descricao: "",
     criticoMin: critMin, criticoMax: critMax,
     categoria,
+    jejum,
+    operador,
     ...overrides,
   });
+
 
   const salvar = async () => {
     const err = validar();
@@ -135,14 +171,17 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
     try {
       const ok = await persistir(buildPayload({
         valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
+        jejum: "qualquer", operador: "entre",
       }));
       if (ok) {
         setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
+        setJejum("qualquer"); setOperador("entre");
         onMutate();
         toast({ title: "Valores limpos" });
       }
     } finally { setSaving(false); }
   };
+
 
   const remover = async () => {
     if (!vr) return;
@@ -165,11 +204,18 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
   return (
     <div className={`rounded-xl border ${borderClass} p-3 transition-all`}>
       <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="text-base leading-none">{meta.icon}</span>
-          <div>
-            <div className="text-[13px] font-semibold text-foreground leading-tight">{meta.label}</div>
-            <div className="text-[10px] text-muted-foreground">
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold text-foreground leading-tight truncate">
+              {meta.label}
+              {jejum !== "qualquer" && (
+                <span className="ml-1.5 inline-flex items-center gap-1 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-[1px] text-[10px] font-medium align-middle">
+                  <Coffee className="h-2.5 w-2.5" /> {JEJUM_LABEL[jejum]}
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
               {isPadrao
                 ? "Vale para todos os pacientes"
                 : meta.sexo !== "Ambos" ? `${meta.sexo}${meta.idadeMinDias !== null ? ` • ${meta.idadeMinDias}–${meta.idadeMaxDias ?? "∞"}d` : ""}`
@@ -177,7 +223,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {exists && hasAnyValue && (
             <button
               onClick={() => setConfirmOpen("clear")} disabled={saving}
@@ -199,11 +245,48 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
         </div>
       </div>
 
+      {/* Operador + Jejum (controles avançados, compactos) */}
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Operador</div>
+          <Select value={operador} onValueChange={(v) => setOperador(v as OperadorVR)}>
+            <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(OPERADOR_LABEL) as OperadorVR[]).map((op) => (
+                <SelectItem key={op} value={op} className="text-[12px]">{OPERADOR_LABEL[op]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Jejum</div>
+          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+            <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-[88px_1fr_8px_1fr_60px] gap-1.5 items-center text-[12px]">
-        <div className="text-[11px] text-muted-foreground font-medium">Normal</div>
-        <Input value={normMin} onChange={(e) => setNormMin(e.target.value)} placeholder="min" className="h-8 text-[12px]" />
-        <span className="text-muted-foreground text-center">–</span>
-        <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
+        <div className="text-[11px] text-muted-foreground font-medium">
+          {isEntre ? "Normal" : `Limite ${OPERADOR_SIMBOLO[operador]}`}
+        </div>
+        {isEntre ? (
+          <>
+            <Input value={normMin} onChange={(e) => setNormMin(e.target.value)} placeholder="min" className="h-8 text-[12px]" />
+            <span className="text-muted-foreground text-center">–</span>
+            <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
+          </>
+        ) : (
+          <>
+            <div className="col-span-2 flex items-center justify-center text-muted-foreground text-[12px] font-medium">{OPERADOR_SIMBOLO[operador]}</div>
+            <Input value={normMax} onChange={(e) => setNormMax(e.target.value)} placeholder="valor" className="h-8 text-[12px]" />
+          </>
+        )}
         <Input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="un." className="h-8 text-[11px] px-1.5" />
 
         <div className="text-[11px] text-muted-foreground font-medium">Crítico</div>
@@ -212,6 +295,7 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
         <Input value={critMax} onChange={(e) => setCritMax(e.target.value)} placeholder="max" className="h-8 text-[12px]" />
         <div />
       </div>
+
 
       {(nMin !== null && nMax !== null) && (
         <div className="mt-2 pt-2 border-t border-border/30 flex items-center gap-3 text-[11px]">

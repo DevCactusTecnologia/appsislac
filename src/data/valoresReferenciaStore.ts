@@ -13,6 +13,9 @@ export type CategoriaVR =
   | "padrao" | "gestante" | "recem_nascido" | "crianca" | "adolescente"
   | "adulto" | "idoso" | "masculino" | "feminino" | "custom";
 
+export type JejumVR = "qualquer" | "com_jejum" | "sem_jejum";
+export type OperadorVR = "entre" | "menor" | "menor_igual" | "maior" | "maior_igual" | "igual";
+
 export interface ValorReferencia {
   id: number;
   exameNome: string;
@@ -29,7 +32,12 @@ export interface ValorReferencia {
   criticoMax?: string;
   /** Categoria do redesign Padrão+Variações. Default 'custom' para registros legados. */
   categoria?: CategoriaVR;
+  /** Condição de jejum exigida. 'qualquer' = não filtra. */
+  jejum?: JejumVR;
+  /** Operador comparativo do limite. 'entre' usa valorMin–valorMax. */
+  operador?: OperadorVR;
 }
+
 
 export const CATEGORIA_META: Record<CategoriaVR, {
   label: string; icon: string; idadeMinDias: number | null; idadeMaxDias: number | null;
@@ -67,6 +75,8 @@ function fromRow(r: any): ValorReferencia {
     criticoMin: r.critico_min ?? "",
     criticoMax: r.critico_max ?? "",
     categoria: (r.categoria as CategoriaVR) ?? "custom",
+    jejum: (r.jejum as JejumVR) ?? "qualquer",
+    operador: (r.operador as OperadorVR) ?? "entre",
   };
 }
 
@@ -85,8 +95,11 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.criticoMin !== undefined) row.critico_min = v.criticoMin || null;
   if (v.criticoMax !== undefined) row.critico_max = v.criticoMax || null;
   if (v.categoria !== undefined) row.categoria = v.categoria;
+  if (v.jejum !== undefined) row.jejum = v.jejum;
+  if (v.operador !== undefined) row.operador = v.operador;
   return row;
 }
+
 
 export async function _initValoresReferenciaStore(): Promise<void> {
   const { data, error } = await supabase.from("valores_referencia").select("*").order("id");
@@ -191,11 +204,21 @@ const compativel = (
   sexoNorm: "Masculino" | "Feminino" | null,
   idadeDias: number | null,
   gestante: boolean,
+  jejum: boolean | null,
 ): boolean => {
   const cat: CategoriaVR = (vr.categoria as CategoriaVR) ?? "custom";
   const meta = CATEGORIA_META[cat];
 
-  // Padrão é sempre compatível
+  // Filtro de jejum: regras com 'qualquer' sempre passam; específicas só
+  // entram se conhecemos o contexto de jejum e ele bate.
+  const j: JejumVR = (vr.jejum as JejumVR) ?? "qualquer";
+  if (j !== "qualquer") {
+    if (jejum === null) return false;
+    if (j === "com_jejum" && !jejum) return false;
+    if (j === "sem_jejum" && jejum) return false;
+  }
+
+  // Padrão é sempre compatível (já filtrado por jejum acima)
   if (cat === "padrao") return true;
 
   // Gestante: só vale se paciente está marcada como gestante
@@ -228,6 +251,7 @@ export interface ResolverContexto {
   sexo: string;
   idade: string;
   gestante?: boolean;
+  jejum?: boolean;
 }
 
 export const resolverReferencia = (
@@ -236,7 +260,8 @@ export const resolverReferencia = (
   sexoPaciente: string,
   idadePaciente: string,
   gestante: boolean = false,
-): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string } | null => {
+  jejum: boolean | null = null,
+): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string; operador?: OperadorVR } | null => {
   const candidatos = valoresReferencia.filter(
     (v) => v.exameNome.toLowerCase() === exameNome.toLowerCase() &&
            v.parametroNome.toLowerCase() === parametroNome.toLowerCase()
@@ -248,13 +273,17 @@ export const resolverReferencia = (
     s.startsWith("m") ? "Masculino" : s.startsWith("f") ? "Feminino" : null;
   const idadeDias = idadeStrParaDias(idadePaciente);
 
-  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante));
+  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante, jejum));
   if (compats.length === 0) return null;
 
   compats.sort((a, b) => {
     const pa = CATEGORIA_META[(a.categoria as CategoriaVR) ?? "custom"].prioridade;
     const pb = CATEGORIA_META[(b.categoria as CategoriaVR) ?? "custom"].prioridade;
     if (pb !== pa) return pb - pa;
+    // Jejum específico vence empate
+    const ja = ((a.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    const jb = ((b.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    if (jb !== ja) return jb - ja;
     const sa = a.sexo !== "Ambos" ? 1 : 0;
     const sb = b.sexo !== "Ambos" ? 1 : 0;
     return sb - sa;
@@ -264,5 +293,7 @@ export const resolverReferencia = (
   return {
     refMin: m.valorMin, refMax: m.valorMax, refUnidade: m.unidade, descricao: m.descricao,
     criticoMin: m.criticoMin || undefined, criticoMax: m.criticoMax || undefined,
+    operador: (m.operador as OperadorVR) ?? "entre",
   };
 };
+
