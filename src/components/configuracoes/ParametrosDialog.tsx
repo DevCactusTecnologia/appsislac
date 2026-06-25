@@ -399,10 +399,11 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
           </div>
 
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 max-w-[1600px] mx-auto">
+            <div className="flex flex-col gap-4 max-w-[1100px] mx-auto">
 
             {/* STEP 1 — Type */}
-            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado." className="xl:col-span-2">
+            <FormSection step={1} title="Tipo de campo" desc="Como o usuário irá preencher este resultado.">
+
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {tiposComponente.map((t) => {
@@ -428,10 +429,9 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
               </div>
             </FormSection>
 
-            {/* STEP 2 — Identification */}
             <FormSection step={2} title="Identificação" desc="Nome humano, abreviação e a chave técnica usada no layout.">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div className="sm:col-span-6">
                   <label className={labelClass}>
                     <Tag className="h-3 w-3 text-muted-foreground" /> Rótulo
                     <span className="text-destructive">*</span>
@@ -444,7 +444,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                     placeholder="Ex: Hemoglobina"
                   />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <label className={labelClass}>
                     Abreviação <span className="text-destructive">*</span>
                   </label>
@@ -456,34 +456,33 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                     placeholder="HB"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  <KeyRound className="h-3 w-3 text-muted-foreground" /> Chave (placeholder)
-                  <span className="text-destructive">*</span>
-                  {chaveAutoGen && (
-                    <span className="ml-1 text-[10px] font-normal text-primary/80 normal-case">auto</span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  value={chave}
-                  onChange={(e) => { setChave(e.target.value.toUpperCase()); setChaveAutoGen(false); }}
-                  className={chaveJaUsada ? inputErrClass : inputClass}
-                  placeholder="HEMOGLOBINA"
-                />
-                <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-[10.5px] text-muted-foreground">
-                    Use no layout como{" "}
-                    <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-foreground/80">
-                      ##{chave || "CHAVE"}##
-                    </code>
-                  </p>
-                  {chaveJaUsada && (
-                    <p className="text-[10.5px] text-destructive font-medium">Já existe</p>
-                  )}
+                <div className="sm:col-span-4">
+                  <label className={labelClass}>
+                    <KeyRound className="h-3 w-3 text-muted-foreground" /> Chave (placeholder)
+                    <span className="text-destructive">*</span>
+                    {chaveAutoGen && (
+                      <span className="ml-1 text-[10px] font-normal text-primary/80 normal-case">auto</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={chave}
+                    onChange={(e) => { setChave(e.target.value.toUpperCase()); setChaveAutoGen(false); }}
+                    className={chaveJaUsada ? inputErrClass : inputClass}
+                    placeholder="HEMOGLOBINA"
+                  />
                 </div>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10.5px] text-muted-foreground">
+                  Use no layout como{" "}
+                  <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-foreground/80">
+                    ##{chave || "CHAVE"}##
+                  </code>
+                </p>
+                {chaveJaUsada && (
+                  <p className="text-[10.5px] text-destructive font-medium">Já existe</p>
+                )}
               </div>
             </FormSection>
 
