@@ -297,11 +297,14 @@ const MatrizValoresReferencia = ({
           <Select value={reguaId} onValueChange={setReguaId}>
             <SelectTrigger className="rounded-xl h-9 text-sm bg-background border-border/60"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {reguas.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.nome}{r.sistema ? " (sistema)" : ""}
-                </SelectItem>
-              ))}
+              {reguas.map((r) => {
+                const tag = r.sistema ? " (sistema)" : r.exameNome ? " • deste exame" : " • global";
+                return (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.nome}{tag}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
