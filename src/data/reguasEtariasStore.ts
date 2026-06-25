@@ -14,8 +14,16 @@ export interface ReguaEtaria {
   nome: string;
   /** Réguas de fábrica não podem ser editadas/removidas, só duplicadas. */
   sistema?: boolean;
+  /**
+   * Quando preenchido, a régua é exclusiva desse exame (estilo Lareval).
+   * Quando vazio/undefined, a régua é global (visível em todos os exames).
+   * Normalizado em lowercase para casamento case-insensitive.
+   */
+  exameNome?: string;
   faixas: FaixaEtaria[];
 }
+
+const normalizeExame = (s?: string) => (s ?? "").trim().toLowerCase();
 
 const STORAGE_PREFIX = "sislac:reguas:";
 
