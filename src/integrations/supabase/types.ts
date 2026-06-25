@@ -6019,6 +6019,7 @@ export type Database = {
           telefone: string
           tenant_id: string
           updated_at: string
+          watermark: Json
         }
         Insert: {
           cidade?: string
@@ -6041,6 +6042,7 @@ export type Database = {
           telefone?: string
           tenant_id: string
           updated_at?: string
+          watermark?: Json
         }
         Update: {
           cidade?: string
@@ -6063,6 +6065,7 @@ export type Database = {
           telefone?: string
           tenant_id?: string
           updated_at?: string
+          watermark?: Json
         }
         Relationships: [
           {
