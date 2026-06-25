@@ -513,7 +513,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
             {/* STEP 3 — Type specific */}
             {(tipoSelecionado === "Select" ||
               tipoSelecionado === "Número" ||
-              tipoSelecionado === "Formula") && (
+              tipoSelecionado === "Formula" ||
+              tipoSelecionado === "Tempo") && (
               <FormSection
                 step={3}
                 title="Configuração específica"
