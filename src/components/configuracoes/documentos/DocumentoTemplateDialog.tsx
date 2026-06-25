@@ -22,10 +22,12 @@ import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { getTemplatePadraoHtml, removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { getLabConfig } from "@/data/labConfigStore";
+import { buildWatermarkCss } from "@/lib/watermark";
 import { fmtBRL } from "@/lib/utils";
 import {
-  Eye, Pencil, FileText, Save, Scaling, ChevronDown, CheckCircle2,
+  Eye, Pencil, FileText, Save, Scaling, ChevronDown, CheckCircle2, Droplet,
 } from "lucide-react";
+
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface Props {
