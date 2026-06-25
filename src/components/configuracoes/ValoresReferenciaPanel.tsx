@@ -528,7 +528,7 @@ const ParametroBloco = ({
 
   const adicionarVariacao = async (cat: CategoriaVR) => {
     const meta = CATEGORIA_META[cat];
-    const unid: UnidIdadeBloco =
+    const unid: "Anos" | "Meses" | "Dias" =
       meta.idadeMinDias !== null && meta.idadeMinDias < 30 ? "Dias"
         : meta.idadeMinDias !== null && meta.idadeMinDias < 365 ? "Meses" : "Anos";
     const conv = (d: number | null): string => {
