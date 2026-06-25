@@ -237,7 +237,7 @@ export async function updateRegua(
   if (patch.nome !== undefined) updates.nome = patch.nome;
   if (patch.faixas !== undefined) updates.faixas = patch.faixas;
   if ("exameNome" in patch) updates.exame_id = resolveExameId(patch.exameNome) ?? null;
-  const { error } = await supabase.from("reguas_etarias").update(updates).eq("id", id);
+  const { error } = await (supabase.from("reguas_etarias") as any).update(updates).eq("id", id);
   if (error) {
     console.warn("[reguasEtariasStore] update falhou:", error.message);
     return false;
