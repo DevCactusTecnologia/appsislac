@@ -71,6 +71,7 @@ function fromRow(r: any): ValorReferencia {
     idadeMin: r.idade_min ?? "",
     idadeMax: r.idade_max ?? "",
     unidadeIdade: r.unidade_idade,
+    unidadeIdadeMax: r.unidade_idade_max ?? r.unidade_idade,
     valorMin: r.valor_min ?? "",
     valorMax: r.valor_max ?? "",
     unidade: r.unidade ?? "",
