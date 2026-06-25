@@ -75,6 +75,8 @@ function fromRow(r: any): ValorReferencia {
     criticoMin: r.critico_min ?? "",
     criticoMax: r.critico_max ?? "",
     categoria: (r.categoria as CategoriaVR) ?? "custom",
+    jejum: (r.jejum as JejumVR) ?? "qualquer",
+    operador: (r.operador as OperadorVR) ?? "entre",
   };
 }
 
@@ -93,8 +95,11 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.criticoMin !== undefined) row.critico_min = v.criticoMin || null;
   if (v.criticoMax !== undefined) row.critico_max = v.criticoMax || null;
   if (v.categoria !== undefined) row.categoria = v.categoria;
+  if (v.jejum !== undefined) row.jejum = v.jejum;
+  if (v.operador !== undefined) row.operador = v.operador;
   return row;
 }
+
 
 export async function _initValoresReferenciaStore(): Promise<void> {
   const { data, error } = await supabase.from("valores_referencia").select("*").order("id");
