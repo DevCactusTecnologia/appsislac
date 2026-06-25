@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_lab_config ADD COLUMN IF NOT EXISTS watermark jsonb NOT NULL DEFAULT '{}'::jsonb;
