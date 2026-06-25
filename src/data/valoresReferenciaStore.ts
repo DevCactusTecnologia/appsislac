@@ -92,6 +92,7 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.idadeMin !== undefined) row.idade_min = v.idadeMin;
   if (v.idadeMax !== undefined) row.idade_max = v.idadeMax;
   if (v.unidadeIdade !== undefined) row.unidade_idade = v.unidadeIdade;
+  if (v.unidadeIdadeMax !== undefined) row.unidade_idade_max = v.unidadeIdadeMax;
   if (v.valorMin !== undefined) row.valor_min = v.valorMin;
   if (v.valorMax !== undefined) row.valor_max = v.valorMax;
   if (v.unidade !== undefined) row.unidade = v.unidade;
