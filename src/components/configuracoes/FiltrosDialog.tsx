@@ -576,8 +576,44 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
         </div>
       </div>
       </>}
-    </StandardDialog>
-    <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+    </>
+  );
+
+  if (embedded) {
+    if (!open) return null;
+    return (
+      <>
+        <div className="flex flex-col h-full bg-card">
+          <div className="px-6 py-3 border-b border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+            {headerActions}
+          </div>
+          <div className="flex-1 min-h-0 overflow-auto">{body}</div>
+          <div className="px-6 py-3 border-t border-border/60 flex items-center justify-end gap-2 bg-muted/10">
+            {footer}
+          </div>
+        </div>
+        <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <StandardDialog
+        open={open}
+        onClose={onClose}
+        icon={<Filter className="h-5 w-5 text-[hsl(var(--status-info))]" />}
+        title="Valores de referência"
+        subtitle={exameNome || "Todos os exames"}
+        headerActions={headerActions}
+        footer={footer}
+        maxWidth="7xl"
+        allowMaximize={true}
+        defaultMaximized={defaultMaximized}
+      >
+        {body}
+      </StandardDialog>
+      <GerenciarReguasDialog open={reguasOpen} onClose={() => setReguasOpen(false)} />
     </>
   );
 };
