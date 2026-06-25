@@ -47,16 +47,17 @@ export const ParamTypedInput = ({
 }) => {
   const statusClasses =
     statusColor === "success"
-      ? "border-status-success/60 focus:ring-status-success/40 focus:border-status-success text-status-success"
+      ? "border-status-success/60 focus:ring-status-success focus:border-status-success text-status-success"
       : statusColor === "warning"
-      ? "border-status-warning/60 focus:ring-status-warning/40 focus:border-status-warning text-status-warning"
+      ? "border-status-warning/60 focus:ring-status-warning focus:border-status-warning text-status-warning"
       : statusColor === "danger"
-      ? "border-status-danger/60 focus:ring-status-danger/40 focus:border-status-danger text-status-danger"
+      ? "border-status-danger/60 focus:ring-status-danger focus:border-status-danger text-status-danger"
       : isCritico
-      ? "border-status-danger/60 focus:ring-status-danger/40 focus:border-status-danger text-status-danger"
-      : "focus:ring-primary/40 focus:border-primary";
-  // Destaque forte no campo focado: ring + borda primária + leve bg.
-  const base = `px-3 py-2 border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:bg-primary/5 focus:shadow-sm font-semibold text-foreground transition-colors ${statusClasses} ${className ?? ""}`;
+      ? "border-status-danger/60 focus:ring-status-danger focus:border-status-danger text-status-danger"
+      : "focus:ring-primary focus:border-primary";
+  // Destaque forte no campo focado: ring grosso + borda primária + bg tintado.
+  // Usa ring-offset para o anel não ser cortado por containers com overflow.
+  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background focus:outline-none focus:ring-4 focus:ring-offset-1 focus:ring-offset-background focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter") {
