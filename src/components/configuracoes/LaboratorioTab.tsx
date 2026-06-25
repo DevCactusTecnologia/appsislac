@@ -586,6 +586,120 @@ const LaboratorioTab = () => {
         </div>
       </section>
 
+      {/* ─── Bloco: Marca d'água ──────────────────────────── */}
+      <section className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        <header className="px-6 pt-5 pb-4 flex items-center justify-between gap-3 border-b border-border/40">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Droplets className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-foreground">Marca d'água</h3>
+              <p className="text-[11px] text-muted-foreground">
+                Imagem suave aplicada ao fundo de todos os documentos impressos (laudos, comprovantes, orçamentos…)
+              </p>
+            </div>
+          </div>
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+            <span className="text-[11px] font-semibold text-muted-foreground">{watermark.enabled ? "Ativa" : "Inativa"}</span>
+            <input
+              type="checkbox"
+              checked={watermark.enabled}
+              onChange={(e) => setWatermark((w) => ({ ...w, enabled: e.target.checked }))}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+        </header>
+        <div className="p-6 space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-5">
+            <div className="rounded-xl border border-border/60 bg-muted/10 aspect-square flex items-center justify-center overflow-hidden relative">
+              {watermark.url ? (
+                <img src={watermark.url} alt="Pré-visualização" style={{ opacity: watermark.opacity, width: `${watermark.sizePct}%`, transform: `rotate(${watermark.rotation}deg)` }} className="object-contain" />
+              ) : (
+                <Droplets className="h-8 w-8 text-muted-foreground/30" />
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className={`inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-3 py-2 text-xs font-semibold cursor-pointer hover:bg-muted/40 transition ${uploadingWatermark ? "opacity-60 cursor-wait" : ""}`}>
+                  <Upload className="h-3.5 w-3.5" />
+                  {watermark.url ? "Trocar imagem" : "Enviar imagem"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    disabled={uploadingWatermark}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast({ title: "Arquivo muito grande", description: "Máximo 2MB.", variant: "destructive" });
+                        return;
+                      }
+                      setUploadingWatermark(true);
+                      try {
+                        const dataUrl = await new Promise<string>((resolve, reject) => {
+                          const r = new FileReader();
+                          r.onload = () => resolve(r.result as string);
+                          r.onerror = () => reject(new Error("Falha ao ler arquivo"));
+                          r.readAsDataURL(file);
+                        });
+                        setWatermark((w) => ({ ...w, url: dataUrl, enabled: true }));
+                      } catch (err) {
+                        toast({ title: "Erro", description: err instanceof Error ? err.message : "Tente novamente.", variant: "destructive" });
+                      } finally {
+                        setUploadingWatermark(false);
+                      }
+                    }}
+                  />
+                </label>
+                {watermark.url && (
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-destructive hover:underline"
+                    onClick={() => setWatermark((w) => ({ ...w, url: null, key: null, enabled: false }))}
+                  >
+                    Remover imagem
+                  </button>
+                )}
+                <span className="text-[11px] text-muted-foreground">PNG/SVG com transparência funcionam melhor</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelClass}>Opacidade ({Math.round(watermark.opacity * 100)}%)</label>
+                  <input
+                    type="range" min={2} max={50} step={1}
+                    value={Math.round(watermark.opacity * 100)}
+                    onChange={(e) => setWatermark((w) => ({ ...w, opacity: Number(e.target.value) / 100 }))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Tamanho ({watermark.sizePct}%)</label>
+                  <input
+                    type="range" min={10} max={100} step={1}
+                    value={watermark.sizePct}
+                    onChange={(e) => setWatermark((w) => ({ ...w, sizePct: Number(e.target.value) }))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Rotação ({watermark.rotation}°)</label>
+                  <input
+                    type="range" min={-180} max={180} step={1}
+                    value={watermark.rotation}
+                    onChange={(e) => setWatermark((w) => ({ ...w, rotation: Number(e.target.value) }))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Barra de ações fixa ───────────────────────────── */}
       <div className="sticky bottom-4 z-10 mt-2">
         <div className="rounded-2xl border border-border/60 bg-card/95 backdrop-blur shadow-lg p-3 sm:p-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
