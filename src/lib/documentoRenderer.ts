@@ -213,13 +213,19 @@ export function renderDocumentoTemplate(
       })
     : "";
 
-  return `<div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;color:#1a1a2e;padding:12px;max-width:640px;margin:0 auto;background:#fff;">
+  const watermarkCss = tplConfig.watermarkEnabled
+    ? buildWatermarkCss(getLabConfig().watermark)
+    : "";
+  const watermarkStyle = watermarkCss ? `<style>${watermarkCss}</style>` : "";
+
+  return `${watermarkStyle}<div style="font-family:'Inter','Segoe UI',system-ui,sans-serif;color:#1a1a2e;padding:12px;max-width:640px;margin:0 auto;background:#fff;">
     ${cabecalho}
     <div class="documento-corpo">${corpo}</div>
     ${rodapePadrao}
     ${rodape}
   </div>`;
 }
+
 
 function renderHeaderFooter(
   tipo: "cabecalho" | "rodape",
