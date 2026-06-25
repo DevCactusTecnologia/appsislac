@@ -111,6 +111,7 @@ const ResultadoDetalhe = () => {
   const canAnalisar = hasPermission("analisar_amostra") || hasPermission("editar_atendimento");
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
+  const [pacienteJejum, setPacienteJejum] = useState<boolean>(false);
   // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
   // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
   // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
@@ -300,6 +301,7 @@ const ResultadoDetalhe = () => {
       // silencioso — mantém defaults se a busca falhar
     }
     setPaciente(pac);
+    setPacienteJejum(!!atFromDb?.jejum);
     setDbIdMap(idMap);
     setSelectedExameId(prev => prev || (exames[0]?.id ?? 0));
 
@@ -1155,6 +1157,13 @@ const ResultadoDetalhe = () => {
         <div className="lg:hidden">
           {/* Patient header — compartilhado, à prova de overflow */}
           <div className="mb-4">
+            <div className="mb-2 flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
+                Jejum: {pacienteJejum ? "Sim" : "Não informado"}
+              </span>
+            </div>
+
             <PacienteHeaderCard
               nome={paciente.nome}
               sexo={paciente.sexo}
@@ -1315,7 +1324,7 @@ const ResultadoDetalhe = () => {
                             {param.headerAntes}
                           </p>
                         )}
-                        <div className="border rounded-lg p-3 space-y-2 bg-background">
+                        <div className="border-2 rounded-lg p-3 space-y-2 bg-background transition-all focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/30 focus-within:bg-primary/5 focus-within:shadow-md">
                           <p className="text-sm font-medium text-foreground">
                             {param.nome}
                             {param.obrigatorio && <span className="text-status-danger ml-0.5">*</span>}
@@ -1645,6 +1654,13 @@ const ResultadoDetalhe = () => {
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-muted/30">
             {/* Patient header — componente compartilhado, sem sobreposição */}
             <div className="px-4 sm:px-5 py-3 border-b border-border/60 bg-card">
+              <div className="mb-2 flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
+                  Jejum: {pacienteJejum ? "Sim" : "Não informado"}
+                </span>
+              </div>
+
               <PacienteHeaderCard
                 nome={paciente.nome}
                 sexo={paciente.sexo}
@@ -1886,7 +1902,7 @@ const ResultadoDetalhe = () => {
                         ? (contStatus === "success" ? "ring-1 ring-status-success/40" : contStatus === "warning" ? "ring-1 ring-status-warning/50" : "ring-1 ring-status-danger/40")
                         : isCriticoParam ? "ring-1 ring-status-danger/30" : "";
                       return (
-                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-colors ${ringClass}`}>
+                        <div className={`relative flex items-center gap-2 pl-3 pr-4 h-9 rounded-lg bg-muted/50 dark:bg-muted/30 transition-all focus-within:bg-primary/10 focus-within:ring-2 focus-within:ring-primary focus-within:shadow-md ${ringClass}`}>
 
                           <span className="shrink-0 inline-flex items-center justify-center h-4 w-4">
                             {inRange === true && <CheckCircle2 className="h-3.5 w-3.5 text-status-success" />}

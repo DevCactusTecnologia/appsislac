@@ -160,21 +160,26 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
       notify();
     }
 
-    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO).
-    if (atendimentoId && at.origem && at.origem !== "INTERNO") {
-      const { error: origemErr } = await supabase
-        .from("atendimentos")
-        .update({ origem_atendimento: at.origem })
-        .eq("id", atendimentoId);
-      if (origemErr) {
-        logger.warn("atendimentoStore", "falha ao persistir origem_atendimento", {
-          atendimentoId, origem: at.origem, error: origemErr.message,
-        });
-      } else {
-        cache.atendimentos = cache.atendimentos.map((a) =>
-          a.protocolo === at.protocolo ? { ...a, origem: at.origem } : a,
-        );
-        notify();
+    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO) e jejum.
+    if (atendimentoId) {
+      const extraPatch: { origem_atendimento?: string; jejum?: boolean } = {};
+      if (at.origem && at.origem !== "INTERNO") extraPatch.origem_atendimento = at.origem;
+      if (typeof at.jejum === "boolean") extraPatch.jejum = at.jejum;
+      if (Object.keys(extraPatch).length > 0) {
+        const { error: extraErr } = await supabase
+          .from("atendimentos")
+          .update(extraPatch)
+          .eq("id", atendimentoId);
+        if (extraErr) {
+          logger.warn("atendimentoStore", "falha ao persistir extras do atendimento", {
+            atendimentoId, extraPatch, error: extraErr.message,
+          });
+        } else {
+          cache.atendimentos = cache.atendimentos.map((a) =>
+            a.protocolo === at.protocolo ? { ...a, ...(at.origem ? { origem: at.origem } : {}), ...(typeof at.jejum === "boolean" ? { jejum: at.jejum } : {}) } : a,
+          );
+          notify();
+        }
       }
     }
   } catch (e) {
@@ -242,6 +247,7 @@ async function persistUpdateAtendimentoTx(
   }
   if (updates.unidadeId !== undefined) patch.unidade_id = updates.unidadeId;
   if (updates.motivoCancelamento !== undefined) patch.motivo_cancelamento = updates.motivoCancelamento ?? "";
+  // `jejum` é persistido fora do edge function transacional (update direto abaixo).
 
   // 3) Monta payload de exames (somente se substituição explícita)
   let examesPayload: Array<Record<string, unknown>> | null = null;
@@ -353,6 +359,17 @@ async function persistUpdateAtendimentoTx(
       );
     }
     notify();
+
+    // Persistência direta de `jejum` (não passa pelo edge function transacional).
+    if (updates.jejum !== undefined) {
+      const { error: jErr } = await supabase
+        .from("atendimentos")
+        .update({ jejum: updates.jejum })
+        .eq("id", id);
+      if (jErr) {
+        logger.warn("atendimentoStore", "falha ao persistir jejum", { id, error: jErr.message });
+      }
+    }
   } catch (e) {
     cache.atendimentos = prev;
     notify();

@@ -499,6 +499,7 @@ const NovoAtendimento = () => {
       setSolicitantes(sols);
       setOriginalSolicitantes(sols);
       setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
+      setJejum(atendimento.jejum ? "sim" : "nao");
       setShowPacienteSearch(false);
       setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
       const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
@@ -659,6 +660,7 @@ const NovoAtendimento = () => {
         // por trigger em atendimento_pagamentos (registros pós-deploy exigem estorno).
         ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
+        jejum: jejum === "sim",
       });
       } else {
       const protocolo = getNextProtocolo();
@@ -684,6 +686,7 @@ const NovoAtendimento = () => {
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
+        jejum: jejum === "sim",
       };
       await addAtendimento(novoAt);
       setLastGuiaNumero(novoAt.guiaNumero ?? null);

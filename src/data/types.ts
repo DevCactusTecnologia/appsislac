@@ -97,4 +97,6 @@ export interface MockAtendimento {
    * `AGENDAMENTO` = pré-agendamento sem pagamento.
    */
   origem?: "INTERNO" | "WEB_AUTO" | "WEB_APROVADO" | "AGENDAMENTO";
+  /** Paciente compareceu em jejum (informado na recepção). */
+  jejum?: boolean;
 }

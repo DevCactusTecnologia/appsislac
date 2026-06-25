@@ -868,6 +868,7 @@ export type Database = {
           guia_data: string | null
           guia_numero: string | null
           id: number
+          jejum: boolean
           motivo_cancelamento: string | null
           origem_atendimento: string
           paciente_cpf: string
@@ -896,6 +897,7 @@ export type Database = {
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
+          jejum?: boolean
           motivo_cancelamento?: string | null
           origem_atendimento?: string
           paciente_cpf: string
@@ -924,6 +926,7 @@ export type Database = {
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
+          jejum?: boolean
           motivo_cancelamento?: string | null
           origem_atendimento?: string
           paciente_cpf?: string
