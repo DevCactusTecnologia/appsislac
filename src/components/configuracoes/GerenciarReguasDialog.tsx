@@ -216,8 +216,16 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
             </div>
 
             {isSistema && (
-              <div className="rounded-xl border border-border/40 bg-muted/30 p-3 text-[11px] text-muted-foreground">
-                Esta é uma régua de <strong>sistema</strong> — somente leitura. Use <strong>Duplicar</strong> para criar uma versão editável.
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between gap-3">
+                <div className="text-[11px] text-muted-foreground">
+                  Esta é uma régua de <strong>sistema</strong> (preset oficial) — campos como <strong>Unid.</strong>, <strong>De/Até</strong> e <strong>Rótulo</strong> ficam bloqueados para preservar o padrão. Crie uma cópia editável:
+                </div>
+                <button
+                  onClick={handleDuplicar}
+                  className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all shrink-0"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Duplicar e editar
+                </button>
               </div>
             )}
 
