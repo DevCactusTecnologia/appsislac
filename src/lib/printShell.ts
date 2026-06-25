@@ -12,8 +12,7 @@
 //   - Permite CSS adicional opt-in via `css`.
 
 import { escapeHtml } from "./escapeHtml";
-import { getLabConfig } from "@/data/labConfigStore";
-import { buildWatermarkCss } from "./watermark";
+
 
 export type PrintOrientation = "portrait" | "landscape";
 
