@@ -66,6 +66,33 @@ const CATEGORIA_CHIP: Record<CategoriaVR, string> = {
   custom: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
 };
 
+/** Resumo "Sexo • Faixa etária" exibido sob o chip da categoria. */
+const SEXO_LABEL: Record<"Ambos" | "Masculino" | "Feminino", string> = {
+  Ambos: "Ambos sexos",
+  Masculino: "♂ Masculino",
+  Feminino: "♀ Feminino",
+};
+const diasParaLabel = (d: number): string => {
+  if (d < 30) return `${d}d`;
+  if (d < 365) return `${Math.round(d / 30)}m`;
+  return `${Math.round(d / 365)}a`;
+};
+const categoriaResumo = (cat: CategoriaVR): { sexo: string; idade: string } => {
+  const m = CATEGORIA_META[cat];
+  const sexo = SEXO_LABEL[m.sexo];
+  let idade = "Qualquer idade";
+  if (cat === "padrao") idade = "Fallback (sem filtro)";
+  else if (cat === "custom") idade = "Faixa livre";
+  else if (m.idadeMinDias !== null && m.idadeMaxDias !== null) {
+    idade = `${diasParaLabel(m.idadeMinDias)} – ${diasParaLabel(m.idadeMaxDias)}`;
+  } else if (m.idadeMinDias !== null) {
+    idade = `≥ ${diasParaLabel(m.idadeMinDias)}`;
+  } else if (m.idadeMaxDias !== null) {
+    idade = `≤ ${diasParaLabel(m.idadeMaxDias)}`;
+  }
+  return { sexo, idade };
+};
+
 interface Props {
   exameNome: string;
   parametros: ExameParametro[];
