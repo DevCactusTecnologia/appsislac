@@ -13,6 +13,12 @@ import {
   ExameLayout, loadLayouts, getLayouts, subscribeLayouts,
   removeLayout, updateLayout, addLayout,
 } from "@/data/exameLayoutsStore";
+import {
+  ExameParametro, loadParametros, getParametros, subscribeParametros,
+} from "@/data/exameParametrosStore";
+import {
+  getValoresReferencia, subscribeValoresReferencia,
+} from "@/data/valoresReferenciaStore";
 
 interface DetalhesExameDialogProps {
   open: boolean;
@@ -36,14 +42,25 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [editingLayout, setEditingLayout] = useState<ExameLayout | null>(null);
   const [layouts, setLayouts] = useState<ExameLayout[]>([]);
+  const [parametros, setParametros] = useState<ExameParametro[]>([]);
+  const [refsCount, setRefsCount] = useState(0);
   const [removeTarget, setRemoveTarget] = useState<ExameLayout | null>(null);
   const [tab, setTab] = useState<TabKey>("layouts");
 
   useEffect(() => {
     if (!open || !exame?.id) return;
     loadLayouts(exame.id).then(setLayouts);
-    return subscribeLayouts(exame.id, () => setLayouts([...getLayouts(exame.id)]));
-  }, [open, exame?.id, layoutOpen]);
+    loadParametros(exame.id).then(setParametros);
+    const unsubL = subscribeLayouts(exame.id, () => setLayouts([...getLayouts(exame.id)]));
+    const unsubP = subscribeParametros(exame.id, () => setParametros([...getParametros(exame.id)]));
+    const recomputeRefs = () => {
+      const nome = (exame.nome || "").toLowerCase();
+      setRefsCount(getValoresReferencia().filter((r) => (r.exameNome || "").toLowerCase() === nome).length);
+    };
+    recomputeRefs();
+    const unsubR = subscribeValoresReferencia(recomputeRefs);
+    return () => { unsubL(); unsubP(); unsubR(); };
+  }, [open, exame?.id, exame?.nome, layoutOpen]);
 
   useEffect(() => { setTab("layouts"); }, [exame?.id]);
 
@@ -78,8 +95,8 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
 
   const tabs: Array<{ key: TabKey; label: string; icon: typeof Layers; hint: string; count?: number }> = [
     { key: "layouts", label: "Layouts", icon: Layers, hint: "Motor científico do laudo", count: layouts.length || undefined },
-    { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação" },
-    { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade" },
+    { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação", count: parametros.length || undefined },
+    { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade", count: refsCount || undefined },
   ];
 
   const headerActions = (
