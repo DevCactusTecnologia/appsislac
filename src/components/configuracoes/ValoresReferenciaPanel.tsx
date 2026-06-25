@@ -553,11 +553,9 @@ const ParametroBloco = ({
   };
 
 
-  // Sempre exibe a linha Padrão (mesmo sem valores) para permitir edição inicial.
-  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> = [
-    { key: "padrao", cat: "padrao", vr: padrao },
-    ...variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr })),
-  ];
+  // Apenas variações (sem linha "Padrão"). Usuário define sexo+idade em cada linha.
+  const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> =
+    variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr }));
 
   return (
     <section className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
