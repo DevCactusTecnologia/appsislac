@@ -214,9 +214,25 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .laudo-cabecalho-wrap span {
           margin-left: 0 !important;
         }
+        /* CKEditor também envolve tabelas do cabeçalho em <figure class="table">.
+           O margin-left padrão do browser (40px) era exatamente o recuo que
+           deixava logo/dados do cabeçalho fora da linha do nome do exame. */
+        .laudo-cabecalho-wrap figure,
+        .laudo-cabecalho-wrap figcaption {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .laudo-cabecalho-wrap figure.table {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+        }
         .laudo-cabecalho-wrap table {
           border-collapse: collapse !important;
           border-spacing: 0 !important;
+          width: 100% !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
         }
         /* Remove cellpadding/cellspacing herdados de tabelas do CKEditor
            que empurram a primeira coluna para a direita. */
