@@ -350,7 +350,7 @@ export default function LoginV2() {
                         <label className="text-xs font-semibold text-foreground">Código do laboratório</label>
                         <div className="group relative">
                           <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-                          <span className="pointer-events-none absolute left-10 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          <span className="pointer-events-none absolute left-9 top-1/2 -translate-y-1/2 text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                             LAB
                           </span>
                           <input
@@ -370,7 +370,7 @@ export default function LoginV2() {
                             placeholder="0001"
                             autoComplete="off"
                             autoFocus
-                            className="h-11 w-full rounded-2xl border border-input bg-background pl-[4.25rem] pr-4 text-sm font-semibold tracking-[0.18em] uppercase text-foreground outline-none transition-all placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:border-primary focus:ring-4 focus:ring-primary/10"
+                            className="h-11 w-full rounded-2xl border border-input bg-background pl-[4.75rem] pr-4 text-sm font-semibold tracking-[0.18em] uppercase text-foreground outline-none transition-all placeholder:font-normal placeholder:tracking-normal placeholder:text-muted-foreground/60 focus:border-primary focus:ring-4 focus:ring-primary/10"
                           />
                         </div>
                         <div className="flex items-center justify-between pl-1 text-[11px] text-muted-foreground">
