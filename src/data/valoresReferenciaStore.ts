@@ -207,10 +207,8 @@ const compativel = (
   jejum: boolean | null,
 ): boolean => {
   const cat: CategoriaVR = (vr.categoria as CategoriaVR) ?? "custom";
-  const meta = CATEGORIA_META[cat];
 
-  // Filtro de jejum: regras com 'qualquer' sempre passam; específicas só
-  // entram se conhecemos o contexto de jejum e ele bate.
+  // Jejum
   const j: JejumVR = (vr.jejum as JejumVR) ?? "qualquer";
   if (j !== "qualquer") {
     if (jejum === null) return false;
@@ -218,30 +216,23 @@ const compativel = (
     if (j === "sem_jejum" && jejum) return false;
   }
 
-  // Padrão é sempre compatível (já filtrado por jejum acima)
+  // Padrão: fallback — não filtra sexo/idade
   if (cat === "padrao") return true;
 
-  // Gestante: só vale se paciente está marcada como gestante
-  if (cat === "gestante") return gestante === true && sexoNorm === "Feminino";
-
-  // Sexo da categoria precisa bater
-  if (meta.sexo !== "Ambos" && sexoNorm && meta.sexo !== sexoNorm) return false;
-
-  // Faixa etária da categoria (quando definida)
-  if (idadeDias !== null) {
-    if (meta.idadeMinDias !== null && idadeDias < meta.idadeMinDias) return false;
-    if (meta.idadeMaxDias !== null && idadeDias > meta.idadeMaxDias) return false;
+  // Gestante: exige flag + sexo feminino; idade da própria linha (se preenchida) também aplica
+  if (cat === "gestante") {
+    if (!(gestante === true && sexoNorm === "Feminino")) return false;
+  } else {
+    // Sexo da própria linha precisa bater
+    if (vr.sexo !== "Ambos" && sexoNorm && vr.sexo !== sexoNorm) return false;
   }
 
-  // 'custom' usa os campos legados (sexo + idadeMin/idadeMax + unidadeIdade)
-  if (cat === "custom") {
-    if (vr.sexo !== "Ambos" && sexoNorm && vr.sexo !== sexoNorm) return false;
-    if (idadeDias !== null && vr.idadeMin && vr.idadeMax) {
-      const fator = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
-      const minD = (parseFloat(vr.idadeMin) || 0) * fator;
-      const maxD = (parseFloat(vr.idadeMax) || 99999) * fator;
-      if (idadeDias < minD || idadeDias > maxD) return false;
-    }
+  // Faixa etária da própria linha (quando preenchida)
+  if (idadeDias !== null && (vr.idadeMin || vr.idadeMax)) {
+    const fator = vr.unidadeIdade === "Anos" ? 365 : vr.unidadeIdade === "Meses" ? 30 : 1;
+    const minD = vr.idadeMin ? (parseFloat(vr.idadeMin) || 0) * fator : 0;
+    const maxD = vr.idadeMax ? (parseFloat(vr.idadeMax) || 99999) * fator : 99999;
+    if (idadeDias < minD || idadeDias > maxD) return false;
   }
 
   return true;
