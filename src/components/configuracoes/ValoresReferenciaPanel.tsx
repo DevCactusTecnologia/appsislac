@@ -253,9 +253,15 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       return;
     }
     if (!isPadrao && idadeMin && idadeMax) {
-      const a = parseFloat(idadeMin), b = parseFloat(idadeMax);
-      if (Number.isFinite(a) && Number.isFinite(b) && a > b) {
-        toast({ title: "Idade mínima maior que máxima", variant: "destructive" });
+      // Converte para dias usando a unidade de cada lado — permite "3 Meses → 2 Anos".
+      const dMin = idadeParaDias(idadeMin, unidadeIdade);
+      const dMax = idadeParaDias(idadeMax, unidadeIdadeMax);
+      if (dMin !== null && dMax !== null && dMin > dMax) {
+        toast({
+          title: "Faixa etária inválida",
+          description: `Mínimo (${idadeMin} ${unidadeIdade}) é maior que máximo (${idadeMax} ${unidadeIdadeMax}).`,
+          variant: "destructive",
+        });
         return;
       }
     }
