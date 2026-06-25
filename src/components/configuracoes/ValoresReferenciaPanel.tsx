@@ -176,6 +176,9 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [idadeMin, setIdadeMin] = useState(defaultIdadeMin);
   const [idadeMax, setIdadeMax] = useState(defaultIdadeMax);
   const [unidadeIdade, setUnidadeIdade] = useState<UnidIdade>(defaultUnidIdade);
+  const [unidadeIdadeMax, setUnidadeIdadeMax] = useState<UnidIdade>(
+    (vr?.unidadeIdadeMax as UnidIdade) ?? defaultUnidIdade,
+  );
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
@@ -192,6 +195,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
     setIdadeMax(vr?.idadeMax ?? defaultIdadeMax);
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
+    setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vr?.id]);
 
