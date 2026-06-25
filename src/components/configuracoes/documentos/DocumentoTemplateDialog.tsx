@@ -430,6 +430,25 @@ const DocumentoTemplateDialog = ({
                   }))}
                   onInsert={(tag) => editorApiRef.current?.insertHtml(`{{${tag}}}`)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setWatermarkEnabled((v) => !v)}
+                  title={
+                    getLabConfig().watermark?.url
+                      ? "Ativar marca d'água global neste documento (pré-visualização e impressão)"
+                      : "Configure a marca d'água global em Configurações → Laboratório"
+                  }
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 h-7 rounded-md transition-colors ${
+                    watermarkEnabled
+                      ? "bg-primary/10 text-primary hover:bg-primary/15"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  <Droplet className="h-3.5 w-3.5" />
+                  Marca d'água
+                  {watermarkEnabled && <CheckCircle2 className="h-3 w-3" />}
+                </button>
+
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
