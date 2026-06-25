@@ -76,20 +76,48 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
     else toast({ title: "Erro ao duplicar", variant: "destructive" });
   };
 
-  const headerActions = (
-    <button
-      onClick={onEdit}
-      className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
-    >
-      <Pencil className="h-3.5 w-3.5" /> Editar exame
-    </button>
-  );
-
   const tabs: Array<{ key: TabKey; label: string; icon: typeof Layers; hint: string; count?: number }> = [
     { key: "layouts", label: "Layouts", icon: Layers, hint: "Motor científico do laudo", count: layouts.length || undefined },
     { key: "parametros", label: "Parâmetros", icon: Sliders, hint: "Campos, críticos e formatação" },
     { key: "referencia", label: "Valores de referência", icon: Filter, hint: "Faixas por sexo e idade" },
   ];
+
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <div className="inline-flex items-center gap-1 rounded-xl bg-muted/40 p-1">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`h-9 px-3 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-all duration-200 ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-[0_1px_3px_hsl(var(--primary)/0.25)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+              }`}
+              title={t.hint}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{t.label}</span>
+              {t.count !== undefined && (
+                <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <button
+        onClick={onEdit}
+        className="h-9 px-3 rounded-xl border border-border/60 bg-muted/30 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all duration-200 flex items-center gap-1.5"
+      >
+        <Pencil className="h-3.5 w-3.5" /> Editar exame
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -104,35 +132,7 @@ const DetalhesExameDialog = ({ open, onClose, exame, onEdit }: DetalhesExameDial
         defaultMaximized={true}
       >
         <div className="flex flex-col h-full min-h-0">
-          {/* Tab bar persistente — segmented modern */}
-          <div className="px-6 pt-4 pb-3 border-b border-border/40 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-            <div className="inline-flex items-center gap-1 rounded-2xl bg-muted/40 p-1 shadow-sm">
-              {tabs.map((t) => {
-                const Icon = t.icon;
-                const active = tab === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setTab(t.key)}
-                    className={`group relative h-10 px-4 rounded-xl text-[12.5px] font-medium flex items-center gap-2 transition-all duration-200 ${
-                      active
-                        ? "bg-background text-foreground shadow-[0_1px_3px_hsl(var(--foreground)/0.08)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-                    }`}
-                    title={t.hint}
-                  >
-                    <Icon className={`h-4 w-4 transition-colors ${active ? "text-primary" : ""}`} />
-                    <span>{t.label}</span>
-                    {t.count !== undefined && (
-                      <span className={`ml-0.5 text-[10.5px] px-1.5 py-0.5 rounded-md font-semibold ${active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                        {t.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
 
           {/* Conteúdo da aba ativa */}
           <div className="flex-1 min-h-0 overflow-hidden">
