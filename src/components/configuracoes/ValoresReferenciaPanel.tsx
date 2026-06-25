@@ -9,7 +9,8 @@
 // Resolver: maior prioridade compatível com sexo+idade+gestante vence.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, AlertTriangle, Eraser, Coffee, EyeOff, Eye } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -365,8 +366,9 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
 };
 
 const ParametroBloco = ({
-  exameNome, parametro, refs, onMutate,
-}: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void }) => {
+  exameNome, parametro, refs, onMutate, onHide,
+}: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
+
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
   const meusRefs = useMemo(
     () => refs.filter((r) => (r.parametroNome || "").toLowerCase() === chave),
@@ -412,10 +414,20 @@ const ParametroBloco = ({
             <div className="text-[11px] text-muted-foreground">{parametro.abreviacao}</div>
           )}
         </div>
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {meusRefs.length} {meusRefs.length === 1 ? "regra" : "regras"}
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            {meusRefs.length} {meusRefs.length === 1 ? "regra" : "regras"}
+          </div>
+          <button
+            onClick={onHide}
+            className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center"
+            title="Ocultar este parâmetro da tela"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         <ValorCard vr={padrao} categoria="padrao" exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
@@ -506,6 +518,21 @@ const ParametroBloco = ({
 };
 
 const ValoresReferenciaPanel = ({ exameNome, parametros, referencias, onMutate }: Props) => {
+  const storageKey = `vr.hiddenParams.${exameNome}`;
+  const [hidden, setHidden] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch { return new Set(); }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify([...hidden])); } catch { /* ignore */ }
+  }, [hidden, storageKey]);
+
+  const hide = (id: string) => setHidden((s) => new Set(s).add(id));
+  const show = (id: string) => setHidden((s) => { const n = new Set(s); n.delete(id); return n; });
+
   if (parametros.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 p-10 text-center text-sm text-muted-foreground">
@@ -514,13 +541,55 @@ const ValoresReferenciaPanel = ({ exameNome, parametros, referencias, onMutate }
     );
   }
 
+  const visiveis = parametros.filter((p) => !hidden.has(String(p.id)));
+  const ocultos = parametros.filter((p) => hidden.has(String(p.id)));
+
   return (
     <div className="space-y-4">
-      {parametros.map((p) => (
-        <ParametroBloco key={p.id} exameNome={exameNome} parametro={p} refs={referencias} onMutate={onMutate} />
+      {ocultos.length > 0 && (
+        <div className="rounded-lg border border-border/50 bg-muted/20 p-2.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="text-[11px] text-muted-foreground">
+              <strong>{ocultos.length}</strong> parâmetro(s) oculto(s) nesta tela:
+            </div>
+            <button
+              onClick={() => setHidden(new Set())}
+              className="ml-auto text-[11px] text-primary hover:underline"
+            >
+              Reexibir todos
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ocultos.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => show(String(p.id))}
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background hover:bg-muted px-2 py-1 text-[11px] text-foreground"
+                title="Reexibir parâmetro"
+              >
+                <Eye className="h-3 w-3 text-muted-foreground" />
+                <span className="truncate max-w-[160px]">{p.rotulo}</span>
+                <Plus className="h-3 w-3 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {visiveis.map((p) => (
+        <ParametroBloco
+          key={p.id}
+          exameNome={exameNome}
+          parametro={p}
+          refs={referencias}
+          onMutate={onMutate}
+          onHide={() => hide(String(p.id))}
+        />
       ))}
     </div>
   );
 };
+
 
 export default ValoresReferenciaPanel;
