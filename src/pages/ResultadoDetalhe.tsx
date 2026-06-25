@@ -1157,6 +1157,13 @@ const ResultadoDetalhe = () => {
         <div className="lg:hidden">
           {/* Patient header — compartilhado, à prova de overflow */}
           <div className="mb-4">
+            <div className="mb-2 flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
+                Jejum: {pacienteJejum ? "Sim" : "Não informado"}
+              </span>
+            </div>
+
             <PacienteHeaderCard
               nome={paciente.nome}
               sexo={paciente.sexo}
