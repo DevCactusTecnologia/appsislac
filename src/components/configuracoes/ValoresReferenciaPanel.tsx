@@ -305,6 +305,8 @@ const ParametroBloco = ({
 
   // Variações "custom" (faixas etárias arbitrárias do modo Avançado) — exibidas como cards somente-leitura com link.
   const customs = meusRefs.filter((r) => r.categoria === "custom");
+  const [customParaRemover, setCustomParaRemover] = useState<ValorReferencia | null>(null);
+
 
   return (
     <div className="rounded-2xl border border-border/40 bg-background p-4 space-y-3">
