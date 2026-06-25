@@ -499,6 +499,7 @@ const NovoAtendimento = () => {
       setSolicitantes(sols);
       setOriginalSolicitantes(sols);
       setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
+      setJejum(atendimento.jejum ? "sim" : "nao");
       setShowPacienteSearch(false);
       setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
       const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
