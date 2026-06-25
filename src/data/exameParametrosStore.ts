@@ -4,7 +4,10 @@ import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 
-export type ParametroTipo = "Texto" | "Número" | "Select" | "Formula";
+export type ParametroTipo = "Texto" | "Número" | "Select" | "Formula" | "Tempo";
+
+/** Formato de exibição para parâmetros do tipo "Tempo". */
+export type FormatoTempo = "min_seg" | "hh_mm_ss";
 
 export interface ExameParametro {
   id: number;
