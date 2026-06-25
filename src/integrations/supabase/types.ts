@@ -6975,7 +6975,9 @@ export type Database = {
           idade_max_dias: number | null
           idade_min: string
           idade_min_dias: number | null
+          jejum: string
           observacao: string | null
+          operador: string
           ordem: number
           parametro_id: number | null
           parametro_nome: string
@@ -7002,7 +7004,9 @@ export type Database = {
           idade_max_dias?: number | null
           idade_min?: string
           idade_min_dias?: number | null
+          jejum?: string
           observacao?: string | null
+          operador?: string
           ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
@@ -7029,7 +7033,9 @@ export type Database = {
           idade_max_dias?: number | null
           idade_min?: string
           idade_min_dias?: number | null
+          jejum?: string
           observacao?: string | null
+          operador?: string
           ordem?: number
           parametro_id?: number | null
           parametro_nome?: string
