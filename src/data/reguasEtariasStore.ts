@@ -166,7 +166,7 @@ async function migrateFromLocalStorage(tenantId: string): Promise<void> {
         faixas: r.faixas,
         sistema: false,
       }));
-      const { error } = await supabase.from("reguas_etarias").insert(rows);
+      const { error } = await (supabase.from("reguas_etarias") as any).insert(rows);
       if (error) {
         console.warn("[reguasEtariasStore] migração localStorage falhou:", error.message);
         return; // não marca flag — tenta de novo na próxima carga
