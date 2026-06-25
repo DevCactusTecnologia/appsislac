@@ -59,9 +59,10 @@ export function evaluateFormula(
     // eslint-disable-next-line no-new-func
     const v = Function(`"use strict"; return (${expr});`)();
     if (typeof v !== "number" || !isFinite(v)) return "";
+    const casas = Math.max(0, casasDecimais);
     return v.toLocaleString("pt-BR", {
-      maximumFractionDigits: Math.max(0, casasDecimais),
-      minimumFractionDigits: 0,
+      maximumFractionDigits: casas,
+      minimumFractionDigits: casas,
     });
   } catch {
     return "";
