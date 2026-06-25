@@ -216,8 +216,16 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
             </div>
 
             {isSistema && (
-              <div className="rounded-xl border border-border/40 bg-muted/30 p-3 text-[11px] text-muted-foreground">
-                Esta é uma régua de <strong>sistema</strong> — somente leitura. Use <strong>Duplicar</strong> para criar uma versão editável.
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 flex items-center justify-between gap-3">
+                <div className="text-[11px] text-muted-foreground">
+                  Esta é uma régua de <strong>sistema</strong> (preset oficial) — campos como <strong>Unid.</strong>, <strong>De/Até</strong> e <strong>Rótulo</strong> ficam bloqueados para preservar o padrão. Crie uma cópia editável:
+                </div>
+                <button
+                  onClick={handleDuplicar}
+                  className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold flex items-center gap-1.5 hover:opacity-90 transition-all shrink-0"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Duplicar e editar
+                </button>
               </div>
             )}
 
@@ -255,7 +263,7 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/30 text-left">
-                    {["Rótulo", "De", "Unid.", "Até", "Unid.", ""].map((h, i) => (
+                    {["Rótulo (coluna)", "De", "Unid.", "Até", "Unid.", ""].map((h, i) => (
                       <th key={i} className="py-2 px-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -267,7 +275,8 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-32 px-2"
                           disabled={isSistema}
                           value={d.label} onChange={(e) => updateFaixa(d.id, { label: e.target.value })}
-                          placeholder="ex.: 0–3m" />
+                          placeholder="auto (ex.: 0–3m)"
+                          title="Texto curto exibido como cabeçalho da coluna na matriz de valores de referência. Deixe em branco para gerar automaticamente." />
                       </td>
                       <td className="py-1.5 px-2">
                         <Input className="rounded-lg h-8 text-[12px] bg-muted/30 border-border/60 w-20 px-2"
