@@ -260,7 +260,10 @@ export async function renderExameComLayout(
   const dataColetaHtml = dataColetaLabel
     ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
     : "";
-  const tituloHtml = `<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;padding-bottom:0;margin-bottom:2px;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;">${exameNome}</div>${dataColetaHtml}</div>`;
+  // Espaçamentos: 0px entre cabeçalho e nome do exame (o nome encosta no
+  // cabeçalho via first-child margin-top:0) e 12px entre o nome do exame e o
+  // início do layout científico (corpo do resultado).
+  const tituloHtml = `<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;padding-bottom:0;margin-top:0;margin-bottom:12px;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;">${exameNome}</div>${dataColetaHtml}</div>`;
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
