@@ -127,7 +127,15 @@ interface RowProps {
 
 /** Template do grid de uma linha — compartilhado entre cabeçalho e linhas. */
 const ROW_TPL =
-  "grid-cols-[1.3fr_0.9fr_1.6fr_1.5fr_1.4fr_1.4fr_0.6fr_1fr_0.7fr]";
+  "grid-cols-[1.3fr_0.9fr_2.0fr_1.5fr_1.4fr_1.4fr_0.6fr_1fr_0.7fr]";
+
+/** Converte um valor + unidade em dias (para comparações de faixa etária). */
+const idadeParaDias = (val: string, unid: "Anos" | "Meses" | "Dias"): number | null => {
+  const n = parseFloat((val || "").replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  const fator = unid === "Anos" ? 365 : unid === "Meses" ? 30 : 1;
+  return n * fator;
+};
 
 type SexoVR = "Ambos" | "Masculino" | "Feminino";
 type UnidIdade = "Anos" | "Meses" | "Dias";
