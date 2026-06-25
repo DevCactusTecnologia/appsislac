@@ -172,7 +172,7 @@ export async function saveLabConfig(config: LabConfig): Promise<LabConfig> {
   const row = configToRow(config, tenantId);
   const { data, error } = await supabase
     .from("tenant_lab_config")
-    .upsert(row, { onConflict: "tenant_id" })
+    .upsert(row as never, { onConflict: "tenant_id" })
     .select()
     .single();
   if (error) throw error;
