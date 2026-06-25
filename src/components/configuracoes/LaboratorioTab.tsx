@@ -10,8 +10,10 @@ import { Building2, Camera, Upload, ShieldCheck, AlertCircle, Mail, Phone, MapPi
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { getLabConfig, loadLabConfigFromDb, saveLabConfig, ensureLabLogoLoaded, clearLabLogoCache } from "@/data/labConfigStore";
+import { DEFAULT_WATERMARK, type WatermarkConfig } from "@/lib/watermark";
 import { supabase } from "@/integrations/supabase/client";
 import EstadoCidadeFields from "@/components/EstadoCidadeFields";
+import { Droplets } from "lucide-react";
 
 
 const formatCNPJ = (value: string) => {
@@ -73,6 +75,8 @@ const LaboratorioTab = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [watermark, setWatermark] = useState<WatermarkConfig>(initial.watermark ?? { ...DEFAULT_WATERMARK });
+  const [uploadingWatermark, setUploadingWatermark] = useState(false);
   const [form, setForm] = useState({
     nome: initial.nome,
     cnpj: initial.cnpj,
