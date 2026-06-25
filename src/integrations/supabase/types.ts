@@ -6929,7 +6929,9 @@ export type Database = {
           exame_nome: string
           id: number
           idade_max: string
+          idade_max_dias: number | null
           idade_min: string
+          idade_min_dias: number | null
           parametro_id: number | null
           parametro_nome: string
           sexo: string
@@ -6949,7 +6951,9 @@ export type Database = {
           exame_nome: string
           id?: number
           idade_max?: string
+          idade_max_dias?: number | null
           idade_min?: string
+          idade_min_dias?: number | null
           parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
@@ -6969,7 +6973,9 @@ export type Database = {
           exame_nome?: string
           id?: number
           idade_max?: string
+          idade_max_dias?: number | null
           idade_min?: string
+          idade_min_dias?: number | null
           parametro_id?: number | null
           parametro_nome?: string
           sexo?: string
