@@ -233,6 +233,38 @@ const ValorCard = ({ vr, categoria, exameNome, parametro, onMutate }: CardProps)
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmOpen !== null} onOpenChange={(o) => !o && setConfirmOpen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {confirmOpen === "clear" ? (
+                <><Eraser className="h-4 w-4 text-muted-foreground" /> Limpar valores?</>
+              ) : (
+                <><Trash2 className="h-4 w-4 text-destructive" /> {isPadrao ? "Remover regra padrão?" : `Remover variação "${meta.label}"?`}</>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmOpen === "clear" ? (
+                <>Os limites <strong>Normal</strong>, <strong>Crítico</strong> e <strong>Unidade</strong> desta regra ficarão em branco. O cartão continua salvo, sem valores. Você pode preenchê-los novamente a qualquer momento.</>
+              ) : isPadrao ? (
+                <>A regra <strong>Padrão</strong> deste parâmetro será removida. Sem ela, apenas variações específicas (sexo / idade / gestante) serão aplicadas.</>
+              ) : (
+                <>A variação <strong>{meta.label}</strong> deste parâmetro será removida. Esta ação não pode ser desfeita.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmOpen === "clear" ? limparESalvar : remover}
+              className={confirmOpen === "clear" ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            >
+              {confirmOpen === "clear" ? "Limpar" : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
