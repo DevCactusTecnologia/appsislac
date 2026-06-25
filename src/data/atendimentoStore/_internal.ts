@@ -164,5 +164,6 @@ export function buildAtendimento(
     pagamentosRealizados: pagamentosFmt.length > 0 ? pagamentosFmt : undefined,
     updatedAt: atRow.updated_at ? formatDateTimeBR(atRow.updated_at) : undefined,
     origem: ((atRow as { origem_atendimento?: string }).origem_atendimento ?? "INTERNO") as MockAtendimento["origem"],
+    jejum: !!(atRow as { jejum?: boolean }).jejum,
   };
 }
