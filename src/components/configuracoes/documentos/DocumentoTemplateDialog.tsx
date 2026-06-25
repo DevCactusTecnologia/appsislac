@@ -135,7 +135,7 @@ const DocumentoTemplateDialog = ({
         const ok = await updateDocumentoTemplate(template.id, {
           tipo, nome: nome.trim(), descricao: template.descricao ?? "",
           conteudo: removerLinhasHorizontaisDocumento(conteudo), ativo, padrao,
-          config: { ...prevConfig, margins: marginsConfig },
+          config: { ...prevConfig, margins: marginsConfig, watermarkEnabled },
         });
         if (ok) {
           toast({ title: "Template atualizado" });
