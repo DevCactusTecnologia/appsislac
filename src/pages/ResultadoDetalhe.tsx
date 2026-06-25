@@ -964,7 +964,8 @@ const ResultadoDetalhe = () => {
           if (p.nome) resultados[p.nome] = v;
           if (p.rotulo) resultados[p.rotulo] = v;
           if (p.chave) resultados[p.chave] = v;
-          if (p.abreviacao) resultados[p.abreviacao] = v;
+          const abrev = (p as { abreviacao?: string }).abreviacao;
+          if (abrev) resultados[abrev] = v;
         });
         const { html, margins } = await renderExameComLayout(
           exame.nome,
