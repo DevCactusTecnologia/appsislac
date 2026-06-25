@@ -273,9 +273,10 @@ export function usePaginatedAtendimentos(
     setLoading(true);
     setError(null);
     try {
+      const kpiFilters: PaginatedFilters = { ...effectiveFilters, status: undefined };
       const [pageItems, k] = await Promise.all([
         fetchPage(effectiveFilters, null),
-        fetchKpis(effectiveFilters),
+        fetchKpis(kpiFilters),
       ]);
       if (reqTokenRef.current !== token) return;
       setItems(pageItems);
