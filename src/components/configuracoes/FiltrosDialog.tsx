@@ -17,7 +17,7 @@ import MatrizValoresReferencia from "./MatrizValoresReferencia";
 import FiltrosPorPerfil from "./FiltrosPorPerfil";
 import GerenciarReguasDialog from "./GerenciarReguasDialog";
 
-interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; }
+interface FiltrosDialogProps { open: boolean; onClose: () => void; exameNome?: string; exameId?: string; defaultMaximized?: boolean; embedded?: boolean; }
 type FormData = Omit<ValorReferencia, "id">;
 
 const emptyForm = (exameNome: string): FormData => ({
