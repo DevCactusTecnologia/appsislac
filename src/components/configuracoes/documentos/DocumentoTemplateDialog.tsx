@@ -315,7 +315,16 @@ const DocumentoTemplateDialog = ({
     const footer = cfg?.exibirRodape ? renderRodapePadrao(ctx) : "";
 
     const wmCss = watermarkEnabled ? buildWatermarkCss(getLabConfig().watermark) : "";
-    const wmStyle = wmCss ? `<style>${wmCss}</style>` : "";
+    // Em pré-visualização não temos `body` nem `.laudo-a4-page`, então
+    // espelhamos as regras para `.a4-sheet` (container do preview).
+    const wmPreview = watermarkEnabled
+      ? buildWatermarkCss(getLabConfig().watermark)
+          .replace(/body\s*\{[^}]*\}/g, "")
+          .replace(/body::before/g, ".a4-sheet::before")
+          .replace(/\.laudo-a4-page/g, ".a4-sheet")
+      : "";
+    const wmStyle = wmCss || wmPreview ? `<style>${wmCss}${wmPreview}</style>` : "";
+
 
     return `
       ${wmStyle}
