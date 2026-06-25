@@ -118,14 +118,14 @@ interface DbRegua {
   id: string;
   nome: string;
   exame_id: string | null;
-  faixas: FaixaEtaria[];
+  faixas: unknown;
 }
 
 function dbToRegua(row: DbRegua): ReguaEtaria {
   return {
     id: row.id,
     nome: row.nome,
-    faixas: Array.isArray(row.faixas) ? row.faixas : [],
+    faixas: Array.isArray(row.faixas) ? (row.faixas as FaixaEtaria[]) : [],
     exameId: row.exame_id ?? undefined,
     exameNome: resolveExameNome(row.exame_id),
   };
@@ -142,7 +142,7 @@ async function fetchCustom(tenantId: string): Promise<ReguaEtaria[]> {
     console.warn("[reguasEtariasStore] fetch falhou:", error.message);
     return [];
   }
-  return (data ?? []).map(dbToRegua);
+  return ((data ?? []) as unknown as DbRegua[]).map(dbToRegua);
 }
 
 /** Migração one-shot por tenant: localStorage → tabela. */
