@@ -83,45 +83,27 @@ export const ParamTypedInput = ({
     const sep: "." | "," = param.separadorDecimal === "." ? "." : ",";
     const totalDig = typeof param.qtdDigitos === "number" ? param.qtdDigitos : 0;
     const maxIntDig = totalDig > 0 ? Math.max(0, totalDig - casas) : Infinity;
+    // Máscara automática estilo "calculadora": apenas dígitos são aceitos e o
+    // separador decimal é inserido conforme a quantidade de casas configurada.
+    // Ex.: casas=1, digita "1081" → "108,1"; casas=2, digita "1081" → "10,81".
     const handleChange = (raw: string) => {
-      // mantém somente dígitos e o separador escolhido (ignora o outro)
-      const other = sep === "." ? "," : ".";
-      let cleaned = raw.replace(new RegExp(`[^0-9${sep === "." ? "\\." : ","}\\-]`, "g"), "");
-      // converte separador alternativo digitado por engano
-      cleaned = cleaned.split(other).join(sep);
-      // só um separador
-      const firstSep = cleaned.indexOf(sep);
-      if (firstSep !== -1) {
-        cleaned = cleaned.slice(0, firstSep + 1) + cleaned.slice(firstSep + 1).replace(new RegExp(sep === "." ? "\\." : ",", "g"), "");
-      }
-      // sinal "-" só no início
-      cleaned = cleaned.replace(/(?!^)-/g, "");
-      // limita partes
-      const negative = cleaned.startsWith("-");
-      const body = negative ? cleaned.slice(1) : cleaned;
-      let [intP = "", decP = ""] = body.split(sep);
-      if (Number.isFinite(maxIntDig)) intP = intP.slice(0, maxIntDig);
-      if (casas >= 0) decP = decP.slice(0, casas);
-      const out = (negative ? "-" : "") + intP + (body.includes(sep) ? sep + decP : "");
-      onChange(out);
-    };
-    // Ao sair do campo, ajusta automaticamente para a quantidade de casas decimais
-    // configurada, seguindo a regra numérica brasileira (vírgula como separador).
-    const handleBlur = () => {
-      const v = (param.valor ?? "").trim();
-      if (!v) return;
-      const negative = v.startsWith("-");
-      const body = negative ? v.slice(1) : v;
-      let [intP = "", decP = ""] = body.split(sep);
-      if (!intP && !decP) return;
-      if (casas > 0) {
-        decP = (decP + "0".repeat(casas)).slice(0, casas);
+      const negative = raw.trim().startsWith("-");
+      const digits = raw.replace(/\D/g, "");
+      if (!digits) { onChange(negative ? "-" : ""); return; }
+      let out: string;
+      if (casas <= 0) {
+        let intP = digits.replace(/^0+(?=\d)/, "");
+        if (Number.isFinite(maxIntDig)) intP = intP.slice(-(maxIntDig as number));
+        out = (negative ? "-" : "") + (intP || "0");
       } else {
-        decP = "";
+        const maxTotal = Number.isFinite(maxIntDig) ? (maxIntDig as number) + casas : Infinity;
+        const trimmed = Number.isFinite(maxTotal) ? digits.slice(-(maxTotal as number)) : digits;
+        const padded = trimmed.padStart(casas + 1, "0");
+        const intP = padded.slice(0, padded.length - casas).replace(/^0+(?=\d)/, "") || "0";
+        const decP = padded.slice(padded.length - casas);
+        out = (negative ? "-" : "") + intP + sep + decP;
       }
-      const intNorm = intP.replace(/^0+(?=\d)/, "") || "0";
-      const out = (negative ? "-" : "") + intNorm + (casas > 0 ? sep + decP : "");
-      if (out !== v) onChange(out);
+      onChange(out);
     };
     return (
       <input
@@ -129,7 +111,6 @@ export const ParamTypedInput = ({
         inputMode="decimal"
         value={param.valor}
         onChange={(e) => handleChange(e.target.value)}
-        onBlur={handleBlur}
         disabled={disabled}
         className={base}
         placeholder={casas > 0 ? `0${sep}${"0".repeat(casas)}` : "0"}
