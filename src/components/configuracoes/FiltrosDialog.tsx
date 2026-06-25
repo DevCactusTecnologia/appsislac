@@ -589,9 +589,6 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
   if (embedded) {
     if (!open) return null;
     return (
-  if (embedded) {
-    if (!open) return null;
-    return (
       <>
         <div className="flex flex-col h-full bg-card">
           <div className="flex-1 min-h-0 overflow-auto">{body}</div>
@@ -600,6 +597,7 @@ const FiltrosDialog = ({ open, onClose, exameNome = "", exameId, defaultMaximize
       </>
     );
   }
+
 
 
   return (
