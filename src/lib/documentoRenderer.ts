@@ -18,7 +18,9 @@ import { fmtBRL } from "@/lib/utils";
 import { escapeHtml as escape } from "@/lib/escapeHtml";
 import { buildDocumentoFooterHtml, type ComprovanteTipo } from "@/lib/comprovantes";
 import { removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";
+import { buildWatermarkCss } from "@/lib/watermark";
 import type { PlaceholderData } from "@/types/domain";
+
 
 export interface DocumentoRenderContext {
   /** Dados do paciente */
