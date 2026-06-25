@@ -263,7 +263,7 @@ const GerenciarReguasDialog = ({ open, onClose, exameNome }: Props) => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border/30 text-left">
-                    {["Rótulo", "De", "Unid.", "Até", "Unid.", ""].map((h, i) => (
+                    {["Rótulo (coluna)", "De", "Unid.", "Até", "Unid.", ""].map((h, i) => (
                       <th key={i} className="py-2 px-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
