@@ -147,7 +147,7 @@ const DocumentoTemplateDialog = ({
         const novo = await addDocumentoTemplate({
           tipo, nome: nome.trim(), descricao: "",
           conteudo: removerLinhasHorizontaisDocumento(conteudo),
-          config: { margins: marginsConfig },
+          config: { margins: marginsConfig, watermarkEnabled },
           ativo, padrao, criadoPor,
         });
         if (novo) {
