@@ -13,6 +13,12 @@ import {
   ExameLayout, loadLayouts, getLayouts, subscribeLayouts,
   removeLayout, updateLayout, addLayout,
 } from "@/data/exameLayoutsStore";
+import {
+  ExameParametro, loadParametros, getParametros, subscribeParametros,
+} from "@/data/exameParametrosStore";
+import {
+  getValoresReferencia, subscribeValoresReferencia,
+} from "@/data/valoresReferenciaStore";
 
 interface DetalhesExameDialogProps {
   open: boolean;
