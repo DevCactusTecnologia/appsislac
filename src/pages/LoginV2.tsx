@@ -374,7 +374,7 @@ export default function LoginV2() {
                           />
                         </div>
                         <div className="flex items-center justify-between pl-1 text-[11px] text-muted-foreground">
-                          <span>Letras e números (ex.: LAB905, SJMED)</span>
+                          <span>Apenas números (ex.: 0001, 0999)</span>
                           <button
                             type="button"
                             onClick={() => setShowHelp((v) => !v)}
@@ -396,8 +396,8 @@ export default function LoginV2() {
                               <div className="mt-2 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-[12px] leading-relaxed text-foreground/80">
                                 O <strong>código do laboratório</strong> é o identificador
                                 operacional do seu laboratório no SISLAC (por exemplo,{" "}
-                                <span className="font-mono font-semibold">LAB905</span> ou{" "}
-                                <span className="font-mono font-semibold">SJMED</span>). Ele é
+                                <span className="font-mono font-semibold">0001</span> ou{" "}
+                                <span className="font-mono font-semibold">0999</span>). Ele é
                                 enviado por e-mail no momento da contratação. Não tem o código?{" "}
                                 <span className="font-medium text-primary">Ligue (83) 9 9672-9999</span>.
                               </div>
