@@ -66,6 +66,33 @@ const CATEGORIA_CHIP: Record<CategoriaVR, string> = {
   custom: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
 };
 
+/** Resumo "Sexo • Faixa etária" exibido sob o chip da categoria. */
+const SEXO_LABEL: Record<"Ambos" | "Masculino" | "Feminino", string> = {
+  Ambos: "Ambos sexos",
+  Masculino: "♂ Masculino",
+  Feminino: "♀ Feminino",
+};
+const diasParaLabel = (d: number): string => {
+  if (d < 30) return `${d}d`;
+  if (d < 365) return `${Math.round(d / 30)}m`;
+  return `${Math.round(d / 365)}a`;
+};
+const categoriaResumo = (cat: CategoriaVR): { sexo: string; idade: string } => {
+  const m = CATEGORIA_META[cat];
+  const sexo = SEXO_LABEL[m.sexo];
+  let idade = "Qualquer idade";
+  if (cat === "padrao") idade = "Fallback (sem filtro)";
+  else if (cat === "custom") idade = "Faixa livre";
+  else if (m.idadeMinDias !== null && m.idadeMaxDias !== null) {
+    idade = `${diasParaLabel(m.idadeMinDias)} – ${diasParaLabel(m.idadeMaxDias)}`;
+  } else if (m.idadeMinDias !== null) {
+    idade = `≥ ${diasParaLabel(m.idadeMinDias)}`;
+  } else if (m.idadeMaxDias !== null) {
+    idade = `≤ ${diasParaLabel(m.idadeMaxDias)}`;
+  }
+  return { sexo, idade };
+};
+
 interface Props {
   exameNome: string;
   parametros: ExameParametro[];
@@ -215,11 +242,21 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   return (
     <div className={`grid grid-cols-12 gap-3 px-5 py-3 items-center hover:bg-muted/30 transition-colors ${rowBg} ${saving ? "opacity-70" : ""}`}>
       {/* Categoria */}
-      <div className="col-span-2 flex items-center gap-2 min-w-0">
-        <span className="text-sm leading-none shrink-0">{meta.icon}</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}>
-          {meta.label}
-        </span>
+      <div className="col-span-2 flex items-start gap-2 min-w-0">
+        <span className="text-sm leading-none shrink-0 mt-0.5">{meta.icon}</span>
+        <div className="flex flex-col min-w-0 gap-0.5">
+          <span
+            className={`inline-flex w-fit items-center px-2 py-0.5 rounded-md border text-[11px] font-medium truncate ${CATEGORIA_CHIP[categoria]}`}
+            title={`${categoriaResumo(categoria).sexo} • ${categoriaResumo(categoria).idade}`}
+          >
+            {meta.label}
+          </span>
+          <div className="text-[10px] leading-tight text-muted-foreground truncate">
+            <span className="font-medium">{categoriaResumo(categoria).sexo}</span>
+            <span className="mx-1 text-muted-foreground/50">•</span>
+            <span>{categoriaResumo(categoria).idade}</span>
+          </div>
+        </div>
       </div>
 
       {/* Condição: operador + jejum */}
@@ -486,12 +523,17 @@ const ParametroBloco = ({
                 <ChevronDown className="h-3 w-3 opacity-60" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuContent align="start" className="w-72">
               {variacoesDisponiveis.map((cat) => {
                 const m = CATEGORIA_META[cat];
+                const r = categoriaResumo(cat);
                 return (
-                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px]">
-                    <span>{m.icon}</span> <span>{m.label}</span>
+                  <DropdownMenuItem key={cat} onClick={() => adicionarVariacao(cat)} className="gap-2 text-[13px] py-2">
+                    <span className="text-base leading-none">{m.icon}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium">{m.label}</span>
+                      <span className="text-[10px] text-muted-foreground truncate">{r.sexo} • {r.idade}</span>
+                    </div>
                   </DropdownMenuItem>
                 );
               })}
