@@ -225,6 +225,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     idadeMin: isPadrao ? "" : idadeMin,
     idadeMax: isPadrao ? "" : idadeMax,
     unidadeIdade,
+    unidadeIdadeMax,
     valorMin: isEntre ? normMin : "",
     valorMax: normMax,
     unidade,
