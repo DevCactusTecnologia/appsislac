@@ -7,6 +7,7 @@ import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@1.0.41";
 import { aiCorsHeaders, authenticate, jsonResponse, resolveAllowedCapabilities } from "../_shared/aiAuth.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
+import { buildAtendimentoTools } from "./skills/atendimento.ts";
 
 interface AIContext {
   module?: string;
