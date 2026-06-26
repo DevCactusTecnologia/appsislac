@@ -701,8 +701,8 @@ export default function AiShell() {
               O Assistente pode cometer erros. Verifique informações importantes.
             </div>
           </footer>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
     </>
   );
 }
