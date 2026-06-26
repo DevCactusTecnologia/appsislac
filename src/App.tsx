@@ -66,6 +66,7 @@ const TenantSite = lazy(() => import("./pages/TenantSite"));
 const TenantSiteSobre = lazy(() => import("./pages/TenantSiteSobre"));
 const TenantSiteContato = lazy(() => import("./pages/TenantSiteContato"));
 const AppLayout = lazy(() => import("./components/AppLayout"));
+const AiShell = lazy(() => import("./components/ai-shell/AiShell"));
 const SuperAdminLayout = lazy(() => import("./components/SuperAdminLayout"));
 const RequireSuperAdmin = lazy(() => import("./components/RequireSuperAdmin"));
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
@@ -428,6 +429,7 @@ function AppRoutes() {
             <Route path="/admin/auditoria-vr" element={<ProtectedRoute><AuditoriaVR /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AiShell />
         </AppLayout>
       </Suspense>
     </ChunkErrorBoundary>
