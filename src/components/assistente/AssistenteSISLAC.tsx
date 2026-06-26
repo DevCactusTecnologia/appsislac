@@ -4,13 +4,13 @@ import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const JARVIS_AGENT_ID = "agent_9901kw2z1z9rew9tk3541rtb90y5";
+const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
 
 /**
  * Assistente SISLAC — Agente conversacional ElevenLabs (público, WebRTC).
- * Botão flutuante global, substitui o antigo AiShell.
+ * Botão flutuante global.
  */
-export function JarvisAgent() {
+export function AssistenteSISLAC() {
   const [connecting, setConnecting] = useState(false);
 
   const conversation = useConversation({
@@ -22,8 +22,7 @@ export function JarvisAgent() {
     },
   });
 
-  const status = conversation.status;
-  const isConnected = status === "connected";
+  const isConnected = conversation.status === "connected";
   const isSpeaking = conversation.isSpeaking;
 
   const start = useCallback(async () => {
@@ -32,7 +31,7 @@ export function JarvisAgent() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
       await conversation.startSession({
-        agentId: JARVIS_AGENT_ID,
+        agentId: AGENT_ID,
         connectionType: "webrtc",
       });
     } catch (e) {
@@ -75,4 +74,4 @@ export function JarvisAgent() {
   );
 }
 
-export default JarvisAgent;
+export default AssistenteSISLAC;

@@ -66,7 +66,7 @@ const TenantSite = lazy(() => import("./pages/TenantSite"));
 const TenantSiteSobre = lazy(() => import("./pages/TenantSiteSobre"));
 const TenantSiteContato = lazy(() => import("./pages/TenantSiteContato"));
 const AppLayout = lazy(() => import("./components/AppLayout"));
-const JarvisAgent = lazy(() => import("./components/jarvis/JarvisAgent"));
+const AssistenteSISLAC = lazy(() => import("./components/assistente/AssistenteSISLAC"));
 const SuperAdminLayout = lazy(() => import("./components/SuperAdminLayout"));
 const RequireSuperAdmin = lazy(() => import("./components/RequireSuperAdmin"));
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
@@ -434,7 +434,7 @@ function AppRoutes() {
           </Suspense>
           {/* Assistente SISLAC (ElevenLabs) isolado em Suspense próprio. */}
           <Suspense fallback={null}>
-            <JarvisAgent />
+            <AssistenteSISLAC />
           </Suspense>
         </AppLayout>
       </Suspense>
