@@ -344,11 +344,11 @@ export default function AiShell() {
                 </div>
               </div>
             ) : (
-              <div className="px-5 py-6 space-y-5">
+              <div className="px-3 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5">
                 {messages.map((m) => (
                   <div
                     key={m.id}
-                    className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                    className={`flex gap-2 sm:gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
                     <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
                       m.role === "user"
@@ -357,9 +357,9 @@ export default function AiShell() {
                     }`}>
                       {m.role === "user"
                         ? <UserIcon className="h-3.5 w-3.5" />
-                        : <Sparkles className="h-3.5 w-3.5" />}
+                        : <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />}
                     </div>
-                    <div className={`max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${
+                    <div className={`max-w-[85%] sm:max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
                       m.role === "user"
                         ? "rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-3.5 py-2.5"
                         : "text-foreground pt-1"
