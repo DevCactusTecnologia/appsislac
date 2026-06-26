@@ -51,7 +51,7 @@ const TabelasPrecoPage = lazy(() => import("./pages/TabelasPreco"));
 const SolicitacoesSite = lazy(() => import("./pages/SolicitacoesSite"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Perfil = lazy(() => import("./pages/Perfil"));
-const AgentPage = lazy(() => import("./pages/AgentPage"));
+
 const CKEditorTest = lazy(() => import("./pages/admin/CKEditorTest"));
 const AuditoriaVR = lazy(() => import("./pages/admin/AuditoriaVR"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -352,7 +352,7 @@ function AppRoutes() {
           <Routes>
             <Route path="/dashboard" element={<ProtectedRoute permissao="visualizar_dashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/atendimentos" element={<ProtectedRoute permissao="visualizar_atendimentos"><Index /></ProtectedRoute>} />
-            <Route path="/agent" element={<ProtectedRoute permissao="visualizar_dashboard"><AgentPage /></ProtectedRoute>} />
+            
             {/* Domain Driven Routes — Fase A (canônicas) */}
             <Route path="/atendimentos/novo" element={<ProtectedRoute permissao="criar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
             <Route path="/atendimentos/:protocolo/editar" element={<ProtectedRoute permissao="editar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
