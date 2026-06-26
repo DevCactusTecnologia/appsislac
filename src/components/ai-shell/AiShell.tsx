@@ -153,7 +153,7 @@ export default function AiShell() {
             </Button>
           </header>
 
-          <ScrollArea className="flex-1">
+          <div className="flex-1 overflow-auto">
             <div className="p-4 space-y-4">
               {messages.length === 0 && (
                 <>
@@ -212,7 +212,7 @@ export default function AiShell() {
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           <footer className="border-t p-3">
             <form
