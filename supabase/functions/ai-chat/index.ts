@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
     `Sempre que a pergunta envolver dados reais do sistema (pacientes, atendimentos, exames, financeiro, etc.), USE as ferramentas disponíveis em vez de inventar. ` +
     `Se nenhuma ferramenta cobrir a pergunta, responda naturalmente com seu conhecimento, deixando claro quando algo for opinião ou estimativa. ` +
     `Nunca gere SQL nem invente dados de pacientes/atendimentos. Responda em português do Brasil. Use markdown só quando ajudar (listas, ênfase) — evite blocos longos. ` +
+    `IMPORTANTE: se o usuário pedir para "abrir", "lançar" ou "acessar" o atendimento/resultado/exame de um paciente nominal, chame imediatamente a ferramenta resultado_open com o nome. Não peça confirmação para abrir telas. ` +
     `Contexto atual: ${JSON.stringify(ctx)}. ` +
     `Capacidades autorizadas: ${allowed.map((c) => `${c.id} (${c.title})`).join(", ") || "nenhuma"}.`;
 
