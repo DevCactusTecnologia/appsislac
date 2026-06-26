@@ -1159,7 +1159,53 @@ const ResultadoDetalhe = () => {
   const handleImprimir = (exames: Exame[]) => iniciarImpressao("imprimir", exames);
   const handleExportPDF = (exames: Exame[]) => iniciarImpressao("pdf", exames);
 
+  // 🤖 Bridge para o Assistente SISLAC (ElevenLabs Agent).
+  // Expõe ações desta tela em window.__sislacResultado enquanto a página estiver montada.
+  useEffect(() => {
+    const findIdx = (termo: string) => {
+      if (!selectedExame) return -1;
+      const n = (s: string) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const t = n(termo);
+      return selectedExame.parametros.findIndex(
+        (p) => n(p.chave || "") === t || n(p.rotulo || "") === t || n(p.nome || "") === t ||
+               n(p.rotulo || "").includes(t) || n(p.nome || "").includes(t),
+      );
+    };
+    (window as any).__sislacResultado = {
+      setValor: (parametro: string, valor: string) => {
+        if (!selectedExame) return { ok: false, msg: "Nenhum exame selecionado" };
+        const idx = findIdx(parametro);
+        if (idx < 0) return { ok: false, msg: `Parâmetro "${parametro}" não encontrado` };
+        updateParametro(selectedExame.id, idx, String(valor));
+        return { ok: true, msg: `${parametro} = ${valor}` };
+      },
+      setVarios: (pares: string) => {
+        if (!selectedExame) return { ok: false, msg: "Nenhum exame selecionado" };
+        const items = pares.split(/[;\n]+/).map((s) => s.trim()).filter(Boolean);
+        let ok = 0, fail = 0;
+        for (const it of items) {
+          const [k, ...rest] = it.split("=");
+          const v = rest.join("=").trim();
+          const idx = findIdx((k || "").trim());
+          if (idx < 0) { fail++; continue; }
+          updateParametro(selectedExame.id, idx, v);
+          ok++;
+        }
+        return { ok: true, msg: `${ok} aplicados, ${fail} ignorados` };
+      },
+      salvar: () => { void handleSalvar(); return { ok: true, msg: "Salvando..." }; },
+      liberar: () => { void handleAnalisarLiberar(); return { ok: true, msg: "Liberando..." }; },
+      imprimir: () => {
+        if (!paciente?.exames?.length) return { ok: false, msg: "Sem exames" };
+        handleImprimir(paciente.exames);
+        return { ok: true, msg: "Impressão iniciada" };
+      },
+    };
+    return () => { try { delete (window as any).__sislacResultado; } catch {} };
+  }, [selectedExame, paciente]);
+
   return (
+
     <div className="min-h-screen bg-background">
 
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 animate-fade-in">
