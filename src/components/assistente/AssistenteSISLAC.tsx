@@ -42,7 +42,7 @@ function describeRoute(pathname: string): string {
   return `Tela: ${pathname}`;
 }
 
-export function AssistenteSISLAC() {
+function AssistenteSISLACInner() {
   const [connecting, setConnecting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
