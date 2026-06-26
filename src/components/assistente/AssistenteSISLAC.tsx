@@ -118,7 +118,38 @@ function AssistenteSISLACInner() {
         if (!data?.length) return `Nenhum paciente para "${termo}"`;
         return data.map((p) => `${p.nome} (${p.cpf ?? "sem CPF"})`).join("; ");
       },
+
+      // ============ FASE 1 — RESULTADO (bridge window.__sislacResultado) ============
+      resultado_set_valor: ({ parametro, valor }: { parametro: string; valor: string }) => {
+        const api = (window as any).__sislacResultado;
+        if (!api) return "Abra um resultado primeiro";
+        const r = api.setValor(parametro, valor);
+        return r.msg;
+      },
+      resultado_set_varios: ({ pares }: { pares: string }) => {
+        const api = (window as any).__sislacResultado;
+        if (!api) return "Abra um resultado primeiro";
+        const r = api.setVarios(pares);
+        return r.msg;
+      },
+      resultado_salvar: () => {
+        const api = (window as any).__sislacResultado;
+        if (!api) return "Abra um resultado primeiro";
+        return api.salvar().msg;
+      },
+      resultado_liberar: ({ confirmado }: { confirmado?: boolean } = {}) => {
+        const api = (window as any).__sislacResultado;
+        if (!api) return "Abra um resultado primeiro";
+        if (!confirmado) return "Confirmação necessária — peça 'sim, liberar' ao usuário";
+        return api.liberar().msg;
+      },
+      resultado_imprimir: () => {
+        const api = (window as any).__sislacResultado;
+        if (!api) return "Abra um resultado primeiro";
+        return api.imprimir().msg;
+      },
     },
+
     onConnect: () => toast.success("Assistente SISLAC conectado"),
     onDisconnect: () => toast.message("Assistente SISLAC desconectado"),
     onError: (err) => {
