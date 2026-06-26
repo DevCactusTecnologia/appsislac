@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import {
   Settings, Sparkles, Mail, Info, Save, Loader2, Eye, EyeOff,
-  Plug, Lock, Brain, Cloud, MessageCircle, PlugZap, CheckCircle2, XCircle,
+  Plug, Lock, Brain, Cloud, MessageCircle, PlugZap, CheckCircle2, XCircle, Mic2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
