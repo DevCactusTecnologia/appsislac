@@ -25,10 +25,11 @@ export default function AiShell() {
 
   const allowedQuickActions = useMemo(() => {
     const perms = new Set((user?.permissoes ?? []) as string[]);
+    const wildcard = perms.has("*");
     return CLIENT_CAPABILITIES.filter((c) => {
       if (!c.enabled) return false;
       if (!c.permission) return true;
-      return perms.has(c.permission);
+      return wildcard || perms.has(c.permission);
     });
   }, [user?.permissoes]);
 
