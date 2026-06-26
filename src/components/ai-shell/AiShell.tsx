@@ -381,7 +381,7 @@ export default function AiShell() {
           </div>
 
           {/* Composer */}
-          <footer className="border-t bg-background/95 backdrop-blur p-3 shrink-0">
+          <footer className="border-t bg-background/95 backdrop-blur p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] shrink-0">
             {(recording || transcribing) && (
               <div className="mb-2 px-2 text-xs text-muted-foreground flex items-center gap-2">
                 {recording ? (
