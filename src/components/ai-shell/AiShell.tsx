@@ -581,7 +581,7 @@ export default function AiShell() {
                   </div>
                 )}
                 <div className="mt-6 text-[11px] text-muted-foreground/70">
-                  Dica: diga <span className="font-medium text-foreground/70">"abra atendimentos"</span> usando o microfone.
+                  Dica: toque no <span className="font-medium text-foreground/70">microfone</span> e fale como na Alexa — diga "parar" para encerrar.
                 </div>
               </div>
             ) : (
