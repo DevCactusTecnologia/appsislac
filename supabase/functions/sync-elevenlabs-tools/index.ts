@@ -117,7 +117,55 @@ const TOOLS: ClientTool[] = [
     response_timeout_secs: 8,
     parameters: [],
   },
-];
+
+  // ============ FASE 2 — ATENDIMENTO ============
+  {
+    type: "client",
+    name: "criar_atendimento",
+    description:
+      "Abre o wizard de novo atendimento. Se o usuário citar um paciente, passe 'paciente_termo' (nome ou CPF) para pré-seleção.",
+    expects_response: true,
+    response_timeout_secs: 8,
+    parameters: [P("paciente_termo", "string", "Opcional: nome parcial ou CPF do paciente", false)],
+  },
+  {
+    type: "client",
+    name: "adicionar_exame",
+    description: "Adiciona um exame a um atendimento existente, identificado pelo protocolo.",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [
+      P("protocolo", "string", "Protocolo do atendimento (ex.: 0000003)"),
+      P("exame", "string", "Nome ou fragmento do nome do exame (ex.: hemograma, glicose)"),
+    ],
+  },
+  {
+    type: "client",
+    name: "cancelar_atendimento",
+    description:
+      "Cancela um atendimento. Ação irreversível — só chame com confirmado=true após o usuário confirmar verbalmente.",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [
+      P("protocolo", "string", "Protocolo do atendimento"),
+      P("motivo", "string", "Motivo do cancelamento", false),
+      P("confirmado", "boolean", "Passe true SOMENTE se o usuário confirmou explicitamente"),
+    ],
+  },
+  {
+    type: "client",
+    name: "registrar_pagamento",
+    description:
+      "Registra um pagamento adicional em um atendimento. Acumula no histórico de pagamentos.",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [
+      P("protocolo", "string", "Protocolo do atendimento"),
+      P("valor", "number", "Valor pago em reais (use ponto como decimal)"),
+      P("forma", "string", "Forma de pagamento: DINHEIRO, PIX, DEBITO, CREDITO", false),
+    ],
+  },
+
 
 async function patchAgent() {
   const url = `https://api.elevenlabs.io/v1/convai/agents/${AGENT_ID}`;
