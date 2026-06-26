@@ -10,6 +10,10 @@
 7. Avatar único. Sem rota dedicada.
 8. Modelo default: `google/gemini-3-flash-preview`.
 9. Memória: nunca PII clínica/financeira em `ai_messages`.
+10. **Toda Skill precisa de ≥1 Action útil**. Skill puramente conversacional é rejeitada em revisão.
+11. **Toda Skill declara métricas de baseline** (`baselineSeconds`, `baselineClicks`, `category`). Sem isso não entra (ver `metrics-model.md`).
+12. **Avatar abre em Modo Assistente** (Ações Rápidas), nunca diretamente em input de chat (ver `assistant-mode.md`).
+13. **Hierarquia operacional**: `Responder → Sugerir → Executar → Automatizar`. Priorizar Executar e Automatizar.
 
 ## Processo: criar nova Skill
 1. Abrir RFC curto em `docs/intelligence-platform/skills/<dominio>.md` com:
