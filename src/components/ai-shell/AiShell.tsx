@@ -60,12 +60,17 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  // Reconhecimento contínuo (Web Speech API) — hands-free.
+  // Reconhecimento contínuo (Web Speech API) — desativado: STT agora é ElevenLabs.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechRecRef = useRef<any>(null);
   const continuousRef = useRef(false);
-  const sendRef = useRef<(t: string) => Promise<void> | void>(() => {});
+  const sendRef = useRef<(t: string, opts?: { fromVoice?: boolean }) => Promise<void> | void>(() => {});
   const [interimText, setInterimText] = useState("");
+  // Voz: ativa quando o usuário usou microfone; respostas saem faladas via ElevenLabs.
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
 
 
   const suggestions = useMemo(
