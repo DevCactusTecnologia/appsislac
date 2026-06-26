@@ -273,6 +273,24 @@ export default function SuperAdminConfiguracoes() {
     setWppOriginal(wpp);
     toast.success("Configuração WhatsApp salva.");
   };
+  const saveEleven = async () => {
+    if (!eleven.voiceId.trim()) {
+      toast.error("Informe o Voice ID do ElevenLabs.");
+      return;
+    }
+    setSaving(true);
+    const payload: ElevenLabsConfig = {
+      apiKey: eleven.apiKey.trim(),
+      voiceId: eleven.voiceId.trim(),
+      modelId: eleven.modelId.trim() || "eleven_multilingual_v2",
+    };
+    const { error } = await saveSetting("elevenlabs_config", payload);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setEleven(payload);
+    setElevenOriginal(payload);
+    toast.success("Configuração ElevenLabs salva.");
+  };
 
   /** Validação client-side dos campos antes de testar a conexão de fato. */
   const testConnection = async (tab: IntegrationTab) => {
