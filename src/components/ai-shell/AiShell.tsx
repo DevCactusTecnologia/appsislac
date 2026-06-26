@@ -422,7 +422,25 @@ export default function AiShell() {
                 <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8 shrink-0">
+            <div className="pr-8 shrink-0 flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const next = !voiceMode;
+                  setVoiceMode(next);
+                  voiceModeRef.current = next;
+                  if (!next && audioElRef.current) {
+                    try { audioElRef.current.pause(); } catch { /* noop */ }
+                    audioElRef.current = null;
+                  }
+                }}
+                aria-label={voiceMode ? "Silenciar respostas faladas" : "Ativar respostas faladas"}
+                title={voiceMode ? "Voz ativa (clique para silenciar)" : "Voz silenciada (clique para ativar)"}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                {voiceMode ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
