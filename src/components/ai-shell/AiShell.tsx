@@ -2,9 +2,8 @@
 // Design ChatGPT-like: limpo, espaçoso, moderno. Voz com comandos de navegação.
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX, X } from "lucide-react";
+import { Sparkles, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX, X, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -465,12 +464,18 @@ export default function AiShell() {
         <Sparkles className="h-5 w-5" />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[440px] md:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Assistente do SISLAC"
           data-ai-shell="panel"
+          className="fixed z-50 bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden
+                     bottom-[max(4.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-3 sm:right-5
+                     w-[calc(100vw-1.5rem)] sm:w-[400px] md:w-[420px]
+                     h-[min(620px,calc(100dvh-6rem))]
+                     animate-in fade-in slide-in-from-bottom-4 duration-200"
         >
+
           {/* Header minimalista — botão fechar nativo do Sheet */}
           <header className="h-14 px-3 sm:px-5 flex items-center justify-between border-b shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -482,7 +487,7 @@ export default function AiShell() {
                 <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8 shrink-0 flex items-center gap-1">
+            <div className="shrink-0 flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -513,6 +518,16 @@ export default function AiShell() {
                   <span className="sm:hidden">Nova</span>
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                aria-label="Fechar assistente"
+                title="Fechar"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </header>
 
@@ -686,8 +701,8 @@ export default function AiShell() {
               O Assistente pode cometer erros. Verifique informações importantes.
             </div>
           </footer>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
     </>
   );
 }
