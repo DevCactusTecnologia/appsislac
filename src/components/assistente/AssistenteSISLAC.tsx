@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ function describeRoute(pathname: string): string {
   return `Tela: ${pathname}`;
 }
 
-export function AssistenteSISLAC() {
+function AssistenteSISLACInner() {
   const [connecting, setConnecting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -190,6 +190,14 @@ export function AssistenteSISLAC() {
         <Mic className="h-4 w-4" />
       )}
     </button>
+  );
+}
+
+export function AssistenteSISLAC() {
+  return (
+    <ConversationProvider>
+      <AssistenteSISLACInner />
+    </ConversationProvider>
   );
 }
 
