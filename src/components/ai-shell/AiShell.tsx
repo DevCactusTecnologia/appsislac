@@ -479,15 +479,65 @@ export default function AiShell() {
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Assistente do SISLAC"
-        title="Assistente • Ctrl+J"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-40 h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
-      >
-        <Sparkles className="h-5 w-5" />
-      </button>
+      {/* Avatar flutuante + botão de microfone hands-free (estilo Alexa).
+          Quando o microfone está ativo, o painel NÃO abre: o avatar pulsa
+          indicando que está ouvindo e as respostas saem por voz. */}
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-40 flex flex-col items-end gap-2">
+        {/* Bolha de interim/transcrição flutuante (apenas em modo voz, painel fechado) */}
+        {recording && !open && interimText && (
+          <div className="max-w-[260px] rounded-2xl bg-card border border-border shadow-lg px-3 py-2 text-xs text-foreground/80 italic animate-in fade-in slide-in-from-bottom-2">
+            "{interimText}"
+          </div>
+        )}
+        {recording && !open && !interimText && (
+          <div className="rounded-full bg-card border border-border shadow-md px-3 py-1 text-[11px] text-muted-foreground animate-in fade-in">
+            Ouvindo… diga <span className="font-semibold text-foreground">"parar"</span> para encerrar
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          {/* Botão de microfone hands-free — independe do painel */}
+          <button
+            type="button"
+            aria-label={recording ? "Parar microfone" : "Falar com o assistente"}
+            title={recording ? "Parar de ouvir" : "Falar (hands-free)"}
+            onClick={toggleMic}
+            className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-full shadow-xl flex items-center justify-center transition-all active:scale-95 ${
+              recording
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-card border border-border text-foreground hover:bg-accent"
+            }`}
+          >
+            {recording && (
+              <>
+                <span className="absolute inset-0 rounded-full bg-red-500/40 animate-ping" />
+                <span className="absolute -inset-1 rounded-full border-2 border-red-500/50 animate-pulse" />
+              </>
+            )}
+            {recording ? <Square className="h-4 w-4 fill-current relative" /> : <Mic className="h-5 w-5" />}
+          </button>
+
+          {/* Avatar do Assistente — abre o painel */}
+          <button
+            type="button"
+            aria-label="Assistente do SISLAC"
+            title="Assistente • Ctrl+J"
+            onClick={() => setOpen(true)}
+            className={`relative h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform ${
+              recording ? "ring-4 ring-primary/30" : ""
+            }`}
+          >
+            {recording && (
+              <span className="absolute -inset-1 rounded-full border-2 border-primary/40 animate-pulse" />
+            )}
+            <Sparkles className={`h-5 w-5 ${recording ? "animate-pulse" : ""}`} />
+            {busy && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary border-2 border-background animate-pulse" />
+            )}
+          </button>
+        </div>
+      </div>
+
 
       {open && (
         <div
