@@ -301,8 +301,7 @@ export default function AiShell() {
 
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
-    // Caminho preferido: reconhecimento contínuo no próprio navegador.
-    if (startContinuousSpeech()) return;
+    // STT agora é ElevenLabs — não usamos mais a Web Speech API do navegador.
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
@@ -344,14 +343,13 @@ export default function AiShell() {
           const data = await res.json().catch(() => ({}));
           const text: string = (data?.text ?? "").trim();
           if (res.ok && text) {
-            await send(text);
+            await send(text, { fromVoice: true });
           } else {
-            setMessages((m) => [...m, {
-              id: crypto.randomUUID(), role: "assistant",
-              text: res.status === 401
-                ? "Sessão expirou. Faça login novamente."
-                : "Não consegui entender o áudio. Pode repetir?",
-            }]);
+            const errText = res.status === 401
+              ? "Sessão expirou. Faça login novamente."
+              : "Não consegui entender o áudio. Pode repetir?";
+            setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+            if (voiceModeRef.current) speak(errText);
           }
         } finally {
           setTranscribing(false);
@@ -367,7 +365,7 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send, startContinuousSpeech]);
+  }, [recording, transcribing, busy, send, speak]);
 
   const stopRecording = useCallback(() => {
     if (speechRecRef.current) { stopContinuousSpeech(); return; }
