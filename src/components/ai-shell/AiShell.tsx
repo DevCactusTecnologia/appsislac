@@ -487,7 +487,7 @@ export default function AiShell() {
                 <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8 shrink-0 flex items-center gap-1">
+            <div className="shrink-0 flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
