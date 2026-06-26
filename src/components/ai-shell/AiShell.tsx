@@ -1,7 +1,8 @@
-// AI Shell — Assistente do SISLAC. Fase 2.4: experiência conversacional natural.
-// O usuário descreve o que deseja. O Assistente entende. Sem menus, sem cards fixos.
+// AI Shell — Assistente do SISLAC.
+// Design ChatGPT-like: limpo, espaçoso, moderno. Voz com comandos de navegação.
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Sparkles, X, Send, Loader2, Mic, MicOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,10 +16,39 @@ interface Msg { id: string; role: "user" | "assistant"; text: string }
 
 const HIDE_ROUTES = ["/", "/login", "/super-admin", "/inscricao", "/laudo/print", "/imprimir", "/verificar", "/r/"];
 
+// ----- Comandos de voz: navegação ------------------------------------------------
+// Mapa simples PT-BR de termos → rota. Avaliado após transcrição (e em texto manual).
+const NAV_INTENTS: { rx: RegExp; path: string; label: string }[] = [
+  { rx: /\b(atendimento|atendimentos)\b/, path: "/atendimentos", label: "Atendimentos" },
+  { rx: /\b(novo atendimento|cadastrar atendimento|criar atendimento)\b/, path: "/atendimentos/novo", label: "Novo atendimento" },
+  { rx: /\b(coleta|registrar coleta)\b/, path: "/registrar-coleta", label: "Coleta" },
+  { rx: /\b(analise|análise|analisar amostra|amostras?)\b/, path: "/analisar-amostra", label: "Análise" },
+  { rx: /\b(resultados?)\b/, path: "/resultados", label: "Resultados" },
+  { rx: /\b(pacientes?)\b/, path: "/pacientes", label: "Pacientes" },
+  { rx: /\b(especialistas?|m[eé]dicos?)\b/, path: "/especialistas", label: "Especialistas" },
+  { rx: /\b(or[cç]amentos?)\b/, path: "/orcamentos", label: "Orçamentos" },
+  { rx: /\b(financeiro|caixa|entradas?|sa[ií]das?)\b/, path: "/financeiro", label: "Financeiro" },
+  { rx: /\b(dashboard|in[ií]cio|home|painel)\b/, path: "/dashboard", label: "Dashboard" },
+  { rx: /\b(cat[áa]logo|exames)\b/, path: "/configuracoes/exames", label: "Catálogo de exames" },
+  { rx: /\b(configura[cç][õo]es|ajustes|prefer[êe]ncias)\b/, path: "/configuracoes", label: "Configurações" },
+  { rx: /\b(soroteca|amostras estocadas)\b/, path: "/soroteca", label: "Soroteca" },
+  { rx: /\b(auditoria|logs?)\b/, path: "/auditoria", label: "Auditoria" },
+];
+
+function parseNavIntent(raw: string): { path: string; label: string } | null {
+  const txt = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (!/^(abr[ai]r?|abra|ir|v[áa]|vai|leve|abrir|navegar|mostre|mostrar|acessar|acesse)\b/.test(txt)) return null;
+  for (const it of NAV_INTENTS) {
+    if (it.rx.test(txt)) return { path: it.path, label: it.label };
+  }
+  return null;
+}
+
 export default function AiShell() {
   const { user } = useAuth();
   const ctx = useAIContext();
   const { manifest } = useManifest();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -31,13 +61,11 @@ export default function AiShell() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Sugestões contextuais surgem APENAS quando há foco real (paciente/atendimento/etc.).
   const suggestions = useMemo(
     () => getContextualSuggestions(ctx, discoverCapabilities(manifest, { suggestionsOnly: true })),
     [ctx, manifest],
   );
 
-  // Atalho Ctrl/Cmd+J
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
@@ -49,12 +77,10 @@ export default function AiShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Foco automático no input ao abrir
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, busy]);
@@ -62,6 +88,18 @@ export default function AiShell() {
   const send = useCallback(async (text: string) => {
     const value = text.trim();
     if (!value || busy) return;
+
+    // 1) Comando de navegação: executa direto, sem chamar o LLM.
+    const nav = parseNavIntent(value);
+    if (nav) {
+      const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: value };
+      const ack: Msg = { id: crypto.randomUUID(), role: "assistant", text: `Abrindo **${nav.label}**…` };
+      setMessages((m) => [...m, userMsg, ack]);
+      setInput("");
+      navigate(nav.path);
+      return;
+    }
+
     const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: value };
     setMessages((m) => [...m, userMsg]);
     setInput("");
@@ -70,9 +108,14 @@ export default function AiShell() {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
         method: "POST",
-        headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "content-type": "application/json",
+          apikey: ANON,
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           context: ctx,
           messages: [...messages, userMsg].map((m) => ({
@@ -82,7 +125,6 @@ export default function AiShell() {
         }),
       });
       if (!res.ok || !res.body) {
-        const err = await res.text().catch(() => "");
         setMessages((m) => [...m, {
           id: crypto.randomUUID(), role: "assistant",
           text: res.status === 429
@@ -124,49 +166,63 @@ export default function AiShell() {
       setBusy(false);
       setTimeout(() => inputRef.current?.focus(), 30);
     }
-  }, [busy, ctx, messages]);
+  }, [busy, ctx, messages, navigate]);
 
-  // ===== Voz: mesma intenção, mesmo fluxo. =====
+  // ===== Microfone (push-to-talk) =====
+  const stopTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessages((m) => [...m, {
+        id: crypto.randomUUID(), role: "assistant",
+        text: "Seu navegador não suporta gravação de áudio.",
+      }]);
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
-                 : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4"
-                 : "";
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
+                : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+                : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4"
+                : "";
       const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       chunksRef.current = [];
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = async () => {
         setRecording(false);
-        const tracks = streamRef.current?.getTracks() ?? [];
-        tracks.forEach((t) => t.stop());
-        streamRef.current = null;
+        stopTracks();
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
-        if (blob.size < 1500) return; // microfone vazio
+        if (blob.size < 1200) return;
         setTranscribing(true);
         try {
           const { data: session } = await supabase.auth.getSession();
           const token = session.session?.access_token;
           const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+          const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
           const form = new FormData();
           const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("mpeg") ? "mp3" : "webm";
           form.append("file", blob, `recording.${ext}`);
           form.append("language", "pt");
           const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-transcribe`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, apikey: ANON },
             body: form,
           });
           const data = await res.json().catch(() => ({}));
           const text: string = (data?.text ?? "").trim();
           if (res.ok && text) {
             await send(text);
-          } else if (!res.ok) {
+          } else {
             setMessages((m) => [...m, {
               id: crypto.randomUUID(), role: "assistant",
-              text: "Não consegui entender o áudio. Pode repetir?",
+              text: res.status === 401
+                ? "Sessão expirou. Faça login novamente."
+                : "Não consegui entender o áudio. Pode repetir?",
             }]);
           }
         } finally {
@@ -177,9 +233,10 @@ export default function AiShell() {
       recorderRef.current = rec;
       setRecording(true);
     } catch {
+      stopTracks();
       setMessages((m) => [...m, {
         id: crypto.randomUUID(), role: "assistant",
-        text: "Preciso de permissão para usar o microfone.",
+        text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
   }, [recording, transcribing, busy, send]);
@@ -187,6 +244,9 @@ export default function AiShell() {
   const stopRecording = useCallback(() => {
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
+    } else {
+      stopTracks();
+      setRecording(false);
     }
   }, []);
 
@@ -202,6 +262,8 @@ export default function AiShell() {
   const hidden = HIDE_ROUTES.some((p) => path === p || (p !== "/" && path.startsWith(p)));
   if (hidden || !user) return null;
 
+  const canSend = !busy && !recording && !transcribing && input.trim().length > 0;
+
   return (
     <>
       <button
@@ -209,7 +271,7 @@ export default function AiShell() {
         aria-label="Assistente do SISLAC"
         title="Assistente • Ctrl+J"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:opacity-90 transition"
+        className="fixed bottom-5 right-5 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
       >
         <Sparkles className="h-5 w-5" />
       </button>
@@ -217,95 +279,129 @@ export default function AiShell() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[420px] p-0 flex flex-col gap-0"
+          className="w-full sm:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
           data-ai-shell="panel"
         >
-          <header className="h-12 px-4 flex items-center justify-between border-b shrink-0">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Assistente</span>
+          {/* Header minimalista — botão fechar nativo do Sheet */}
+          <header className="h-14 px-5 flex items-center justify-between border-b shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-sm font-semibold">Assistente</div>
+                <div className="text-[10px] text-muted-foreground">SISLAC Intelligence</div>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="pr-8">
               {messages.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={newConversation} className="h-8 text-xs">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={newConversation}
+                  className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
                   Nova conversa
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Fechar">
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-auto">
+          {/* Stream de mensagens */}
+          <div ref={scrollRef} className="flex-1 overflow-auto scroll-smooth">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center px-6 text-center">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Sparkles className="h-6 w-6 text-primary" />
+              <div className="h-full flex flex-col items-center justify-center px-8 text-center">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center mb-5">
+                  <Sparkles className="h-7 w-7 text-primary" />
                 </div>
-                <h2 className="text-base font-medium mb-1">Em que posso ajudar hoje?</h2>
-                <p className="text-xs text-muted-foreground max-w-[280px]">
-                  Descreva o que você precisa. Posso buscar pacientes, abrir resultados, gerar relatórios e muito mais.
+                <h2 className="text-lg font-semibold mb-1.5 tracking-tight">Em que posso ajudar?</h2>
+                <p className="text-sm text-muted-foreground max-w-[300px] leading-relaxed">
+                  Pergunte, peça relatórios, abra páginas por voz ou converse normalmente.
                 </p>
                 {suggestions.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-1.5 justify-center">
-                    {suggestions.map((s) => (
+                  <div className="mt-7 flex flex-wrap gap-2 justify-center max-w-[360px]">
+                    {suggestions.slice(0, 4).map((s) => (
                       <button
                         key={s.id}
                         onClick={() => send(s.prompt)}
-                        className="text-xs rounded-full border px-3 py-1 hover:bg-accent transition"
+                        className="text-xs rounded-full border bg-card px-3.5 py-1.5 hover:bg-accent hover:border-primary/40 transition-all"
                       >
                         {s.label}
                       </button>
                     ))}
                   </div>
                 )}
+                <div className="mt-6 text-[11px] text-muted-foreground/70">
+                  Dica: diga <span className="font-medium text-foreground/70">"abra atendimentos"</span> usando o microfone.
+                </div>
               </div>
             ) : (
-              <div className="p-4 space-y-3">
+              <div className="px-5 py-6 space-y-5">
                 {messages.map((m) => (
                   <div
                     key={m.id}
-                    className={`text-sm whitespace-pre-wrap leading-relaxed ${
-                      m.role === "user"
-                        ? "ml-6 rounded-lg bg-primary text-primary-foreground px-3 py-2"
-                        : "mr-6 text-foreground"
-                    }`}
+                    className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
-                    {m.text || (busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "")}
+                    <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
+                      m.role === "user"
+                        ? "bg-muted text-muted-foreground"
+                        : "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground"
+                    }`}>
+                      {m.role === "user"
+                        ? <UserIcon className="h-3.5 w-3.5" />
+                        : <Sparkles className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className={`max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${
+                      m.role === "user"
+                        ? "rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-3.5 py-2.5"
+                        : "text-foreground pt-1"
+                    }`}>
+                      {m.text || (busy ? <span className="inline-flex gap-1"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} /><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "120ms" }} /><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "240ms" }} /></span> : "")}
+                    </div>
                   </div>
                 ))}
                 {busy && messages[messages.length - 1]?.role === "user" && (
-                  <div className="mr-6 text-xs text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" /> pensando...
+                  <div className="flex gap-3">
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                      <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
+                    </div>
+                    <div className="pt-1.5 text-xs text-muted-foreground">pensando…</div>
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          <footer className="border-t p-3 shrink-0">
+          {/* Composer */}
+          <footer className="border-t bg-background/95 backdrop-blur p-3 shrink-0">
             {(recording || transcribing) && (
-              <div className="mb-2 text-xs text-muted-foreground flex items-center gap-2">
+              <div className="mb-2 px-2 text-xs text-muted-foreground flex items-center gap-2">
                 {recording ? (
-                  <><span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" /> Gravando... toque no microfone para enviar.</>
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                    </span>
+                    Ouvindo… toque no microfone para enviar.
+                  </>
                 ) : (
-                  <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo áudio...</>
+                  <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo…</>
                 )}
               </div>
             )}
             <form
               onSubmit={(e) => { e.preventDefault(); send(input); }}
-              className="flex items-end gap-2"
+              className="flex items-end gap-2 rounded-2xl border bg-card focus-within:border-primary/50 focus-within:shadow-sm transition-all px-2 py-1.5"
             >
               <Textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Em que posso ajudar?"
+                placeholder={recording ? "Estou ouvindo…" : "Escreva uma mensagem ou use o microfone"}
                 rows={1}
                 disabled={recording || transcribing}
-                className="min-h-[40px] max-h-[140px] resize-none text-sm"
+                className="min-h-[36px] max-h-[140px] resize-none text-sm border-0 focus-visible:ring-0 shadow-none bg-transparent px-2 py-2"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -313,21 +409,33 @@ export default function AiShell() {
                   }
                 }}
               />
-              <Button
-                type="button"
-                size="icon"
-                variant={recording ? "destructive" : "ghost"}
-                onClick={toggleMic}
-                disabled={busy || transcribing}
-                aria-label={recording ? "Parar gravação" : "Falar"}
-                title={recording ? "Parar gravação" : "Falar"}
-              >
-                {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              <Button type="submit" size="icon" disabled={busy || !input.trim() || recording || transcribing}>
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
+              <div className="flex items-center gap-1 pb-1">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={toggleMic}
+                  disabled={busy || transcribing}
+                  aria-label={recording ? "Parar gravação" : "Falar"}
+                  title={recording ? "Parar gravação" : "Falar"}
+                  className={`h-8 w-8 rounded-full ${recording ? "bg-red-500/10 text-red-600 hover:bg-red-500/15" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {recording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!canSend}
+                  aria-label="Enviar"
+                  className="h-8 w-8 rounded-full disabled:opacity-40"
+                >
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+                </Button>
+              </div>
             </form>
+            <div className="mt-2 text-[10px] text-center text-muted-foreground/70">
+              O Assistente pode cometer erros. Verifique informações importantes.
+            </div>
           </footer>
         </SheetContent>
       </Sheet>
