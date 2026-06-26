@@ -56,15 +56,23 @@ export function useAIContext(): AIContext {
   }, [location.pathname, params]);
 }
 
-/** Sugestões contextuais baseadas no foco atual. */
-export function getContextualSuggestions(ctx: AIContext): Array<{ id: string; label: string; prompt: string }> {
+/** Sugestões contextuais. Deriva exclusivamente do Manifest (SSOT) + foco atual. */
+export function getContextualSuggestions(
+  ctx: AIContext,
+  capabilities: Array<{ id: string; title: string; promptTemplate?: string; supportsSuggestions: boolean }> = [],
+): Array<{ id: string; label: string; prompt: string }> {
   const out: Array<{ id: string; label: string; prompt: string }> = [];
+  // Foco em paciente → sugestões de Capabilities da categoria paciente.
   if (ctx.focus.pacienteId) {
-    out.push({
-      id: "buscar-historico",
-      label: "Pesquisar histórico deste paciente",
-      prompt: `Pesquisar histórico do paciente ${ctx.focus.pacienteId}`,
-    });
+    for (const cap of capabilities) {
+      if (!cap.supportsSuggestions) continue;
+      if (!cap.id.startsWith("paciente.")) continue;
+      out.push({
+        id: `ctx-${cap.id}`,
+        label: cap.title,
+        prompt: `${cap.promptTemplate ?? cap.title} ${ctx.focus.pacienteId}`.trim(),
+      });
+    }
   }
   return out.slice(0, 3);
 }

@@ -115,10 +115,9 @@ export default function AiShell() {
     }
   }, [busy, ctx, messages]);
 
-  const onQuickAction = (cap: typeof CLIENT_CAPABILITIES[number]) => {
+  const onQuickAction = (cap: ManifestItem) => {
     if (!cap.enabled) return;
-    const prompt = cap.promptTemplate ?? cap.label;
-    setInput(prompt);
+    setInput(cap.promptTemplate ?? cap.title);
   };
 
   const path = ctx.route.path;
@@ -172,7 +171,7 @@ export default function AiShell() {
                             disabled={!cap.enabled}
                             className="text-left rounded-lg border bg-card p-3 hover:bg-accent transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <div className="text-sm font-medium">{cap.label}</div>
+                            <div className="text-sm font-medium">{cap.title}</div>
                             <div className="text-xs text-muted-foreground mt-0.5">{cap.description}</div>
                           </button>
                         ))}
