@@ -786,23 +786,16 @@ export default function SuperAdminConfiguracoes() {
                       placeholder="7iqXtOF3wl3pomwXFY7G"
                     />
                   </div>
-                  <div>
-                    <FieldLabel>Modelo</FieldLabel>
-                    <Input
-                      value={eleven.modelId}
-                      onChange={(e) => updEleven("modelId", e.target.value)}
-                      placeholder="eleven_multilingual_v2"
-                    />
-                  </div>
                 </div>
 
                 <InfoNote>
                   O <strong>Voice ID</strong> personalizado já vem pré-configurado
                   (<code className="font-mono text-[11px]">7iqXtOF3wl3pomwXFY7G</code>).
                   A <strong>API Key</strong> é opcional — se deixada em branco, o sistema
-                  usa a chave global gerenciada pela plataforma. Modelo recomendado:
-                  <code className="font-mono text-[11px]"> eleven_multilingual_v2</code>.
+                  usa a chave global gerenciada pela plataforma. Modelo travado em
+                  <code className="font-mono text-[11px]"> eleven_v3</code> (não editável).
                 </InfoNote>
+
 
                 <ActionsBar
                   onTest={undefined}
