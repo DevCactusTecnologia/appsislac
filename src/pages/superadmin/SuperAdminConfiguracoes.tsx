@@ -190,6 +190,7 @@ export default function SuperAdminConfiguracoes() {
       setAi(aiV); setAiOriginal(aiV);
       setS3(s3V); setS3Original(s3V);
       setWpp(wppV); setWppOriginal(wppV);
+      setEleven(elevenV); setElevenOriginal(elevenV);
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -202,11 +203,13 @@ export default function SuperAdminConfiguracoes() {
     ai.openaiOrgId !== aiOriginal.openaiOrgId;
   const isS3Dirty = JSON.stringify(s3) !== JSON.stringify(s3Original);
   const isWppDirty = JSON.stringify(wpp) !== JSON.stringify(wppOriginal);
+  const isElevenDirty = JSON.stringify(eleven) !== JSON.stringify(elevenOriginal);
 
   const updSmtp = <K extends keyof SmtpConfig>(k: K, v: SmtpConfig[K]) => setSmtp((p) => ({ ...p, [k]: v }));
   const updAi = <K extends keyof AiConfig>(k: K, v: AiConfig[K]) => setAi((p) => ({ ...p, [k]: v }));
   const updS3 = <K extends keyof S3Config>(k: K, v: S3Config[K]) => setS3((p) => ({ ...p, [k]: v }));
   const updWpp = <K extends keyof WhatsappConfig>(k: K, v: WhatsappConfig[K]) => setWpp((p) => ({ ...p, [k]: v }));
+  const updEleven = <K extends keyof ElevenLabsConfig>(k: K, v: ElevenLabsConfig[K]) => setEleven((p) => ({ ...p, [k]: v }));
 
   const onSecurityChange = (sec: SmtpSecurity) => {
     const opt = SECURITY_OPTIONS.find((o) => o.value === sec)!;
