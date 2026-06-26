@@ -3,7 +3,7 @@
 // Recebe { text, voiceId? }, devolve { audio: base64Mp3, mime }.
 // Lê voiceId/apiKey do saas_settings (key: elevenlabs_config) quando não informado.
 import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 // Voz padrão (PT-BR) — voz personalizada do laboratório.
 const DEFAULT_VOICE = "7iqXtOF3wl3pomwXFY7G";
