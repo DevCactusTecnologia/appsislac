@@ -1,13 +1,14 @@
 // ai-speak — texto → áudio (TTS) via ElevenLabs.
-// Voz natural e humanizada para as respostas do Assistente.
+// Modelo TRAVADO em `eleven_v3` (decisão de produto — não trocar).
 // Recebe { text, voiceId? }, devolve { audio: base64Mp3, mime }.
-// Lê voiceId/apiKey/modelId do saas_settings (key: elevenlabs_config) quando não informado.
+// Lê voiceId/apiKey do saas_settings (key: elevenlabs_config) quando não informado.
 import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-// Voz padrão multilíngue (PT-BR): voz personalizada do laboratório.
+// Voz padrão (PT-BR) — voz personalizada do laboratório.
 const DEFAULT_VOICE = "7iqXtOF3wl3pomwXFY7G";
-const DEFAULT_MODEL = "eleven_multilingual_v2";
+// Modelo fixo, não configurável.
+const FIXED_MODEL = "eleven_v3";
 const MAX_CHARS = 1200;
 
 Deno.serve(async (req) => {
@@ -22,8 +23,8 @@ Deno.serve(async (req) => {
   const raw = (body.text ?? "").trim();
   if (!raw) return jsonResponse({ error: "empty_text" }, 400);
 
-  // Busca config global do ElevenLabs (voiceId/modelId/apiKey opcionais).
-  let cfg: { apiKey?: string; voiceId?: string; modelId?: string } = {};
+  // Busca config global do ElevenLabs (voiceId/apiKey opcionais; modelId IGNORADO).
+  let cfg: { apiKey?: string; voiceId?: string } = {};
   try {
     const { data } = await auth.admin
       .from("saas_settings")
@@ -38,7 +39,6 @@ Deno.serve(async (req) => {
 
   const text = raw.length > MAX_CHARS ? raw.slice(0, MAX_CHARS) + "…" : raw;
   const voiceId = (body.voiceId ?? cfg.voiceId ?? DEFAULT_VOICE).trim() || DEFAULT_VOICE;
-  const modelId = (cfg.modelId ?? DEFAULT_MODEL).trim() || DEFAULT_MODEL;
 
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
@@ -50,11 +50,13 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         text,
-        model_id: modelId,
+        // Modelo travado — eleven_v3 (mais expressivo e natural em PT-BR).
+        model_id: FIXED_MODEL,
+        // Configurações otimizadas para soar humano e conversacional.
         voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.8,
-          style: 0.25,
+          stability: 0.35,
+          similarity_boost: 0.85,
+          style: 0.55,
           use_speaker_boost: true,
           speed: 1.0,
         },
@@ -70,3 +72,4 @@ Deno.serve(async (req) => {
   const buf = new Uint8Array(await res.arrayBuffer());
   return jsonResponse({ audio: base64Encode(buf), mime: "audio/mpeg" });
 });
+
