@@ -165,6 +165,9 @@ const TOOLS: ClientTool[] = [
       P("forma", "string", "Forma de pagamento: DINHEIRO, PIX, DEBITO, CREDITO", false),
     ],
   },
+];
+
+
 
 
 async function patchAgent() {
