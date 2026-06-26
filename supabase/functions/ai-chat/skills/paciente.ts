@@ -39,7 +39,7 @@ export function buildPacienteTools(userClient: SupabaseClient) {
     paciente_create: tool({
       description:
         "Cria um novo paciente no tenant atual. Exige confirmação humana antes da execução.",
-      parameters: z.object({
+      inputSchema: z.object({
         nome: z.string().min(2).max(200),
         cpf: z.string().optional(),
         celular: z.string().optional(),
