@@ -60,6 +60,13 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Reconhecimento contínuo (Web Speech API) — hands-free.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const speechRecRef = useRef<any>(null);
+  const continuousRef = useRef(false);
+  const sendRef = useRef<(t: string) => Promise<void> | void>(() => {});
+  const [interimText, setInterimText] = useState("");
+
 
   const suggestions = useMemo(
     () => getContextualSuggestions(ctx, discoverCapabilities(manifest, { suggestionsOnly: true })),
@@ -174,7 +181,79 @@ export default function AiShell() {
     }
   }, [busy, ctx, messages, navigate]);
 
-  // ===== Microfone (push-to-talk) =====
+
+
+
+  // Mantém a referência da última versão de `send` para uso em callbacks contínuos.
+  useEffect(() => { sendRef.current = send; }, [send]);
+
+  // Detecção da Web Speech API (Chrome/Edge/Safari iOS 14.5+).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SpeechRecognitionCtor: any =
+    typeof window !== "undefined"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+      : null;
+
+  const startContinuousSpeech = useCallback(() => {
+    if (!SpeechRecognitionCtor) return false;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rec: any = new SpeechRecognitionCtor();
+      rec.lang = "pt-BR";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (event: any) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript: string = result[0]?.transcript ?? "";
+          if (result.isFinal) {
+            const clean = transcript.trim();
+            if (clean) {
+              setInterimText("");
+              sendRef.current?.(clean);
+            }
+          } else {
+            interim += transcript;
+          }
+        }
+        setInterimText(interim.trim());
+      };
+
+      rec.onerror = () => { /* ignora ruídos; continua até stop manual */ };
+      rec.onend = () => {
+        // Se ainda estamos em modo contínuo, reinicia automaticamente.
+        if (continuousRef.current) {
+          try { rec.start(); } catch { /* já iniciado */ }
+        } else {
+          setRecording(false);
+          setInterimText("");
+        }
+      };
+
+      continuousRef.current = true;
+      speechRecRef.current = rec;
+      rec.start();
+      setRecording(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [SpeechRecognitionCtor]);
+
+  const stopContinuousSpeech = useCallback(() => {
+    continuousRef.current = false;
+    try { speechRecRef.current?.stop(); } catch { /* noop */ }
+    speechRecRef.current = null;
+    setRecording(false);
+    setInterimText("");
+  }, []);
+
+  // ===== Microfone (fallback push-to-talk via MediaRecorder) =====
   const stopTracks = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -182,6 +261,9 @@ export default function AiShell() {
 
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
+    // Caminho preferido: reconhecimento contínuo no próprio navegador.
+    if (startContinuousSpeech()) return;
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
         id: crypto.randomUUID(), role: "assistant",
@@ -245,18 +327,21 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send]);
+  }, [recording, transcribing, busy, send, startContinuousSpeech]);
 
   const stopRecording = useCallback(() => {
+    if (speechRecRef.current) { stopContinuousSpeech(); return; }
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
     } else {
       stopTracks();
       setRecording(false);
     }
-  }, []);
+  }, [stopContinuousSpeech]);
 
   const toggleMic = () => { recording ? stopRecording() : startRecording(); };
+
+
 
   const newConversation = () => {
     setMessages([]);
@@ -383,20 +468,25 @@ export default function AiShell() {
           {/* Composer */}
           <footer className="border-t bg-background/95 backdrop-blur p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] shrink-0">
             {(recording || transcribing) && (
-              <div className="mb-2 px-2 text-xs text-muted-foreground flex items-center gap-2">
+              <div className="mb-2 px-2 text-xs text-muted-foreground flex items-start gap-2">
                 {recording ? (
                   <>
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-2 w-2 mt-1 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
                     </span>
-                    Ouvindo… toque no microfone para enviar.
+                    <span className="flex-1 min-w-0">
+                      {interimText
+                        ? <span className="text-foreground/80 italic">"{interimText}"</span>
+                        : <>Ouvindo continuamente… fale à vontade. Toque no microfone para parar.</>}
+                    </span>
                   </>
                 ) : (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo…</>
                 )}
               </div>
             )}
+
             <form
               onSubmit={(e) => { e.preventDefault(); send(input); }}
               className="flex items-end gap-2 rounded-2xl border bg-card focus-within:border-primary/50 focus-within:shadow-sm transition-all px-2 py-1.5"
