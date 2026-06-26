@@ -350,91 +350,98 @@ function AppRoutes() {
     <ChunkErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <AppLayout>
-          <Routes>
-            <Route path="/dashboard" element={<ProtectedRoute permissao="visualizar_dashboard"><Dashboard /></ProtectedRoute>} />
-            <Route path="/atendimentos" element={<ProtectedRoute permissao="visualizar_atendimentos"><Index /></ProtectedRoute>} />
-            
-            {/* Domain Driven Routes — Fase A (canônicas) */}
-            <Route path="/atendimentos/novo" element={<ProtectedRoute permissao="criar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
-            <Route path="/atendimentos/:protocolo/editar" element={<ProtectedRoute permissao="editar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
-            {/* Redirects legados (Fase A — compatibilidade total) */}
-            <Route path="/novo-atendimento" element={<Navigate to="/atendimentos/novo" replace />} />
-            <Route path="/editar-atendimento/:protocolo" element={<LegacyEditarAtendimentoRedirect />} />
-            <Route path="/registrar-coleta" element={<ProtectedRoute permissao="registrar_coleta"><RegistrarColeta /></ProtectedRoute>} />
-            <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><AnalisarAmostra /></ProtectedRoute>} />
-            <Route path="/resultados" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><Resultados /></ProtectedRoute>} />
-            <Route path="/resultado/:id" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><ResultadoDetalhe /></ProtectedRoute>} />
-            {/* Página dedicada de impressão — abre em nova aba via ResultadoDetalhe.
-                O HTML do laudo chega via sessionStorage (PrintContext SSOT). */}
-            <Route path="/resultado/:id/print" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><LaudoPrintPage /></ProtectedRoute>} />
+          {/* Suspense interno: route lazy não derruba o AiShell durante transições. */}
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/dashboard" element={<ProtectedRoute permissao="visualizar_dashboard"><Dashboard /></ProtectedRoute>} />
+              <Route path="/atendimentos" element={<ProtectedRoute permissao="visualizar_atendimentos"><Index /></ProtectedRoute>} />
+              
+              {/* Domain Driven Routes — Fase A (canônicas) */}
+              <Route path="/atendimentos/novo" element={<ProtectedRoute permissao="criar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
+              <Route path="/atendimentos/:protocolo/editar" element={<ProtectedRoute permissao="editar_atendimento"><NovoAtendimento /></ProtectedRoute>} />
+              {/* Redirects legados (Fase A — compatibilidade total) */}
+              <Route path="/novo-atendimento" element={<Navigate to="/atendimentos/novo" replace />} />
+              <Route path="/editar-atendimento/:protocolo" element={<LegacyEditarAtendimentoRedirect />} />
+              <Route path="/registrar-coleta" element={<ProtectedRoute permissao="registrar_coleta"><RegistrarColeta /></ProtectedRoute>} />
+              <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><AnalisarAmostra /></ProtectedRoute>} />
+              <Route path="/resultados" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><Resultados /></ProtectedRoute>} />
+              <Route path="/resultado/:id" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><ResultadoDetalhe /></ProtectedRoute>} />
+              {/* Página dedicada de impressão — abre em nova aba via ResultadoDetalhe.
+                  O HTML do laudo chega via sessionStorage (PrintContext SSOT). */}
+              <Route path="/resultado/:id/print" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><LaudoPrintPage /></ProtectedRoute>} />
 
-            {/* Domain Driven Routes — Fase A (canônicas) */}
-            <Route path="/resultados/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ConsultarResultados /></ProtectedRoute>} />
-            <Route path="/resultados/:id/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ResultadoDetalhe /></ProtectedRoute>} />
-            {/* Redirects legados (Fase A — compatibilidade total) */}
-            <Route path="/consultar-resultados" element={<Navigate to="/resultados/consulta" replace />} />
-            <Route path="/consultar-resultado/:id" element={<LegacyConsultarResultadoRedirect />} />
-            <Route path="/lab-apoio" element={<ProtectedRoute permissao="lab_apoio_acesso"><LabApoio /></ProtectedRoute>} />
-            <Route path="/pacientes" element={<ProtectedRoute permissao="visualizar_pacientes"><Pacientes /></ProtectedRoute>} />
-            <Route path="/especialistas" element={<ProtectedRoute permissao="visualizar_pacientes"><Especialistas /></ProtectedRoute>} />
-            <Route path="/auditoria" element={<ProtectedRoute permissao="auditoria"><Auditoria /></ProtectedRoute>} />
-            <Route path="/orcamentos" element={<ProtectedRoute permissao="visualizar_orcamentos"><Orcamentos /></ProtectedRoute>} />
-            <Route path="/relatorios/impressao" element={<ProtectedRoute permissao="impressao_geral"><ImpressaoGeral /></ProtectedRoute>} />
-            <Route path="/relatorios/producao" element={<ProtectedRoute permissao="relatorios_producao"><Producao /></ProtectedRoute>} />
-            <Route path="/relatorios/ocorrencias" element={<ProtectedRoute permissao="relatorios_ocorrencias"><RelatorioOcorrencias /></ProtectedRoute>} />
-            <Route path="/relatorios/recoletas" element={<ProtectedRoute permissao="relatorios_recoletas"><RelatorioRecoletas /></ProtectedRoute>} />
-            <Route path="/mapa" element={<ProtectedRoute permissao="mapa_trabalho_acesso"><Mapa /></ProtectedRoute>} />
-            <Route path="/financeiro" element={<ProtectedRoute permissao="visualizar_financeiro"><Financeiro /></ProtectedRoute>} />
-            <Route path="/soroteca" element={<ProtectedRoute permissao="registrar_coleta"><Soroteca /></ProtectedRoute>} />
-            <Route path="/soroteca/estrutura" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEstrutura /></ProtectedRoute>} />
-            <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
-            <Route path="/soroteca/materiais" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaMateriais /></ProtectedRoute>} />
-            
-            <Route path="/soroteca/expurgo" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaExpurgo /></ProtectedRoute>} />
+              {/* Domain Driven Routes — Fase A (canônicas) */}
+              <Route path="/resultados/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ConsultarResultados /></ProtectedRoute>} />
+              <Route path="/resultados/:id/consulta" element={<ProtectedRoute permissao="consultar_resultados"><ResultadoDetalhe /></ProtectedRoute>} />
+              {/* Redirects legados (Fase A — compatibilidade total) */}
+              <Route path="/consultar-resultados" element={<Navigate to="/resultados/consulta" replace />} />
+              <Route path="/consultar-resultado/:id" element={<LegacyConsultarResultadoRedirect />} />
+              <Route path="/lab-apoio" element={<ProtectedRoute permissao="lab_apoio_acesso"><LabApoio /></ProtectedRoute>} />
+              <Route path="/pacientes" element={<ProtectedRoute permissao="visualizar_pacientes"><Pacientes /></ProtectedRoute>} />
+              <Route path="/especialistas" element={<ProtectedRoute permissao="visualizar_pacientes"><Especialistas /></ProtectedRoute>} />
+              <Route path="/auditoria" element={<ProtectedRoute permissao="auditoria"><Auditoria /></ProtectedRoute>} />
+              <Route path="/orcamentos" element={<ProtectedRoute permissao="visualizar_orcamentos"><Orcamentos /></ProtectedRoute>} />
+              <Route path="/relatorios/impressao" element={<ProtectedRoute permissao="impressao_geral"><ImpressaoGeral /></ProtectedRoute>} />
+              <Route path="/relatorios/producao" element={<ProtectedRoute permissao="relatorios_producao"><Producao /></ProtectedRoute>} />
+              <Route path="/relatorios/ocorrencias" element={<ProtectedRoute permissao="relatorios_ocorrencias"><RelatorioOcorrencias /></ProtectedRoute>} />
+              <Route path="/relatorios/recoletas" element={<ProtectedRoute permissao="relatorios_recoletas"><RelatorioRecoletas /></ProtectedRoute>} />
+              <Route path="/mapa" element={<ProtectedRoute permissao="mapa_trabalho_acesso"><Mapa /></ProtectedRoute>} />
+              <Route path="/financeiro" element={<ProtectedRoute permissao="visualizar_financeiro"><Financeiro /></ProtectedRoute>} />
+              <Route path="/soroteca" element={<ProtectedRoute permissao="registrar_coleta"><Soroteca /></ProtectedRoute>} />
+              <Route path="/soroteca/estrutura" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaEstrutura /></ProtectedRoute>} />
+              <Route path="/soroteca/triagem" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaTriagem /></ProtectedRoute>} />
+              <Route path="/soroteca/materiais" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaMateriais /></ProtectedRoute>} />
+              
+              <Route path="/soroteca/expurgo" element={<ProtectedRoute permissao="registrar_coleta"><SorotecaExpurgo /></ProtectedRoute>} />
 
 
-            <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
-            <Route path="/configuracoes" element={<ProtectedRoute permissao="configuracoes_sistema"><Configuracoes /></ProtectedRoute>} />
-            {/* Domain Driven Routes — Fase B (entidades de domínio promovidas) */}
-            <Route path="/exames" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id/modelos" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id/modelos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id/modelos/:modelId" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/exames/:id/modelos/:modelId/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
-            <Route path="/convenios" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
-            <Route path="/convenios/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
-            <Route path="/convenios/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
-            <Route path="/convenios/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
-            <Route path="/unidades" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
-            <Route path="/unidades/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
-            <Route path="/unidades/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
-            <Route path="/unidades/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
-            <Route path="/documentos" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
-            <Route path="/documentos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
-            <Route path="/documentos/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
-            <Route path="/documentos/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
-            <Route path="/tabelas-preco" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
-            <Route path="/tabelas-preco/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
-            <Route path="/tabelas-preco/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
-            <Route path="/pedidos-site" element={<ProtectedRoute permissao="solicitacoes_site_acesso"><SolicitacoesSite /></ProtectedRoute>} />
-            {/* Backwards-compat: rota antiga `/solicitacoes-site` redireciona */}
-            <Route path="/solicitacoes-site" element={<Navigate to="/pedidos-site" replace />} />
-            <Route path="/equipe" element={<ProtectedRoute permissao="gestao_usuarios"><Usuarios /></ProtectedRoute>} />
-            <Route path="/usuarios" element={<Navigate to="/equipe" replace />} />
-            <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-            <Route path="/admin/ckeditor-test" element={<ProtectedRoute><CKEditorTest /></ProtectedRoute>} />
-            <Route path="/admin/auditoria-vr" element={<ProtectedRoute><AuditoriaVR /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <AiShell />
+              <Route path="/estoque" element={<ProtectedRoute permissao="configuracoes_sistema"><Estoque /></ProtectedRoute>} />
+              <Route path="/configuracoes" element={<ProtectedRoute permissao="configuracoes_sistema"><Configuracoes /></ProtectedRoute>} />
+              {/* Domain Driven Routes — Fase B (entidades de domínio promovidas) */}
+              <Route path="/exames" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id/modelos" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id/modelos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id/modelos/:modelId" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/exames/:id/modelos/:modelId/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ExamesPage /></ProtectedRoute>} />
+              <Route path="/convenios" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+              <Route path="/convenios/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+              <Route path="/convenios/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+              <Route path="/convenios/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><ConveniosPage /></ProtectedRoute>} />
+              <Route path="/unidades" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+              <Route path="/unidades/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+              <Route path="/unidades/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+              <Route path="/unidades/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><UnidadesPage /></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+              <Route path="/documentos/novo" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+              <Route path="/documentos/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+              <Route path="/documentos/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><DocumentosPage /></ProtectedRoute>} />
+              <Route path="/tabelas-preco" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
+              <Route path="/tabelas-preco/:id" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
+              <Route path="/tabelas-preco/:id/editar" element={<ProtectedRoute permissao="configuracoes_sistema"><TabelasPrecoPage /></ProtectedRoute>} />
+              <Route path="/pedidos-site" element={<ProtectedRoute permissao="solicitacoes_site_acesso"><SolicitacoesSite /></ProtectedRoute>} />
+              {/* Backwards-compat: rota antiga `/solicitacoes-site` redireciona */}
+              <Route path="/solicitacoes-site" element={<Navigate to="/pedidos-site" replace />} />
+              <Route path="/equipe" element={<ProtectedRoute permissao="gestao_usuarios"><Usuarios /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<Navigate to="/equipe" replace />} />
+              <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+              <Route path="/admin/ckeditor-test" element={<ProtectedRoute><CKEditorTest /></ProtectedRoute>} />
+              <Route path="/admin/auditoria-vr" element={<ProtectedRoute><AuditoriaVR /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+          {/* AiShell isolado em Suspense próprio — permanece visível durante transições de rota. */}
+          <Suspense fallback={null}>
+            <AiShell />
+          </Suspense>
         </AppLayout>
       </Suspense>
     </ChunkErrorBoundary>
   );
 }
+
 
 const App = () => {
   // Limpa o cache do React Query (e do tenant) sempre que a identidade
