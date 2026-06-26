@@ -54,9 +54,10 @@ async function fetchManifest(): Promise<Manifest> {
   const token = session.session?.access_token;
   if (!token) throw new Error("no_session");
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+  const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
   const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-manifest`, {
     method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, apikey: ANON_KEY },
   });
   if (!res.ok) throw new Error(`manifest_${res.status}`);
   return (await res.json()) as Manifest;
