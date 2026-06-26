@@ -5,8 +5,10 @@ import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAtendimentoByProtocolo, updateAtendimento } from "@/data/atendimentoStore";
 
 const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
+
 
 /**
  * Mapa de rotas amigáveis -> caminho real.
@@ -148,7 +150,75 @@ function AssistenteSISLACInner() {
         if (!api) return "Abra um resultado primeiro";
         return api.imprimir().msg;
       },
+
+      // ============ FASE 2 — ATENDIMENTO ============
+      /** Abre o wizard de novo atendimento; opcionalmente pré-seleciona paciente por nome/CPF. */
+      criar_atendimento: async ({ paciente_termo }: { paciente_termo?: string } = {}) => {
+        let qs = "";
+        if (paciente_termo) {
+          const { data } = await supabase
+            .from("pacientes")
+            .select("id, nome")
+            .or(`nome.ilike.%${paciente_termo}%,cpf.ilike.%${paciente_termo}%`)
+            .limit(1)
+            .maybeSingle();
+          if (data?.id) qs = `?paciente=${data.id}`;
+        }
+        navigateRef.current(`/atendimentos/novo${qs}`);
+        return paciente_termo ? `Novo atendimento para ${paciente_termo}` : "Novo atendimento aberto";
+      },
+
+      /** Adiciona um exame a um atendimento existente (busca exato/parcial no catálogo). */
+      adicionar_exame: async ({ protocolo, exame }: { protocolo: string; exame: string }) => {
+        if (!protocolo || !exame) return "Informe protocolo e exame";
+        const at = await fetchAtendimentoByProtocolo(protocolo);
+        if (!at) return `Atendimento ${protocolo} não encontrado`;
+        if (at.statusAtendimento?.label === "Cancelado") return "Atendimento cancelado";
+        const { data: cat } = await supabase
+          .from("exames_catalogo")
+          .select("nome")
+          .ilike("nome", `%${exame}%`)
+          .limit(1)
+          .maybeSingle();
+        const nome = cat?.nome ?? exame.toUpperCase();
+        if (at.exames?.includes(nome)) return `${nome} já está no atendimento`;
+        await updateAtendimento(protocolo, { exames: [...(at.exames ?? []), nome] });
+        return `Exame ${nome} adicionado`;
+      },
+
+      /** Cancela atendimento — exige confirmação verbal explícita. */
+      cancelar_atendimento: async ({
+        protocolo, motivo, confirmado,
+      }: { protocolo: string; motivo?: string; confirmado?: boolean }) => {
+        if (!protocolo) return "Informe o protocolo";
+        if (!confirmado) return "Confirmação necessária — peça 'sim, cancelar' ao usuário";
+        const at = await fetchAtendimentoByProtocolo(protocolo);
+        if (!at) return `Atendimento ${protocolo} não encontrado`;
+        if (at.statusAtendimento?.label === "Cancelado") return "Já estava cancelado";
+        await updateAtendimento(protocolo, {
+          statusAtendimento: { label: "Cancelado", type: "danger" },
+          motivoCancelamento: motivo || "Cancelado via Assistente SISLAC",
+        });
+        return `Atendimento ${protocolo} cancelado`;
+      },
+
+      /** Registra pagamento adicional (acumula em pagamentosRealizados). */
+      registrar_pagamento: async ({
+        protocolo, valor, forma,
+      }: { protocolo: string; valor: number | string; forma?: string }) => {
+        if (!protocolo) return "Informe o protocolo";
+        const v = typeof valor === "string" ? parseFloat(String(valor).replace(",", ".")) : Number(valor);
+        if (!Number.isFinite(v) || v <= 0) return "Valor inválido";
+        const at = await fetchAtendimentoByProtocolo(protocolo);
+        if (!at) return `Atendimento ${protocolo} não encontrado`;
+        if (at.statusAtendimento?.label === "Cancelado") return "Atendimento cancelado";
+        const novo = { tipo: (forma || "DINHEIRO").toUpperCase(), valor: v, data: new Date().toISOString() };
+        const pagamentos = [...(at.pagamentosRealizados ?? []), novo];
+        await updateAtendimento(protocolo, { pagamentosRealizados: pagamentos });
+        return `Pagamento de R$ ${v.toFixed(2)} (${novo.tipo}) registrado`;
+      },
     },
+
 
     onConnect: () => toast.success("Assistente SISLAC conectado"),
     onDisconnect: () => toast.message("Assistente SISLAC desconectado"),
