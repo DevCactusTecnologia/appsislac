@@ -181,11 +181,8 @@ export default function AiShell() {
     }
   }, [busy, ctx, messages, navigate]);
 
-  // ===== Microfone (push-to-talk) =====
-  const stopTracks = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  };
+
+
 
   // Mantém a referência da última versão de `send` para uso em callbacks contínuos.
   useEffect(() => { sendRef.current = send; }, [send]);
