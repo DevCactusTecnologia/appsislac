@@ -156,6 +156,8 @@ export default function AiShell() {
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setBusy(true);
+    const abort = new AbortController();
+    chatAbortRef.current = abort;
     try {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
@@ -175,6 +177,7 @@ export default function AiShell() {
             parts: [{ type: "text", text: m.text }],
           })),
         }),
+        signal: abort.signal,
       });
       if (!res.ok || !res.body) {
         const errText = res.status === 429
@@ -215,15 +218,41 @@ export default function AiShell() {
         }
       }
       if (voiceModeRef.current && acc.trim()) speak(acc);
-    } catch {
-      const errText = "Tive um problema de conexão. Pode tentar de novo?";
-      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
-      if (voiceModeRef.current) speak(errText);
+    } catch (e) {
+      // Cancelamento pelo usuário — silencioso.
+      if ((e as { name?: string })?.name === "AbortError") {
+        // Marca a mensagem como interrompida.
+        setMessages((m) => {
+          const last = m[m.length - 1];
+          if (last?.role === "assistant") {
+            return m.map((x, i) => i === m.length - 1 ? { ...x, text: (x.text || "") + (x.text ? "\n\n" : "") + "_(resposta interrompida)_" } : x);
+          }
+          return m;
+        });
+      } else {
+        const errText = "Tive um problema de conexão. Pode tentar de novo?";
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+        if (voiceModeRef.current) speak(errText);
+      }
     } finally {
+      chatAbortRef.current = null;
       setBusy(false);
       setTimeout(() => inputRef.current?.focus(), 30);
     }
   }, [busy, ctx, messages, navigate, speak]);
+
+  // Cancela qualquer resposta em andamento (texto streamando do LLM).
+  const cancelChat = useCallback(() => {
+    try { chatAbortRef.current?.abort(); } catch { /* noop */ }
+    chatAbortRef.current = null;
+    // Para também o áudio que estiver tocando.
+    if (audioElRef.current) {
+      try { audioElRef.current.pause(); } catch { /* noop */ }
+      audioElRef.current = null;
+    }
+  }, []);
+
+
 
 
 
