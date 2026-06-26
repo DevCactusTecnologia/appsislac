@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   const allowed = await resolveAllowedCapabilities(admin, userId);
 
   // Tools (apenas as autorizadas)
-  const allTools = buildPacienteTools(userClient);
+  const allTools = { ...buildPacienteTools(userClient), ...buildAtendimentoTools(userClient) };
   const toolMap: Record<string, unknown> = {};
   for (const cap of allowed) {
     const key = cap.id.replace(".", "_");
