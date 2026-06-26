@@ -91,7 +91,8 @@ interface WhatsappConfig {
 interface ElevenLabsConfig {
   apiKey: string;
   voiceId: string;
-  modelId: string;
+  /** Modelo fixo `eleven_v3` — mantido por compatibilidade de leitura; não editável. */
+  modelId?: string;
 }
 
 const EMPTY_SMTP: SmtpConfig = {
@@ -101,7 +102,8 @@ const EMPTY_SMTP: SmtpConfig = {
 const EMPTY_AI: AiConfig = { geminiApiKey: "", openaiApiKey: "", openaiOrgId: "" };
 const EMPTY_S3: S3Config = { accessKeyId: "", secretAccessKey: "", region: "us-east-1", bucket: "", endpoint: "" };
 const EMPTY_WPP: WhatsappConfig = { provider: "meta", phoneNumberId: "", accessToken: "", verifyToken: "", businessAccountId: "" };
-const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G", modelId: "eleven_multilingual_v2" };
+const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G" };
+
 
 const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defaultPort: number }[] = [
   { value: "none", label: "Nenhuma", hint: "Sem criptografia (não recomendado)", defaultPort: 25 },
