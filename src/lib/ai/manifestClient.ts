@@ -71,7 +71,7 @@ export function useManifest() {
   const [error, setError] = useState<string | null>(null);
 
   const permsHash = hashPerms((user?.permissoes ?? []) as string[]);
-  const key = cacheKey(user?.id, user?.tenant_id, permsHash);
+  const key = cacheKey(user?.id != null ? String(user.id) : undefined, user?.tenantId, permsHash);
 
   useEffect(() => {
     if (!user) { setManifest(null); return; }
