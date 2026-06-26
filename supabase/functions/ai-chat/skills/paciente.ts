@@ -66,5 +66,45 @@ export function buildPacienteTools(userClient: SupabaseClient) {
         return { ok: true, data };
       },
     }),
+
+    paciente_exames: tool({
+      description:
+        "Lista todos os exames realizados por um paciente. Recebe nome (parcial), CPF ou ID do paciente. Retorna atendimentos com seus exames, status e datas.",
+      inputSchema: z.object({
+        paciente: z.string().min(2).max(120).describe("Nome (parcial), CPF ou UUID do paciente"),
+      }),
+      execute: async ({ paciente }) => {
+        const onlyDigits = paciente.replace(/\D/g, "");
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(paciente);
+        let pacQuery = userClient.from("pacientes").select("id, nome, cpf").limit(5);
+        if (isUuid) pacQuery = pacQuery.eq("id", paciente);
+        else if (onlyDigits.length >= 6) pacQuery = pacQuery.ilike("cpf", `%${onlyDigits}%`);
+        else pacQuery = pacQuery.ilike("nome", `%${normalize(paciente)}%`);
+
+        const { data: pacs, error: pacErr } = await pacQuery;
+        if (pacErr) return { ok: false, error: { code: "INTERNAL", message: pacErr.message } };
+        if (!pacs || pacs.length === 0) return { ok: true, data: { pacientes: [], atendimentos: [] } };
+
+        const ids = pacs.map((p) => p.id);
+        const { data: ats, error: atErr } = await userClient
+          .from("atendimentos")
+          .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(exame_nome, status)")
+          .in("paciente_id", ids)
+          .order("data_atendimento", { ascending: false })
+          .limit(50);
+        if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
+
+        const atendimentos = (ats ?? []).map((a: Record<string, unknown>) => ({
+          protocolo: a.protocolo,
+          data: a.data_atendimento,
+          status: a.status,
+          paciente: pacs.find((p) => p.id === a.paciente_id)?.nome,
+          exames: (a.atendimento_exames as Array<{ exame_nome: string; status: string }> ?? [])
+            .map((e) => ({ nome: e.exame_nome, status: e.status })),
+        }));
+        const total_exames = atendimentos.reduce((s, a) => s + a.exames.length, 0);
+        return { ok: true, data: { pacientes: pacs, atendimentos, total_exames } };
+      },
+    }),
   };
 }
