@@ -193,4 +193,12 @@ function AssistenteSISLACInner() {
   );
 }
 
+export function AssistenteSISLAC() {
+  return (
+    <ConversationProvider>
+      <AssistenteSISLACInner />
+    </ConversationProvider>
+  );
+}
+
 export default AssistenteSISLAC;
