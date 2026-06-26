@@ -97,17 +97,53 @@ export default function AiShell() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, busy]);
 
-  const send = useCallback(async (text: string) => {
+  // Reproduz a resposta do assistente via ElevenLabs (TTS).
+  const speak = useCallback(async (text: string) => {
+    const clean = text.replace(/[*_`#>]/g, "").replace(/\[(.*?)\]\(.*?\)/g, "$1").trim();
+    if (!clean) return;
+    try {
+      // Para qualquer áudio anterior antes de tocar o próximo.
+      if (audioElRef.current) {
+        try { audioElRef.current.pause(); } catch { /* noop */ }
+        audioElRef.current = null;
+      }
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-speak`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: ANON,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null) as { audio?: string; mime?: string } | null;
+      if (!data?.audio) return;
+      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audio}`);
+      audioElRef.current = audio;
+      audio.play().catch(() => { /* autoplay bloqueado */ });
+    } catch { /* silencioso — a resposta de texto já está visível */ }
+  }, []);
+
+  const send = useCallback(async (text: string, opts?: { fromVoice?: boolean }) => {
     const value = text.trim();
     if (!value || busy) return;
+
+    if (opts?.fromVoice) { setVoiceMode(true); voiceModeRef.current = true; }
 
     // 1) Comando de navegação: executa direto, sem chamar o LLM.
     const nav = parseNavIntent(value);
     if (nav) {
       const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: value };
-      const ack: Msg = { id: crypto.randomUUID(), role: "assistant", text: `Abrindo **${nav.label}**…` };
+      const ackText = `Abrindo ${nav.label}.`;
+      const ack: Msg = { id: crypto.randomUUID(), role: "assistant", text: ackText };
       setMessages((m) => [...m, userMsg, ack]);
       setInput("");
+      if (voiceModeRef.current) speak(ackText);
       navigate(nav.path);
       return;
     }
@@ -137,14 +173,13 @@ export default function AiShell() {
         }),
       });
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, {
-          id: crypto.randomUUID(), role: "assistant",
-          text: res.status === 429
-            ? "Estou recebendo muitas solicitações agora. Tente em alguns instantes."
-            : res.status === 402
-            ? "Os créditos do Assistente acabaram. Avise o administrador."
-            : `Não consegui processar agora (${res.status}).`,
-        }]);
+        const errText = res.status === 429
+          ? "Estou recebendo muitas solicitações agora. Tente em alguns instantes."
+          : res.status === 402
+          ? "Os créditos do Assistente acabaram. Avise o administrador."
+          : `Não consegui processar agora (${res.status}).`;
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+        if (voiceModeRef.current) speak(errText);
         return;
       }
       const reader = res.body.getReader();
@@ -175,16 +210,16 @@ export default function AiShell() {
           } catch { /* ignore */ }
         }
       }
+      if (voiceModeRef.current && acc.trim()) speak(acc);
     } catch {
-      setMessages((m) => [...m, {
-        id: crypto.randomUUID(), role: "assistant",
-        text: "Tive um problema de conexão. Pode tentar de novo?",
-      }]);
+      const errText = "Tive um problema de conexão. Pode tentar de novo?";
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+      if (voiceModeRef.current) speak(errText);
     } finally {
       setBusy(false);
       setTimeout(() => inputRef.current?.focus(), 30);
     }
-  }, [busy, ctx, messages, navigate]);
+  }, [busy, ctx, messages, navigate, speak]);
 
 
 
