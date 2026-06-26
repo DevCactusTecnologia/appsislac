@@ -437,6 +437,9 @@ function AppRoutes() {
           <Suspense fallback={null}>
             <AiShell />
           </Suspense>
+          <Suspense fallback={null}>
+            <JarvisAgent />
+          </Suspense>
         </AppLayout>
       </Suspense>
     </ChunkErrorBoundary>
