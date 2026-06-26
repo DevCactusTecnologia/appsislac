@@ -14,7 +14,7 @@ export function buildPacienteTools(userClient: SupabaseClient) {
     paciente_search: tool({
       description:
         "Busca pacientes do tenant atual por nome, CPF ou telefone. Retorna até 10 resultados.",
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().min(2).max(80),
       }),
       execute: async ({ query }) => {
