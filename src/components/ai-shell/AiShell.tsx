@@ -285,10 +285,18 @@ export default function AiShell() {
           const transcript: string = result[0]?.transcript ?? "";
           if (result.isFinal) {
             const clean = transcript.trim();
-            if (clean) {
-              setInterimText("");
-              sendRef.current?.(clean);
+            if (!clean) continue;
+            setInterimText("");
+            // Palavras de parada estilo Alexa — encerram o modo hands-free.
+            const norm = clean.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (/^(parar|pare|encerrar|encerra|chega|cancelar|cancela|obrigad[oa]|tchau|sair|desligar|desliga)\.?$/.test(norm)) {
+              continuousRef.current = false;
+              try { rec.stop(); } catch { /* noop */ }
+              speak("Tudo bem, estou aqui se precisar.");
+              return;
             }
+            // Auto-envia cada frase final como comando — hands-free.
+            sendRef.current?.(clean, { fromVoice: true });
           } else {
             interim += transcript;
           }
@@ -296,7 +304,17 @@ export default function AiShell() {
         setInterimText(interim.trim());
       };
 
-      rec.onerror = () => { /* ignora ruídos; continua até stop manual */ };
+      rec.onerror = (ev: any) => {
+        // "no-speech" e "aborted" são normais durante escuta contínua.
+        if (ev?.error === "not-allowed" || ev?.error === "service-not-allowed") {
+          continuousRef.current = false;
+          setRecording(false);
+          setMessages((m) => [...m, {
+            id: crypto.randomUUID(), role: "assistant",
+            text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
+          }]);
+        }
+      };
       rec.onend = () => {
         // Se ainda estamos em modo contínuo, reinicia automaticamente.
         if (continuousRef.current) {
@@ -311,11 +329,14 @@ export default function AiShell() {
       speechRecRef.current = rec;
       rec.start();
       setRecording(true);
+      // Hands-free implica respostas faladas.
+      setVoiceMode(true);
+      voiceModeRef.current = true;
       return true;
     } catch {
       return false;
     }
-  }, [SpeechRecognitionCtor]);
+  }, [SpeechRecognitionCtor, speak]);
 
   const stopContinuousSpeech = useCallback(() => {
     continuousRef.current = false;
@@ -333,8 +354,12 @@ export default function AiShell() {
 
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
-    // STT agora é ElevenLabs — não usamos mais a Web Speech API do navegador.
 
+    // Modo hands-free estilo Alexa — escuta contínua via Web Speech API
+    // (Chrome/Edge/Safari). Cada frase final é executada automaticamente.
+    if (SpeechRecognitionCtor && startContinuousSpeech()) return;
+
+    // Fallback push-to-talk: grava e transcreve via ElevenLabs ao parar.
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
         id: crypto.randomUUID(), role: "assistant",
@@ -404,7 +429,7 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send, speak]);
+  }, [recording, transcribing, busy, send, speak, SpeechRecognitionCtor, startContinuousSpeech]);
 
   // Para a gravação e ENVIA a transcrição.
   const stopRecording = useCallback(() => {
@@ -556,7 +581,7 @@ export default function AiShell() {
                   </div>
                 )}
                 <div className="mt-6 text-[11px] text-muted-foreground/70">
-                  Dica: diga <span className="font-medium text-foreground/70">"abra atendimentos"</span> usando o microfone.
+                  Dica: toque no <span className="font-medium text-foreground/70">microfone</span> e fale como na Alexa — diga "parar" para encerrar.
                 </div>
               </div>
             ) : (
@@ -609,7 +634,7 @@ export default function AiShell() {
                     <span className="flex-1 min-w-0">
                       {interimText
                         ? <span className="text-foreground/80 italic">"{interimText}"</span>
-                        : <>Ouvindo… fale à vontade. Toque no <strong>quadrado</strong> para enviar ou no <strong>X</strong> para cancelar.</>}
+                        : <>Estou ouvindo… fale o comando. Diga <strong>"parar"</strong> para encerrar.</>}
                     </span>
                     <button
                       type="button"
