@@ -7,19 +7,18 @@ import { cn } from "@/lib/utils";
 const JARVIS_AGENT_ID = "agent_9901kw2z1z9rew9tk3541rtb90y5";
 
 /**
- * Jarvis — Agente conversacional ElevenLabs (público, WebRTC).
- * Botão flutuante independente do AiShell. Posicionado em bottom-4 left-4
- * para não conflitar com o Assistente atual (bottom-4 right-4).
+ * Assistente SISLAC — Agente conversacional ElevenLabs (público, WebRTC).
+ * Botão flutuante global, substitui o antigo AiShell.
  */
 export function JarvisAgent() {
   const [connecting, setConnecting] = useState(false);
 
   const conversation = useConversation({
-    onConnect: () => toast.success("Jarvis conectado"),
-    onDisconnect: () => toast.message("Jarvis desconectado"),
+    onConnect: () => toast.success("Assistente SISLAC conectado"),
+    onDisconnect: () => toast.message("Assistente SISLAC desconectado"),
     onError: (err) => {
-      console.error("[Jarvis]", err);
-      toast.error("Falha na conexão com Jarvis");
+      console.error("[AssistenteSISLAC]", err);
+      toast.error("Falha na conexão com o Assistente SISLAC");
     },
   });
 
