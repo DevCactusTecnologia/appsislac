@@ -165,6 +165,15 @@ const TOOLS: ClientTool[] = [
       P("forma", "string", "Forma de pagamento: DINHEIRO, PIX, DEBITO, CREDITO", false),
     ],
   },
+  {
+    type: "client",
+    name: "atendimento_resumo",
+    description:
+      "Lê em voz alta o resumo de um atendimento: protocolo, status atual e lista de exames. Use quando o usuário pedir 'me fale sobre', 'resumo', 'status' ou 'quais exames' de um protocolo.",
+    expects_response: true,
+    response_timeout_secs: 8,
+    parameters: [P("protocolo", "string", "Protocolo do atendimento (ex.: 0000003)")],
+  },
 ];
 
 
