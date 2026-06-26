@@ -150,6 +150,8 @@ export default function SuperAdminConfiguracoes() {
   const [s3Original, setS3Original] = useState<S3Config>(EMPTY_S3);
   const [wpp, setWpp] = useState<WhatsappConfig>(EMPTY_WPP);
   const [wppOriginal, setWppOriginal] = useState<WhatsappConfig>(EMPTY_WPP);
+  const [eleven, setEleven] = useState<ElevenLabsConfig>(EMPTY_ELEVEN);
+  const [elevenOriginal, setElevenOriginal] = useState<ElevenLabsConfig>(EMPTY_ELEVEN);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
