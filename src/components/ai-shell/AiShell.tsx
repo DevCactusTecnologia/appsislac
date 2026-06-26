@@ -5,7 +5,7 @@ import { Sparkles, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { CLIENT_CAPABILITIES } from "@/lib/ai/capabilityRegistry";
 import { useAIContext, getContextualSuggestions } from "@/lib/ai/contextEngine";
