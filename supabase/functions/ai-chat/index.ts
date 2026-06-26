@@ -8,6 +8,7 @@ import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@1.0.41";
 import { aiCorsHeaders, authenticate, jsonResponse, resolveAllowedCapabilities } from "../_shared/aiAuth.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
 import { buildAtendimentoTools } from "./skills/atendimento.ts";
+import { buildResultadoTools } from "./skills/resultado.ts";
 
 interface AIContext {
   module?: string;
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
   const allowed = await resolveAllowedCapabilities(admin, userId);
 
   // Tools (apenas as autorizadas)
-  const allTools = { ...buildPacienteTools(userClient), ...buildAtendimentoTools(userClient) };
+  const allTools = { ...buildPacienteTools(userClient), ...buildAtendimentoTools(userClient), ...buildResultadoTools(userClient) };
   const toolMap: Record<string, unknown> = {};
   for (const cap of allowed) {
     const key = cap.id.replace(".", "_");
