@@ -285,10 +285,18 @@ export default function AiShell() {
           const transcript: string = result[0]?.transcript ?? "";
           if (result.isFinal) {
             const clean = transcript.trim();
-            if (clean) {
-              setInterimText("");
-              sendRef.current?.(clean);
+            if (!clean) continue;
+            setInterimText("");
+            // Palavras de parada estilo Alexa — encerram o modo hands-free.
+            const norm = clean.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (/^(parar|pare|encerrar|encerra|chega|cancelar|cancela|obrigad[oa]|tchau|sair|desligar|desliga)\.?$/.test(norm)) {
+              continuousRef.current = false;
+              try { rec.stop(); } catch { /* noop */ }
+              speak("Tudo bem, estou aqui se precisar.");
+              return;
             }
+            // Auto-envia cada frase final como comando — hands-free.
+            sendRef.current?.(clean, { fromVoice: true });
           } else {
             interim += transcript;
           }
@@ -296,7 +304,17 @@ export default function AiShell() {
         setInterimText(interim.trim());
       };
 
-      rec.onerror = () => { /* ignora ruídos; continua até stop manual */ };
+      rec.onerror = (ev: any) => {
+        // "no-speech" e "aborted" são normais durante escuta contínua.
+        if (ev?.error === "not-allowed" || ev?.error === "service-not-allowed") {
+          continuousRef.current = false;
+          setRecording(false);
+          setMessages((m) => [...m, {
+            id: crypto.randomUUID(), role: "assistant",
+            text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
+          }]);
+        }
+      };
       rec.onend = () => {
         // Se ainda estamos em modo contínuo, reinicia automaticamente.
         if (continuousRef.current) {
@@ -311,11 +329,14 @@ export default function AiShell() {
       speechRecRef.current = rec;
       rec.start();
       setRecording(true);
+      // Hands-free implica respostas faladas.
+      setVoiceMode(true);
+      voiceModeRef.current = true;
       return true;
     } catch {
       return false;
     }
-  }, [SpeechRecognitionCtor]);
+  }, [SpeechRecognitionCtor, speak]);
 
   const stopContinuousSpeech = useCallback(() => {
     continuousRef.current = false;
