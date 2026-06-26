@@ -17,20 +17,33 @@
 
 ## Processo: criar nova Skill
 1. Abrir RFC curto em `docs/intelligence-platform/skills/<dominio>.md` com:
-   - Justificativa (qual complexidade ela elimina?).
+   - **Tarefas eliminadas** (lista concreta).
+   - **Baseline operacional** (`baselineSeconds`, `baselineClicks`).
+   - **Categoria** (`automation` / `write` / `read`).
+   - **Classificação Responder/Sugerir/Executar/Automatizar**.
    - Tools previstas (nome, descrição, input/output, permissão, needsApproval).
+   - Actions previstas (≥1 obrigatória).
+   - Ações Rápidas e Sugestões Contextuais.
    - Reuso de serviços existentes.
 2. Aprovação humana (OECV — etapa Entendeu).
 3. Implementação em `supabase/functions/ai-chat/skills/<dominio>.ts`.
 4. Registro em `supabase/functions/ai-chat/skills/index.ts`.
 5. Testes: unit das Tools + smoke contra DB de teste.
-6. Validação (OECV — Validou): fluxo completo no AI Shell, com auditoria conferida.
+6. Validação (OECV — Validou): fluxo completo no AI Shell, com auditoria conferida e métricas iniciais coletadas.
+
+## Critério obrigatório de aceite (rejeição automática)
+Uma Skill é **rejeitada** se:
+- Não declara `metrics.baseline*`.
+- Não possui pelo menos uma Action útil.
+- Sua única categoria é `conversational`.
+- Não economiza ao menos 2 cliques OU 15 segundos vs. fluxo manual.
 
 ## Processo: criar nova Action
 - Vive dentro de uma Skill existente.
 - Mutações exigem `needsApproval: true`, exceto se já existir confirmação na UI chamadora.
 - Reuso obrigatório do serviço oficial; nunca duplicar `INSERT`/`UPDATE`.
 - Auditoria automática (`ai_audit`).
+- Declara `baselineSeconds`/`baselineClicks` próprios.
 
 ## Processo: integrar IA a um módulo novo
 1. Módulo expõe um hook `useAIContextProvider({ module, focus })` na página raiz.
