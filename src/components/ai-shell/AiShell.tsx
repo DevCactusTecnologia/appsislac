@@ -2,7 +2,7 @@
 // Design ChatGPT-like: limpo, espaçoso, moderno. Voz com comandos de navegação.
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX } from "lucide-react";
+import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
