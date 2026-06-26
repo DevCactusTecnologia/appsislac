@@ -3,8 +3,8 @@
 // Bootstrap (JWT, tenant, permissões) é delegado ao _shared/aiAuth.ts.
 // NUNCA: SQL direto, lógica de negócio, tenant vindo do frontend.
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import { convertToModelMessages, streamText, type UIMessage } from "npm:ai@4.3.16";
-import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@0.2.16";
+import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "npm:ai@5.0.206";
+import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@1.0.41";
 import { aiCorsHeaders, authenticate, jsonResponse, resolveAllowedCapabilities } from "../_shared/aiAuth.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
 
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools: toolMap as never,
-      maxSteps: 5,
+      stopWhen: stepCountIs(5),
       onFinish: async ({ text, usage, finishReason }) => {
         await admin.from("ai_audit").insert({
           tenant_id: tenantId,
