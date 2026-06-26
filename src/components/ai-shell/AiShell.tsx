@@ -354,8 +354,12 @@ export default function AiShell() {
 
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
-    // STT agora é ElevenLabs — não usamos mais a Web Speech API do navegador.
 
+    // Modo hands-free estilo Alexa — escuta contínua via Web Speech API
+    // (Chrome/Edge/Safari). Cada frase final é executada automaticamente.
+    if (SpeechRecognitionCtor && startContinuousSpeech()) return;
+
+    // Fallback push-to-talk: grava e transcreve via ElevenLabs ao parar.
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
         id: crypto.randomUUID(), role: "assistant",
