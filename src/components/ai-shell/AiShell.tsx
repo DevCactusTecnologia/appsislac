@@ -277,7 +277,7 @@ export default function AiShell() {
         aria-label="Assistente do SISLAC"
         title="Assistente • Ctrl+J"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-40 h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
       >
         <Sparkles className="h-5 w-5" />
       </button>
@@ -285,30 +285,31 @@ export default function AiShell() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
+          className="w-full sm:max-w-[440px] md:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
           data-ai-shell="panel"
         >
           {/* Header minimalista — botão fechar nativo do Sheet */}
-          <header className="h-14 px-5 flex items-center justify-between border-b shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+          <header className="h-14 px-3 sm:px-5 flex items-center justify-between border-b shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
                 <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
               </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold">Assistente</div>
-                <div className="text-[10px] text-muted-foreground">SISLAC Intelligence</div>
+              <div className="leading-tight min-w-0">
+                <div className="text-sm font-semibold truncate">Assistente</div>
+                <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8">
+            <div className="pr-8 shrink-0">
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={newConversation}
-                  className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                  className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground px-2"
                 >
                   <PlusCircle className="h-3.5 w-3.5" />
-                  Nova conversa
+                  <span className="hidden sm:inline">Nova conversa</span>
+                  <span className="sm:hidden">Nova</span>
                 </Button>
               )}
             </div>
