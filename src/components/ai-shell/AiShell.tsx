@@ -1,5 +1,5 @@
 // AI Shell — Assistente do SISLAC. Avatar global + Drawer + Modo Assistente.
-// Sem rota. Sempre abre em Modo Assistente.
+// SSOT: consome exclusivamente o Capability Manifest (Edge ai-manifest).
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Sparkles, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { CLIENT_CAPABILITIES } from "@/lib/ai/capabilityRegistry";
+import { useManifest, discoverCapabilities, type ManifestItem } from "@/lib/ai/manifestClient";
 import { useAIContext, getContextualSuggestions } from "@/lib/ai/contextEngine";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,22 +18,21 @@ const HIDE_ROUTES = ["/", "/login", "/super-admin", "/inscricao", "/laudo/print"
 export default function AiShell() {
   const { user } = useAuth();
   const ctx = useAIContext();
+  const { manifest } = useManifest();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const allowedQuickActions = useMemo(() => {
-    const perms = new Set((user?.permissoes ?? []) as string[]);
-    const wildcard = perms.has("*");
-    return CLIENT_CAPABILITIES.filter((c) => {
-      if (!c.enabled) return false;
-      if (!c.permission) return true;
-      return wildcard || perms.has(c.permission);
-    });
-  }, [user?.permissoes]);
+  const allowedQuickActions = useMemo(
+    () => discoverCapabilities(manifest, { module: ctx.module, quickActionOnly: true }),
+    [manifest, ctx.module],
+  );
 
-  const suggestions = useMemo(() => getContextualSuggestions(ctx), [ctx]);
+  const suggestions = useMemo(
+    () => getContextualSuggestions(ctx, discoverCapabilities(manifest, { suggestionsOnly: true })),
+    [ctx, manifest],
+  );
 
   // Atalho Ctrl/Cmd+J
   useEffect(() => {
@@ -116,10 +115,9 @@ export default function AiShell() {
     }
   }, [busy, ctx, messages]);
 
-  const onQuickAction = (cap: typeof CLIENT_CAPABILITIES[number]) => {
+  const onQuickAction = (cap: ManifestItem) => {
     if (!cap.enabled) return;
-    const prompt = cap.promptTemplate ?? cap.label;
-    setInput(prompt);
+    setInput(cap.promptTemplate ?? cap.title);
   };
 
   const path = ctx.route.path;
@@ -173,7 +171,7 @@ export default function AiShell() {
                             disabled={!cap.enabled}
                             className="text-left rounded-lg border bg-card p-3 hover:bg-accent transition disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <div className="text-sm font-medium">{cap.label}</div>
+                            <div className="text-sm font-medium">{cap.title}</div>
                             <div className="text-xs text-muted-foreground mt-0.5">{cap.description}</div>
                           </button>
                         ))}

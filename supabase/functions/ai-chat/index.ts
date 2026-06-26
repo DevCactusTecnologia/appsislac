@@ -6,7 +6,7 @@ import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { convertToModelMessages, streamText, type UIMessage } from "npm:ai@4.3.16";
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@0.2.16";
-import { CAPABILITIES } from "./registry.ts";
+import { CAPABILITIES } from "../_shared/registry.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
 
 const corsHeaders: Record<string, string> = {
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     `Profissional, objetivo, silencioso. Nunca se identifique como IA. ` +
     `Use SEMPRE as ferramentas disponíveis para executar tarefas. ` +
     `Não invente dados. Não gere SQL. Contexto atual: ${JSON.stringify(ctx)}. ` +
-    `Capacidades autorizadas: ${allowed.map((c) => `${c.id} (${c.label})`).join(", ") || "nenhuma"}.`;
+    `Capacidades autorizadas: ${allowed.map((c) => `${c.id} (${c.title})`).join(", ") || "nenhuma"}.`;
 
   const gateway = createOpenAICompatible({
     name: "lovable",
