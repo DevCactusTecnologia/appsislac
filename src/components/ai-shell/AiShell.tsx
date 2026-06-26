@@ -277,7 +277,7 @@ export default function AiShell() {
         aria-label="Assistente do SISLAC"
         title="Assistente • Ctrl+J"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 sm:bottom-5 sm:right-5 z-40 h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
       >
         <Sparkles className="h-5 w-5" />
       </button>
@@ -285,30 +285,31 @@ export default function AiShell() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
+          className="w-full sm:max-w-[440px] md:max-w-[480px] p-0 flex flex-col gap-0 bg-background border-l"
           data-ai-shell="panel"
         >
           {/* Header minimalista — botão fechar nativo do Sheet */}
-          <header className="h-14 px-5 flex items-center justify-between border-b shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+          <header className="h-14 px-3 sm:px-5 flex items-center justify-between border-b shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0">
                 <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
               </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold">Assistente</div>
-                <div className="text-[10px] text-muted-foreground">SISLAC Intelligence</div>
+              <div className="leading-tight min-w-0">
+                <div className="text-sm font-semibold truncate">Assistente</div>
+                <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8">
+            <div className="pr-8 shrink-0">
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={newConversation}
-                  className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                  className="h-8 text-xs gap-1.5 text-muted-foreground hover:text-foreground px-2"
                 >
                   <PlusCircle className="h-3.5 w-3.5" />
-                  Nova conversa
+                  <span className="hidden sm:inline">Nova conversa</span>
+                  <span className="sm:hidden">Nova</span>
                 </Button>
               )}
             </div>
@@ -343,11 +344,11 @@ export default function AiShell() {
                 </div>
               </div>
             ) : (
-              <div className="px-5 py-6 space-y-5">
+              <div className="px-3 sm:px-5 py-5 sm:py-6 space-y-4 sm:space-y-5">
                 {messages.map((m) => (
                   <div
                     key={m.id}
-                    className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                    className={`flex gap-2 sm:gap-3 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
                     <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
                       m.role === "user"
@@ -356,9 +357,9 @@ export default function AiShell() {
                     }`}>
                       {m.role === "user"
                         ? <UserIcon className="h-3.5 w-3.5" />
-                        : <Sparkles className="h-3.5 w-3.5" />}
+                        : <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />}
                     </div>
-                    <div className={`max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${
+                    <div className={`max-w-[85%] sm:max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap break-words ${
                       m.role === "user"
                         ? "rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-3.5 py-2.5"
                         : "text-foreground pt-1"
@@ -380,7 +381,7 @@ export default function AiShell() {
           </div>
 
           {/* Composer */}
-          <footer className="border-t bg-background/95 backdrop-blur p-3 shrink-0">
+          <footer className="border-t bg-background/95 backdrop-blur p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] shrink-0">
             {(recording || transcribing) && (
               <div className="mb-2 px-2 text-xs text-muted-foreground flex items-center gap-2">
                 {recording ? (
