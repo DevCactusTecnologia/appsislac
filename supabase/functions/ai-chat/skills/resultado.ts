@@ -24,7 +24,11 @@ export function buildResultadoTools(userClient: SupabaseClient) {
   return {
     resultado_open: tool({
       description:
-        "Abre a tela de resultado de um paciente. Recebe nome/CPF/ID do paciente; opcionalmente o nome do exame para selecionar o atendimento certo. Retorna a rota para navegação automática.",
+        "Abre o atendimento/resultado de um paciente na tela de inserção/edição de resultados. " +
+        "USE SEMPRE que o usuário pedir para 'abrir atendimento', 'abrir paciente', 'abrir resultado', " +
+        "'abrir exame', 'lançar resultado' ou similar mencionando um nome/CPF. " +
+        "Recebe nome/CPF/ID do paciente; opcionalmente o nome do exame para escolher o atendimento certo. " +
+        "Retorna a rota /resultado/{id} para navegação automática.",
       inputSchema: z.object({
         paciente: z.string().min(2).max(120),
         exame: z.string().optional().describe("Nome (parcial) do exame, opcional"),
