@@ -429,7 +429,7 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send, speak]);
+  }, [recording, transcribing, busy, send, speak, SpeechRecognitionCtor, startContinuousSpeech]);
 
   // Para a gravação e ENVIA a transcrição.
   const stopRecording = useCallback(() => {
