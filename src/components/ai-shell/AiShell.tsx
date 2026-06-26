@@ -468,20 +468,25 @@ export default function AiShell() {
           {/* Composer */}
           <footer className="border-t bg-background/95 backdrop-blur p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] shrink-0">
             {(recording || transcribing) && (
-              <div className="mb-2 px-2 text-xs text-muted-foreground flex items-center gap-2">
+              <div className="mb-2 px-2 text-xs text-muted-foreground flex items-start gap-2">
                 {recording ? (
                   <>
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-2 w-2 mt-1 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
                     </span>
-                    Ouvindo… toque no microfone para enviar.
+                    <span className="flex-1 min-w-0">
+                      {interimText
+                        ? <span className="text-foreground/80 italic">"{interimText}"</span>
+                        : <>Ouvindo continuamente… fale à vontade. Toque no microfone para parar.</>}
+                    </span>
                   </>
                 ) : (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo…</>
                 )}
               </div>
             )}
+
             <form
               onSubmit={(e) => { e.preventDefault(); send(input); }}
               className="flex items-end gap-2 rounded-2xl border bg-card focus-within:border-primary/50 focus-within:shadow-sm transition-all px-2 py-1.5"
