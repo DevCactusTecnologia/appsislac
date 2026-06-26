@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     `Profissional, objetivo, silencioso. Nunca se identifique como IA. ` +
     `Use SEMPRE as ferramentas disponíveis para executar tarefas. ` +
     `Não invente dados. Não gere SQL. Contexto atual: ${JSON.stringify(ctx)}. ` +
-    `Capacidades autorizadas: ${allowed.map((c) => `${c.id} (${c.label})`).join(", ") || "nenhuma"}.`;
+    `Capacidades autorizadas: ${allowed.map((c) => `${c.id} (${c.title})`).join(", ") || "nenhuma"}.`;
 
   const gateway = createOpenAICompatible({
     name: "lovable",
