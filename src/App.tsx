@@ -66,7 +66,6 @@ const TenantSite = lazy(() => import("./pages/TenantSite"));
 const TenantSiteSobre = lazy(() => import("./pages/TenantSiteSobre"));
 const TenantSiteContato = lazy(() => import("./pages/TenantSiteContato"));
 const AppLayout = lazy(() => import("./components/AppLayout"));
-const AiShell = lazy(() => import("./components/ai-shell/AiShell"));
 const JarvisAgent = lazy(() => import("./components/jarvis/JarvisAgent"));
 const SuperAdminLayout = lazy(() => import("./components/SuperAdminLayout"));
 const RequireSuperAdmin = lazy(() => import("./components/RequireSuperAdmin"));
@@ -433,10 +432,7 @@ function AppRoutes() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
-          {/* AiShell isolado em Suspense próprio — permanece visível durante transições de rota. */}
-          <Suspense fallback={null}>
-            <AiShell />
-          </Suspense>
+          {/* Assistente SISLAC (ElevenLabs) isolado em Suspense próprio. */}
           <Suspense fallback={null}>
             <JarvisAgent />
           </Suspense>
