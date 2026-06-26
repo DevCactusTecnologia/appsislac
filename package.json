@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@ckeditor/ckeditor5-react": "^11.2.0",
+    "@elevenlabs/react": "^1.9.0",
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/manrope": "^5.2.8",
     "@fontsource/sora": "^5.2.8",
