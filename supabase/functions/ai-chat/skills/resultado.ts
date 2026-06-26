@@ -146,5 +146,98 @@ export function buildResultadoTools(userClient: SupabaseClient) {
         }
       },
     }),
+
+    resultado_set_varios: tool({
+      description:
+        "Insere/atualiza VÁRIOS parâmetros de UM exame em uma única chamada. Use quando o usuário ditar múltiplos valores de uma vez (ex.: 'hemácias 4,5, hemoglobina 13,8 e VCM 88'). Exige confirmação humana.",
+      inputSchema: z.object({
+        paciente: z.string().min(2).max(120),
+        exame: z.string().min(2).max(120).describe("Nome (parcial) do exame"),
+        valores: z.array(z.object({
+          parametro: z.string().min(1).max(60).describe("Chave OU rótulo do parâmetro"),
+          valor: z.union([z.string(), z.number()]),
+        })).min(1).max(40),
+        _confirmed: z.boolean().default(false),
+      }),
+      execute: async (input) => {
+        if (!input._confirmed) {
+          return {
+            ok: false,
+            error: { code: "NEEDS_APPROVAL", message: "Confirmação humana obrigatória." },
+            preview: input,
+          };
+        }
+        try {
+          const pacs = await findPaciente(userClient, input.paciente);
+          if (pacs.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Paciente não encontrado." } };
+          const ids = pacs.map((p) => p.id);
+
+          const ex = norm(input.exame);
+          const { data: ats, error: atErr } = await userClient
+            .from("atendimentos")
+            .select("id, protocolo, data_atendimento, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
+            .in("paciente_id", ids)
+            .order("data_atendimento", { ascending: false })
+            .limit(20);
+          if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
+
+          let alvo: any = null;
+          let atProtocolo: string | null = null;
+          let atId: number | null = null;
+          for (const a of ats ?? []) {
+            const hit = (a.atendimento_exames ?? []).find((e: any) => norm(e.nome_exame ?? "").includes(ex));
+            if (hit) { alvo = hit; atProtocolo = a.protocolo; atId = a.id; break; }
+          }
+          if (!alvo) return { ok: false, error: { code: "NOT_FOUND", message: `Exame "${input.exame}" não encontrado nos últimos atendimentos.` } };
+
+          const { data: params } = await userClient
+            .from("exame_parametros")
+            .select("chave, rotulo")
+            .eq("exame_id", alvo.exame_id);
+
+          const novos: Record<string, string> = { ...(alvo.resultados ?? {}) };
+          const aplicados: Array<{ parametro: string; valor: string }> = [];
+          const ignorados: Array<{ parametro: string; motivo: string }> = [];
+
+          for (const item of input.valores) {
+            const target = norm(item.parametro);
+            const param = (params ?? []).find((p: any) =>
+              norm(p.chave) === target || norm(p.rotulo) === target ||
+              norm(p.rotulo).includes(target) || norm(p.chave).includes(target)
+            );
+            if (!param?.chave) {
+              ignorados.push({ parametro: item.parametro, motivo: "Parâmetro não encontrado no exame." });
+              continue;
+            }
+            novos[param.chave] = String(item.valor);
+            aplicados.push({ parametro: param.chave, valor: String(item.valor) });
+          }
+
+          if (aplicados.length === 0) {
+            return { ok: false, error: { code: "NOT_FOUND", message: "Nenhum parâmetro reconhecido." }, data: { ignorados } };
+          }
+
+          const { error: upErr } = await userClient
+            .from("atendimento_exames")
+            .update({ resultados: novos })
+            .eq("id", alvo.id);
+          if (upErr) return { ok: false, error: { code: "INTERNAL", message: upErr.message } };
+
+          return {
+            ok: true,
+            navigate: `/resultado/${atId}`,
+            data: {
+              atendimento_id: atId,
+              protocolo: atProtocolo,
+              exame: alvo.nome_exame,
+              aplicados,
+              ignorados,
+            },
+          };
+        } catch (e) {
+          return { ok: false, error: { code: "INTERNAL", message: (e as Error).message } };
+        }
+      },
+    }),
   };
 }
