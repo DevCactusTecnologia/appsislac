@@ -8,6 +8,9 @@
 A Inteligência Artificial **não é um módulo do SISLAC**. É uma **capacidade transversal** que atravessa todos os domínios (Pacientes, Atendimentos, Exames, Resultados, Soroteca, Financeiro, WhatsApp, Produção). O usuário nunca pensa "vou abrir o AI"; ele percebe que "o sistema ficou mais inteligente".
 
 Princípios obrigatórios (não negociáveis):
+- **Orientação à execução** — A IA do SISLAC é orientada à execução de tarefas e automação operacional. O chat é apenas a interface de comunicação. O objetivo principal é reduzir cliques, eliminar tarefas repetitivas, sugerir ações inteligentes e executar operações autorizadas de forma contextual, segura e integrada ao fluxo do laboratório.
+- **Hierarquia operacional**: `Responder → Sugerir → Executar → Automatizar`. Priorizar sempre Executar e Automatizar.
+- **Modo Assistente primeiro** — o Avatar abre em uma grade de Ações Rápidas, não em um input de chat (ver `assistant-mode.md`).
 - **OECV** (Olhou • Entendeu • Configurou • Validou) — toda evolução respeita o ciclo.
 - **SSOT** — uma única fonte de verdade por conceito; stores existentes (`atendimentoStore`, `pacienteStore`, etc.) são a verdade operacional.
 - **Domain Driven** — uma Skill por domínio; sem orquestrador onisciente.
@@ -15,6 +18,7 @@ Princípios obrigatórios (não negociáveis):
 - **Interface Canônica** — um único AI Shell, um único Context Engine, um único Action Engine.
 - **Zero Duplicação** — IA usa os mesmos serviços, RLS, validações e auditoria que o resto do sistema.
 - **Código Enxuto** — toda Skill/Action precisa eliminar complexidade existente; senão não entra.
+- **Métricas operacionais** — toda Skill declara baseline (segundos e cliques economizados); sem isso não é aceita (ver `metrics-model.md`).
 
 ## Camadas (visão macro)
 
