@@ -3,7 +3,7 @@
 // Nunca expõe internals (tools, SQL, services).
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { CAPABILITIES, buildManifest, MANIFEST_VERSION } from "../ai-chat/registry.ts";
+import { CAPABILITIES, buildManifest, MANIFEST_VERSION } from "../_shared/registry.ts";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
