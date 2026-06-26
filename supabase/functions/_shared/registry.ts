@@ -167,6 +167,23 @@ export const CAPABILITIES: CapabilityMeta[] = [
     color: "primary",
     actions: [{ id: "resultado.set_valor", tool: "resultado_set_valor" }],
     promptTemplate: "Inserir valor no exame ",
+  {
+    id: "resultado.set_varios",
+    title: "Inserir vários valores",
+    description: "Insere/atualiza múltiplos parâmetros de um exame em uma única chamada.",
+    permission: "liberar_resultado",
+    category: "resultados",
+    visibility: "always",
+    priority: 42,
+    baselineSeconds: 60,
+    baselineClicks: 15,
+    needsApproval: true,
+    quickAction: false,
+    supportsSuggestions: false,
+    icon: "ListChecks",
+    color: "primary",
+    actions: [{ id: "resultado.set_varios", tool: "resultado_set_varios" }],
+    promptTemplate: "Inserir vários valores no exame ",
   },
 ];
 
