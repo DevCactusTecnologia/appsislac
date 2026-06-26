@@ -60,6 +60,13 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Reconhecimento contínuo (Web Speech API) — hands-free.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const speechRecRef = useRef<any>(null);
+  const continuousRef = useRef(false);
+  const sendRef = useRef<(t: string) => Promise<void> | void>(() => {});
+  const [interimText, setInterimText] = useState("");
+
 
   const suggestions = useMemo(
     () => getContextualSuggestions(ctx, discoverCapabilities(manifest, { suggestionsOnly: true })),
