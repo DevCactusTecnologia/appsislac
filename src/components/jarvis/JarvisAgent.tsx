@@ -36,8 +36,8 @@ export function JarvisAgent() {
         connectionType: "webrtc",
       });
     } catch (e) {
-      console.error("[Jarvis] start", e);
-      toast.error("Permita o microfone para falar com Jarvis");
+      console.error("[AssistenteSISLAC] start", e);
+      toast.error("Permita o microfone para falar com o Assistente SISLAC");
     } finally {
       setConnecting(false);
     }
@@ -48,7 +48,7 @@ export function JarvisAgent() {
   }, [conversation]);
 
   const onClick = isConnected ? stop : start;
-  const label = isConnected ? "Encerrar Jarvis" : "Falar com Jarvis";
+  const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
 
   return (
     <button
