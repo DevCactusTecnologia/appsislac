@@ -1,13 +1,12 @@
-// ai-transcribe — adaptador de voz → texto do Assistente do SISLAC.
-// Não cria nova arquitetura: apenas converte áudio em texto e devolve.
-// O texto retorna ao cliente e segue exatamente o mesmo fluxo do ai-chat.
+// ai-transcribe — voz → texto via ElevenLabs Scribe.
+// Mesmo contrato anterior (multipart `file`, retorna { text }) — apenas troca de provedor.
 import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: aiCorsHeaders });
 
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return jsonResponse({ error: "missing_lovable_api_key" }, 500);
+  const ELEVEN_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
 
   const auth = await authenticate(req);
   if (!auth.ok) return auth.response;
@@ -25,16 +24,17 @@ Deno.serve(async (req) => {
   }
 
   const upstream = new FormData();
-  upstream.append("model", "openai/gpt-4o-mini-transcribe");
-  upstream.append("file", file, file.name || "recording.wav");
-  const language = form.get("language");
-  if (typeof language === "string" && /^[a-z]{2}$/.test(language)) {
-    upstream.append("language", language);
-  }
+  upstream.append("file", file, file.name || "recording.webm");
+  upstream.append("model_id", "scribe_v1");
+  // ElevenLabs usa ISO 639-3; "por" = português.
+  const lang = form.get("language");
+  upstream.append("language_code", typeof lang === "string" && lang.length >= 2 ? "por" : "por");
+  upstream.append("tag_audio_events", "false");
+  upstream.append("diarize", "false");
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+  const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+    headers: { "xi-api-key": ELEVEN_KEY },
     body: upstream,
   });
 
@@ -44,5 +44,5 @@ Deno.serve(async (req) => {
   }
 
   const data = await res.json().catch(() => null) as { text?: string } | null;
-  return jsonResponse({ text: data?.text ?? "" });
+  return jsonResponse({ text: (data?.text ?? "").trim() });
 });

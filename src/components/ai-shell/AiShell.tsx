@@ -2,7 +2,7 @@
 // Design ChatGPT-like: limpo, espaçoso, moderno. Voz com comandos de navegação.
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon } from "lucide-react";
+import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,12 +60,17 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  // Reconhecimento contínuo (Web Speech API) — hands-free.
+  // Reconhecimento contínuo (Web Speech API) — desativado: STT agora é ElevenLabs.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechRecRef = useRef<any>(null);
   const continuousRef = useRef(false);
-  const sendRef = useRef<(t: string) => Promise<void> | void>(() => {});
+  const sendRef = useRef<(t: string, opts?: { fromVoice?: boolean }) => Promise<void> | void>(() => {});
   const [interimText, setInterimText] = useState("");
+  // Voz: ativa quando o usuário usou microfone; respostas saem faladas via ElevenLabs.
+  const [voiceMode, setVoiceMode] = useState(false);
+  const voiceModeRef = useRef(false);
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
 
 
   const suggestions = useMemo(
@@ -92,17 +97,53 @@ export default function AiShell() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, busy]);
 
-  const send = useCallback(async (text: string) => {
+  // Reproduz a resposta do assistente via ElevenLabs (TTS).
+  const speak = useCallback(async (text: string) => {
+    const clean = text.replace(/[*_`#>]/g, "").replace(/\[(.*?)\]\(.*?\)/g, "$1").trim();
+    if (!clean) return;
+    try {
+      // Para qualquer áudio anterior antes de tocar o próximo.
+      if (audioElRef.current) {
+        try { audioElRef.current.pause(); } catch { /* noop */ }
+        audioElRef.current = null;
+      }
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-speak`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: ANON,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null) as { audio?: string; mime?: string } | null;
+      if (!data?.audio) return;
+      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audio}`);
+      audioElRef.current = audio;
+      audio.play().catch(() => { /* autoplay bloqueado */ });
+    } catch { /* silencioso — a resposta de texto já está visível */ }
+  }, []);
+
+  const send = useCallback(async (text: string, opts?: { fromVoice?: boolean }) => {
     const value = text.trim();
     if (!value || busy) return;
+
+    if (opts?.fromVoice) { setVoiceMode(true); voiceModeRef.current = true; }
 
     // 1) Comando de navegação: executa direto, sem chamar o LLM.
     const nav = parseNavIntent(value);
     if (nav) {
       const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: value };
-      const ack: Msg = { id: crypto.randomUUID(), role: "assistant", text: `Abrindo **${nav.label}**…` };
+      const ackText = `Abrindo ${nav.label}.`;
+      const ack: Msg = { id: crypto.randomUUID(), role: "assistant", text: ackText };
       setMessages((m) => [...m, userMsg, ack]);
       setInput("");
+      if (voiceModeRef.current) speak(ackText);
       navigate(nav.path);
       return;
     }
@@ -132,14 +173,13 @@ export default function AiShell() {
         }),
       });
       if (!res.ok || !res.body) {
-        setMessages((m) => [...m, {
-          id: crypto.randomUUID(), role: "assistant",
-          text: res.status === 429
-            ? "Estou recebendo muitas solicitações agora. Tente em alguns instantes."
-            : res.status === 402
-            ? "Os créditos do Assistente acabaram. Avise o administrador."
-            : `Não consegui processar agora (${res.status}).`,
-        }]);
+        const errText = res.status === 429
+          ? "Estou recebendo muitas solicitações agora. Tente em alguns instantes."
+          : res.status === 402
+          ? "Os créditos do Assistente acabaram. Avise o administrador."
+          : `Não consegui processar agora (${res.status}).`;
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+        if (voiceModeRef.current) speak(errText);
         return;
       }
       const reader = res.body.getReader();
@@ -170,16 +210,16 @@ export default function AiShell() {
           } catch { /* ignore */ }
         }
       }
+      if (voiceModeRef.current && acc.trim()) speak(acc);
     } catch {
-      setMessages((m) => [...m, {
-        id: crypto.randomUUID(), role: "assistant",
-        text: "Tive um problema de conexão. Pode tentar de novo?",
-      }]);
+      const errText = "Tive um problema de conexão. Pode tentar de novo?";
+      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+      if (voiceModeRef.current) speak(errText);
     } finally {
       setBusy(false);
       setTimeout(() => inputRef.current?.focus(), 30);
     }
-  }, [busy, ctx, messages, navigate]);
+  }, [busy, ctx, messages, navigate, speak]);
 
 
 
@@ -261,8 +301,7 @@ export default function AiShell() {
 
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
-    // Caminho preferido: reconhecimento contínuo no próprio navegador.
-    if (startContinuousSpeech()) return;
+    // STT agora é ElevenLabs — não usamos mais a Web Speech API do navegador.
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
@@ -304,14 +343,13 @@ export default function AiShell() {
           const data = await res.json().catch(() => ({}));
           const text: string = (data?.text ?? "").trim();
           if (res.ok && text) {
-            await send(text);
+            await send(text, { fromVoice: true });
           } else {
-            setMessages((m) => [...m, {
-              id: crypto.randomUUID(), role: "assistant",
-              text: res.status === 401
-                ? "Sessão expirou. Faça login novamente."
-                : "Não consegui entender o áudio. Pode repetir?",
-            }]);
+            const errText = res.status === 401
+              ? "Sessão expirou. Faça login novamente."
+              : "Não consegui entender o áudio. Pode repetir?";
+            setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+            if (voiceModeRef.current) speak(errText);
           }
         } finally {
           setTranscribing(false);
@@ -327,7 +365,7 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send, startContinuousSpeech]);
+  }, [recording, transcribing, busy, send, speak]);
 
   const stopRecording = useCallback(() => {
     if (speechRecRef.current) { stopContinuousSpeech(); return; }
@@ -384,7 +422,25 @@ export default function AiShell() {
                 <div className="text-[10px] text-muted-foreground truncate">SISLAC Intelligence</div>
               </div>
             </div>
-            <div className="pr-8 shrink-0">
+            <div className="pr-8 shrink-0 flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const next = !voiceMode;
+                  setVoiceMode(next);
+                  voiceModeRef.current = next;
+                  if (!next && audioElRef.current) {
+                    try { audioElRef.current.pause(); } catch { /* noop */ }
+                    audioElRef.current = null;
+                  }
+                }}
+                aria-label={voiceMode ? "Silenciar respostas faladas" : "Ativar respostas faladas"}
+                title={voiceMode ? "Voz ativa (clique para silenciar)" : "Voz silenciada (clique para ativar)"}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                {voiceMode ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
