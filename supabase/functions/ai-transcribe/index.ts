@@ -5,11 +5,20 @@ import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts"
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: aiCorsHeaders });
 
-  const ELEVEN_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
-
   const auth = await authenticate(req);
   if (!auth.ok) return auth.response;
+
+  let cfgKey = "";
+  try {
+    const { data } = await auth.admin
+      .from("saas_settings")
+      .select("value")
+      .eq("key", "elevenlabs_config")
+      .maybeSingle();
+    cfgKey = (((data as { value?: unknown } | null)?.value as { apiKey?: string } | null)?.apiKey ?? "").trim();
+  } catch { /* noop */ }
+  const ELEVEN_KEY = (cfgKey || Deno.env.get("ELEVENLABS_API_KEY") || "").trim();
+  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
 
   let form: FormData;
   try { form = await req.formData(); }

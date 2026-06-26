@@ -1,18 +1,17 @@
 // ai-speak — texto → áudio (TTS) via ElevenLabs.
 // Voz natural e humanizada para as respostas do Assistente.
 // Recebe { text, voiceId? }, devolve { audio: base64Mp3, mime }.
+// Lê voiceId/apiKey/modelId do saas_settings (key: elevenlabs_config) quando não informado.
 import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-// Voz padrão multilíngue (PT-BR soa bem): Sarah.
-const DEFAULT_VOICE = "EXAVITQu4vr4xnSDxMaL";
+// Voz padrão multilíngue (PT-BR): voz personalizada do laboratório.
+const DEFAULT_VOICE = "7iqXtOF3wl3pomwXFY7G";
+const DEFAULT_MODEL = "eleven_multilingual_v2";
 const MAX_CHARS = 1200;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: aiCorsHeaders });
-
-  const ELEVEN_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
 
   const auth = await authenticate(req);
   if (!auth.ok) return auth.response;
@@ -23,9 +22,23 @@ Deno.serve(async (req) => {
   const raw = (body.text ?? "").trim();
   if (!raw) return jsonResponse({ error: "empty_text" }, 400);
 
-  // Limita para evitar custo/latência exagerados em respostas longas.
+  // Busca config global do ElevenLabs (voiceId/modelId/apiKey opcionais).
+  let cfg: { apiKey?: string; voiceId?: string; modelId?: string } = {};
+  try {
+    const { data } = await auth.admin
+      .from("saas_settings")
+      .select("value")
+      .eq("key", "elevenlabs_config")
+      .maybeSingle();
+    cfg = ((data as { value?: unknown } | null)?.value as typeof cfg) ?? {};
+  } catch { /* mantém defaults */ }
+
+  const ELEVEN_KEY = (cfg.apiKey?.trim() || Deno.env.get("ELEVENLABS_API_KEY") || "").trim();
+  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
+
   const text = raw.length > MAX_CHARS ? raw.slice(0, MAX_CHARS) + "…" : raw;
-  const voiceId = (body.voiceId ?? DEFAULT_VOICE).trim();
+  const voiceId = (body.voiceId ?? cfg.voiceId ?? DEFAULT_VOICE).trim() || DEFAULT_VOICE;
+  const modelId = (cfg.modelId ?? DEFAULT_MODEL).trim() || DEFAULT_MODEL;
 
   const res = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
@@ -37,7 +50,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         text,
-        model_id: "eleven_multilingual_v2",
+        model_id: modelId,
         voice_settings: {
           stability: 0.45,
           similarity_boost: 0.8,
