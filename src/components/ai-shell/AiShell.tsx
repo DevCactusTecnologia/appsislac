@@ -187,8 +187,86 @@ export default function AiShell() {
     streamRef.current = null;
   };
 
+  // Mantém a referência da última versão de `send` para uso em callbacks contínuos.
+  useEffect(() => { sendRef.current = send; }, [send]);
+
+  // Detecção da Web Speech API (Chrome/Edge/Safari iOS 14.5+).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SpeechRecognitionCtor: any =
+    typeof window !== "undefined"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+      : null;
+
+  const startContinuousSpeech = useCallback(() => {
+    if (!SpeechRecognitionCtor) return false;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rec: any = new SpeechRecognitionCtor();
+      rec.lang = "pt-BR";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rec.onresult = (event: any) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript: string = result[0]?.transcript ?? "";
+          if (result.isFinal) {
+            const clean = transcript.trim();
+            if (clean) {
+              setInterimText("");
+              sendRef.current?.(clean);
+            }
+          } else {
+            interim += transcript;
+          }
+        }
+        setInterimText(interim.trim());
+      };
+
+      rec.onerror = () => { /* ignora ruídos; continua até stop manual */ };
+      rec.onend = () => {
+        // Se ainda estamos em modo contínuo, reinicia automaticamente.
+        if (continuousRef.current) {
+          try { rec.start(); } catch { /* já iniciado */ }
+        } else {
+          setRecording(false);
+          setInterimText("");
+        }
+      };
+
+      continuousRef.current = true;
+      speechRecRef.current = rec;
+      rec.start();
+      setRecording(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [SpeechRecognitionCtor]);
+
+  const stopContinuousSpeech = useCallback(() => {
+    continuousRef.current = false;
+    try { speechRecRef.current?.stop(); } catch { /* noop */ }
+    speechRecRef.current = null;
+    setRecording(false);
+    setInterimText("");
+  }, []);
+
+  // ===== Microfone (fallback push-to-talk via MediaRecorder) =====
+  const stopTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
   const startRecording = useCallback(async () => {
     if (recording || transcribing || busy) return;
+    // Caminho preferido: reconhecimento contínuo no próprio navegador.
+    if (startContinuousSpeech()) return;
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setMessages((m) => [...m, {
         id: crypto.randomUUID(), role: "assistant",
@@ -252,18 +330,21 @@ export default function AiShell() {
         text: "Preciso de permissão para usar o microfone. Verifique as permissões do navegador.",
       }]);
     }
-  }, [recording, transcribing, busy, send]);
+  }, [recording, transcribing, busy, send, startContinuousSpeech]);
 
   const stopRecording = useCallback(() => {
+    if (speechRecRef.current) { stopContinuousSpeech(); return; }
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
     } else {
       stopTracks();
       setRecording(false);
     }
-  }, []);
+  }, [stopContinuousSpeech]);
 
   const toggleMic = () => { recording ? stopRecording() : startRecording(); };
+
+
 
   const newConversation = () => {
     setMessages([]);
