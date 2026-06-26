@@ -518,6 +518,16 @@ export default function AiShell() {
                   <span className="sm:hidden">Nova</span>
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                aria-label="Fechar assistente"
+                title="Fechar"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </header>
 
