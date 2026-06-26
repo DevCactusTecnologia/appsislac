@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
       messages: await convertToModelMessages(messages),
       tools: toolMap as never,
       stopWhen: stepCountIs(5),
+      maxOutputTokens: 2048,
       onFinish: async ({ text, usage, finishReason }) => {
         await admin.from("ai_audit").insert({
           tenant_id: tenantId,
