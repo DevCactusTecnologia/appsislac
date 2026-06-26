@@ -1,17 +1,18 @@
-# AI Shell — Assistente Operacional do SISLAC
+# AI Shell — Assistente do SISLAC
 
-> O AI Shell **não é um chat**. É o **Assistente Operacional** do laboratório. Tem cara de SISLAC, vocabulário de SISLAC, e abre direto em **Modo Assistente** (ver `assistant-mode.md`).
+> O AI Shell **não é um chat** e **não representa uma IA**. É o **Assistente do SISLAC** — um membro experiente da equipe do laboratório, sempre disponível. Ver `persona.md` para identidade e tom; `assistant-mode.md` para a tela inicial do painel.
 
 ## Princípio
-Um único ponto de entrada visual da IA, presente em todas as páginas autenticadas, **sem ocupar área útil** e **sem rota dedicada**. O Avatar é um portal para executar ações, não um espaço de conversa.
+Um único ponto de entrada do Assistente, presente em todas as páginas autenticadas, **sem ocupar área útil** e **sem rota dedicada**. O Avatar é um portal para executar tarefas, não um espaço de conversa. Transmite **disponibilidade permanente, nunca interrupção**.
 
 ## Identidade visual (parte do SISLAC, não um chatbot)
-- **Nome interno e exibido**: "Assistente" (nunca "Chat", "IA", "Bot", "Copilot").
+- **Nome interno e exibido**: "Assistente" (nunca "Chat", "IA", "Bot", "Copilot", "Assistente de IA").
 - **Ícone**: `Sparkles` da Lucide na cor `primary` (#4D41F3) — mesma família visual do restante do sistema.
 - **Tipografia**: Inter, mesma do app. Sem fonte distinta.
 - **Tokens**: apenas semânticos do `index.css` (primary/background/border/muted-foreground). Sem gradiente, sem sombra extra, raio 8px.
-- **Aria-label**: `Assistente SISLAC`.
+- **Aria-label**: `Assistente do SISLAC`.
 - **Tooltip do botão**: "Assistente • Ctrl+J".
+- **Tom**: profissional, objetivo, silencioso, previsível, discreto, confiável (ver `persona.md`).
 
 ## Posicionamento
 - Montado no `AppShell` após `<Outlet/>`, nível de `Toaster`.

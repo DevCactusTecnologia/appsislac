@@ -1,6 +1,10 @@
 # Modo Assistente
 
-> Princípio oficial: **A IA do SISLAC é orientada à execução de tarefas e automação operacional. O chat é apenas a interface de comunicação.** O objetivo principal é reduzir cliques, eliminar tarefas repetitivas, sugerir ações inteligentes e executar operações autorizadas de forma contextual, segura e integrada ao fluxo do laboratório.
+> Princípios oficiais:
+> 1. **O Assistente é um membro experiente da equipe**, não uma IA (ver `persona.md`).
+> 2. **Orientado à execução de tarefas e automação operacional.** O chat é apenas a interface de comunicação. O objetivo é reduzir cliques, eliminar tarefas repetitivas, sugerir ações inteligentes e executar operações autorizadas de forma contextual, segura e integrada ao fluxo do laboratório.
+>
+> Ordem fixa do painel ao abrir: **Ações Rápidas → Sugestões Contextuais → Histórico Recente → Campo de Conversa**. O chat é recurso complementar, nunca ponto de partida.
 
 ## Conceito
 Ao abrir o Avatar, o usuário **NÃO** vê um input em branco com "Olá, como posso ajudar?". Vê uma **grade de Ações Rápidas** contextual ao seu papel, rota atual e foco. O chat fica disponível como segunda camada (textarea minimizado no rodapé), nunca como tela principal.

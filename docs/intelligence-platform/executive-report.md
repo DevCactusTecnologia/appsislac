@@ -1,17 +1,22 @@
-# Executive Report — SISLAC Intelligence Platform (Fase 1 + 1.1)
+# Executive Report — SISLAC Intelligence Platform (Fase 1 + 1.1 + 1.2)
 
-> **Status**: OLHOU + ENTENDEU + Refinamento Arquitetural concluídos. Nenhum código foi escrito.
+> **Status**: OLHOU + ENTENDEU + Refinamento Arquitetural + Humanização concluídos. Nenhum código foi escrito.
 > **Próxima fase**: aguarda aprovação explícita do usuário.
 
 ## Sumário
-A Plataforma de Inteligência do SISLAC foi projetada como **capacidade transversal** e **assistente operacional**, não como módulo nem como chatbot. A arquitetura reutiliza integralmente a infraestrutura existente (Supabase, RLS, `current_tenant_id()`, `has_permission`, stores oficiais) e adota Lovable AI Gateway via AI SDK como única boundary de LLM.
+A Plataforma de Inteligência do SISLAC foi projetada como **capacidade transversal** e **Assistente do laboratório**, não como módulo, não como chatbot, e **não como IA percebida pelo usuário**. A arquitetura reutiliza integralmente a infraestrutura existente (Supabase, RLS, `current_tenant_id()`, `has_permission`, stores oficiais) e adota Lovable AI Gateway via AI SDK como única boundary de LLM.
 
-A Fase 1.1 elevou a filosofia para **orientação à execução**: o chat é apenas a interface; o objetivo é executar tarefas e automatizar processos.
+- **Fase 1.1** elevou a filosofia para **orientação à execução**: o chat é apenas a interface; o objetivo é executar tarefas e automatizar processos.
+- **Fase 1.2** humanizou o Assistente: ele **representa um membro experiente da equipe do laboratório**, não uma Inteligência Artificial.
 
-## Princípio oficial adicionado (Fase 1.1)
-> A Inteligência Artificial do SISLAC é orientada à execução de tarefas e automação operacional. O chat é apenas a interface de comunicação. O objetivo principal é reduzir cliques, eliminar tarefas repetitivas, sugerir ações inteligentes e executar operações autorizadas de forma contextual, segura e integrada ao fluxo do laboratório.
+## Princípios oficiais consolidados
+> **(1.1)** A inteligência do SISLAC é orientada à execução de tarefas e automação operacional. O chat é apenas a interface de comunicação. O objetivo principal é reduzir cliques, eliminar tarefas repetitivas, sugerir ações inteligentes e executar operações autorizadas de forma contextual, segura e integrada ao fluxo do laboratório.
+>
+> **(1.2)** O Assistente do SISLAC não representa uma Inteligência Artificial. Ele representa um membro experiente da equipe do laboratório. O usuário deve pensar "vou pedir ajuda ao Assistente do SISLAC", nunca "vou conversar com uma IA". Ver `persona.md`.
 
 Hierarquia operacional: `Responder → Sugerir → Executar → Automatizar` (priorizar sempre Executar e Automatizar).
+
+**Métrica soberana**: `ai_time_saved_seconds` — tempo operacional economizado para o laboratório. Todas as demais métricas são secundárias.
 
 ## Camadas definidas
 1. **AI Shell — Assistente Operacional** — Avatar global + painel lateral (Ctrl/Cmd+J). Abre em **Modo Assistente**, não em chat.
@@ -43,12 +48,14 @@ Hierarquia operacional: `Responder → Sugerir → Executar → Automatizar` (pr
 | 8 | Auditoria **obrigatória** em toda Action. |
 | 9 | Memória **sem PII clínica**. |
 | 10 | **Confirmação humana** em Actions de mutação. |
-| 11 | **IA orientada à execução**. Chat é apenas interface. |
+| 11 | **Orientado à execução**. Chat é apenas interface. |
 | 12 | **Avatar abre em Modo Assistente** (Ações Rápidas), nunca em input vazio. |
 | 13 | **Toda Skill exige ≥1 Action útil** + baseline de tempo/cliques. |
-| 14 | **Métricas operacionais obrigatórias** (tempo economizado, cliques removidos). |
+| 14 | **Métricas operacionais obrigatórias**; soberana = tempo economizado. |
+| 15 | **O Assistente é percebido como colaborador do laboratório**, não como IA. Termos "IA/Chat/Bot/Copilot" proibidos na UI. |
 
 ## Entregáveis (em `docs/intelligence-platform/`)
+- `persona.md` (**novo — Fase 1.2**)
 - `architecture-overview.md` (atualizado)
 - `ai-shell.md` (atualizado — Assistente Operacional)
 - `assistant-mode.md` (**novo**)
