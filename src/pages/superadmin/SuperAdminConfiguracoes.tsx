@@ -751,6 +751,66 @@ export default function SuperAdminConfiguracoes() {
                 />
               </div>
             )}
+
+            {/* ElevenLabs */}
+            {activeTab === "elevenlabs" && (
+              <div className="p-5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-foreground">ElevenLabs</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Voz e transcrição do Assistente (TTS + STT)
+                    </p>
+                  </div>
+                  <StatusBadge configured={!!elevenOriginal.voiceId} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <FieldLabel>API Key</FieldLabel>
+                    <SecretInput
+                      value={eleven.apiKey}
+                      onChange={(v) => updEleven("apiKey", v)}
+                      placeholder="Deixe vazio para usar a chave da plataforma"
+                      visible={!!revealKeys.eleven}
+                      onToggle={() => toggleReveal("eleven")}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Voice ID</FieldLabel>
+                    <Input
+                      value={eleven.voiceId}
+                      onChange={(e) => updEleven("voiceId", e.target.value)}
+                      placeholder="7iqXtOF3wl3pomwXFY7G"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Modelo</FieldLabel>
+                    <Input
+                      value={eleven.modelId}
+                      onChange={(e) => updEleven("modelId", e.target.value)}
+                      placeholder="eleven_multilingual_v2"
+                    />
+                  </div>
+                </div>
+
+                <InfoNote>
+                  O <strong>Voice ID</strong> personalizado já vem pré-configurado
+                  (<code className="font-mono text-[11px]">7iqXtOF3wl3pomwXFY7G</code>).
+                  A <strong>API Key</strong> é opcional — se deixada em branco, o sistema
+                  usa a chave global gerenciada pela plataforma. Modelo recomendado:
+                  <code className="font-mono text-[11px]"> eleven_multilingual_v2</code>.
+                </InfoNote>
+
+                <ActionsBar
+                  onTest={undefined}
+                  testing={false}
+                  onSave={saveEleven}
+                  saving={saving}
+                  dirty={isElevenDirty}
+                />
+              </div>
+            )}
           </>
         )}
       </section>
