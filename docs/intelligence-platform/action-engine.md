@@ -3,6 +3,8 @@
 ## Princípio
 A IA **executa**, não apenas responde. Toda execução acontece através de **Actions** — funções server-side que reusam serviços oficiais e atravessam auditoria + permissão + confirmação.
 
+> Regra dura: **toda Skill precisa de pelo menos uma Action útil para a operação do laboratório**. Skills puramente conversacionais não passam em revisão (ver `governance.md`).
+
 ## Anatomia de uma Action
 ```ts
 type Action<Input, Output> = {
@@ -12,9 +14,13 @@ type Action<Input, Output> = {
   inputSchema: ZodSchema<Input>;
   requiredPermission: Permission;
   needsApproval: boolean;      // true para mutações
-  side_effects: "none" | "read" | "write" | "external"; // tag
+  side_effects: "none" | "read" | "write" | "external";
   execute: (ctx, input) => Promise<Output>;
   audit: (input, output) => Record<string, unknown>; // o que loga (sanitizado)
+  metrics: {
+    baselineSeconds: number;   // tempo manual estimado para essa ação
+    baselineClicks: number;    // cliques manuais que essa ação remove
+  };
 };
 ```
 

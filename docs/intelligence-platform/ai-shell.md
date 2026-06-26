@@ -1,29 +1,43 @@
-# AI Shell — Avatar Global
+# AI Shell — Assistente Operacional do SISLAC
+
+> O AI Shell **não é um chat**. É o **Assistente Operacional** do laboratório. Tem cara de SISLAC, vocabulário de SISLAC, e abre direto em **Modo Assistente** (ver `assistant-mode.md`).
 
 ## Princípio
-Um único ponto de entrada visual da IA, presente em todas as páginas autenticadas, **sem ocupar área útil** e **sem rota dedicada**. O avatar é um portal, não uma página.
+Um único ponto de entrada visual da IA, presente em todas as páginas autenticadas, **sem ocupar área útil** e **sem rota dedicada**. O Avatar é um portal para executar ações, não um espaço de conversa.
+
+## Identidade visual (parte do SISLAC, não um chatbot)
+- **Nome interno e exibido**: "Assistente" (nunca "Chat", "IA", "Bot", "Copilot").
+- **Ícone**: `Sparkles` da Lucide na cor `primary` (#4D41F3) — mesma família visual do restante do sistema.
+- **Tipografia**: Inter, mesma do app. Sem fonte distinta.
+- **Tokens**: apenas semânticos do `index.css` (primary/background/border/muted-foreground). Sem gradiente, sem sombra extra, raio 8px.
+- **Aria-label**: `Assistente SISLAC`.
+- **Tooltip do botão**: "Assistente • Ctrl+J".
 
 ## Posicionamento
-- Componente montado no `AppShell` (após `<Outlet/>`), nível de `Toaster`.
-- Botão flutuante: `fixed bottom-4 right-4`, `z-40`, `40x40px`, ícone `Sparkles`, cor `primary` (#4D41F3).
+- Montado no `AppShell` após `<Outlet/>`, nível de `Toaster`.
+- Botão flutuante: `fixed bottom-4 right-4`, `z-40`, `40x40px`.
 - Quando minimizado: badge numerado se houver sugestões proativas pendentes.
-- Atalho de teclado oficial: **Ctrl/Cmd + J** abre o painel; **Esc** fecha.
+- Atalho oficial: **Ctrl/Cmd + J** abre; **Esc** fecha.
 
 ## Painel
 - Drawer lateral à direita (`Sheet` shadcn), largura `420px` desktop, `100vw` mobile.
 - Não bloqueia interação com a página (overlay translúcido, click-outside fecha).
-- Header: nome curto ("Assistente"), status (online/streaming/erro), botão minimizar e fechar.
-- Body: lista de mensagens (markdown via `react-markdown`), tool calls renderizadas como cards compactos com status (pending/running/success/error), botões de confirmação para ações `needsApproval`.
-- Composer: input multiline auto-resize, enviar com Enter (Shift+Enter = nova linha), botão stop durante streaming.
-- Footer: chips de "ações sugeridas" derivadas do contexto atual.
+- Header: "Assistente" + status discreto (online/streaming/erro) + minimizar/fechar.
+- **Body abre sempre em Modo Assistente** (ver `assistant-mode.md`):
+  1. Grade de Ações Rápidas (contextual, filtrada por permissão).
+  2. Chips de Sugestões Contextuais (até 3).
+  3. Histórico recente colapsável (últimas 3 interações).
+- Composer minimizado no rodapé: placeholder `Pedir algo...`; expande ao focar.
 
 ## Estados visuais
 | Estado | Aparência |
 |---|---|
-| Oculto | Sem botão (rotas públicas `/`, `/login`, `/inscricao`) |
+| Oculto | Sem botão (rotas públicas e de impressão) |
 | Idle | Botão flutuante discreto |
-| Sugestão proativa | Botão com badge numérico + tooltip "1 sugestão" |
-| Streaming | Painel aberto, indicador de tokens |
+| Sugestão proativa | Badge numérico no botão + tooltip "N sugestões" |
+| Executando Action | Card inline no painel: ícone + ação humana + spinner |
+| Aguardando confirmação | Card com resumo + botões Confirmar/Cancelar |
+| Streaming texto | Indicador de tokens no header |
 | Erro | Toast com mensagem do gateway (429/402/etc.) |
 
 ## Mobile
@@ -35,21 +49,23 @@ Um único ponto de entrada visual da IA, presente em todas as páginas autentica
 - Landing pública (`/`).
 - Login (`/login`, `/super-admin`).
 - Inscrição (`/inscricao`).
-- Telas de impressão (`/laudo/print/*`, `/imprimir/*`) — atrapalha o A4.
-- Páginas em fullscreen explícito (regra: `data-ai-shell="off"` no container raiz).
+- Telas de impressão (`/laudo/print/*`, `/imprimir/*`).
+- Páginas com `data-ai-shell="off"` no container raiz.
 
 ## Tema
-- Usa apenas tokens semânticos do `index.css` (primary, background, border, muted-foreground).
-- Sem gradientes, sem sombras, raio 8px (`rounded-lg`).
-- Respeita dark mode automaticamente.
+- Usa apenas tokens semânticos do `index.css`. Respeita dark mode automaticamente.
 
 ## Notificações proativas
-- O Context Engine pode emitir "hints" leves (ex.: "3 resultados parados há >24h"); o AI Shell incrementa o badge.
-- Limite: máximo 3 hints simultâneos; nunca push intrusivo (sem toast, sem modal).
+- Context Engine emite hints leves (ver `proactive-suggestions.md`); badge incrementa.
+- Máximo 3 hints visíveis; nunca toast, nunca modal, nunca som.
 
 ## Anti-padrões proibidos
+- Chamar de "Chat", "Bot", "IA", "Copilot" em qualquer texto visível.
+- Abrir o painel já no input de mensagem (sempre abre em Modo Assistente).
+- Mensagem de boas-vindas conversacional ("Olá, como posso ajudar?").
 - Criar rota `/agent` ou `/ai`.
 - Usar `useNavigate()` para mover o usuário sem confirmação.
 - Abrir modal por cima de modal.
 - Reproduzir áudio sem ação explícita.
 - Persistir estado de UI no localStorage entre tenants.
+- Ícones decorativos sem ação associada.
