@@ -167,6 +167,7 @@ export const CAPABILITIES: CapabilityMeta[] = [
     color: "primary",
     actions: [{ id: "resultado.set_valor", tool: "resultado_set_valor" }],
     promptTemplate: "Inserir valor no exame ",
+  },
   {
     id: "resultado.set_varios",
     title: "Inserir vários valores",
