@@ -14,6 +14,8 @@
 11. **Toda Skill declara métricas de baseline** (`baselineSeconds`, `baselineClicks`, `category`). Sem isso não entra (ver `metrics-model.md`).
 12. **Avatar abre em Modo Assistente** (Ações Rápidas), nunca diretamente em input de chat (ver `assistant-mode.md`).
 13. **Hierarquia operacional**: `Responder → Sugerir → Executar → Automatizar`. Priorizar Executar e Automatizar.
+14. **O Assistente é percebido como colaborador do laboratório**, não como IA (ver `persona.md`). Nenhum texto visível, label ou microcopy pode usar "IA", "Chat", "Bot", "Copilot".
+15. **Métrica soberana**: **tempo operacional economizado**. Todas as demais métricas são secundárias.
 
 ## Processo: criar nova Skill
 1. Abrir RFC curto em `docs/intelligence-platform/skills/<dominio>.md` com:
@@ -35,8 +37,11 @@
 Uma Skill é **rejeitada** se:
 - Não declara `metrics.baseline*`.
 - Não possui pelo menos uma Action útil.
-- Sua única categoria é `conversational`.
+- Sua única categoria é `conversational` (apenas responde perguntas ou apenas gera texto).
 - Não economiza ao menos 2 cliques OU 15 segundos vs. fluxo manual.
+- Não reutiliza serviços oficiais do SISLAC (duplica lógica de store/serviço).
+- Aumenta a complexidade da interface (novos componentes globais, novas rotas, novos modos visuais).
+- Não produz ganho operacional mensurável em `ai_time_saved_seconds`.
 
 ## Processo: criar nova Action
 - Vive dentro de uma Skill existente.

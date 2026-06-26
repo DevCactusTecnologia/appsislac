@@ -3,6 +3,11 @@
 ## Princípio
 A Plataforma de Inteligência **prova seu valor por métricas operacionais**, não por engajamento conversacional. Tempo economizado e cliques eliminados > mensagens trocadas.
 
+## Métrica soberana
+**`ai_time_saved_seconds` — Tempo operacional economizado para o laboratório.**
+
+Esta é a principal métrica da Plataforma. Todas as demais (mensagens, prompts, duração de conversa, adoção) são **secundárias** e existem apenas para diagnosticar problemas que afetem a métrica soberana. Nunca otimizar para volume de conversa.
+
 ## Métricas obrigatórias (GA)
 ### Execução
 | Métrica | Descrição | Fonte |

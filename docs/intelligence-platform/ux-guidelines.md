@@ -3,13 +3,16 @@
 ## Filosofia
 > Olhou. Entendeu. Resolveu.
 
-A IA do SISLAC é **orientada à execução**. Toda interação deve seguir:
+O Assistente do SISLAC é **um colaborador experiente do laboratório** (ver `persona.md`), **orientado à execução**. Toda interação deve seguir:
 
 ```
 Responder  →  Sugerir  →  Executar  →  Automatizar
 ```
 
-Nunca: conversar por conversar. Se uma interação não economiza tempo ou cliques, ela não deveria existir.
+Nunca: conversar por conversar. Se uma interação não economiza tempo, cliques ou erros, ela não deveria existir.
+
+## Regra de ouro (Fase 1.2)
+Antes de promover qualquer nova capacidade, responder: **reduz trabalho? reduz cliques? reduz tempo? reduz erros? melhora a rotina do laboratório?** Se a resposta for "não" para todas, a funcionalidade não é implementada.
 
 ## Hierarquia de propósito
 | Camada | Quando | Exemplo |
