@@ -91,7 +91,8 @@ interface WhatsappConfig {
 interface ElevenLabsConfig {
   apiKey: string;
   voiceId: string;
-  modelId: string;
+  /** Modelo fixo `eleven_v3` — mantido por compatibilidade de leitura; não editável. */
+  modelId?: string;
 }
 
 const EMPTY_SMTP: SmtpConfig = {
@@ -101,7 +102,8 @@ const EMPTY_SMTP: SmtpConfig = {
 const EMPTY_AI: AiConfig = { geminiApiKey: "", openaiApiKey: "", openaiOrgId: "" };
 const EMPTY_S3: S3Config = { accessKeyId: "", secretAccessKey: "", region: "us-east-1", bucket: "", endpoint: "" };
 const EMPTY_WPP: WhatsappConfig = { provider: "meta", phoneNumberId: "", accessToken: "", verifyToken: "", businessAccountId: "" };
-const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G", modelId: "eleven_multilingual_v2" };
+const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G" };
+
 
 const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defaultPort: number }[] = [
   { value: "none", label: "Nenhuma", hint: "Sem criptografia (não recomendado)", defaultPort: 25 },
@@ -282,7 +284,7 @@ export default function SuperAdminConfiguracoes() {
     const payload: ElevenLabsConfig = {
       apiKey: eleven.apiKey.trim(),
       voiceId: eleven.voiceId.trim(),
-      modelId: eleven.modelId.trim() || "eleven_multilingual_v2",
+      modelId: "eleven_v3",
     };
     const { error } = await saveSetting("elevenlabs_config", payload);
     setSaving(false);
@@ -784,23 +786,16 @@ export default function SuperAdminConfiguracoes() {
                       placeholder="7iqXtOF3wl3pomwXFY7G"
                     />
                   </div>
-                  <div>
-                    <FieldLabel>Modelo</FieldLabel>
-                    <Input
-                      value={eleven.modelId}
-                      onChange={(e) => updEleven("modelId", e.target.value)}
-                      placeholder="eleven_multilingual_v2"
-                    />
-                  </div>
                 </div>
 
                 <InfoNote>
                   O <strong>Voice ID</strong> personalizado já vem pré-configurado
                   (<code className="font-mono text-[11px]">7iqXtOF3wl3pomwXFY7G</code>).
                   A <strong>API Key</strong> é opcional — se deixada em branco, o sistema
-                  usa a chave global gerenciada pela plataforma. Modelo recomendado:
-                  <code className="font-mono text-[11px]"> eleven_multilingual_v2</code>.
+                  usa a chave global gerenciada pela plataforma. Modelo travado em
+                  <code className="font-mono text-[11px]"> eleven_v3</code> (não editável).
                 </InfoNote>
+
 
                 <ActionsBar
                   onTest={undefined}

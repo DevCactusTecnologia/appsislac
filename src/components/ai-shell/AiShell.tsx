@@ -2,7 +2,7 @@
 // Design ChatGPT-like: limpo, espaçoso, moderno. Voz com comandos de navegação.
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX } from "lucide-react";
+import { Sparkles, Send, Loader2, Mic, Square, ArrowUp, PlusCircle, User as UserIcon, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,10 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Cancela o envio do áudio: ao stop()ar, descarta blob ao invés de transcrever.
+  const cancelAudioRef = useRef(false);
+  // Aborta a requisição de chat em andamento (cancela resposta do LLM).
+  const chatAbortRef = useRef<AbortController | null>(null);
   // Reconhecimento contínuo (Web Speech API) — desativado: STT agora é ElevenLabs.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechRecRef = useRef<any>(null);
@@ -152,6 +156,8 @@ export default function AiShell() {
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setBusy(true);
+    const abort = new AbortController();
+    chatAbortRef.current = abort;
     try {
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
@@ -171,6 +177,7 @@ export default function AiShell() {
             parts: [{ type: "text", text: m.text }],
           })),
         }),
+        signal: abort.signal,
       });
       if (!res.ok || !res.body) {
         const errText = res.status === 429
@@ -211,15 +218,41 @@ export default function AiShell() {
         }
       }
       if (voiceModeRef.current && acc.trim()) speak(acc);
-    } catch {
-      const errText = "Tive um problema de conexão. Pode tentar de novo?";
-      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
-      if (voiceModeRef.current) speak(errText);
+    } catch (e) {
+      // Cancelamento pelo usuário — silencioso.
+      if ((e as { name?: string })?.name === "AbortError") {
+        // Marca a mensagem como interrompida.
+        setMessages((m) => {
+          const last = m[m.length - 1];
+          if (last?.role === "assistant") {
+            return m.map((x, i) => i === m.length - 1 ? { ...x, text: (x.text || "") + (x.text ? "\n\n" : "") + "_(resposta interrompida)_" } : x);
+          }
+          return m;
+        });
+      } else {
+        const errText = "Tive um problema de conexão. Pode tentar de novo?";
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: errText }]);
+        if (voiceModeRef.current) speak(errText);
+      }
     } finally {
+      chatAbortRef.current = null;
       setBusy(false);
       setTimeout(() => inputRef.current?.focus(), 30);
     }
   }, [busy, ctx, messages, navigate, speak]);
+
+  // Cancela qualquer resposta em andamento (texto streamando do LLM).
+  const cancelChat = useCallback(() => {
+    try { chatAbortRef.current?.abort(); } catch { /* noop */ }
+    chatAbortRef.current = null;
+    // Para também o áudio que estiver tocando.
+    if (audioElRef.current) {
+      try { audioElRef.current.pause(); } catch { /* noop */ }
+      audioElRef.current = null;
+    }
+  }, []);
+
+
 
 
 
@@ -319,10 +352,17 @@ export default function AiShell() {
                 : "";
       const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       chunksRef.current = [];
+      cancelAudioRef.current = false;
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = async () => {
         setRecording(false);
         stopTracks();
+        // Cancelado pelo usuário — descarta áudio sem transcrever.
+        if (cancelAudioRef.current) {
+          cancelAudioRef.current = false;
+          chunksRef.current = [];
+          return;
+        }
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         if (blob.size < 1200) return;
         setTranscribing(true);
@@ -367,7 +407,9 @@ export default function AiShell() {
     }
   }, [recording, transcribing, busy, send, speak]);
 
+  // Para a gravação e ENVIA a transcrição.
   const stopRecording = useCallback(() => {
+    cancelAudioRef.current = false;
     if (speechRecRef.current) { stopContinuousSpeech(); return; }
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
@@ -377,7 +419,25 @@ export default function AiShell() {
     }
   }, [stopContinuousSpeech]);
 
+  // Cancela a gravação SEM transcrever nem enviar.
+  const cancelRecording = useCallback(() => {
+    cancelAudioRef.current = true;
+    chunksRef.current = [];
+    if (speechRecRef.current) {
+      stopContinuousSpeech();
+      return;
+    }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try { recorderRef.current.stop(); } catch { /* noop */ }
+    } else {
+      stopTracks();
+      setRecording(false);
+    }
+  }, [stopContinuousSpeech]);
+
   const toggleMic = () => { recording ? stopRecording() : startRecording(); };
+
+
 
 
 
@@ -534,8 +594,17 @@ export default function AiShell() {
                     <span className="flex-1 min-w-0">
                       {interimText
                         ? <span className="text-foreground/80 italic">"{interimText}"</span>
-                        : <>Ouvindo continuamente… fale à vontade. Toque no microfone para parar.</>}
+                        : <>Ouvindo… fale à vontade. Toque no <strong>quadrado</strong> para enviar ou no <strong>X</strong> para cancelar.</>}
                     </span>
+                    <button
+                      type="button"
+                      onClick={cancelRecording}
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                      aria-label="Cancelar gravação"
+                      title="Cancelar gravação (descarta a fala)"
+                    >
+                      <X className="h-3 w-3" /> Cancelar
+                    </button>
                   </>
                 ) : (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo…</>
@@ -563,27 +632,54 @@ export default function AiShell() {
                 }}
               />
               <div className="flex flex-col items-center gap-1 pb-1">
+                {recording ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={cancelRecording}
+                    aria-label="Cancelar gravação"
+                    title="Cancelar gravação (descarta)"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-500/10"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
                   onClick={toggleMic}
                   disabled={busy || transcribing}
-                  aria-label={recording ? "Parar gravação" : "Falar"}
-                  title={recording ? "Parar gravação" : "Falar"}
+                  aria-label={recording ? "Parar e enviar" : "Falar"}
+                  title={recording ? "Parar e enviar" : "Falar"}
                   className={`h-8 w-8 rounded-full ${recording ? "bg-red-500/10 text-red-600 hover:bg-red-500/15" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {recording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
                 </Button>
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!canSend}
-                  aria-label="Enviar"
-                  className="h-8 w-8 rounded-full disabled:opacity-40"
-                >
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-                </Button>
+                {busy ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={cancelChat}
+                    aria-label="Cancelar resposta"
+                    title="Cancelar resposta"
+                    className="h-8 w-8 rounded-full bg-muted text-foreground hover:bg-muted/80"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={!canSend}
+                    aria-label="Enviar"
+                    className="h-8 w-8 rounded-full disabled:opacity-40"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </form>
             <div className="mt-2 text-[10px] text-center text-muted-foreground/70">
