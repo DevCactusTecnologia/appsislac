@@ -284,7 +284,7 @@ export default function SuperAdminConfiguracoes() {
     const payload: ElevenLabsConfig = {
       apiKey: eleven.apiKey.trim(),
       voiceId: eleven.voiceId.trim(),
-      modelId: eleven.modelId.trim() || "eleven_multilingual_v2",
+      modelId: "eleven_v3",
     };
     const { error } = await saveSetting("elevenlabs_config", payload);
     setSaving(false);
