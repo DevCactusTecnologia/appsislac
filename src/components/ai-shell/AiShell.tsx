@@ -406,9 +406,9 @@ export default function AiShell() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={recording ? "Estou ouvindo…" : "Escreva uma mensagem ou use o microfone"}
-                rows={1}
+                rows={3}
                 disabled={recording || transcribing}
-                className="min-h-[36px] max-h-[140px] resize-none text-sm border-0 focus-visible:ring-0 shadow-none bg-transparent px-2 py-2"
+                className="min-h-[84px] max-h-[280px] resize-y text-sm border-0 focus-visible:ring-0 shadow-none bg-transparent px-2 py-2 leading-relaxed"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
