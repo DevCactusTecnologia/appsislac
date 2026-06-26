@@ -193,6 +193,7 @@ export default function AiShell() {
       const aId = crypto.randomUUID();
       setMessages((m) => [...m, { id: aId, role: "assistant", text: "" }]);
       let acc = "";
+      let toolFeedback = ""; // fallback de voz quando o LLM não devolve texto após a tool.
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -207,16 +208,39 @@ export default function AiShell() {
               acc += obj.delta;
               setMessages((m) => m.map((x) => x.id === aId ? { ...x, text: acc } : x));
             }
-            // Navegação automática quando uma tool devolve { navigate: "/rota" }.
+            // Tool result (AI SDK v5): { type: "tool-result", toolName, output }
             const out = obj.output ?? obj.result ?? obj.toolResult;
-            const nav = out && typeof out === "object" ? (out as { navigate?: unknown }).navigate : undefined;
-            if (typeof nav === "string" && nav.startsWith("/")) {
-              setTimeout(() => navigate(nav), 50);
+            if (out && typeof out === "object") {
+              const o = out as { navigate?: unknown; ok?: unknown; data?: { parametro?: string; valor?: string; aplicados?: unknown[] } };
+              const nav = o.navigate;
+              if (typeof nav === "string" && nav.startsWith("/")) {
+                setTimeout(() => navigate(nav), 50);
+              }
+              if (o.ok === true && o.data) {
+                if (Array.isArray(o.data.aplicados) && o.data.aplicados.length > 0) {
+                  toolFeedback = `Pronto, gravei ${o.data.aplicados.length} valores.`;
+                } else if (o.data.parametro && o.data.valor !== undefined) {
+                  toolFeedback = `Pronto, gravei ${o.data.valor} em ${o.data.parametro}.`;
+                } else if (!toolFeedback) {
+                  toolFeedback = "Pronto.";
+                }
+              }
             }
           } catch { /* ignore */ }
         }
       }
-      if (voiceModeRef.current && acc.trim()) speak(acc);
+      // Voz: sempre fala em modo voz. Se o modelo ficou em silêncio após a tool,
+      // usa o feedback derivado do retorno da própria ferramenta.
+      if (voiceModeRef.current) {
+        const spoken = acc.trim() || toolFeedback;
+        if (spoken) speak(spoken);
+        // Se a tool gravou mas o LLM não escreveu nada, mostra no chat também.
+        if (!acc.trim() && toolFeedback) {
+          setMessages((m) => m.map((x) => x.id === aId ? { ...x, text: toolFeedback } : x));
+        }
+      } else if (!acc.trim() && toolFeedback) {
+        setMessages((m) => m.map((x) => x.id === aId ? { ...x, text: toolFeedback } : x));
+      }
     } catch (e) {
       // Cancelamento pelo usuário — silencioso.
       if ((e as { name?: string })?.name === "AbortError") {
