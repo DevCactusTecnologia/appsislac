@@ -60,6 +60,10 @@ export default function AiShell() {
   const streamRef = useRef<MediaStream | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Cancela o envio do áudio: ao stop()ar, descarta blob ao invés de transcrever.
+  const cancelAudioRef = useRef(false);
+  // Aborta a requisição de chat em andamento (cancela resposta do LLM).
+  const chatAbortRef = useRef<AbortController | null>(null);
   // Reconhecimento contínuo (Web Speech API) — desativado: STT agora é ElevenLabs.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const speechRecRef = useRef<any>(null);
