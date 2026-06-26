@@ -24,27 +24,61 @@ export function buildResultadoTools(userClient: SupabaseClient) {
   return {
     resultado_open: tool({
       description:
-        "Abre o atendimento/resultado de um paciente na tela de inserção/edição de resultados. " +
+        "Abre o atendimento/resultado na tela de inserção/edição de resultados. " +
         "USE SEMPRE que o usuário pedir para 'abrir atendimento', 'abrir paciente', 'abrir resultado', " +
-        "'abrir exame', 'lançar resultado' ou similar mencionando um nome/CPF. " +
-        "Recebe nome/CPF/ID do paciente; opcionalmente o nome do exame para escolher o atendimento certo. " +
-        "Retorna a rota /resultado/{id} para navegação automática.",
+        "'abrir exame', 'lançar resultado' ou similar. " +
+        "Aceita: nome/CPF/ID do paciente OU número de protocolo do atendimento (ex.: '0000003', '#3', 'atendimento 3'). " +
+        "Opcionalmente o nome do exame. Retorna a rota /resultado/{id} para navegação automática.",
       inputSchema: z.object({
-        paciente: z.string().min(2).max(120),
+        paciente: z.string().min(1).max(120).optional().describe("Nome, CPF ou ID do paciente"),
+        protocolo: z.string().min(1).max(40).optional().describe("Número/protocolo do atendimento (ex.: '0000003', '3')"),
         exame: z.string().optional().describe("Nome (parcial) do exame, opcional"),
       }),
-      execute: async ({ paciente, exame }) => {
+      execute: async ({ paciente, protocolo, exame }) => {
         try {
+          // 1) Busca direta por protocolo
+          if (protocolo && !paciente) {
+            const raw = String(protocolo).trim().replace(/^#/, "");
+            const digits = raw.replace(/\D/g, "");
+            const candidatos = Array.from(new Set([
+              raw,
+              digits,
+              digits.replace(/^0+/, ""),
+              digits.padStart(7, "0"),
+            ].filter(Boolean)));
+            const { data: ats, error } = await userClient
+              .from("atendimentos")
+              .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(nome_exame), pacientes(nome)")
+              .in("protocolo", candidatos)
+              .order("data_atendimento", { ascending: false })
+              .limit(5);
+            if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
+            if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: `Atendimento ${protocolo} não encontrado.` } };
+            const chosen: any = ats[0];
+            const route = `/resultado/${chosen.id}`;
+            return {
+              ok: true,
+              navigate: route,
+              data: {
+                route,
+                atendimento_id: chosen.id,
+                protocolo: chosen.protocolo,
+                paciente: chosen.pacientes?.nome,
+                exames: (chosen.atendimento_exames ?? []).map((e: any) => e.nome_exame),
+              },
+            };
+          }
+
+          if (!paciente) return { ok: false, error: { code: "BAD_INPUT", message: "Informe paciente ou protocolo." } };
           const pacs = await findPaciente(userClient, paciente);
           if (pacs.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Paciente não encontrado." } };
           const ids = pacs.map((p) => p.id);
-          let q = userClient
+          const { data: ats, error } = await userClient
             .from("atendimentos")
             .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(nome_exame)")
             .in("paciente_id", ids)
             .order("data_atendimento", { ascending: false })
             .limit(10);
-          const { data: ats, error } = await q;
           if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
           if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Nenhum atendimento encontrado para este paciente." } };
 
