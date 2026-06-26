@@ -48,9 +48,9 @@ export function buildResultadoTools(userClient: SupabaseClient) {
             ].filter(Boolean)));
             const { data: ats, error } = await userClient
               .from("atendimentos")
-              .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(nome_exame), pacientes(nome)")
+              .select("id, protocolo, data, status, paciente_id, atendimento_exames(nome_exame), pacientes(nome)")
               .in("protocolo", candidatos)
-              .order("data_atendimento", { ascending: false })
+              .order("data", { ascending: false })
               .limit(5);
             if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
             if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: `Atendimento ${protocolo} não encontrado.` } };
@@ -75,9 +75,9 @@ export function buildResultadoTools(userClient: SupabaseClient) {
           const ids = pacs.map((p) => p.id);
           const { data: ats, error } = await userClient
             .from("atendimentos")
-            .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(nome_exame)")
+            .select("id, protocolo, data, status, paciente_id, atendimento_exames(nome_exame)")
             .in("paciente_id", ids)
-            .order("data_atendimento", { ascending: false })
+            .order("data", { ascending: false })
             .limit(10);
           if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
           if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Nenhum atendimento encontrado para este paciente." } };
@@ -130,9 +130,9 @@ export function buildResultadoTools(userClient: SupabaseClient) {
           const ex = norm(input.exame);
           const { data: ats, error: atErr } = await userClient
             .from("atendimentos")
-            .select("id, protocolo, data_atendimento, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
+            .select("id, protocolo, data, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
             .in("paciente_id", ids)
-            .order("data_atendimento", { ascending: false })
+            .order("data", { ascending: false })
             .limit(20);
           if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
 
@@ -204,9 +204,9 @@ export function buildResultadoTools(userClient: SupabaseClient) {
           const ex = norm(input.exame);
           const { data: ats, error: atErr } = await userClient
             .from("atendimentos")
-            .select("id, protocolo, data_atendimento, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
+            .select("id, protocolo, data, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
             .in("paciente_id", ids)
-            .order("data_atendimento", { ascending: false })
+            .order("data", { ascending: false })
             .limit(20);
           if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
 

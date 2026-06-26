@@ -83,15 +83,15 @@ export function buildPacienteTools(userClient: SupabaseClient) {
         const ids = pacs.map((p) => p.id);
         const { data: ats, error: atErr } = await userClient
           .from("atendimentos")
-          .select("id, protocolo, data_atendimento, status, paciente_id, atendimento_exames(exame_nome, status)")
+          .select("id, protocolo, data, status, paciente_id, atendimento_exames(exame_nome, status)")
           .in("paciente_id", ids)
-          .order("data_atendimento", { ascending: false })
+          .order("data", { ascending: false })
           .limit(50);
         if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
 
         const atendimentos = (ats ?? []).map((a: Record<string, unknown>) => ({
           protocolo: a.protocolo,
-          data: a.data_atendimento,
+          data: a.data,
           status: a.status,
           paciente: pacs.find((p) => p.id === a.paciente_id)?.nome,
           exames: (a.atendimento_exames as Array<{ exame_nome: string; status: string }> ?? [])
