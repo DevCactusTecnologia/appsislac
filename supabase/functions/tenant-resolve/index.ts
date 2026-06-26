@@ -97,14 +97,20 @@ Deno.serve(async (req) => {
     tenantId = (prof as { tenant_id?: string } | null)?.tenant_id ?? null;
   }
 
-  // Prioridade 3: código numérico (novo padrão lab_code em tenants)
-  if (!tenantId && isLegacyNumeric) {
-    const { data: t } = await supa
-      .from("tenants")
-      .select("id")
-      .eq("lab_code", raw)
-      .maybeSingle();
-    tenantId = (t as { id?: string } | null)?.id ?? null;
+  // Prioridade 3: código numérico (novo padrão lab_code em tenants).
+  // Aceita tanto o número puro ("0001") quanto a forma "LAB0001" usada
+  // no input do Login V2 (que sempre prefixa "LAB" + dígitos).
+  if (!tenantId) {
+    const stripped = upper.replace(/^LAB/, "");
+    const numericCandidate = isLegacyNumeric ? raw : (/^[0-9]{3,6}$/.test(stripped) ? stripped : null);
+    if (numericCandidate) {
+      const { data: t } = await supa
+        .from("tenants")
+        .select("id")
+        .eq("lab_code", numericCandidate)
+        .maybeSingle();
+      tenantId = (t as { id?: string } | null)?.id ?? null;
+    }
   }
 
   if (!tenantId) return json(200, { ok: false, error: "not_found" });
