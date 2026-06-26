@@ -164,11 +164,12 @@ export default function SuperAdminConfiguracoes() {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [smtpV, aiV, s3V, wppV] = await Promise.all([
+      const [smtpV, aiV, s3V, wppV, elevenV] = await Promise.all([
         loadSetting<SmtpConfig>("smtp_config", EMPTY_SMTP),
         loadSetting<AiConfig>("ai_config", EMPTY_AI),
         loadSetting<S3Config>("s3_config", EMPTY_S3),
         loadSetting<WhatsappConfig>("whatsapp_config", EMPTY_WPP),
+        loadSetting<ElevenLabsConfig>("elevenlabs_config", EMPTY_ELEVEN),
       ]);
       if (!alive) return;
       // Compat SMTP legado
