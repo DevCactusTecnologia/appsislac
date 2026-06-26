@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
   try {
     const result = streamText({
-      model: gateway("google/gemini-3-flash-preview"),
+      model: gateway("google/gemini-2.5-flash"),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools: toolMap as never,
