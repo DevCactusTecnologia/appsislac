@@ -352,10 +352,17 @@ export default function AiShell() {
                 : "";
       const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
       chunksRef.current = [];
+      cancelAudioRef.current = false;
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = async () => {
         setRecording(false);
         stopTracks();
+        // Cancelado pelo usuário — descarta áudio sem transcrever.
+        if (cancelAudioRef.current) {
+          cancelAudioRef.current = false;
+          chunksRef.current = [];
+          return;
+        }
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" });
         if (blob.size < 1200) return;
         setTranscribing(true);
@@ -400,7 +407,9 @@ export default function AiShell() {
     }
   }, [recording, transcribing, busy, send, speak]);
 
+  // Para a gravação e ENVIA a transcrição.
   const stopRecording = useCallback(() => {
+    cancelAudioRef.current = false;
     if (speechRecRef.current) { stopContinuousSpeech(); return; }
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
@@ -410,7 +419,25 @@ export default function AiShell() {
     }
   }, [stopContinuousSpeech]);
 
+  // Cancela a gravação SEM transcrever nem enviar.
+  const cancelRecording = useCallback(() => {
+    cancelAudioRef.current = true;
+    chunksRef.current = [];
+    if (speechRecRef.current) {
+      stopContinuousSpeech();
+      return;
+    }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try { recorderRef.current.stop(); } catch { /* noop */ }
+    } else {
+      stopTracks();
+      setRecording(false);
+    }
+  }, [stopContinuousSpeech]);
+
   const toggleMic = () => { recording ? stopRecording() : startRecording(); };
+
+
 
 
 
