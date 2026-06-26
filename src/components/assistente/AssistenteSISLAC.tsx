@@ -217,6 +217,17 @@ function AssistenteSISLACInner() {
         await updateAtendimento(protocolo, { pagamentosRealizados: pagamentos });
         return `Pagamento de R$ ${v.toFixed(2)} (${novo.tipo}) registrado`;
       },
+
+      /** Resumo falável: protocolo, status e lista de exames. */
+      atendimento_resumo: async ({ protocolo }: { protocolo: string }) => {
+        if (!protocolo) return "Informe o protocolo";
+        const at = await fetchAtendimentoByProtocolo(protocolo);
+        if (!at) return `Atendimento ${protocolo} não encontrado`;
+        const status = at.statusAtendimento?.label ?? "sem status";
+        const exames = at.exames?.length ? at.exames.join(", ") : "nenhum exame";
+        const paciente = (at as any).pacienteNome ?? (at as any).paciente?.nome ?? "";
+        return `Protocolo ${at.protocolo}${paciente ? ` — ${paciente}` : ""}. Status: ${status}. Exames: ${exames}.`;
+      },
     },
 
 
