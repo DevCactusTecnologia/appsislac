@@ -899,7 +899,7 @@ function SecretInput({
 function ActionsBar({
   onTest, testing, onSave, saving, dirty,
 }: {
-  onTest: () => void;
+  onTest?: () => void;
   testing: boolean;
   onSave: () => void;
   saving: boolean;
@@ -907,14 +907,16 @@ function ActionsBar({
 }) {
   return (
     <div className="flex items-center justify-end gap-2 pt-1">
-      <Button variant="outline" onClick={onTest} disabled={testing || saving}>
-        {testing ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <PlugZap className="h-4 w-4 mr-2" />
-        )}
-        {testing ? "Testando..." : "Testar conexão"}
-      </Button>
+      {onTest && (
+        <Button variant="outline" onClick={onTest} disabled={testing || saving}>
+          {testing ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <PlugZap className="h-4 w-4 mr-2" />
+          )}
+          {testing ? "Testando..." : "Testar conexão"}
+        </Button>
+      )}
       <Button onClick={onSave} disabled={!dirty || saving}>
         {saving ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
