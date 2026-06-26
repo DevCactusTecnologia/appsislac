@@ -416,7 +416,7 @@ export default function AiShell() {
                   }
                 }}
               />
-              <div className="flex items-center gap-1 pb-1">
+              <div className="flex flex-col items-center gap-1 pb-1">
                 <Button
                   type="button"
                   size="icon"
