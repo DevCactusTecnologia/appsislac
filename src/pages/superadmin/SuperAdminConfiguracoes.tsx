@@ -88,6 +88,12 @@ interface WhatsappConfig {
   businessAccountId: string;
 }
 
+interface ElevenLabsConfig {
+  apiKey: string;
+  voiceId: string;
+  modelId: string;
+}
+
 const EMPTY_SMTP: SmtpConfig = {
   host: "", port: 587, user: "", password: "",
   fromEmail: "", fromName: "", security: "starttls", secure: false,
@@ -95,6 +101,7 @@ const EMPTY_SMTP: SmtpConfig = {
 const EMPTY_AI: AiConfig = { geminiApiKey: "", openaiApiKey: "", openaiOrgId: "" };
 const EMPTY_S3: S3Config = { accessKeyId: "", secretAccessKey: "", region: "us-east-1", bucket: "", endpoint: "" };
 const EMPTY_WPP: WhatsappConfig = { provider: "meta", phoneNumberId: "", accessToken: "", verifyToken: "", businessAccountId: "" };
+const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G", modelId: "eleven_multilingual_v2" };
 
 const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defaultPort: number }[] = [
   { value: "none", label: "Nenhuma", hint: "Sem criptografia (não recomendado)", defaultPort: 25 },
@@ -102,7 +109,7 @@ const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defa
   { value: "ssl", label: "SSL/TLS", hint: "Criptografia direta (porta 465)", defaultPort: 465 },
 ];
 
-type IntegrationTab = "smtp" | "gemini" | "openai" | "s3" | "whatsapp";
+type IntegrationTab = "smtp" | "gemini" | "openai" | "s3" | "whatsapp" | "elevenlabs";
 
 const INTEGRATION_TABS: { id: IntegrationTab; label: string; icon: typeof Mail }[] = [
   { id: "smtp", label: "Servidor SMTP", icon: Mail },
@@ -110,6 +117,7 @@ const INTEGRATION_TABS: { id: IntegrationTab; label: string; icon: typeof Mail }
   { id: "openai", label: "OpenAI", icon: Brain },
   { id: "s3", label: "AWS S3", icon: Cloud },
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  { id: "elevenlabs", label: "ElevenLabs", icon: Mic2 },
 ];
 
 async function loadSetting<T>(key: string, fallback: T): Promise<T> {
