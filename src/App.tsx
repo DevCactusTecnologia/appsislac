@@ -67,6 +67,7 @@ const TenantSiteSobre = lazy(() => import("./pages/TenantSiteSobre"));
 const TenantSiteContato = lazy(() => import("./pages/TenantSiteContato"));
 const AppLayout = lazy(() => import("./components/AppLayout"));
 const AiShell = lazy(() => import("./components/ai-shell/AiShell"));
+const JarvisAgent = lazy(() => import("./components/jarvis/JarvisAgent"));
 const SuperAdminLayout = lazy(() => import("./components/SuperAdminLayout"));
 const RequireSuperAdmin = lazy(() => import("./components/RequireSuperAdmin"));
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
