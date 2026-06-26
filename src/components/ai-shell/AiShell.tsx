@@ -634,7 +634,7 @@ export default function AiShell() {
                     <span className="flex-1 min-w-0">
                       {interimText
                         ? <span className="text-foreground/80 italic">"{interimText}"</span>
-                        : <>Ouvindo… fale à vontade. Toque no <strong>quadrado</strong> para enviar ou no <strong>X</strong> para cancelar.</>}
+                        : <>Estou ouvindo… fale o comando. Diga <strong>"parar"</strong> para encerrar.</>}
                     </span>
                     <button
                       type="button"
