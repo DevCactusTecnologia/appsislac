@@ -594,8 +594,17 @@ export default function AiShell() {
                     <span className="flex-1 min-w-0">
                       {interimText
                         ? <span className="text-foreground/80 italic">"{interimText}"</span>
-                        : <>Ouvindo continuamente… fale à vontade. Toque no microfone para parar.</>}
+                        : <>Ouvindo… fale à vontade. Toque no <strong>quadrado</strong> para enviar ou no <strong>X</strong> para cancelar.</>}
                     </span>
+                    <button
+                      type="button"
+                      onClick={cancelRecording}
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                      aria-label="Cancelar gravação"
+                      title="Cancelar gravação (descarta a fala)"
+                    >
+                      <X className="h-3 w-3" /> Cancelar
+                    </button>
                   </>
                 ) : (
                   <><Loader2 className="h-3 w-3 animate-spin" /> Transcrevendo…</>
@@ -623,27 +632,54 @@ export default function AiShell() {
                 }}
               />
               <div className="flex flex-col items-center gap-1 pb-1">
+                {recording ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={cancelRecording}
+                    aria-label="Cancelar gravação"
+                    title="Cancelar gravação (descarta)"
+                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-500/10"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   size="icon"
                   variant="ghost"
                   onClick={toggleMic}
                   disabled={busy || transcribing}
-                  aria-label={recording ? "Parar gravação" : "Falar"}
-                  title={recording ? "Parar gravação" : "Falar"}
+                  aria-label={recording ? "Parar e enviar" : "Falar"}
+                  title={recording ? "Parar e enviar" : "Falar"}
                   className={`h-8 w-8 rounded-full ${recording ? "bg-red-500/10 text-red-600 hover:bg-red-500/15" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   {recording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
                 </Button>
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!canSend}
-                  aria-label="Enviar"
-                  className="h-8 w-8 rounded-full disabled:opacity-40"
-                >
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-                </Button>
+                {busy ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={cancelChat}
+                    aria-label="Cancelar resposta"
+                    title="Cancelar resposta"
+                    className="h-8 w-8 rounded-full bg-muted text-foreground hover:bg-muted/80"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="icon"
+                    disabled={!canSend}
+                    aria-label="Enviar"
+                    className="h-8 w-8 rounded-full disabled:opacity-40"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </form>
             <div className="mt-2 text-[10px] text-center text-muted-foreground/70">
