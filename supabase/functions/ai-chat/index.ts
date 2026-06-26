@@ -1,20 +1,12 @@
-// ai-chat — única Edge Function do Assistente do SISLAC.
-// Responsabilidades: JWT, tenant resolver, permissões, contexto, registry, streaming, auditoria.
+// ai-chat — única Edge Function operacional do Assistente do SISLAC.
+// Responsabilidades: contexto, registry, streaming, tool calling, auditoria.
+// Bootstrap (JWT, tenant, permissões) é delegado ao _shared/aiAuth.ts.
 // NUNCA: SQL direto, lógica de negócio, tenant vindo do frontend.
-
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { convertToModelMessages, streamText, type UIMessage } from "npm:ai@4.3.16";
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@0.2.16";
-import { CAPABILITIES } from "../_shared/registry.ts";
+import { aiCorsHeaders, authenticate, jsonResponse, resolveAllowedCapabilities } from "../_shared/aiAuth.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
-
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 interface AIContext {
   module?: string;
@@ -22,74 +14,23 @@ interface AIContext {
   focus?: Record<string, string | undefined>;
 }
 
-async function checkPermission(
-  admin: ReturnType<typeof createClient>,
-  userId: string,
-  permission: string,
-): Promise<boolean> {
-  const { data, error } = await admin.rpc("has_permission", {
-    _user_id: userId,
-    _permission: permission,
-  });
-  if (error) return false;
-  return Boolean(data);
-}
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: aiCorsHeaders });
 
   const started = Date.now();
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return jsonResponse({ error: "missing_lovable_api_key" }, 500);
 
-  if (!LOVABLE_API_KEY) {
-    return new Response(JSON.stringify({ error: "missing_lovable_api_key" }), {
-      status: 500, headers: { ...corsHeaders, "content-type": "application/json" },
-    });
-  }
-
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7) : "";
-  if (!token) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "content-type": "application/json" },
-    });
-  }
-
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-
-  // Resolver usuário e tenant SERVER-SIDE
-  const { data: userData, error: userErr } = await admin.auth.getUser(token);
-  if (userErr || !userData?.user) {
-    return new Response(JSON.stringify({ error: "invalid_token" }), {
-      status: 401, headers: { ...corsHeaders, "content-type": "application/json" },
-    });
-  }
-  const userId = userData.user.id;
-  const { data: tenantRpc } = await userClient.rpc("current_tenant_id");
-  const tenantId = (tenantRpc as string | null) ?? null;
-  if (!tenantId) {
-    return new Response(JSON.stringify({ error: "tenant_unresolved" }), {
-      status: 403, headers: { ...corsHeaders, "content-type": "application/json" },
-    });
-  }
+  const auth = await authenticate(req);
+  if (!auth.ok) return auth.response;
+  const { admin, userClient, userId, tenantId } = auth;
 
   let body: { messages?: UIMessage[]; context?: AIContext; threadId?: string };
   try { body = await req.json(); } catch { body = {}; }
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const ctx = body.context ?? {};
 
-  // Filtrar capabilities por permissão
-  const allowed = [] as typeof CAPABILITIES;
-  for (const cap of CAPABILITIES) {
-    if (!cap.permission) { allowed.push(cap); continue; }
-    if (await checkPermission(admin, userId, cap.permission)) allowed.push(cap);
-  }
+  const allowed = await resolveAllowedCapabilities(admin, userId);
 
   // Tools (apenas as autorizadas)
   const allTools = buildPacienteTools(userClient);
@@ -123,7 +64,6 @@ Deno.serve(async (req) => {
       tools: toolMap as never,
       maxSteps: 5,
       onFinish: async ({ text, usage, finishReason }) => {
-        const duration = Date.now() - started;
         await admin.from("ai_audit").insert({
           tenant_id: tenantId,
           user_id: userId,
@@ -132,7 +72,7 @@ Deno.serve(async (req) => {
           capability: null,
           action: null,
           status: finishReason === "error" ? "error" : "ok",
-          duration_ms: duration,
+          duration_ms: Date.now() - started,
           needs_approval: false,
           origin: "ai-chat",
           metadata: { usage, finishReason, text_len: text?.length ?? 0 },
@@ -140,7 +80,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    return result.toUIMessageStreamResponse({ headers: corsHeaders });
+    return result.toUIMessageStreamResponse({ headers: aiCorsHeaders });
   } catch (e) {
     const msg = (e as Error)?.message ?? String(e);
     await admin.from("ai_audit").insert({
@@ -148,8 +88,6 @@ Deno.serve(async (req) => {
       status: "error", duration_ms: Date.now() - started,
       origin: "ai-chat", error_code: "STREAM_FAIL", metadata: { message: msg },
     });
-    return new Response(JSON.stringify({ error: "stream_failed", message: msg }), {
-      status: 500, headers: { ...corsHeaders, "content-type": "application/json" },
-    });
+    return jsonResponse({ error: "stream_failed", message: msg }, 500);
   }
 });
