@@ -154,6 +154,12 @@ export default function AiShell() {
               acc += obj.delta;
               setMessages((m) => m.map((x) => x.id === aId ? { ...x, text: acc } : x));
             }
+            // Navegação automática quando uma tool devolve { navigate: "/rota" }.
+            const out = obj.output ?? obj.result ?? obj.toolResult;
+            const nav = out && typeof out === "object" ? (out as { navigate?: unknown }).navigate : undefined;
+            if (typeof nav === "string" && nav.startsWith("/")) {
+              setTimeout(() => navigate(nav), 50);
+            }
           } catch { /* ignore */ }
         }
       }
