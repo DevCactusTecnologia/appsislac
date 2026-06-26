@@ -70,6 +70,6 @@ Deno.serve(async (req) => {
   }
 
   const buf = new Uint8Array(await res.arrayBuffer());
-  return jsonResponse({ audio: base64Encode(buf), mime: "audio/mpeg" });
+  return jsonResponse({ audio: encodeBase64(buf), mime: "audio/mpeg" });
 });
 
