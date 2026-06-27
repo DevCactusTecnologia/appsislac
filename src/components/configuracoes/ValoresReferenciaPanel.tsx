@@ -198,6 +198,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
     setJejum((vr?.jejum as JejumVR) ?? "qualquer");
+    setRiscoCv((vr?.riscoCv as RiscoCV) ?? "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
