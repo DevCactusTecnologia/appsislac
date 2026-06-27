@@ -343,9 +343,11 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
                 Nenhum template disponível.
               </div>
             )}
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="matriz" className="space-y-4">
+          {tab === "matriz" && (
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-[11px]">Operador (todas as células)</Label>
