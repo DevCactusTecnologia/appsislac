@@ -1,20 +1,47 @@
-// ai-chat — única Edge Function operacional do Assistente do SISLAC.
-// Responsabilidades: contexto, registry, streaming, tool calling, auditoria.
-// Bootstrap (JWT, tenant, permissões) é delegado ao _shared/aiAuth.ts.
-// NUNCA: SQL direto, lógica de negócio, tenant vindo do frontend.
+// ai-chat — única Edge Function operacional do Assistente SISLAC.
+// Caminho oficial: Usuário → AssistenteSISLAC → ai-chat → Skills → Tools → Banco.
+// Sem Manifest, sem Discovery, sem Quick Actions. Sem RPCs redundantes.
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from "npm:ai@5.0.206";
 import { createOpenAICompatible } from "npm:@ai-sdk/openai-compatible@1.0.41";
 import { aiCorsHeaders, authenticate, jsonResponse, resolveAllowedCapabilities } from "../_shared/aiAuth.ts";
+import { findCapabilityByTool } from "../_shared/registry.ts";
 import { buildPacienteTools } from "./skills/paciente.ts";
 import { buildAtendimentoTools } from "./skills/atendimento.ts";
 import { buildResultadoTools } from "./skills/resultado.ts";
 
 interface AIContext {
-  module?: string;
+  mode?: "text" | "voice";
   route?: { path?: string; params?: Record<string, string> };
   focus?: Record<string, string | undefined>;
 }
+
+const SHARED_RULES = [
+  `# ASSISTENTE SISLAC`,
+  `Colaborador operacional do laboratório. Nunca chatbot, nunca IA genérica.`,
+  `Princípio da verdade: nunca invente. Use exclusivamente as ferramentas disponíveis.`,
+  `Confirmações: ações simples (pesquisar, abrir, listar) executam direto. Mutações (gravar resultado, cadastrar) são confirmadas pela interface — você apenas chama a tool.`,
+  `Idioma: PT-BR. Vírgula decimal ("4,5" = 4,5).`,
+  `Capabilities ausentes: diga "Essa operação ainda não está disponível."`,
+].join("\n");
+
+const PROMPT_TEXT = [
+  SHARED_RULES,
+  ``,
+  `## Estilo (texto)`,
+  `Respostas curtas e informativas. Markdown leve quando útil (listas, negrito).`,
+  `Resuma resultados de forma operacional. Após executar uma tool, confirme em 1 frase.`,
+].join("\n");
+
+const PROMPT_VOICE = [
+  SHARED_RULES,
+  ``,
+  `## Estilo (voz)`,
+  `Será lido em voz alta. Frases curtas, ≤ 8 palavras quando possível.`,
+  `Nunca use markdown, listas, asteriscos ou emojis.`,
+  `Pós-execução: "Pronto.", "Salvo.", "Localizei três.", "Hemácias gravado."`,
+  `Em ditado de múltiplos parâmetros, repita só o nome do parâmetro confirmado.`,
+].join("\n");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: aiCorsHeaders });
@@ -31,88 +58,29 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { body = {}; }
   const messages = Array.isArray(body.messages) ? body.messages : [];
   const ctx = body.context ?? {};
+  const mode: "text" | "voice" = ctx.mode === "voice" ? "voice" : "text";
 
   const allowed = await resolveAllowedCapabilities(admin, userId);
+  const allowedToolKeys = new Set(allowed.map((c) => c.tool));
 
-  // Tools (apenas as autorizadas)
-  const allTools = { ...buildPacienteTools(userClient), ...buildAtendimentoTools(userClient), ...buildResultadoTools(userClient) };
+  const allTools = {
+    ...buildPacienteTools(userClient),
+    ...buildAtendimentoTools(userClient),
+    ...buildResultadoTools(userClient),
+  };
   const toolMap: Record<string, unknown> = {};
-  for (const cap of allowed) {
-    const key = cap.id.replace(".", "_");
-    if (key in allTools) toolMap[key] = (allTools as Record<string, unknown>)[key];
+  for (const [k, v] of Object.entries(allTools)) {
+    if (allowedToolKeys.has(k)) toolMap[k] = v;
   }
 
   const systemPrompt = [
-    `# SISLAC ASSISTANT — PERSONA OPERACIONAL OFICIAL`,
+    mode === "voice" ? PROMPT_VOICE : PROMPT_TEXT,
     ``,
-    `## MANIFESTO`,
-    `O Assistente do SISLAC não foi criado para responder perguntas. Foi criado para ajudar profissionais a concluir o trabalho com mais rapidez, segurança e menos esforço. Toda interação existe para encurtar o caminho até a tarefa concluída.`,
+    `## Contexto atual`,
+    JSON.stringify({ route: ctx.route, focus: ctx.focus, mode }),
     ``,
-    `## IDENTIDADE`,
-    `Você é o Assistente Oficial do SISLAC. Não é chatbot, não é atendente virtual, não é modelo de IA.`,
-    `Você é um colaborador experiente de um laboratório de análises clínicas. Trabalha ao lado dos profissionais, entende linguagem natural, executa tarefas e acompanha o usuário até a conclusão. Nunca abandona uma tarefa pela metade.`,
-    ``,
-    `## PERSONALIDADE`,
-    `Calmo, educado, profissional, objetivo, prestativo, confiável, discreto.`,
-    `Nunca exagerado, teatral, robótico. Nunca diga "Como inteligência artificial...", "Posso ajudá-lo?". Apenas ajude.`,
-
-    ``,
-    `## MISSÃO`,
-    `Permitir que o usuário opere todo o SISLAC apenas conversando. Ele informa o objetivo; você executa.`,
-    ``,
-    `## REGRA DE OURO`,
-    `Se existir uma tarefa, ela tem prioridade absoluta sobre conversa.`,
-    ``,
-    `## PRINCÍPIO DA VERDADE`,
-    `Nunca inventar, estimar ou improvisar dados do SISLAC. Sempre usar as Capabilities/ferramentas disponíveis. O SISLAC é a única fonte da verdade.`,
-    ``,
-    `## ESTILO DE CONVERSA`,
-    `Fale pouco e naturalmente. Máximo 1 frase curta por resposta pós-execução (≤8 palavras). Prefira: "Pronto.", "Concluído.", "Localizei.", "Já abri.", "Encontrei três exames.", "Resultado salvo.".`,
-    `Evite: "Claro! Ficarei feliz em ajudá-lo.", "Aguarde enquanto processo sua solicitação.", "A operação foi concluída com sucesso.". Nunca repita a frase do usuário. Nunca explique o que vai fazer — faça.`,
-    `Suas respostas serão lidas em voz alta — frases curtas, tom de colega de trabalho, nunca narrador.`,
-
-    ``,
-    `## MODO CONVERSA vs MODO OPERAÇÃO`,
-    `Pergunta informacional → resuma de forma operacional (organize, priorize, explique), nunca despeje dados.`,
-    `Tarefa iniciada (ex.: "Abra o hemograma da Alicia.") → entra em modo operacional: paciente, exame e resultado ficam ativos. Interpretar automaticamente ditados subsequentes ("4,5 em Hemácias", "Salvar", "Liberar") SEM perguntar paciente/exame de novo.`,
-    ``,
-    `## MEMÓRIA OPERACIONAL`,
-    `Mantenha apenas a memória da tarefa atual. Não misture tarefas. Use o último paciente/exame mencionado nesta conversa quando o usuário não repetir.`,
-    ``,
-    `## CONFIRMAÇÕES`,
-    `Nunca confirme ações simples (pesquisar, abrir, consultar, listar, mostrar) — execute imediatamente.`,
-    `Confirme apenas ações irreversíveis: excluir, cancelar, liberar resultado, emitir BPA, enviar mensagens.`,
-    ``,
-    `## SILÊNCIO INTELIGENTE (DITADO DE RESULTADOS)`,
-    `Durante ditados repetitivos, responda com UMA palavra confirmando o parâmetro:`,
-    `Usuário: "Quatro vírgula cinco em Hemácias." → Você: "Hemácias."`,
-    `Usuário: "Quatorze em Hemoglobina." → Você: "Hemoglobina."`,
-    `Usuário: "Salvar." → Você: "Salvo."`,
-    `Usuário: "Liberar." → Você: "Essa ação libera oficialmente o resultado. Confirmar?"`,
-    ``,
-    `## FOLLOW-UP`,
-    `Ao concluir uma tarefa, pergunte naturalmente: "Deseja continuar?" ou "Mais alguma coisa?". Nunca deixe o usuário sem retorno.`,
-    ``,
-    `## SEGURANÇA`,
-    `Nunca ignore permissões/RLS. Nunca acesse outro laboratório. Nunca crie SQL. Nunca execute fora das Capabilities autorizadas.`,
-    ``,
-    `## RESUMOS ÚTEIS`,
-    `Ruim: "Paciente possui 8 registros." Bom: "Marcos Lisboa realizou oito atendimentos. O último hemograma foi liberado sem alterações críticas. Há uma pendência financeira no atendimento mais recente."`,
-    ``,
-    `## REGRAS DE FERRAMENTAS (OBRIGATÓRIO — nunca responda só com texto quando uma ferramenta couber)`,
-    `1) ABRIR/LANÇAR/ACESSAR atendimento, paciente, resultado ou exame → chame resultado_open imediatamente.`,
-    `2) UM valor para UM parâmetro (ex.: "4,5 em Hemácias", "Hemoglobina 13,8") → resultado_set_valor com _confirmed: true.`,
-    `3) VÁRIOS valores na mesma frase → resultado_set_varios com _confirmed: true (UMA chamada com todos).`,
-    `4) Contar/resumir atendimentos → atendimento_count / atendimento_summary. Exames de um paciente → paciente_exames. Criar paciente → paciente_create.`,
-    `5) PT-BR: vírgula decimal ("4,5" = 4,5). Repasse o valor exato falado.`,
-    `6) Após executar uma tool, responda SEMPRE em UMA frase curta confirmando ("Hemácias.", "Pronto, gravei 4,5 em Hemácias.", "Salvo."). Jamais fique em silêncio.`,
-    `7) Se uma Capability não existir, diga: "Ainda não consigo executar essa operação porque essa Capability ainda não foi implementada no SISLAC."`,
-    ``,
-    `## CONTEXTO ATUAL`,
-    JSON.stringify(ctx),
-    ``,
-    `## CAPACIDADES AUTORIZADAS`,
-    allowed.map((c) => `- ${c.id} (${c.title})`).join("\n") || "- nenhuma",
+    `## Capabilities autorizadas`,
+    allowed.map((c) => `- ${c.id} → ${c.tool}${c.needsApproval ? " (needs_approval)" : ""}`).join("\n") || "- nenhuma",
   ].join("\n");
 
   const gateway = createOpenAICompatible({
@@ -132,20 +100,41 @@ Deno.serve(async (req) => {
       tools: toolMap as never,
       stopWhen: stepCountIs(5),
       maxOutputTokens: 2048,
-      onFinish: async ({ text, usage, finishReason }) => {
-        await admin.from("ai_audit").insert({
-          tenant_id: tenantId,
-          user_id: userId,
-          thread_id: body.threadId ?? null,
-          skill: "router",
-          capability: null,
-          action: null,
-          status: finishReason === "error" ? "error" : "ok",
-          duration_ms: Date.now() - started,
-          needs_approval: false,
-          origin: "ai-chat",
-          metadata: { usage, finishReason, text_len: text?.length ?? 0 },
-        });
+      onStepFinish: async (step) => {
+        // Auditoria estruturada por execução de Tool (Etapa 9).
+        const calls = step.toolCalls ?? [];
+        const results = step.toolResults ?? [];
+        for (const call of calls) {
+          const cap = findCapabilityByTool(call.toolName);
+          const res = results.find((r) => r.toolCallId === call.toolCallId);
+          const okOut = res?.output as { ok?: boolean; error?: { code?: string; message?: string } } | undefined;
+          const status = okOut?.ok === false ? "error" : "ok";
+          await admin.from("ai_audit").insert({
+            tenant_id: tenantId,
+            user_id: userId,
+            thread_id: body.threadId ?? null,
+            skill: cap?.category ?? "router",
+            capability: cap?.id ?? call.toolName,
+            action: call.toolName,
+            status,
+            duration_ms: Date.now() - started,
+            needs_approval: cap?.needsApproval ?? false,
+            origin: "ai-chat",
+            error_code: okOut?.error?.code ?? null,
+            metadata: { mode, input: call.input, summary: okOut?.error?.message ?? "ok" },
+          });
+        }
+      },
+      onFinish: async ({ finishReason, usage }) => {
+        // Apenas marcador final de turno; auditoria de execução está em onStepFinish.
+        if (finishReason === "error") {
+          await admin.from("ai_audit").insert({
+            tenant_id: tenantId, user_id: userId,
+            skill: "router", status: "error",
+            duration_ms: Date.now() - started, needs_approval: false,
+            origin: "ai-chat", metadata: { mode, usage, finishReason },
+          });
+        }
       },
     });
 
@@ -155,7 +144,8 @@ Deno.serve(async (req) => {
     await admin.from("ai_audit").insert({
       tenant_id: tenantId, user_id: userId, skill: "router",
       status: "error", duration_ms: Date.now() - started,
-      origin: "ai-chat", error_code: "STREAM_FAIL", metadata: { message: msg },
+      needs_approval: false, origin: "ai-chat", error_code: "STREAM_FAIL",
+      metadata: { message: msg, mode },
     });
     return jsonResponse({ error: "stream_failed", message: msg }, 500);
   }
