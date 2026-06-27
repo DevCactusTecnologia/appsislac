@@ -460,17 +460,37 @@ function AssistenteSISLACInner() {
     setConnecting(true);
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      await conversation.startSession({
-        agentId: AGENT_ID,
-        connectionType: "webrtc",
-      });
-      // Contexto inicial logo após conectar.
+
+      // Tenta obter token (agente privado). Faz fallback para agentId público se a function falhar.
+      let started = false;
+      try {
+        const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
+        if (!error && data?.token) {
+          await conversation.startSession({
+            conversationToken: data.token as string,
+            connectionType: "webrtc",
+          });
+          started = true;
+        } else if (error) {
+          console.warn("[AssistenteSISLAC] token fn falhou, tentando agente público", error);
+        }
+      } catch (e) {
+        console.warn("[AssistenteSISLAC] token fn exceção, tentando agente público", e);
+      }
+
+      if (!started) {
+        await conversation.startSession({
+          agentId: AGENT_ID,
+          connectionType: "webrtc",
+        });
+      }
+
       setTimeout(() => {
         try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
       }, 300);
     } catch (e) {
       console.error("[AssistenteSISLAC] start", e);
-      toast.error("Permita o microfone para falar com o Assistente SISLAC");
+      toast.error("Não foi possível iniciar o Assistente SISLAC. Verifique o microfone.");
     } finally {
       setConnecting(false);
     }
