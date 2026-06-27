@@ -215,6 +215,7 @@ const compativel = (
   idadeDias: number | null,
   gestante: boolean,
   jejum: boolean | null,
+  riscoCv: RiscoCV | null,
 ): boolean => {
   const cat: CategoriaVR = (vr.categoria as CategoriaVR) ?? "custom";
 
@@ -224,6 +225,13 @@ const compativel = (
     if (jejum === null) return false;
     if (j === "com_jejum" && !jejum) return false;
     if (j === "sem_jejum" && jejum) return false;
+  }
+
+  // Risco cardiovascular
+  const rcv: RiscoCV = (vr.riscoCv as RiscoCV) ?? "qualquer";
+  if (rcv !== "qualquer") {
+    if (riscoCv === null || riscoCv === "qualquer") return false;
+    if (rcv !== riscoCv) return false;
   }
 
   // Padrão: fallback — não filtra sexo/idade
