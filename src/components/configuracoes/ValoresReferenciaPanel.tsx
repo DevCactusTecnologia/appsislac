@@ -707,7 +707,27 @@ const ParametroBloco = ({
         <div>Categoria</div>
         <div className="text-center">Sexo</div>
         <div className="text-center">Faixa Etária</div>
-        <div>Condição</div>
+        <div className="flex items-center gap-1">
+          <span>Condição</span>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/70 hover:text-foreground transition-colors" aria-label="O que aparece na coluna Condição?">
+                  <HelpCircle className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[320px] text-[11px] leading-snug normal-case tracking-normal font-normal">
+                <p className="mb-1"><strong>Condição</strong> agrupa até 3 qualificadores clínicos da regra:</p>
+                <ul className="space-y-0.5 list-disc pl-4">
+                  <li><strong>Operador</strong> — sempre visível (entre, &lt;, ≤, &gt;, ≥, =).</li>
+                  <li><strong>Jejum</strong> — só quando o parâmetro está marcado como <em>sensível a jejum</em> (ex.: Glicemia, Triglicérides).</li>
+                  <li><strong>Risco CV</strong> — só quando o parâmetro está marcado como <em>estratificado por risco cardiovascular</em> (ex.: LDL, Não-HDL).</li>
+                </ul>
+                <p className="mt-1 text-muted-foreground">Ative essas flags em <em>Parâmetros do exame</em> para liberar os selects.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="text-center">Faixa Normal</div>
         <div className="text-center">Faixa Crítica</div>
         <div className="text-center">Un.</div>
