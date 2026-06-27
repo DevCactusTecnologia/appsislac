@@ -99,4 +99,11 @@ export interface MockAtendimento {
   origem?: "INTERNO" | "WEB_AUTO" | "WEB_APROVADO" | "AGENDAMENTO";
   /** Paciente compareceu em jejum (informado na recepção). */
   jejum?: boolean;
+  /**
+   * Chave de idempotência (UUID) para prevenir duplicação no servidor.
+   * Gerada no cliente por sessão de formulário e persistida em sessionStorage
+   * até o salvamento ter sucesso. Reenvios (reload, retry, timeout) com a
+   * mesma chave retornam o atendimento já criado em vez de criar outro.
+   */
+  idempotencyKey?: string;
 }
