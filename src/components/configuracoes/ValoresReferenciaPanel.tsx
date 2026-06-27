@@ -714,10 +714,26 @@ const ParametroBloco = ({
                 <span className="text-[10px] text-muted-foreground truncate">Sexo e idade definidos por você</span>
               </div>
             </DropdownMenuItem>
+            <div className="border-t my-1" />
+            <DropdownMenuItem onClick={() => setMatrizOpen(true)} className="gap-2 text-[13px] py-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium">Template ou matriz em lote…</span>
+                <span className="text-[10px] text-muted-foreground truncate">Triglicérides, LDL, glicemia ou grade personalizada</span>
+              </div>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <span className="text-[11px] text-muted-foreground/70">Alterações salvas automaticamente ao sair do campo.</span>
       </footer>
+
+      <VariacaoMatrizDialog
+        open={matrizOpen}
+        onOpenChange={setMatrizOpen}
+        exameNome={exameNome}
+        parametro={parametro}
+        onCreated={onMutate}
+      />
     </section>
   );
 };
