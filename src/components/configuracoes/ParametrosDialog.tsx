@@ -797,6 +797,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
                   { label: "Exibir resultado anterior", desc: "Mostra o último valor registrado deste paciente", value: exibirAnterior, set: setExibirAnterior },
                   { label: "Exibir no mapa de trabalho", desc: "Aparece na grade de análise da bancada", value: exibirMapa, set: setExibirMapa },
+                  { label: "VR sensível a jejum", desc: "Os valores de referência variam conforme o paciente esteja em jejum (ex.: Triglicérides).", value: sensivelJejum, set: setSensivelJejum },
+                  { label: "VR estratificado por risco cardiovascular", desc: "Os valores variam conforme o risco CV do paciente (ex.: LDL, Não-HDL).", value: estratificadoRiscoCv, set: setEstratificadoRiscoCv },
                 ].map((t) => (
                   <div key={t.label} className="flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-muted/30 transition-colors">
                     <div className="min-w-0">
