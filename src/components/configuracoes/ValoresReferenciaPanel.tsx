@@ -290,11 +290,11 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     try {
       const ok = await persistir(buildPayload({
         valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
-        jejum: "qualquer", operador: "entre",
+        jejum: "qualquer", riscoCv: "qualquer", operador: "entre",
       }));
       if (ok) {
         setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
-        setJejum("qualquer"); setOperador("entre");
+        setJejum("qualquer"); setRiscoCv("qualquer"); setOperador("entre");
         onMutate();
         toast({ title: "Valores limpos" });
       }
