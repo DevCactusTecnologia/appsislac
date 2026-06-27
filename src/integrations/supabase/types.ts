@@ -922,6 +922,7 @@ export type Database = {
           guia_data: string | null
           guia_numero: string | null
           id: number
+          idempotency_key: string | null
           jejum: boolean
           motivo_cancelamento: string | null
           observacoes_assistente: string | null
@@ -952,6 +953,7 @@ export type Database = {
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
+          idempotency_key?: string | null
           jejum?: boolean
           motivo_cancelamento?: string | null
           observacoes_assistente?: string | null
@@ -982,6 +984,7 @@ export type Database = {
           guia_data?: string | null
           guia_numero?: string | null
           id?: number
+          idempotency_key?: string | null
           jejum?: boolean
           motivo_cancelamento?: string | null
           observacoes_assistente?: string | null
