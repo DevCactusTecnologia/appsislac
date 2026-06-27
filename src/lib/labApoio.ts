@@ -73,7 +73,7 @@ export function resolveDestino(opts: {
   const nome = opts.laboratorioPropriaNome?.trim() || "INTERNO";
   return {
     label: nome,
-    sigla: siglaLab(nome),
+    sigla: "INTERNO",
     cor: corLab(`internal:${nome}`),
     tipo: "INTERNO",
   };
