@@ -429,7 +429,16 @@ const ResultadoDetalhe = () => {
 
   // Resolve reference values from the shared store based on patient sex/age
   const getResolvedRef = (exameNome: string, param: Parametro) => {
-    const resolved = resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade, false, pacienteJejum);
+    // VRs podem estar indexados por CHAVE (canônico, ex.: "HEMACI") ou por
+    // RÓTULO legado (ex.: "Hemácias"). Tenta chave primeiro, depois rótulo/nome.
+    const resolved =
+      (param.chave
+        ? resolverReferencia(exameNome, param.chave, paciente.sexo, paciente.idade, false, pacienteJejum)
+        : null) ||
+      resolverReferencia(exameNome, param.nome, paciente.sexo, paciente.idade, false, pacienteJejum) ||
+      (param.rotulo
+        ? resolverReferencia(exameNome, param.rotulo, paciente.sexo, paciente.idade, false, pacienteJejum)
+        : null);
     if (resolved) return resolved;
     // Parâmetros do tipo Formula: a expressão fica em `param.formula`
     // (coluna dedicada). O `valor_referencia` agora é texto descritivo
