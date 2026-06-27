@@ -58,7 +58,7 @@ export const ParamTypedInput = ({
   // Destaque forte no campo focado: ring inset (não é cortado por containers)
   // + borda primária + bg tintado. ring-inset garante que o contorno fique
   // dentro dos limites do próprio input, envolvendo o campo por completo.
-  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background focus:outline-none focus:ring-4 focus:ring-inset focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
+  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background outline-none focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-offset-0 focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter") {
@@ -76,7 +76,7 @@ export const ParamTypedInput = ({
       >
         <SelectTrigger
           data-result-nav="true"
-          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 focus:ring-4 focus:ring-inset focus:ring-primary focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
+          className={`h-10 rounded-lg bg-background font-semibold text-foreground justify-start text-left border-2 outline-none focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-primary focus:border-primary focus:bg-primary/10 focus:shadow-md transition-all ${
             isCritico
               ? "border-status-danger/60 ring-2 ring-status-danger/30 text-status-danger"
               : ""
