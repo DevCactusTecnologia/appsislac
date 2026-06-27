@@ -178,19 +178,31 @@ const TOOLS: ClientTool[] = [
     type: "client",
     name: "listar_atendimentos_por_protocolo",
     description:
-      "Lista os últimos atendimentos com protocolo e status (falável). Use para 'mostre meus atendimentos', 'liste atendimentos', 'últimos atendimentos'.",
+      "Lista atendimentos com protocolo e status, podendo filtrar por período ('hoje', 'ontem', 'semana', 'semana_passada', 'mes', 'mes_passado', '7dias', '30dias') ou por intervalo data_inicio/data_fim (ISO). Use para 'mostre meus atendimentos de hoje', 'da semana passada' etc.",
     expects_response: true,
-    response_timeout_secs: 8,
+    response_timeout_secs: 10,
     parameters: [
-      P("limite", "number", "Quantos atendimentos retornar (1 a 20). Padrão 5.", false),
+      P("limite", "number", "Quantos atendimentos retornar (1 a 50). Padrão 10.", false),
       P("status", "string", "Filtro opcional por status (ex.: Aguardando, Liberado)", false),
+      P("periodo", "string", "hoje | ontem | semana | semana_passada | mes | mes_passado | 7dias | 30dias", false),
+      P("data_inicio", "string", "Data ISO opcional (YYYY-MM-DD) — sobrepõe 'periodo'", false),
+      P("data_fim", "string", "Data ISO opcional (YYYY-MM-DD) — sobrepõe 'periodo'", false),
     ],
+  },
+  {
+    type: "client",
+    name: "detalhes_atendimento_por_protocolo",
+    description:
+      "Lê em voz alta os detalhes completos de um atendimento: protocolo, paciente, status e cada exame com seu status e valores principais. Use para 'mostre os exames do meu atendimento'.",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [P("protocolo", "string", "Protocolo do atendimento (ex.: 0000003)")],
   },
   {
     type: "client",
     name: "imprimir_atendimento",
     description:
-      "Abre a tela de impressão do laudo de um atendimento pelo protocolo, em nova aba.",
+      "Abre a tela de impressão do laudo do atendimento em nova aba (auto-print). O usuário pode escolher 'Salvar como PDF' no diálogo para baixar.",
     expects_response: true,
     response_timeout_secs: 8,
     parameters: [P("protocolo", "string", "Protocolo do atendimento")],
@@ -206,6 +218,40 @@ const TOOLS: ClientTool[] = [
       P("protocolo", "string", "Protocolo do atendimento"),
       P("confirmado", "boolean", "Passe true SOMENTE se o usuário confirmou explicitamente"),
     ],
+  },
+  {
+    type: "client",
+    name: "registrar_observacao_atendimento",
+    description:
+      "Registra uma observação falada no atendimento. Anexa ao histórico de observações com timestamp. Use para 'anote no protocolo X que ...'.",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [
+      P("protocolo", "string", "Protocolo do atendimento"),
+      P("observacao", "string", "Texto da observação a registrar"),
+    ],
+  },
+  {
+    type: "client",
+    name: "pacientes_com_dividas",
+    description:
+      "Lista pacientes com pagamento pendente ou parcial. Use 'modo' para escolher: 'pendente', 'parcial' ou 'todos' (qualquer não-pago).",
+    expects_response: true,
+    response_timeout_secs: 10,
+    parameters: [
+      P("modo", "string", "pendente | parcial | todos. Padrão: todos.", false),
+      P("convenio", "string", "Filtro opcional por nome de convênio", false),
+      P("limite", "number", "Máximo de linhas (1 a 50). Padrão 10.", false),
+    ],
+  },
+  {
+    type: "client",
+    name: "gerar_pdf_devedores_por_convenio",
+    description:
+      "Gera relatório de devedores agrupado por convênio e abre o diálogo de impressão para o usuário salvar como PDF. Filtro opcional por nome de convênio.",
+    expects_response: true,
+    response_timeout_secs: 15,
+    parameters: [P("apenas_convenio", "string", "Opcional: limita a um único convênio", false)],
   },
 ];
 
