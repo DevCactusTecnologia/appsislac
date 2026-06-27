@@ -197,6 +197,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       separadorDecimal: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? separadorDecimal : ".",
       qtdDigitos: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? qtdDigitos : 0,
       formatoExibicao: tipoSelecionado === "Tempo" ? formatoTempo : undefined,
+      sensivelJejum,
+      estratificadoRiscoCv,
     };
     let ok = false;
     if (selectedId) ok = await updateParametro(selectedId, exameId, payload);
