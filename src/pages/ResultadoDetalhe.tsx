@@ -22,6 +22,7 @@ import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { savePrintContext } from "@/domains/print/printContext";
+import { getLabConfig } from "@/data/labConfigStore";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
