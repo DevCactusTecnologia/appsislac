@@ -767,13 +767,13 @@ const ParametroBloco = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[320px] text-[11px] leading-snug normal-case tracking-normal font-normal">
-                <p className="mb-1"><strong>Condição</strong> agrupa até 3 qualificadores clínicos da regra:</p>
+                <p className="mb-1"><strong>Condição</strong> agrupa qualificadores clínicos da regra:</p>
                 <ul className="space-y-0.5 list-disc pl-4">
                   <li><strong>Operador</strong> — sempre visível (entre, &lt;, ≤, &gt;, ≥, =).</li>
-                  <li><strong>Jejum</strong> — só quando o parâmetro está marcado como <em>sensível a jejum</em> (ex.: Glicemia, Triglicérides).</li>
-                  <li><strong>Risco CV</strong> — só quando o parâmetro está marcado como <em>estratificado por risco cardiovascular</em> (ex.: LDL, Não-HDL).</li>
+                  <li><strong>Jejum</strong> — adicione com [+] quando a regra depender de jejum (ex.: Glicemia, Triglicérides).</li>
+                  <li><strong>Risco CV</strong> — adicione com [+] quando a regra depender de risco cardiovascular (ex.: LDL, Não-HDL).</li>
                 </ul>
-                <p className="mt-1 text-muted-foreground">Ative essas flags em <em>Parâmetros do exame</em> para liberar os selects.</p>
+                <p className="mt-1 text-muted-foreground">Use o botão [+] na própria linha para adicionar/remover condições.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
