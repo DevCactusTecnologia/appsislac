@@ -15,7 +15,7 @@ import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, CATEGORIA_META,
+  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, type RiscoCV, CATEGORIA_META,
   addValorReferencia, updateValorReferencia, removeValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import type { ExameParametro } from "@/data/exameParametrosStore";
