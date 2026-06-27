@@ -142,29 +142,46 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            reservada em cada pagina. */
         @page { size: A4; margin: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm; }
         html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+        /* Reserva espaço, em CADA página impressa, para o rodapé fixo abaixo.
+           O rodapé é renderizado via position:fixed; bottom:0 (Chrome repete
+           elementos fixos em todas as páginas impressas, sempre na mesma
+           posição), então o conteúdo precisa de padding-bottom equivalente
+           à altura visual do rodapé (~32mm: logo + endereço + CNES + faixa). */
+        body { padding-bottom: 32mm !important; }
 
         table.laudo-a4-page {
           width: 100% !important;
-          height: calc(297mm - ${m.top}mm - ${printBottomMarginMm}mm) !important;
-          min-height: calc(297mm - ${m.top}mm - ${printBottomMarginMm}mm) !important;
           border-collapse: collapse !important;
           border-spacing: 0 !important;
           background: transparent !important;
         }
         table.laudo-a4-page > thead { display: table-header-group !important; }
-        table.laudo-a4-page > tbody { height: 100% !important; }
-        table.laudo-a4-page > tbody > tr { height: 100% !important; }
-        table.laudo-a4-page > tfoot { display: table-footer-group !important; }
+        table.laudo-a4-page > tbody { }
         table.laudo-a4-page > thead > tr > td,
-        table.laudo-a4-page > tbody > tr > td,
-        table.laudo-a4-page > tfoot > tr > td {
+        table.laudo-a4-page > tbody > tr > td {
           padding: 0 !important; border: 0 !important; vertical-align: top !important; background: transparent !important;
         }
+        /* Espaço entre o cabeçalho (repetido pelo thead) e o início do
+           conteúdo — vale para TODAS as páginas, não só a primeira. */
+        table.laudo-a4-page > thead > tr > td { padding-bottom: 16px !important; }
         .laudo-a4-cabecalho { padding: 0 !important; margin: 0 !important; }
         .laudo-a4-cabecalho > *:last-child, .laudo-a4-cabecalho * :last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .laudo-cabecalho-wrap > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .laudo-a4-corpo { padding-top: 0 !important; margin-top: 0 !important; }
-        .laudo-a4-rodape { margin-top: 0 !important; background: transparent !important; }
+        /* Rodapé fixo na base de CADA página impressa (Chrome repete
+           automaticamente elementos position:fixed). Isto substitui o
+           tfoot, que só ficava colado ao fim do conteúdo — fazendo o
+           rodapé "subir" em páginas com pouco conteúdo. */
+        .laudo-a4-rodape-fixed {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          width: 100% !important;
+          background: #ffffff !important;
+          z-index: 10 !important;
+        }
+        .laudo-a4-rodape-fixed { margin: 0 !important; }
         /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
            do Layout Científico (font-family inline). Aplicamos apenas um
            fallback quando o layout não define fonte alguma, sem !important
@@ -366,11 +383,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           margin: 0 !important;
         }
         #laudo-content br { line-height: 1.4 !important; }
-        /* Espaçamento de 16px entre o cabeçalho do laudo e o primeiro exame. */
+        /* Espaço entre cabeçalho e primeiro exame é controlado pelo
+           padding-bottom do thead (repete em todas as páginas). Mantemos
+           zerada a margem do primeiro filho do conteúdo. */
         .laudo-a4-corpo > #laudo-content > *:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco-custom:first-child {
-          margin-top: 16px !important;
+          margin-top: 0 !important;
           padding-top: 0 !important;
         }
         /* Evita quebra de exame e assinatura entre páginas. */
@@ -496,15 +515,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         </div>
           </div>
         </td></tr></tbody>
-        <tfoot><tr><td>
-          <div class="laudo-a4-rodape">
-            ${rodapePadrao
-              ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
-              : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
-                  <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
-                </div>`}
-          </div>
-        </td></tr></tfoot>
       </table>
+      <div class="laudo-a4-rodape-fixed">
+        ${rodapePadrao
+          ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
+          : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
+              <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+            </div>`}
+      </div>
     `;
 }
