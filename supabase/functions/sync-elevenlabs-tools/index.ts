@@ -174,6 +174,39 @@ const TOOLS: ClientTool[] = [
     response_timeout_secs: 8,
     parameters: [P("protocolo", "string", "Protocolo do atendimento (ex.: 0000003)")],
   },
+  {
+    type: "client",
+    name: "listar_atendimentos_por_protocolo",
+    description:
+      "Lista os últimos atendimentos com protocolo e status (falável). Use para 'mostre meus atendimentos', 'liste atendimentos', 'últimos atendimentos'.",
+    expects_response: true,
+    response_timeout_secs: 8,
+    parameters: [
+      P("limite", "number", "Quantos atendimentos retornar (1 a 20). Padrão 5.", false),
+      P("status", "string", "Filtro opcional por status (ex.: Aguardando, Liberado)", false),
+    ],
+  },
+  {
+    type: "client",
+    name: "imprimir_atendimento",
+    description:
+      "Abre a tela de impressão do laudo de um atendimento pelo protocolo, em nova aba.",
+    expects_response: true,
+    response_timeout_secs: 8,
+    parameters: [P("protocolo", "string", "Protocolo do atendimento")],
+  },
+  {
+    type: "client",
+    name: "liberar_resultado_atendimento",
+    description:
+      "Libera o resultado de um atendimento pelo protocolo. Ação irreversível — só chame com confirmado=true após o usuário confirmar verbalmente.",
+    expects_response: true,
+    response_timeout_secs: 15,
+    parameters: [
+      P("protocolo", "string", "Protocolo do atendimento"),
+      P("confirmado", "boolean", "Passe true SOMENTE se o usuário confirmou explicitamente"),
+    ],
+  },
 ];
 
 

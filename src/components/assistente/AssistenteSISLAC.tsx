@@ -228,6 +228,66 @@ function AssistenteSISLACInner() {
         const paciente = (at as any).pacienteNome ?? (at as any).paciente?.nome ?? "";
         return `Protocolo ${at.protocolo}${paciente ? ` — ${paciente}` : ""}. Status: ${status}. Exames: ${exames}.`;
       },
+
+      /** Lista os últimos atendimentos com protocolo e status (falável). */
+      listar_atendimentos_por_protocolo: async ({
+        limite, status,
+      }: { limite?: number; status?: string } = {}) => {
+        const n = Math.max(1, Math.min(20, Number(limite) || 5));
+        let q = supabase
+          .from("atendimentos")
+          .select("protocolo, status_atendimento, data_atendimento")
+          .order("data_atendimento", { ascending: false })
+          .limit(n);
+        if (status) q = q.ilike("status_atendimento", `%${status}%`);
+        const { data, error } = await q;
+        if (error) return `Erro: ${error.message}`;
+        if (!data?.length) return "Nenhum atendimento encontrado";
+        return data
+          .map((r: any) => `Protocolo ${r.protocolo}: ${r.status_atendimento ?? "sem status"}`)
+          .join("; ");
+      },
+
+      /** Abre a tela de impressão do laudo pelo protocolo. */
+      imprimir_atendimento: async ({ protocolo }: { protocolo: string }) => {
+        if (!protocolo) return "Informe o protocolo";
+        const { data, error } = await supabase
+          .from("atendimentos")
+          .select("id, protocolo")
+          .ilike("protocolo", `%${protocolo}%`)
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) return `Atendimento ${protocolo} não encontrado`;
+        window.open(`/resultado/${data.id}/print`, "_blank", "noopener");
+        return `Impressão de ${data.protocolo} aberta`;
+      },
+
+      /** Libera o resultado de um atendimento pelo protocolo (exige confirmação). */
+      liberar_resultado_atendimento: async ({
+        protocolo, confirmado,
+      }: { protocolo: string; confirmado?: boolean }) => {
+        if (!protocolo) return "Informe o protocolo";
+        if (!confirmado) return "Confirmação necessária — peça 'sim, liberar' ao usuário";
+        const { data, error } = await supabase
+          .from("atendimentos")
+          .select("id, protocolo")
+          .ilike("protocolo", `%${protocolo}%`)
+          .limit(1)
+          .maybeSingle();
+        if (error || !data) return `Atendimento ${protocolo} não encontrado`;
+        navigateRef.current(`/resultado/${data.id}`);
+        // Aguarda a tela montar e a bridge ficar disponível.
+        const ok = await new Promise<boolean>((resolve) => {
+          const t0 = Date.now();
+          const iv = setInterval(() => {
+            if ((window as any).__sislacResultado) { clearInterval(iv); resolve(true); }
+            else if (Date.now() - t0 > 5000) { clearInterval(iv); resolve(false); }
+          }, 150);
+        });
+        if (!ok) return "Tela de resultado não carregou a tempo";
+        const r = (window as any).__sislacResultado.liberar();
+        return r?.msg ?? `Resultado ${data.protocolo} liberado`;
+      },
     },
 
 
