@@ -2325,15 +2325,31 @@ const NovoAtendimento = () => {
             >
               Cancelar
             </button>
-            {!isEditing && (
-              <button
-                onClick={() => setOrcamentoConfirmOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/5 transition-all"
-              >
-                <Receipt className="h-4 w-4" />
-                <span className="hidden sm:inline">Orçamento</span>
-              </button>
-            )}
+            {(() => {
+              const temConvenioNaoParticular = convenios.some((c) => c && c !== "Particular");
+              const temPagamento = pagamentosRealizados.length > 0;
+              const orcamentoDisabled = isEditing || temPagamento || temConvenioNaoParticular;
+              const motivo = isEditing
+                ? "Orçamento indisponível em edição de atendimento"
+                : temPagamento
+                  ? "Atendimento já possui pagamento — orçamento indisponível"
+                  : temConvenioNaoParticular
+                    ? "Orçamento disponível apenas para convênio Particular"
+                    : "Gerar orçamento";
+              return (
+                <button
+                  type="button"
+                  onClick={() => setOrcamentoConfirmOpen(true)}
+                  disabled={orcamentoDisabled}
+                  title={motivo}
+                  aria-disabled={orcamentoDisabled}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                >
+                  <Receipt className="h-4 w-4" />
+                  <span className="hidden sm:inline">Orçamento</span>
+                </button>
+              );
+            })()}
             <button
               onClick={finalizarComValidacao}
               disabled={isSubmitting}
