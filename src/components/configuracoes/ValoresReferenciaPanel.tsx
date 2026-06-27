@@ -243,6 +243,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     criticoMin: critMin, criticoMax: critMax,
     categoria,
     jejum,
+    riscoCv,
     operador,
     ...overrides,
   });
