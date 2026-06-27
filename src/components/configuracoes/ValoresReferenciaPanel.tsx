@@ -420,24 +420,36 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
 
-      {/* Condição: operador + jejum */}
-      <div className="flex gap-1">
+      {/* Condição: operador + jejum (+ risco CV quando estratificado) */}
+      <div className="flex flex-wrap gap-1">
         <Select value={operador} onValueChange={(v) => { setOperador(v as OperadorVR); }}>
-          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 text-[12px] px-2 min-w-[88px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.keys(OPERADOR_LABEL_LONGO) as OperadorVR[]).map((op) => (
               <SelectItem key={op} value={op} className="text-[12px]">{OPERADOR_LABEL_LONGO[op]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
-          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
-              <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {parametro.sensivelJejum && (
+          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {parametro.estratificadoRiscoCv && (
+          <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
+            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
+                <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Faixa Normal */}
