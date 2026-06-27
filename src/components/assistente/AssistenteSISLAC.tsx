@@ -201,13 +201,20 @@ function describeRoute(pathname: string): string {
 
 function AssistenteSISLACInner() {
   const [connecting, setConnecting] = useState(false);
+  const [mode, setMode] = useState<AssistantMode>("voice");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const credentialsRef = useRef<ElevenLabsCredentials | null>(null);
+  const pendingTextStartRef = useRef(false);
+  const lastStartAttemptRef = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
   const conversation = useConversation({
-    clientTools: {
+    clientTools: withToolFeedback({
       /** Navega para uma área do sistema. */
       navegar_para: ({ destino }: { destino: string }) => {
         const path = ROUTE_MAP[destino?.toLowerCase?.()] ?? destino;
@@ -562,14 +569,50 @@ function AssistenteSISLACInner() {
         printHtmlInHiddenFrame({ html, documentTitle: "Devedores por convênio" });
         return `Relatório de ${data.length} devedor(es) gerado — use 'Salvar como PDF'`;
       },
+    }),
+
+
+    onConnect: () => {
+      setConnecting(false);
+      toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
-
-
-    onConnect: () => toast.success("Assistente SISLAC conectado"),
-    onDisconnect: () => toast.message("Assistente SISLAC desconectado"),
-    onError: (err) => {
-      console.error("[AssistenteSISLAC]", err);
-      toast.error("Falha na conexão com o Assistente SISLAC");
+    onDisconnect: () => {
+      setConnecting(false);
+      toast.message("Assistente SISLAC desconectado");
+    },
+    onMessage: ({ role, message }) => {
+      if (!message?.trim()) return;
+      setChatMessages((current) => {
+        const last = current[current.length - 1];
+        if (last?.role === role && last.message === message) return current;
+        return [...current.slice(-30), { role: role === "agent" ? "agent" : "user", message }];
+      });
+    },
+    onStatusChange: ({ status }) => {
+      if (status === "connected" || status === "disconnected") setConnecting(false);
+    },
+    onError: (err, context) => {
+      const message = normalizeErrorMessage(err);
+      console.error("[AssistenteSISLAC]", err, context);
+      setConnecting(false);
+      toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
+        description: message,
+      });
+    },
+    onUnhandledClientToolCall: (toolCall) => {
+      const name = getToolName(toolCall);
+      console.warn("[AssistenteSISLAC] ferramenta não registrada", toolCall);
+      toast.error("Ação não disponível", { description: `Ferramenta não registrada: ${name}` });
+    },
+    onAgentToolRequest: (toolCall) => {
+      const name = getToolName(toolCall);
+      console.info("[AssistenteSISLAC] agent tool request", toolCall);
+      toast.loading(`${TOOL_LABELS[name] ?? `Executando ${name}`}...`, { id: `assistant-tool-${name}` });
+    },
+    onAgentToolResponse: (toolCall) => {
+      const name = getToolName(toolCall);
+      console.info("[AssistenteSISLAC] agent tool response", toolCall);
+      toast.success("Ação processada", { id: `assistant-tool-${name}`, description: TOOL_LABELS[name] ?? name });
     },
   });
 
