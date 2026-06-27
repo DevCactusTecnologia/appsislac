@@ -197,18 +197,28 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
 
+  // Condições adicionais ativas nesta linha (jejum e/ou risco CV). Controle por linha:
+  // inicia com qualquer condição já preenchida no registro persistido.
+  const [showJejum, setShowJejum] = useState<boolean>(
+    ((vr?.jejum as JejumVR) ?? "qualquer") !== "qualquer",
+  );
+  const [showRiscoCv, setShowRiscoCv] = useState<boolean>(
+    ((vr?.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer",
+  );
+  const [condMenuOpen, setCondMenuOpen] = useState(false);
+
   useEffect(() => {
     setNormMin(vr?.valorMin ?? "");
     setNormMax(vr?.valorMax ?? "");
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
-    // Coerção: se a flag do parâmetro está desligada, força "qualquer" mesmo que o
-    // registro persistido contenha valor antigo (legado ou template aplicado antes).
     const jPersist = (vr?.jejum as JejumVR) ?? "qualquer";
-    setJejum(parametro.sensivelJejum ? jPersist : "qualquer");
+    setJejum(jPersist);
+    setShowJejum(jPersist !== "qualquer");
     const rPersist = (vr?.riscoCv as RiscoCV) ?? "qualquer";
-    setRiscoCv(parametro.estratificadoRiscoCv ? rPersist : "qualquer");
+    setRiscoCv(rPersist);
+    setShowRiscoCv(rPersist !== "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
@@ -216,7 +226,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
     setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vr?.id, parametro.sensivelJejum, parametro.estratificadoRiscoCv]);
+  }, [vr?.id]);
 
   const dirty =
     (vr?.valorMin ?? "") !== normMin ||
