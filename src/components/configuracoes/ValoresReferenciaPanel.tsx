@@ -10,8 +10,8 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronUp, Eraser, EyeOff, Eye, Sparkles, HelpCircle } from "lucide-react";
-import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
+import { Plus, Trash2, ChevronDown, ChevronUp, Eraser, EyeOff, Eye, Sparkles, HelpCircle, X } from "lucide-react";
+import VariacaoMatrizDialog from "./VariacaoMatrizDialog";
 import { Grid3x3 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -197,18 +197,28 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [removing, setRemoving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState<null | "remove" | "clear">(null);
 
+  // Condições adicionais ativas nesta linha (jejum e/ou risco CV). Controle por linha:
+  // inicia com qualquer condição já preenchida no registro persistido.
+  const [showJejum, setShowJejum] = useState<boolean>(
+    ((vr?.jejum as JejumVR) ?? "qualquer") !== "qualquer",
+  );
+  const [showRiscoCv, setShowRiscoCv] = useState<boolean>(
+    ((vr?.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer",
+  );
+  const [condMenuOpen, setCondMenuOpen] = useState(false);
+
   useEffect(() => {
     setNormMin(vr?.valorMin ?? "");
     setNormMax(vr?.valorMax ?? "");
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
-    // Coerção: se a flag do parâmetro está desligada, força "qualquer" mesmo que o
-    // registro persistido contenha valor antigo (legado ou template aplicado antes).
     const jPersist = (vr?.jejum as JejumVR) ?? "qualquer";
-    setJejum(parametro.sensivelJejum ? jPersist : "qualquer");
+    setJejum(jPersist);
+    setShowJejum(jPersist !== "qualquer");
     const rPersist = (vr?.riscoCv as RiscoCV) ?? "qualquer";
-    setRiscoCv(parametro.estratificadoRiscoCv ? rPersist : "qualquer");
+    setRiscoCv(rPersist);
+    setShowRiscoCv(rPersist !== "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
@@ -216,7 +226,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
     setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vr?.id, parametro.sensivelJejum, parametro.estratificadoRiscoCv]);
+  }, [vr?.id]);
 
   const dirty =
     (vr?.valorMin ?? "") !== normMin ||
@@ -265,24 +275,12 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 
   const salvarSeNecessario = async () => {
     if (!dirty) return;
-    // Guarda contra combinações inválidas: jejum/risco CV só são aceitos se o
-    // parâmetro tiver a flag correspondente ligada em "Parâmetros do exame".
-    if (!parametro.sensivelJejum && jejum !== "qualquer") {
-      toast({
-        title: "Condição de jejum não aplicável",
-        description: `O parâmetro "${parametro.rotulo}" não está marcado como sensível a jejum. Ative em Parâmetros do exame ou use "Qualquer".`,
-        variant: "destructive",
-      });
-      setJejum("qualquer");
+    if (isEntre && nMin !== null && nMax !== null && nMin > nMax) {
+      toast({ title: "Mínimo normal maior que máximo", variant: "destructive" });
       return;
     }
-    if (!parametro.estratificadoRiscoCv && riscoCv !== "qualquer") {
-      toast({
-        title: "Risco CV não aplicável",
-        description: `O parâmetro "${parametro.rotulo}" não está marcado como estratificado por risco cardiovascular. Ative em Parâmetros do exame ou use "Qualquer risco".`,
-        variant: "destructive",
-      });
-      setRiscoCv("qualquer");
+    if (cMin !== null && cMax !== null && cMin > cMax) {
+      toast({ title: "Mínimo crítico maior que máximo", variant: "destructive" });
       return;
     }
     if (isEntre && nMin !== null && nMax !== null && nMin > nMax) {
@@ -450,8 +448,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
 
-      {/* Condição: operador + jejum (+ risco CV quando estratificado) */}
-      <div className="flex flex-wrap gap-1">
+      {/* Condição: operador (sempre) + jejum e/ou risco CV adicionados via [+] */}
+      <div className="flex flex-wrap gap-1 items-center">
         <Select value={operador} onValueChange={(v) => { setOperador(v as OperadorVR); }}>
           <SelectTrigger className="h-9 text-[12px] px-2 min-w-[88px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -460,25 +458,70 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
             ))}
           </SelectContent>
         </Select>
-        {parametro.sensivelJejum && (
-          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
-            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
-                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {showJejum && (
+          <div className="inline-flex items-center gap-0.5">
+            <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+              <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                  <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              onClick={() => { setJejum("qualquer"); setShowJejum(false); setTimeout(salvarSeNecessario, 0); }}
+              className="h-5 w-5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title="Remover condição de jejum"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         )}
-        {parametro.estratificadoRiscoCv && (
-          <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
-            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
-                <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {showRiscoCv && (
+          <div className="inline-flex items-center gap-0.5">
+            <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
+              <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
+                  <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              onClick={() => { setRiscoCv("qualquer"); setShowRiscoCv(false); setTimeout(salvarSeNecessario, 0); }}
+              className="h-5 w-5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title="Remover condição de risco CV"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+        {(!showJejum || !showRiscoCv) && (
+          <DropdownMenu open={condMenuOpen} onOpenChange={setCondMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="h-7 w-7 rounded-md border border-dashed border-border/60 text-muted-foreground hover:text-primary hover:border-primary/50 flex items-center justify-center transition-colors"
+                title="Adicionar condição"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {!showJejum && (
+                <DropdownMenuItem onClick={() => { setShowJejum(true); setJejum("com_jejum"); setCondMenuOpen(false); }} className="text-[12px]">
+                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" /> Jejum
+                </DropdownMenuItem>
+              )}
+              {!showRiscoCv && (
+                <DropdownMenuItem onClick={() => { setShowRiscoCv(true); setRiscoCv("baixo"); setCondMenuOpen(false); }} className="text-[12px]">
+                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" /> Risco cardiovascular
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -603,10 +646,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
-  const { toast } = useToast();
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [aplicandoTpl, setAplicandoTpl] = useState<string | null>(null);
   const collapseKey = `vr.collapsed.${exameNome}.${parametro.id}`;
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(collapseKey) === "1"; } catch { return false; }
@@ -620,19 +661,6 @@ const ParametroBloco = ({
     setMatrizOpen(true);
   };
 
-  const aplicarTemplate = async (tplId: string) => {
-    const tpl = TEMPLATES.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setAplicandoTpl(tplId);
-    try {
-      const ok = await aplicarTemplatePreset(tpl, exameNome, parametro.chave || parametro.rotulo);
-      toast({ title: "Template aplicado", description: `${ok} regra(s) criada(s).` });
-      setMenuOpen(false);
-      onMutate();
-    } finally {
-      setAplicandoTpl(null);
-    }
-  };
 
 
 
@@ -739,13 +767,13 @@ const ParametroBloco = ({
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[320px] text-[11px] leading-snug normal-case tracking-normal font-normal">
-                <p className="mb-1"><strong>Condição</strong> agrupa até 3 qualificadores clínicos da regra:</p>
+                <p className="mb-1"><strong>Condição</strong> agrupa qualificadores clínicos da regra:</p>
                 <ul className="space-y-0.5 list-disc pl-4">
                   <li><strong>Operador</strong> — sempre visível (entre, &lt;, ≤, &gt;, ≥, =).</li>
-                  <li><strong>Jejum</strong> — só quando o parâmetro está marcado como <em>sensível a jejum</em> (ex.: Glicemia, Triglicérides).</li>
-                  <li><strong>Risco CV</strong> — só quando o parâmetro está marcado como <em>estratificado por risco cardiovascular</em> (ex.: LDL, Não-HDL).</li>
+                  <li><strong>Jejum</strong> — adicione com [+] quando a regra depender de jejum (ex.: Glicemia, Triglicérides).</li>
+                  <li><strong>Risco CV</strong> — adicione com [+] quando a regra depender de risco cardiovascular (ex.: LDL, Não-HDL).</li>
                 </ul>
-                <p className="mt-1 text-muted-foreground">Ative essas flags em <em>Parâmetros do exame</em> para liberar os selects.</p>
+                <p className="mt-1 text-muted-foreground">Use o botão [+] na própria linha para adicionar/remover condições.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -810,28 +838,18 @@ const ParametroBloco = ({
               </div>
             </DropdownMenuItem>
             <div className="border-t my-1" />
-            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
-              Templates clínicos (aplicação direta)
-            </div>
-            {TEMPLATES.map((tpl) => (
-              <DropdownMenuItem
-                key={tpl.id}
-                disabled={aplicandoTpl !== null}
-                onSelect={(event) => {
-                  event.preventDefault();
-                  aplicarTemplate(tpl.id);
-                }}
-                className="gap-2 text-[13px] py-2"
-              >
-                <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                <div className="flex flex-col min-w-0">
-                  <span className="font-medium truncate">{tpl.label}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">
-                    {tpl.resumo} • {tpl.unidade} • {tpl.fonte}
-                  </span>
-                </div>
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuItem
+              onClick={() => { setMenuOpen(false); adicionarVariacao("custom"); }}
+              className="gap-2 text-[13px] py-2"
+            >
+              <Sparkles className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium">Preset clínico</span>
+                <span className="text-[10px] text-muted-foreground truncate">
+                  Cria regra em branco — você configura sexo, idade e condições
+                </span>
+              </div>
+            </DropdownMenuItem>
             <div className="border-t my-1" />
             <DropdownMenuItem
               onPointerDown={(event) => {
