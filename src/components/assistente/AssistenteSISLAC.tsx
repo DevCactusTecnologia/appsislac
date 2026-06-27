@@ -101,6 +101,17 @@ function getMicrophoneErrorMessage(check: MicrophoneCheck): string {
   }
 }
 
+function isMicrophoneStartupError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes("microphone")
+    || normalized.includes("microfone")
+    || normalized.includes("notfounderror")
+    || normalized.includes("requested device not found")
+    || normalized.includes("permission denied")
+    || normalized.includes("notallowederror")
+    || normalized.includes("device not found");
+}
+
 async function checkMicrophone(): Promise<MicrophoneCheck> {
   if (!navigator.mediaDevices?.getUserMedia) {
     return { ok: false, reason: "unsupported" };
@@ -593,6 +604,11 @@ function AssistenteSISLACInner() {
       const message = normalizeErrorMessage(err);
       console.error("[AssistenteSISLAC]", err, context);
       setConnecting(false);
+      if (mode === "voice" && isMicrophoneStartupError(message)) {
+        toast.warning("Microfone indisponível. Tentando modo texto...");
+        setTimeout(() => void startTextMode("Continue usando o Assistente SISLAC por texto."), 0);
+        return;
+      }
       toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
         description: message,
       });
