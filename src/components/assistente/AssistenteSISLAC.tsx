@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Sparkles, Square, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -490,19 +490,20 @@ function AssistenteSISLACInner() {
       aria-label={label}
       title={label}
       className={cn(
-        "fixed bottom-4 left-4 z-40 h-10 w-10 rounded-lg",
-        "flex items-center justify-center border border-border",
-        "bg-background text-foreground shadow-sm hover:bg-accent transition-colors",
-        isConnected && "bg-primary text-primary-foreground border-primary hover:bg-primary/90",
-        isSpeaking && "animate-pulse",
+        "fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full",
+        "flex items-center justify-center border border-border/60",
+        "bg-muted/60 text-muted-foreground backdrop-blur-sm shadow-sm",
+        "hover:bg-muted hover:text-foreground transition-all",
+        isConnected && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15",
+        isSpeaking && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background animate-pulse",
       )}
     >
       {connecting ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : isConnected ? (
-        <MicOff className="h-4 w-4" />
+        <Square className="h-3.5 w-3.5 fill-current" />
       ) : (
-        <Mic className="h-4 w-4" />
+        <Sparkles className="h-4 w-4" />
       )}
     </button>
   );
