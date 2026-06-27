@@ -585,9 +585,13 @@ function AssistenteSISLACInner() {
       setConnecting(false);
       toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
-    onDisconnect: () => {
+    onDisconnect: (details?: unknown) => {
       setConnecting(false);
-      toast.message("Assistente SISLAC desconectado");
+      console.warn("[AssistenteSISLAC] disconnect details", details);
+      const reason = (details && typeof details === "object" && "reason" in (details as Record<string, unknown>))
+        ? String((details as Record<string, unknown>).reason ?? "")
+        : "";
+      toast.message("Assistente SISLAC desconectado", reason ? { description: reason } : undefined);
     },
     onMessage: ({ role, message }) => {
       if (!message?.trim()) return;
@@ -637,6 +641,15 @@ function AssistenteSISLACInner() {
       console.warn("[AssistenteSISLAC] contextual update", e);
     }
   }, [isConnected, location.pathname, conversation]);
+
+  // Keep-alive: previne timeout por inatividade especialmente em modo texto.
+  useEffect(() => {
+    if (!isConnected) return;
+    const id = window.setInterval(() => {
+      try { conversation.sendUserActivity(); } catch {}
+    }, 12_000);
+    return () => window.clearInterval(id);
+  }, [isConnected, conversation]);
 
   useEffect(() => {
     if (conversation.status === "error") setConnecting(false);
