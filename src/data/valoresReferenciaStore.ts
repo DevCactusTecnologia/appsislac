@@ -40,6 +40,8 @@ export interface ValorReferencia {
   jejum?: JejumVR;
   /** Operador comparativo do limite. 'entre' usa valorMin–valorMax. */
   operador?: OperadorVR;
+  /** Estratificação por risco cardiovascular. 'qualquer' = não filtra. */
+  riscoCv?: RiscoCV;
 }
 
 
