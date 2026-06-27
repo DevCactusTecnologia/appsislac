@@ -841,7 +841,7 @@ function AssistenteSISLACInner() {
       if (!mic.ok) {
         console.warn("[AssistenteSISLAC] microphone unavailable", mic);
         setConnecting(false);
-        openTextMode(getMicrophoneErrorMessage(mic));
+        openTextMode();
         return;
       }
 
