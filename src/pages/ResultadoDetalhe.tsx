@@ -1159,7 +1159,7 @@ const ResultadoDetalhe = () => {
   const handleImprimir = (exames: Exame[]) => iniciarImpressao("imprimir", exames);
   const handleExportPDF = (exames: Exame[]) => iniciarImpressao("pdf", exames);
 
-  // 🤖 Bridge para o Assistente SISLAC (ElevenLabs Agent).
+  // 🤖 Bridge para o Assistente SISLAC.
   // Expõe ações desta tela em window.__sislacResultado enquanto a página estiver montada.
   useEffect(() => {
     const findIdx = (termo: string) => {

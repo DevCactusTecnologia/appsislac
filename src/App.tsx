@@ -432,7 +432,7 @@ function AppRoutes() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
-          {/* Assistente SISLAC (ElevenLabs) isolado em Suspense próprio. */}
+          {/* Assistente SISLAC isolado em Suspense próprio. */}
           <Suspense fallback={null}>
             <AssistenteSISLAC />
           </Suspense>
