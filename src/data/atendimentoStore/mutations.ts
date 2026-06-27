@@ -343,6 +343,18 @@ async function persistUpdateAtendimentoTx(
       await persistExamesCobrancaValues(id, updates.examesCobranca ?? []);
     }
 
+    const hasPagamentoPayload = (pagamentosPayload?.length ?? 0) > 0;
+    const somenteCobrancaSemEdge = persistirSomenteCobranca
+      && !examesPayload
+      && Object.keys(patch).length === 0
+      && !hasPagamentoPayload
+      && !cancelarTudo
+      && updates.jejum === undefined;
+    if (somenteCobrancaSemEdge) {
+      notify();
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke("update-atendimento", {
       body: {
         atendimento_id: id,
