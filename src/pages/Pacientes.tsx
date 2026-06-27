@@ -306,7 +306,7 @@ const Pacientes = () => {
                               )}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              {p.sexo === "M" ? "Masculino" : "Feminino"}
+                              {p.sexo === "M" || p.sexo === "Masculino" ? "Masculino" : "Feminino"}
                               {p.dataNascimento && <> · Nasc. {p.dataNascimento}</>}
                               {idadeDetalhada && <> · {idadeDetalhada}</>}
                             </p>
