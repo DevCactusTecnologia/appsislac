@@ -34,16 +34,23 @@ Deno.serve(async (req) => {
 
     const [tokenResponse, signedUrlResponse] = await Promise.all([tokenRequest, signedUrlRequest]);
     const tokenBody = await tokenResponse.text();
-    if (!tokenResponse.ok) {
-      console.error("[elevenlabs-conversation-token] token upstream", tokenResponse.status, tokenBody);
+    const signedUrlBody = await signedUrlResponse.text();
+    if (!tokenResponse.ok && !signedUrlResponse.ok) {
+      console.error("[elevenlabs-conversation-token] upstream", {
+        token: { status: tokenResponse.status, body: tokenBody },
+        signedUrl: { status: signedUrlResponse.status, body: signedUrlBody },
+      });
       return new Response(
         JSON.stringify({ error: "upstream", status: tokenResponse.status, detail: tokenBody }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const payload = JSON.parse(tokenBody) as Record<string, unknown>;
-    const signedUrlBody = await signedUrlResponse.text();
+    const payload = tokenResponse.ok ? JSON.parse(tokenBody) as Record<string, unknown> : {};
+    if (!tokenResponse.ok) {
+      console.warn("[elevenlabs-conversation-token] token upstream", tokenResponse.status, tokenBody);
+      payload.token_error = { status: tokenResponse.status, detail: tokenBody };
+    }
     if (signedUrlResponse.ok) {
       try {
         const signedPayload = JSON.parse(signedUrlBody) as Record<string, unknown>;
