@@ -575,6 +575,12 @@ const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
   const [matrizOpen, setMatrizOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const abrirMatrizEmLote = () => {
+    setMenuOpen(false);
+    setMatrizOpen(true);
+  };
 
 
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
@@ -679,7 +685,7 @@ const ParametroBloco = ({
 
       {/* Footer */}
       <footer className="px-5 py-3 bg-muted/30 border-t border-border/40 flex items-center justify-between">
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-[13px] transition-colors group">
               <span className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
@@ -716,10 +722,14 @@ const ParametroBloco = ({
             </DropdownMenuItem>
             <div className="border-t my-1" />
             <DropdownMenuItem
-              onSelect={() => {
-                // Deixa o dropdown fechar e abre o Dialog no próximo tick,
-                // evitando conflito de focus-trap com o portal do Radix.
-                setTimeout(() => setMatrizOpen(true), 50);
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                abrirMatrizEmLote();
+              }}
+              onSelect={(event) => {
+                event.preventDefault();
+                abrirMatrizEmLote();
               }}
               className="gap-2 text-[13px] py-2"
             >

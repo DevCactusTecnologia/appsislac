@@ -10,11 +10,9 @@
 //
 // Por trás chama `addValorReferencia` linha a linha (sem alterar o resolver/banco).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Sparkles, Grid3x3, Loader2, X } from "lucide-react";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,6 +126,7 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState("templates");
+  const titleId = `variacao-matriz-title-${parametro.id}`;
 
   const parametroNome = parametro.chave || parametro.rotulo;
   const haystack = `${exameNome} ${parametro.rotulo} ${parametro.chave ?? ""}`.toLowerCase();
@@ -275,19 +274,51 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
     } finally { setLoading(false); }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !loading) onOpenChange(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, loading, onOpenChange]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[260] flex items-center justify-center p-4 sm:p-6">
+      <button
+        type="button"
+        aria-label="Fechar criação em lote"
+        className="absolute inset-0 bg-foreground/30 backdrop-blur-[3px]"
+        onClick={() => !loading && onOpenChange(false)}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative z-[261] grid w-full max-w-4xl max-h-[calc(100dvh-2rem)] gap-4 overflow-hidden rounded-2xl border border-border bg-background p-6"
+      >
+        <button
+          type="button"
+          aria-label="Fechar"
+          disabled={loading}
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex flex-col space-y-1.5 pr-8 text-center sm:text-left">
+          <h2 id={titleId} className="flex items-center gap-2 text-lg font-semibold leading-none tracking-tight">
             <Sparkles className="h-4 w-4 text-primary" />
             Criar variações em lote — {parametro.rotulo}
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground">
             Aplique um template clínico pronto ou monte uma matriz personalizada.
             Cada célula preenchida vira uma linha na aba "Valores de referência".
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="w-full">
           <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 mb-3">
@@ -461,7 +492,7 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
           )}
         </div>
 
-        <DialogFooter>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancelar</Button>
           {tab === "matriz" && (
             <Button onClick={aplicarMatriz} disabled={loading} className="gap-1.5">
@@ -469,9 +500,10 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
               Criar regras
             </Button>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 };
 
