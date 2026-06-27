@@ -205,6 +205,50 @@ const ROUTE_MAP: Record<string, string> = {
   impressao: "/relatorios/impressao",
 };
 
+/**
+ * Interpretador local de intents — executa comandos comuns sem depender do agente remoto.
+ * Garante que comandos como "abrir atendimentos", "novo atendimento", "ir para pacientes"
+ * funcionem mesmo quando as tools não estão registradas no painel do ElevenLabs.
+ */
+type LocalIntent = { reply: string; run: () => void | Promise<void> };
+
+function parseLocalIntent(raw: string, navigate: (p: string) => void): LocalIntent | null {
+  const t = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (!t) return null;
+
+  // "novo atendimento" / "criar atendimento" / "cadastrar atendimento"
+  if (/\b(novo|criar|cadastrar|abrir novo)\b.*\batendimento/.test(t) || /^novo atendimento/.test(t)) {
+    return { reply: "Abrindo novo atendimento.", run: () => navigate("/atendimentos/novo") };
+  }
+
+  const navMap: Array<{ re: RegExp; path: string; name: string }> = [
+    { re: /\batendimento(s)?\b/, path: "/atendimentos", name: "atendimentos" },
+    { re: /\borcament/, path: "/orcamentos", name: "orçamentos" },
+    { re: /\bpaciente/, path: "/pacientes", name: "pacientes" },
+    { re: /\bresultado(s)?\b/, path: "/resultados", name: "resultados" },
+    { re: /\bcoleta/, path: "/registrar-coleta", name: "coleta" },
+    { re: /\b(analise|analisar)/, path: "/analisar-amostra", name: "análise de amostras" },
+    { re: /\b(dashboard|inicio|home|painel)/, path: "/dashboard", name: "dashboard" },
+    { re: /\b(lab.?apoio|apoio)/, path: "/lab-apoio", name: "lab apoio" },
+    { re: /\bauditoria/, path: "/auditoria", name: "auditoria" },
+    { re: /\bespecialista/, path: "/especialistas", name: "especialistas" },
+    { re: /\bproducao/, path: "/relatorios/producao", name: "produção" },
+    { re: /\bimpress/, path: "/relatorios/impressao", name: "impressão" },
+  ];
+
+  const isNav = /\b(abr(?:ir|a)|ir|vai|vamos|mostr|ver|exib|list|acess|entrar|ativ|abre)\b/.test(t);
+  const startsWithSection = /^(atendimento|orcament|paciente|resultado|coleta|dashboard|painel|analise|auditoria|especialista|producao|impress|lab)/.test(t);
+  if (isNav || startsWithSection) {
+    for (const m of navMap) {
+      if (m.re.test(t)) {
+        return { reply: `Abrindo ${m.name}.`, run: () => navigate(m.path) };
+      }
+    }
+  }
+
+  return null;
+}
+
 const ASSISTANT_RUNTIME_INSTRUCTIONS = [
   "Você é o Assistente SISLAC. Estilo: direto, objetivo, executor.",
   "Execute comandos imediatamente usando ferramentas. Não peça confirmação para navegação, abrir telas, listar ou consultar dados.",
