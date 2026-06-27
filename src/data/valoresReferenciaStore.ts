@@ -106,6 +106,7 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.categoria !== undefined) row.categoria = v.categoria;
   if (v.jejum !== undefined) row.jejum = v.jejum;
   if (v.operador !== undefined) row.operador = v.operador;
+  if (v.riscoCv !== undefined) row.risco_cv = v.riscoCv;
   return row;
 }
 
