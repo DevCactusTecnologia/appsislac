@@ -37,6 +37,7 @@ import type { MockAtendimento } from "@/data/types";
 import { getUnidadeById } from "@/data/unidadeStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
 import { getAtendimentoExamesDB, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { resolveMaterialNome } from "@/data/materiaisAmostraStore";
 import { calculateExamPrice } from "@/domains/appointment/services/pricing";
 import {
   ensureDocumentoTemplatesLoaded,
@@ -76,6 +77,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
 
   const [exameStatusMap, setExameStatusMap] = useState<Record<string, ExameStatusDb>>({});
   const [exameRowMap, setExameRowMap] = useState<Record<string, AtendimentoExameRow>>({});
+  const [exameRows, setExameRows] = useState<AtendimentoExameRow[]>([]);
   // Tick para forçar re-render quando os templates de documento forem
   // recarregados ou editados.
   const [, setTemplatesTick] = useState(0);
@@ -93,8 +95,16 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   }, [open]);
 
   useEffect(() => {
-    if (!open || !atendimento) return;
+    if (!open || !atendimento) {
+      setExameStatusMap({});
+      setExameRowMap({});
+      setExameRows([]);
+      return;
+    }
     let cancelled = false;
+    setExameStatusMap({});
+    setExameRowMap({});
+    setExameRows([]);
     (async () => {
       try {
         const rows = await getAtendimentoExamesDB(atendimento.protocolo);
@@ -107,8 +117,9 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
         }
         setExameStatusMap(map);
         setExameRowMap(rowMap);
+        setExameRows(rows);
       } catch {
-        if (!cancelled) { setExameStatusMap({}); setExameRowMap({}); }
+        if (!cancelled) { setExameStatusMap({}); setExameRowMap({}); setExameRows([]); }
       }
     })();
     return () => { cancelled = true; };
@@ -117,17 +128,29 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
   const unidade = atendimento?.unidadeId ? getUnidadeById(atendimento.unidadeId) : undefined;
   // Resolve valor REAL e destino de cobrança a partir dos metadados persistidos (examesCobranca).
   // Fallback (atendimentos legados sem metadados): R$ 0 e cobrança "paciente".
-  const examesComValor = (atendimento?.exames ?? []).map((nomeExame) => {
-    const meta = atendimento?.examesCobranca?.find(c => c.nome === nomeExame);
-    const valor = Number(meta?.valor) || 0;
+  const examesComValor = (exameRows.length > 0
+    ? exameRows.map((row) => ({ nomeExame: row.nome_exame, row }))
+    : (atendimento?.exames ?? []).map((nomeExame) => ({ nomeExame, row: null as AtendimentoExameRow | null }))
+  ).map(({ nomeExame, row }) => {
+    const meta = atendimento?.examesCobranca?.find(c =>
+      (row?.id && c.atendimentoExameId === row.id) || c.nome === nomeExame
+    );
+    const valor = Number(row?.valor ?? meta?.valor) || 0;
     const valorTabela = calculateExamPrice({ nomeExame, convenioNome: atendimento?.convenio ?? "Particular" });
-    const valorOriginal = Math.max(Number(meta?.valorOriginal) || 0, valor, valorTabela);
+    const valorOriginalDb = Number(row?.valor_original);
+    const valorOriginal = Math.max(
+      Number.isFinite(valorOriginalDb) && valorOriginalDb > 0 ? valorOriginalDb : 0,
+      Number(meta?.valorOriginal) || 0,
+      valor,
+      valorTabela,
+    );
     return {
       nome: nomeExame,
-      material: meta?.material ?? "",
+      material: row?.material_id ? resolveMaterialNome(row.material_id) : (meta?.material ?? ""),
       valor,
       valorOriginal,
-      cobrancaDestino: meta?.cobrancaDestino ?? "paciente",
+      cobrancaDestino: row?.cobranca_destino === "convenio" ? "convenio" : (meta?.cobrancaDestino ?? "paciente"),
+      row,
     };
   });
 
@@ -379,7 +402,7 @@ const AtendimentoDetalheDialog = ({ open, onClose, atendimento }: AtendimentoDet
                 const meta = status ? STATUS_META[status] : null;
                 const Icon = meta?.icon;
                 const isConvenio = exame.cobrancaDestino === "convenio";
-                const row = exameRowMap[exame.nome];
+                const row = exame.row ?? exameRowMap[exame.nome];
                 const isTerc = row?.tipo_processo === "TERCEIRIZADO";
                 return (
                   <div key={i} className="flex items-center justify-between px-4 py-2.5 gap-3">

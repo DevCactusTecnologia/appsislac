@@ -334,7 +334,19 @@ export async function fetchAtendimentoByProtocolo(
     ]);
     cache.idByProtocolo.set(at.protocolo, at.id);
     cache.protocoloById.set(at.id, at.protocolo);
-    return buildAtendimento(at, exames ?? [], pgs ?? []);
+    const built = buildAtendimento(at, exames ?? [], pgs ?? []);
+    const idx = cache.atendimentos.findIndex((a) => a.protocolo === at.protocolo);
+    if (idx >= 0) {
+      cache.atendimentos = [
+        ...cache.atendimentos.slice(0, idx),
+        built,
+        ...cache.atendimentos.slice(idx + 1),
+      ];
+    } else {
+      cache.atendimentos = [built, ...cache.atendimentos];
+    }
+    notify();
+    return built;
   } catch (err) {
     logger.warn("atendimentoStore", "fetchAtendimentoByProtocolo falhou", {
       protocolo,
