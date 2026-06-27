@@ -816,42 +816,18 @@ function AssistenteSISLACInner() {
     }, 600);
   }, [conversation, location.pathname]);
 
-  const openTextMode = useCallback((notice?: string) => {
+  const openTextMode = useCallback(() => {
     setMode("text");
     setChatOpen(true);
     setConnecting(false);
-    if (notice) toast.warning(notice);
   }, []);
 
+  // Modo texto não usa mais o ElevenLabs — é chamado diretamente via ai-chat.
+  // (Função mantida como no-op para compatibilidade com chamadas existentes.)
   const startTextSession = useCallback(async () => {
-    if (conversation.status === "connected" || conversation.status === "connecting") return;
     setMode("text");
     setChatOpen(true);
-    setConnecting(true);
-
-    try {
-      const credentials = await getCredentials();
-      if (credentials.signedUrl) {
-        conversation.startSession({
-          signedUrl: credentials.signedUrl,
-          connectionType: "websocket",
-          textOnly: true,
-        });
-      } else {
-        conversation.startSession({
-          agentId: AGENT_ID,
-          connectionType: "websocket",
-          textOnly: true,
-        });
-      }
-    } catch (error) {
-      console.error("[AssistenteSISLAC] start text", error);
-      setConnecting(false);
-      toast.error("Não foi possível iniciar o Assistente SISLAC em modo texto", {
-        description: normalizeErrorMessage(error),
-      });
-    }
-  }, [conversation, getCredentials]);
+  }, []);
 
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
