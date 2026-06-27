@@ -34,6 +34,8 @@ interface Props {
   exameNome: string;
   parametro: ExameParametro;
   onCreated: () => void;
+  /** Aba inicial. Default: "templates". */
+  initialTab?: "templates" | "matriz";
 }
 
 interface FaixaIdade {
