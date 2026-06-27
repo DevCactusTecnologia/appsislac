@@ -574,6 +574,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
+  const [matrizOpen, setMatrizOpen] = useState(false);
+
 
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
   const meusRefs = useMemo(
