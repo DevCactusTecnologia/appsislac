@@ -134,27 +134,33 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            altura, que era a causa do rodapé fora de posição e da 2ª página
            em branco. O html2pdf é configurado com margin:0 porque a margem
            real já está no padding interno da folha. */
-        @page { size: A4; margin: 0; }
+        /* Cabeçalho e rodapé sao repetidos automaticamente em TODAS as folhas
+           pelo motor de impressao porque o container raiz e uma <table> com
+           <thead> (display: table-header-group) e <tfoot> (display: table-footer-group).
+           As margens da pagina sao definidas no @page para que a area imprimivel
+           ja desconte as bordas — assim thead/tfoot ocupam exatamente a faixa
+           reservada em cada pagina. */
+        @page { size: A4; margin: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm; }
+        html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
 
-        /* Paginacao natural: o container NAO trava altura nem usa overflow:hidden.
-           Isso permite que o motor de impressao quebre o fluxo entre paginas
-           respeitando page-break-inside: avoid em cada bloco .exame-bloco.
-           min-height: 297mm garante que laudos curtos ainda preencham a folha. */
-        .laudo-a4-page {
-          width: 210mm !important;
-          min-height: 297mm !important;
-          margin: 0 !important;
-          padding: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm !important;
-          box-sizing: border-box !important;
+        table.laudo-a4-page {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          border-spacing: 0 !important;
           background: #ffffff !important;
-          display: flex !important;
-          flex-direction: column !important;
         }
-        .laudo-a4-cabecalho { flex: 0 0 auto; padding: 0 !important; margin: 0 !important; }
+        table.laudo-a4-page > thead { display: table-header-group !important; }
+        table.laudo-a4-page > tfoot { display: table-footer-group !important; }
+        table.laudo-a4-page > thead > tr > td,
+        table.laudo-a4-page > tbody > tr > td,
+        table.laudo-a4-page > tfoot > tr > td {
+          padding: 0 !important; border: 0 !important; vertical-align: top !important;
+        }
+        .laudo-a4-cabecalho { padding: 0 !important; margin: 0 !important; }
         .laudo-a4-cabecalho > *:last-child, .laudo-a4-cabecalho * :last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .laudo-cabecalho-wrap > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
-        .laudo-a4-corpo { flex: 1 1 auto; min-height: 0; padding-top: 0 !important; margin-top: 0 !important; }
-        .laudo-a4-rodape { flex: 0 0 auto; margin-top: auto !important; }
+        .laudo-a4-corpo { padding-top: 0 !important; margin-top: 0 !important; }
+        .laudo-a4-rodape { margin-top: 0 !important; }
         /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
            do Layout Científico (font-family inline). Aplicamos apenas um
            fallback quando o layout não define fonte alguma, sem !important
