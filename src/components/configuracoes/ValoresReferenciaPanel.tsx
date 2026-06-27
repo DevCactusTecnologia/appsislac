@@ -448,8 +448,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
 
-      {/* Condição: operador + jejum (+ risco CV quando estratificado) */}
-      <div className="flex flex-wrap gap-1">
+      {/* Condição: operador (sempre) + jejum e/ou risco CV adicionados via [+] */}
+      <div className="flex flex-wrap gap-1 items-center">
         <Select value={operador} onValueChange={(v) => { setOperador(v as OperadorVR); }}>
           <SelectTrigger className="h-9 text-[12px] px-2 min-w-[88px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -458,25 +458,70 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
             ))}
           </SelectContent>
         </Select>
-        {parametro.sensivelJejum && (
-          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
-            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
-                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {showJejum && (
+          <div className="inline-flex items-center gap-0.5">
+            <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+              <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                  <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              onClick={() => { setJejum("qualquer"); setShowJejum(false); setTimeout(salvarSeNecessario, 0); }}
+              className="h-5 w-5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title="Remover condição de jejum"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         )}
-        {parametro.estratificadoRiscoCv && (
-          <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
-            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
-                <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {showRiscoCv && (
+          <div className="inline-flex items-center gap-0.5">
+            <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
+              <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
+                  <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              onClick={() => { setRiscoCv("qualquer"); setShowRiscoCv(false); setTimeout(salvarSeNecessario, 0); }}
+              className="h-5 w-5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+              title="Remover condição de risco CV"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+        {(!showJejum || !showRiscoCv) && (
+          <DropdownMenu open={condMenuOpen} onOpenChange={setCondMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="h-7 w-7 rounded-md border border-dashed border-border/60 text-muted-foreground hover:text-primary hover:border-primary/50 flex items-center justify-center transition-colors"
+                title="Adicionar condição"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {!showJejum && (
+                <DropdownMenuItem onClick={() => { setShowJejum(true); setJejum("com_jejum"); setCondMenuOpen(false); }} className="text-[12px]">
+                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" /> Jejum
+                </DropdownMenuItem>
+              )}
+              {!showRiscoCv && (
+                <DropdownMenuItem onClick={() => { setShowRiscoCv(true); setRiscoCv("baixo"); setCondMenuOpen(false); }} className="text-[12px]">
+                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" /> Risco cardiovascular
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
