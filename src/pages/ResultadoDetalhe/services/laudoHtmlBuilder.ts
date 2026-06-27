@@ -383,11 +383,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           margin: 0 !important;
         }
         #laudo-content br { line-height: 1.4 !important; }
-        /* Espaçamento de 16px entre o cabeçalho do laudo e o primeiro exame. */
+        /* Espaço entre cabeçalho e primeiro exame é controlado pelo
+           padding-bottom do thead (repete em todas as páginas). Mantemos
+           zerada a margem do primeiro filho do conteúdo. */
         .laudo-a4-corpo > #laudo-content > *:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco:first-child,
         .laudo-a4-corpo #laudo-content .exame-bloco-custom:first-child {
-          margin-top: 16px !important;
+          margin-top: 0 !important;
           padding-top: 0 !important;
         }
         /* Evita quebra de exame e assinatura entre páginas. */
