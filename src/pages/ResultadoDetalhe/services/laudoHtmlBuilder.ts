@@ -491,14 +491,16 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           </div>
         </div>
           </div>
-        </div>
-        <div class="laudo-a4-rodape">
-          ${rodapePadrao
-            ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
-            : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
-                <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
-              </div>`}
-        </div>
-      </div>
+        </td></tr></tbody>
+        <tfoot><tr><td>
+          <div class="laudo-a4-rodape">
+            ${rodapePadrao
+              ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
+              : `<div style="border-top:1px solid #ddd;padding-top:4px;text-align:center;font-size:8pt;color:#999;">
+                  <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+                </div>`}
+          </div>
+        </td></tr></tfoot>
+      </table>
     `;
 }
