@@ -141,8 +141,10 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
   );
 
   // -------- MATRIZ PERSONALIZADA --------
-  const usaJejum = !!parametro.sensivelJejum;
-  const usaRisco = !!parametro.estratificadoRiscoCv;
+  // Dimensões agora são escolhidas localmente (checkboxes na aba Matriz),
+  // pré-preenchidas a partir do parâmetro quando ele já estava marcado.
+  const [usaJejum, setUsaJejum] = useState<boolean>(!!parametro.sensivelJejum);
+  const [usaRisco, setUsaRisco] = useState<boolean>(!!parametro.estratificadoRiscoCv);
 
   const [faixas, setFaixas] = useState<FaixaIdade[]>([
     { label: "0–9 anos",   de: "0",  ate: "9",   unidade: "Anos" },
@@ -368,10 +370,21 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
               </div>
             </div>
 
+            <div className="flex items-center gap-4 px-1 py-1 text-[12px]">
+              <span className="text-muted-foreground">Dimensões da matriz:</span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" checked={usaJejum} onChange={(e) => setUsaJejum(e.target.checked)} className="h-3.5 w-3.5" />
+                Jejum
+              </label>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" checked={usaRisco} onChange={(e) => setUsaRisco(e.target.checked)} className="h-3.5 w-3.5" />
+                Risco cardiovascular
+              </label>
+            </div>
+
             {!usaJejum && !usaRisco && (
-              <div className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded px-2 py-1.5">
-                Sem dimensão de Jejum/Risco CV ativa no parâmetro — a matriz vira uma coluna única "Valor".
-                Ative os toggles em <strong>Editar parâmetro → Comportamento</strong> para ter mais colunas.
+              <div className="text-[11px] text-muted-foreground bg-muted/30 border border-border/50 rounded px-2 py-1.5">
+                Sem dimensão ativa — a matriz fica com uma coluna única "Valor". Marque Jejum e/ou Risco CV acima para gerar mais colunas.
               </div>
             )}
 
