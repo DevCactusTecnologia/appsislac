@@ -444,8 +444,9 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
             <Button variant="outline" size="sm" onClick={addFaixa} className="gap-1.5">
               <Plus className="h-3.5 w-3.5" /> Adicionar faixa etária
             </Button>
-          </TabsContent>
-        </Tabs>
+          </div>
+          )}
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancelar</Button>
