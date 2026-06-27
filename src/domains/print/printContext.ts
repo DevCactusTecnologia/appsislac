@@ -23,6 +23,14 @@ export const PRINT_CONTEXT_KEY = "sislac:print-context";
 /** TTL do contexto (15 min). Após isso é descartado mesmo que ainda exista. */
 export const PRINT_CONTEXT_TTL_MS = 15 * 60 * 1000;
 
+export interface PrintContextWatermark {
+  enabled: boolean;
+  url: string | null;
+  opacity: number;
+  sizePct: number;
+  rotation: number;
+}
+
 export interface PrintContext {
   /** Id do atendimento (mesmo `:id` da rota /resultado/:id). */
   atendimentoId: string;
@@ -32,10 +40,12 @@ export interface PrintContext {
   solicitanteId?: string;
   /** Modo da impressão. */
   modo: "todos" | "selecionados";
-  /** HTML do laudo já renderizado, pronto para `window.print()`. */
+  /** HTML do laudo já renderizado, pronto para o Document Engine. */
   html: string;
   /** Título do documento (usado pelo Chrome ao "Salvar como PDF"). */
   title: string;
+  /** Marca d'água (snapshot do `tenant_lab_config.watermark` no momento da impressão). */
+  watermark?: PrintContextWatermark;
   /** Timestamp (ms) de criação — base do TTL. */
   createdAt: number;
 }

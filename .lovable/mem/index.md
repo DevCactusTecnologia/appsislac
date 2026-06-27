@@ -7,3 +7,4 @@ Cleanup (código morto, dual-write, flags temporárias) é parte da fase, não t
 
 ## Memories
 - [Metodologia OECV](mem://preferences/metodologia-olhou-entendeu-configurou-validou) — Ciclo oficial de 4 etapas com regra de parada e critérios obrigatórios
+- [Document Engine 3.0 congelado](mem://constraints/document-engine-3.0-congelado) — Motor oficial de documentos; Paged.js isolado em adapters/PagedRenderer.ts; consumir só via renderDocument

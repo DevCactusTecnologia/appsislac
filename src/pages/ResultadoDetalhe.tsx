@@ -22,6 +22,7 @@ import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { savePrintContext } from "@/domains/print/printContext";
+import { getLabConfig } from "@/data/labConfigStore";
 import { getLabsApoio } from "@/data/labApoioStore";
 import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
@@ -1057,6 +1058,7 @@ const ResultadoDetalhe = () => {
         /<title>[^<]*<\/title>/i,
         `<title>${title}</title>`,
       );
+      const labWm = getLabConfig().watermark;
       savePrintContext({
         atendimentoId: id,
         exameIds: printable.map((e) => String(e.id)),
@@ -1064,6 +1066,15 @@ const ResultadoDetalhe = () => {
         modo: "selecionados",
         html: sanitized,
         title,
+        watermark: labWm
+          ? {
+              enabled: !!labWm.enabled,
+              url: labWm.url ?? null,
+              opacity: typeof labWm.opacity === "number" ? labWm.opacity : 0.08,
+              sizePct: typeof labWm.sizePct === "number" ? labWm.sizePct : 60,
+              rotation: typeof labWm.rotation === "number" ? labWm.rotation : 0,
+            }
+          : undefined,
         createdAt: Date.now(),
       });
       // `_blank` herda uma cópia do sessionStorage no momento do open.
