@@ -123,6 +123,8 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
           convenio_nome: at.convenio,
           unidade_id: at.unidadeId ?? "und-001",
           motivo_cancelamento: at.motivoCancelamento ?? null,
+          // Chave de idempotência: previne duplicação em reenvios (reload, retry, timeout).
+          idempotency_key: at.idempotencyKey ?? null,
         },
         exames: examesPayload,
         pagamentos: pagamentosPayload,
