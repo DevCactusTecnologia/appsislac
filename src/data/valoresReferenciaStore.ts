@@ -84,6 +84,7 @@ function fromRow(r: any): ValorReferencia {
     categoria: (r.categoria as CategoriaVR) ?? "custom",
     jejum: (r.jejum as JejumVR) ?? "qualquer",
     operador: (r.operador as OperadorVR) ?? "entre",
+    riscoCv: (r.risco_cv as RiscoCV) ?? "qualquer",
   };
 }
 
