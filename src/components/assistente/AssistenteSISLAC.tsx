@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
+import { Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -204,6 +204,72 @@ const ROUTE_MAP: Record<string, string> = {
   producao: "/relatorios/producao",
   impressao: "/relatorios/impressao",
 };
+
+/**
+ * Chama a Edge Function `ai-chat` em streaming SSE (AI SDK UI message stream)
+ * e invoca `onDelta` a cada pedaço de texto recebido. Acesso completo a todas as
+ * tools/skills do servidor (paciente, atendimento, resultado).
+ */
+async function streamAiChat(opts: {
+  messages: Array<{ role: "user" | "assistant"; text: string }>;
+  routePath: string;
+  onDelta: (chunk: string) => void;
+}): Promise<void> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? anonKey;
+
+  const uiMessages = opts.messages.map((m) => ({
+    id: crypto.randomUUID(),
+    role: m.role,
+    parts: [{ type: "text", text: m.text }],
+  }));
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: anonKey,
+    },
+    body: JSON.stringify({
+      messages: uiMessages,
+      context: { route: { path: opts.routePath } },
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(errText || `ai-chat ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      try {
+        const event = JSON.parse(data) as { type?: string; delta?: string; textDelta?: string };
+        const delta = event.delta ?? event.textDelta;
+        if ((event.type === "text-delta" || event.type === "text") && typeof delta === "string") {
+          opts.onDelta(delta);
+        }
+      } catch {
+        /* ignore non-JSON heartbeats */
+      }
+    }
+  }
+}
 
 /**
  * Interpretador local de intents — executa comandos comuns sem depender do agente remoto.
@@ -663,22 +729,11 @@ function AssistenteSISLACInner() {
     onConnect: () => {
       setConnecting(false);
       intentionalStopRef.current = false;
-      toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
     onDisconnect: (details?: unknown) => {
       setConnecting(false);
       console.warn("[AssistenteSISLAC] disconnect details", details);
-      const reason = getDisconnectReason(details);
-      const description = getDisconnectDescription(details);
-      if (intentionalStopRef.current || reason === "user") {
-        intentionalStopRef.current = false;
-        return;
-      }
-      if (mode === "text" && chatOpen) {
-        toast.message("Modo texto em espera", { description: "Digite para reconectar o Assistente SISLAC." });
-        return;
-      }
-      toast.message("Assistente SISLAC desconectado", description ? { description } : undefined);
+      intentionalStopRef.current = false;
     },
     onMessage: ({ role, message }) => {
       if (!message?.trim()) return;
@@ -696,26 +751,21 @@ function AssistenteSISLACInner() {
       console.error("[AssistenteSISLAC]", err, context);
       setConnecting(false);
       if (mode === "voice" && (isMicrophoneStartupError(message) || isRealtimeSignalStartupError(message))) {
-        setTimeout(() => openTextMode("Conexão de voz indisponível. Use o modo texto."), 0);
+        setTimeout(() => openTextMode(), 0);
         return;
       }
-      if (mode === "text") {
-        toast.error("Não consegui conectar o modo texto", { description: message });
-        return;
+      // Modo texto não depende mais do ElevenLabs — engole erros silenciosamente.
+      if (mode === "text") return;
+      // Voz: só notifica erros realmente fatais.
+      if (!message.includes("Client tool")) {
+        toast.error("Falha na conexão de voz", { description: message });
       }
-      toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
-        description: message,
-      });
     },
     onAgentToolRequest: (toolCall) => {
-      const name = getToolName(toolCall);
       console.info("[AssistenteSISLAC] agent tool request", toolCall);
-      toast.loading(`${TOOL_LABELS[name] ?? `Executando ${name}`}...`, { id: `assistant-tool-${name}` });
     },
     onAgentToolResponse: (toolCall) => {
-      const name = getToolName(toolCall);
       console.info("[AssistenteSISLAC] agent tool response", toolCall);
-      toast.success("Ação processada", { id: `assistant-tool-${name}`, description: TOOL_LABELS[name] ?? name });
     },
   });
 
@@ -766,42 +816,18 @@ function AssistenteSISLACInner() {
     }, 600);
   }, [conversation, location.pathname]);
 
-  const openTextMode = useCallback((notice?: string) => {
+  const openTextMode = useCallback(() => {
     setMode("text");
     setChatOpen(true);
     setConnecting(false);
-    if (notice) toast.warning(notice);
   }, []);
 
+  // Modo texto não usa mais o ElevenLabs — é chamado diretamente via ai-chat.
+  // (Função mantida como no-op para compatibilidade com chamadas existentes.)
   const startTextSession = useCallback(async () => {
-    if (conversation.status === "connected" || conversation.status === "connecting") return;
     setMode("text");
     setChatOpen(true);
-    setConnecting(true);
-
-    try {
-      const credentials = await getCredentials();
-      if (credentials.signedUrl) {
-        conversation.startSession({
-          signedUrl: credentials.signedUrl,
-          connectionType: "websocket",
-          textOnly: true,
-        });
-      } else {
-        conversation.startSession({
-          agentId: AGENT_ID,
-          connectionType: "websocket",
-          textOnly: true,
-        });
-      }
-    } catch (error) {
-      console.error("[AssistenteSISLAC] start text", error);
-      setConnecting(false);
-      toast.error("Não foi possível iniciar o Assistente SISLAC em modo texto", {
-        description: normalizeErrorMessage(error),
-      });
-    }
-  }, [conversation, getCredentials]);
+  }, []);
 
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
@@ -815,7 +841,7 @@ function AssistenteSISLACInner() {
       if (!mic.ok) {
         console.warn("[AssistenteSISLAC] microphone unavailable", mic);
         setConnecting(false);
-        openTextMode(getMicrophoneErrorMessage(mic));
+        openTextMode();
         return;
       }
 
@@ -864,13 +890,16 @@ function AssistenteSISLACInner() {
     await conversation.endSession();
   }, [conversation]);
 
+  const [sending, setSending] = useState(false);
+
   const sendTextMessage = useCallback(async () => {
     const text = chatInput.trim();
-    if (!text) return;
-    setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
+    if (!text || sending) return;
+    const userMsg = { role: "user" as const, message: text };
+    setChatMessages((current) => [...current.slice(-30), userMsg]);
     setChatInput("");
 
-    // 1) Tenta interpretar localmente — executa na hora sem depender do agente.
+    // 1) Atalho local — navegação executa instantaneamente.
     const intent = parseLocalIntent(text, navigateRef.current);
     if (intent) {
       try {
@@ -885,19 +914,52 @@ function AssistenteSISLACInner() {
       return;
     }
 
-    // 2) Caso contrário, encaminha para o agente remoto.
-    if (conversation.status !== "connected") {
-      pendingTextMessageRef.current = text;
-      void startTextSession();
-      return;
-    }
+    // 2) Caso contrário, conversa com ai-chat (acesso total às skills do servidor).
+    setSending(true);
+    // placeholder do agente (vai sendo preenchido pelo stream)
+    setChatMessages((current) => [...current.slice(-30), { role: "agent", message: "" }]);
     try {
-      conversation.sendUserMessage(text);
-      conversation.sendUserActivity();
+      const history = [...chatMessages, userMsg].map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        text: m.message,
+      }));
+      await streamAiChat({
+        messages: history,
+        routePath: location.pathname,
+        onDelta: (chunk) => {
+          setChatMessages((current) => {
+            const next = [...current];
+            const last = next[next.length - 1];
+            if (last && last.role === "agent") {
+              next[next.length - 1] = { ...last, message: last.message + chunk };
+            }
+            return next;
+          });
+        },
+      });
+      setChatMessages((current) => {
+        const last = current[current.length - 1];
+        if (last && last.role === "agent" && !last.message.trim()) {
+          return [...current.slice(0, -1), { role: "agent", message: "Pronto." }];
+        }
+        return current;
+      });
     } catch (error) {
-      toast.error("Não consegui enviar a mensagem", { description: normalizeErrorMessage(error) });
+      setChatMessages((current) => {
+        const next = [...current];
+        const last = next[next.length - 1];
+        const msg = `Não consegui responder agora: ${normalizeErrorMessage(error)}`;
+        if (last && last.role === "agent" && !last.message) {
+          next[next.length - 1] = { role: "agent", message: msg };
+        } else {
+          next.push({ role: "agent", message: msg });
+        }
+        return next;
+      });
+    } finally {
+      setSending(false);
     }
-  }, [chatInput, conversation, startTextSession]);
+  }, [chatInput, sending, chatMessages, location.pathname]);
 
   const onClick = isConnected ? stop : start;
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
@@ -914,7 +976,7 @@ function AssistenteSISLACInner() {
               <div>
                 <p className="text-sm font-semibold leading-none">Assistente SISLAC</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Modo texto pronto"}
+                  {sending ? "Pensando…" : "Pronto"}
                 </p>
               </div>
             </div>
@@ -935,12 +997,9 @@ function AssistenteSISLACInner() {
 
           <div className="max-h-[360px] min-h-[220px] space-y-3 overflow-y-auto px-4 py-3">
             {!chatMessages.length && (
-              <div className="rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>Seu microfone não está disponível. Você pode digitar comandos aqui e o assistente continuará executando ações no sistema.</p>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Digite um comando como "abrir atendimentos", "listar pacientes devedores", "abrir resultado 12345".
+              </p>
             )}
             {chatMessages.map((item, index) => (
               <div key={`${item.role}-${index}-${item.message.slice(0, 12)}`} className={cn("flex", item.role === "user" ? "justify-end" : "justify-start")}>
@@ -964,11 +1023,11 @@ function AssistenteSISLACInner() {
             <Input
               value={chatInput}
               onChange={(event) => setChatInput(event.target.value)}
-              placeholder={connecting ? "Conectando..." : "Digite um comando..."}
-              disabled={connecting}
+              placeholder="Digite um comando..."
               className="h-10"
+              autoFocus
             />
-            <Button type="submit" size="icon" disabled={connecting || !chatInput.trim()} aria-label="Enviar mensagem">
+            <Button type="submit" size="icon" disabled={sending || !chatInput.trim()} aria-label="Enviar mensagem">
               <Send className="h-4 w-4" />
             </Button>
           </form>
