@@ -21,19 +21,42 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const agentId = url.searchParams.get("agent_id") || AGENT_ID;
 
-    const r = await fetch(
+    const tokenRequest = fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(agentId)}`,
       { headers: { "xi-api-key": apiKey } },
     );
-    const body = await r.text();
-    if (!r.ok) {
-      console.error("[elevenlabs-conversation-token] upstream", r.status, body);
+
+    // Também gera signed_url para fallback em modo texto quando não houver microfone.
+    const signedUrlRequest = fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agentId)}`,
+      { headers: { "xi-api-key": apiKey } },
+    );
+
+    const [tokenResponse, signedUrlResponse] = await Promise.all([tokenRequest, signedUrlRequest]);
+    const tokenBody = await tokenResponse.text();
+    if (!tokenResponse.ok) {
+      console.error("[elevenlabs-conversation-token] token upstream", tokenResponse.status, tokenBody);
       return new Response(
-        JSON.stringify({ error: "upstream", status: r.status, detail: body }),
+        JSON.stringify({ error: "upstream", status: tokenResponse.status, detail: tokenBody }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    return new Response(body, {
+
+    const payload = JSON.parse(tokenBody) as Record<string, unknown>;
+    const signedUrlBody = await signedUrlResponse.text();
+    if (signedUrlResponse.ok) {
+      try {
+        const signedPayload = JSON.parse(signedUrlBody) as Record<string, unknown>;
+        payload.signed_url = signedPayload.signed_url ?? signedPayload.signedUrl;
+      } catch {
+        payload.signed_url = signedUrlBody;
+      }
+    } else {
+      console.warn("[elevenlabs-conversation-token] signed-url upstream", signedUrlResponse.status, signedUrlBody);
+      payload.signed_url_error = { status: signedUrlResponse.status, detail: signedUrlBody };
+    }
+
+    return new Response(JSON.stringify(payload), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
