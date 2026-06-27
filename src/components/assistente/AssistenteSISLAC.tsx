@@ -253,26 +253,59 @@ function AssistenteSISLACInner() {
         return `Protocolo ${at.protocolo}${paciente ? ` — ${paciente}` : ""}. Status: ${status}. Exames: ${exames}.`;
       },
 
-      /** Lista os últimos atendimentos com protocolo e status (falável). */
+      /** Lista atendimentos por período, com filtro opcional por status. */
       listar_atendimentos_por_protocolo: async ({
-        limite, status,
-      }: { limite?: number; status?: string } = {}) => {
-        const n = Math.max(1, Math.min(20, Number(limite) || 5));
+        limite, status, periodo, data_inicio, data_fim,
+      }: { limite?: number; status?: string; periodo?: string; data_inicio?: string; data_fim?: string } = {}) => {
+        const n = Math.max(1, Math.min(50, Number(limite) || 10));
+        const { ini, fim, label } = resolvePeriodo(periodo, data_inicio, data_fim);
         let q = supabase
           .from("atendimentos")
-          .select("protocolo, status_atendimento, data_atendimento")
-          .order("data_atendimento", { ascending: false })
+          .select("protocolo, status_atendimento, data, paciente_nome")
+          .order("data", { ascending: false })
           .limit(n);
+        if (ini) q = q.gte("data", ini.toISOString());
+        if (fim) q = q.lt("data", fim.toISOString());
         if (status) q = q.ilike("status_atendimento", `%${status}%`);
         const { data, error } = await q;
         if (error) return `Erro: ${error.message}`;
-        if (!data?.length) return "Nenhum atendimento encontrado";
-        return data
-          .map((r: any) => `Protocolo ${r.protocolo}: ${r.status_atendimento ?? "sem status"}`)
+        if (!data?.length) return `Nenhum atendimento ${label}`;
+        const head = `${data.length} atendimento(s) ${label}: `;
+        return head + data
+          .map((r: any) => `${r.protocolo} — ${r.paciente_nome ?? ""} (${r.status_atendimento ?? "sem status"})`)
           .join("; ");
       },
 
-      /** Abre a tela de impressão do laudo pelo protocolo. */
+      /** Detalhes falável: protocolo, status e exames com valores. */
+      detalhes_atendimento_por_protocolo: async ({ protocolo }: { protocolo: string }) => {
+        if (!protocolo) return "Informe o protocolo";
+        const { data: at, error: e1 } = await supabase
+          .from("atendimentos")
+          .select("id, protocolo, status_atendimento, paciente_nome")
+          .ilike("protocolo", `%${protocolo}%`)
+          .limit(1)
+          .maybeSingle();
+        if (e1 || !at) return `Atendimento ${protocolo} não encontrado`;
+        const { data: exs } = await supabase
+          .from("atendimento_exames")
+          .select("nome_exame, status, resultados")
+          .eq("atendimento_id", at.id)
+          .order("ordem", { ascending: true });
+        const linhas = (exs ?? []).map((e: any) => {
+          let valor = "sem resultado";
+          const r = e.resultados;
+          if (r && typeof r === "object") {
+            const pares = Object.entries(r).slice(0, 4)
+              .map(([k, v]: any) => `${k}=${typeof v === "object" ? v?.valor ?? "" : v}`)
+              .join(", ");
+            if (pares) valor = pares;
+          }
+          return `${e.nome_exame} [${e.status}]: ${valor}`;
+        });
+        return `Protocolo ${at.protocolo} — ${at.paciente_nome}. Status: ${at.status_atendimento}. Exames: ${linhas.join(" | ") || "nenhum"}`;
+      },
+
+      /** Abre impressão do laudo (auto-print → o usuário pode salvar como PDF). */
       imprimir_atendimento: async ({ protocolo }: { protocolo: string }) => {
         if (!protocolo) return "Informe o protocolo";
         const { data, error } = await supabase
@@ -283,7 +316,7 @@ function AssistenteSISLACInner() {
           .maybeSingle();
         if (error || !data) return `Atendimento ${protocolo} não encontrado`;
         window.open(`/resultado/${data.id}/print`, "_blank", "noopener");
-        return `Impressão de ${data.protocolo} aberta`;
+        return `Impressão de ${data.protocolo} aberta — use 'Salvar como PDF' no diálogo`;
       },
 
       /** Libera o resultado de um atendimento pelo protocolo (exige confirmação). */
@@ -300,7 +333,6 @@ function AssistenteSISLACInner() {
           .maybeSingle();
         if (error || !data) return `Atendimento ${protocolo} não encontrado`;
         navigateRef.current(`/resultado/${data.id}`);
-        // Aguarda a tela montar e a bridge ficar disponível.
         const ok = await new Promise<boolean>((resolve) => {
           const t0 = Date.now();
           const iv = setInterval(() => {
@@ -311,6 +343,93 @@ function AssistenteSISLACInner() {
         if (!ok) return "Tela de resultado não carregou a tempo";
         const r = (window as any).__sislacResultado.liberar();
         return r?.msg ?? `Resultado ${data.protocolo} liberado`;
+      },
+
+      /** Registra observação falada no atendimento (append com timestamp). */
+      registrar_observacao_atendimento: async ({
+        protocolo, observacao,
+      }: { protocolo: string; observacao: string }) => {
+        if (!protocolo) return "Informe o protocolo";
+        if (!observacao?.trim()) return "Diga o conteúdo da observação";
+        const { data: at, error } = await supabase
+          .from("atendimentos")
+          .select("id, protocolo, observacoes_assistente")
+          .ilike("protocolo", `%${protocolo}%`)
+          .limit(1)
+          .maybeSingle();
+        if (error || !at) return `Atendimento ${protocolo} não encontrado`;
+        const ts = new Date().toLocaleString("pt-BR");
+        const novo = `${at.observacoes_assistente ? at.observacoes_assistente + "\n" : ""}[${ts}] ${observacao.trim()}`;
+        const { error: e2 } = await supabase
+          .from("atendimentos")
+          .update({ observacoes_assistente: novo })
+          .eq("id", at.id);
+        if (e2) return `Erro ao salvar: ${e2.message}`;
+        return `Observação registrada em ${at.protocolo}`;
+      },
+
+      /** Lista pacientes com dívidas (pagamento pendente/parcial), opcional por convênio. */
+      pacientes_com_dividas: async ({
+        modo, convenio, limite,
+      }: { modo?: "pendente" | "parcial" | "todos"; convenio?: string; limite?: number } = {}) => {
+        const n = Math.max(1, Math.min(50, Number(limite) || 10));
+        let q = supabase
+          .from("atendimentos")
+          .select("protocolo, paciente_nome, convenio_nome, status_pagamento, total")
+          .order("data", { ascending: false })
+          .limit(n);
+        if (modo === "parcial") q = q.ilike("status_pagamento", "%parcial%");
+        else if (modo === "pendente") q = q.ilike("status_pagamento", "%pendente%");
+        else q = q.not("status_pagamento", "ilike", "%pago%");
+        if (convenio) q = q.ilike("convenio_nome", `%${convenio}%`);
+        const { data, error } = await q;
+        if (error) return `Erro: ${error.message}`;
+        if (!data?.length) return "Nenhum paciente com pendência";
+        return `${data.length} pendência(s): ` + data
+          .map((r: any) => `${r.paciente_nome} (${r.convenio_nome}) — R$ ${Number(r.total ?? 0).toFixed(2)} [${r.status_pagamento}]`)
+          .join("; ");
+      },
+
+      /** Gera relatório (PDF via diálogo de impressão) de devedores agrupados por convênio. */
+      gerar_pdf_devedores_por_convenio: async ({ apenas_convenio }: { apenas_convenio?: string } = {}) => {
+        let q = supabase
+          .from("atendimentos")
+          .select("protocolo, paciente_nome, paciente_cpf, convenio_nome, status_pagamento, total, data")
+          .not("status_pagamento", "ilike", "%pago%")
+          .order("convenio_nome", { ascending: true })
+          .order("data", { ascending: false })
+          .limit(1000);
+        if (apenas_convenio) q = q.ilike("convenio_nome", `%${apenas_convenio}%`);
+        const { data, error } = await q;
+        if (error) return `Erro: ${error.message}`;
+        if (!data?.length) return "Nenhum devedor encontrado";
+
+        const grupos = new Map<string, any[]>();
+        for (const r of data as any[]) {
+          const k = r.convenio_nome ?? "Sem convênio";
+          if (!grupos.has(k)) grupos.set(k, []);
+          grupos.get(k)!.push(r);
+        }
+        const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        const hoje = new Date().toLocaleString("pt-BR");
+        let totalGeral = 0;
+        let html = `<!doctype html><html><head><meta charset="utf-8"><title>Devedores por convênio</title>
+<style>body{font-family:Arial,sans-serif;padding:16px;color:#111}h1{font-size:18px;margin:0 0 4px}h2{font-size:14px;margin:18px 0 6px;border-bottom:1px solid #333;padding-bottom:2px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left}th{background:#f1f1f1}tfoot td{font-weight:bold;background:#fafafa}.right{text-align:right}.muted{color:#666;font-size:11px}@media print{@page{size:A4;margin:14mm}}</style>
+</head><body><h1>Relatório de Devedores por Convênio</h1><div class="muted">Gerado em ${hoje}</div>`;
+        for (const [conv, rows] of grupos) {
+          const subtotal = rows.reduce((s, r) => s + Number(r.total ?? 0), 0);
+          totalGeral += subtotal;
+          html += `<h2>${conv} — ${rows.length} paciente(s) — ${fmt(subtotal)}</h2>
+<table><thead><tr><th>Protocolo</th><th>Paciente</th><th>CPF</th><th>Data</th><th>Status</th><th class="right">Valor</th></tr></thead><tbody>`;
+          for (const r of rows) {
+            const dt = r.data ? new Date(r.data).toLocaleDateString("pt-BR") : "";
+            html += `<tr><td>${r.protocolo}</td><td>${r.paciente_nome ?? ""}</td><td>${r.paciente_cpf ?? ""}</td><td>${dt}</td><td>${r.status_pagamento}</td><td class="right">${fmt(Number(r.total ?? 0))}</td></tr>`;
+          }
+          html += `</tbody><tfoot><tr><td colspan="5" class="right">Subtotal</td><td class="right">${fmt(subtotal)}</td></tr></tfoot></table>`;
+        }
+        html += `<h2>Total geral: ${fmt(totalGeral)}</h2></body></html>`;
+        printHtmlInHiddenFrame({ html, documentTitle: "Devedores por convênio" });
+        return `Relatório de ${data.length} devedor(es) gerado — use 'Salvar como PDF'`;
       },
     },
 
