@@ -205,26 +205,13 @@ const ROUTE_MAP: Record<string, string> = {
   impressao: "/relatorios/impressao",
 };
 
-/**
- * Overrides para tornar o agente direto: executa sem pedir confirmação para
- * comandos triviais (navegar, abrir, listar). Só pergunta se faltar dado essencial.
- */
-const AGENT_OVERRIDES = {
-  agent: {
-    prompt: {
-      prompt: [
-        "Você é o Assistente SISLAC. Estilo: direto, objetivo, executor.",
-        "REGRA PRINCIPAL: execute o comando imediatamente usando as ferramentas. NÃO peça confirmação.",
-        "NUNCA pergunte 'deseja continuar?', 'confirma?', 'quer que eu...?' para ações de navegação, abrir telas, listar ou consultar dados.",
-        "Só faça UMA pergunta se faltar um dado obrigatório (ex.: protocolo, nome do paciente). Caso contrário, aja.",
-        "Após executar, responda em no máximo 6 palavras (ex.: 'Pronto.', 'Aberto.', 'Feito.').",
-        "Sinônimos de navegação ('abrir', 'ir para', 'mostrar', 'ver', 'visualizar') = chame navegar_para imediatamente.",
-        "Mapa de destinos: dashboard, atendimentos, novo_atendimento, coleta, analise, resultados, pacientes, orcamentos, lab_apoio, auditoria, especialistas, producao, impressao.",
-      ].join(" "),
-    },
-    language: "pt",
-  },
-} as const;
+const ASSISTANT_RUNTIME_INSTRUCTIONS = [
+  "Você é o Assistente SISLAC. Estilo: direto, objetivo, executor.",
+  "Execute comandos imediatamente usando ferramentas. Não peça confirmação para navegação, abrir telas, listar ou consultar dados.",
+  "Pergunte apenas se faltar dado obrigatório, como protocolo ou nome do paciente.",
+  "Após executar, responda em até 6 palavras: Pronto, Aberto ou Feito.",
+  "Destinos: dashboard, atendimentos, novo_atendimento, coleta, analise, resultados, pacientes, orcamentos, lab_apoio, auditoria, especialistas, producao, impressao.",
+].join(" ");
 
 /** Descreve a tela atual em uma linha curta para o agente. */
 function describeRoute(pathname: string): string {
@@ -240,6 +227,22 @@ function describeRoute(pathname: string): string {
   return `Tela: ${pathname}`;
 }
 
+function buildAssistantContext(pathname: string): string {
+  return `${ASSISTANT_RUNTIME_INSTRUCTIONS} ${describeRoute(pathname)}`;
+}
+
+function getDisconnectDescription(details: unknown): string {
+  if (!details || typeof details !== "object") return "";
+  const value = details as Record<string, unknown>;
+  const context = value.context && typeof value.context === "object" ? value.context as Record<string, unknown> : undefined;
+  return String(value.message ?? value.closeReason ?? context?.reason ?? value.reason ?? "");
+}
+
+function getDisconnectReason(details: unknown): string {
+  if (!details || typeof details !== "object") return "";
+  return String((details as Record<string, unknown>).reason ?? "");
+}
+
 function AssistenteSISLACInner() {
   const [connecting, setConnecting] = useState(false);
   const [mode, setMode] = useState<AssistantMode>("voice");
@@ -247,6 +250,8 @@ function AssistenteSISLACInner() {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const lastStartAttemptRef = useRef(0);
+  const pendingTextMessageRef = useRef<string | null>(null);
+  const intentionalStopRef = useRef(false);
   const navigate = useNavigate();
   const location = useLocation();
   const navigateRef = useRef(navigate);
@@ -613,15 +618,23 @@ function AssistenteSISLACInner() {
 
     onConnect: () => {
       setConnecting(false);
+      intentionalStopRef.current = false;
       toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
     onDisconnect: (details?: unknown) => {
       setConnecting(false);
       console.warn("[AssistenteSISLAC] disconnect details", details);
-      const reason = (details && typeof details === "object" && "reason" in (details as Record<string, unknown>))
-        ? String((details as Record<string, unknown>).reason ?? "")
-        : "";
-      toast.message("Assistente SISLAC desconectado", reason ? { description: reason } : undefined);
+      const reason = getDisconnectReason(details);
+      const description = getDisconnectDescription(details);
+      if (intentionalStopRef.current || reason === "user") {
+        intentionalStopRef.current = false;
+        return;
+      }
+      if (mode === "text" && chatOpen) {
+        toast.message("Modo texto em espera", { description: "Digite para reconectar o Assistente SISLAC." });
+        return;
+      }
+      toast.message("Assistente SISLAC desconectado", description ? { description } : undefined);
     },
     onMessage: ({ role, message }) => {
       if (!message?.trim()) return;
@@ -639,8 +652,11 @@ function AssistenteSISLACInner() {
       console.error("[AssistenteSISLAC]", err, context);
       setConnecting(false);
       if (mode === "voice" && (isMicrophoneStartupError(message) || isRealtimeSignalStartupError(message))) {
-        toast.warning("Conexão de voz indisponível. Tentando modo texto...");
-        setTimeout(() => void startTextMode("Continue usando o Assistente SISLAC por texto."), 0);
+        setTimeout(() => openTextMode("Conexão de voz indisponível. Use o modo texto."), 0);
+        return;
+      }
+      if (mode === "text") {
+        toast.error("Não consegui conectar o modo texto", { description: message });
         return;
       }
       toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
@@ -666,7 +682,13 @@ function AssistenteSISLACInner() {
   useEffect(() => {
     if (!isConnected) return;
     try {
-      conversation.sendContextualUpdate(describeRoute(location.pathname));
+      conversation.sendContextualUpdate(buildAssistantContext(location.pathname));
+      const pending = pendingTextMessageRef.current;
+      if (pending) {
+        pendingTextMessageRef.current = null;
+        conversation.sendUserMessage(pending);
+        conversation.sendUserActivity();
+      }
     } catch (e) {
       console.warn("[AssistenteSISLAC] contextual update", e);
     }
@@ -696,33 +718,38 @@ function AssistenteSISLACInner() {
 
   const sendCurrentContextSoon = useCallback(() => {
     setTimeout(() => {
-      try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
+      try { conversation.sendContextualUpdate(buildAssistantContext(location.pathname)); } catch {}
     }, 600);
   }, [conversation, location.pathname]);
 
-  const startTextMode = useCallback(async (notice?: string) => {
+  const openTextMode = useCallback((notice?: string) => {
+    setMode("text");
+    setChatOpen(true);
+    setConnecting(false);
+    if (notice) toast.warning(notice);
+  }, []);
+
+  const startTextSession = useCallback(async () => {
     if (conversation.status === "connected" || conversation.status === "connecting") return;
     setMode("text");
     setChatOpen(true);
     setConnecting(true);
-    if (notice) toast.warning(notice);
 
     try {
       const credentials = await getCredentials();
       if (credentials.signedUrl) {
         conversation.startSession({
           signedUrl: credentials.signedUrl,
-          connectionType: "websocket", overrides: AGENT_OVERRIDES,
+          connectionType: "websocket",
           textOnly: true,
         });
       } else {
         conversation.startSession({
           agentId: AGENT_ID,
-          connectionType: "websocket", overrides: AGENT_OVERRIDES,
+          connectionType: "websocket",
           textOnly: true,
         });
       }
-      sendCurrentContextSoon();
     } catch (error) {
       console.error("[AssistenteSISLAC] start text", error);
       setConnecting(false);
@@ -730,7 +757,7 @@ function AssistenteSISLACInner() {
         description: normalizeErrorMessage(error),
       });
     }
-  }, [conversation, getCredentials, sendCurrentContextSoon]);
+  }, [conversation, getCredentials]);
 
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
@@ -744,7 +771,7 @@ function AssistenteSISLACInner() {
       if (!mic.ok) {
         console.warn("[AssistenteSISLAC] microphone unavailable", mic);
         setConnecting(false);
-        await startTextMode(getMicrophoneErrorMessage(mic));
+        openTextMode(getMicrophoneErrorMessage(mic));
         return;
       }
 
@@ -755,13 +782,13 @@ function AssistenteSISLACInner() {
         if (credentials.signedUrl) {
           conversation.startSession({
             signedUrl: credentials.signedUrl,
-            connectionType: "websocket", overrides: AGENT_OVERRIDES,
+            connectionType: "websocket",
           });
           started = true;
         } else if (credentials.token) {
           conversation.startSession({
             conversationToken: credentials.token,
-            connectionType: "webrtc", overrides: AGENT_OVERRIDES,
+            connectionType: "webrtc",
           });
           started = true;
         }
@@ -772,7 +799,7 @@ function AssistenteSISLACInner() {
       if (!started) {
         conversation.startSession({
           agentId: AGENT_ID,
-          connectionType: "webrtc", overrides: AGENT_OVERRIDES,
+          connectionType: "webrtc",
         });
       }
       sendCurrentContextSoon();
@@ -783,9 +810,11 @@ function AssistenteSISLACInner() {
         description: normalizeErrorMessage(e),
       });
     }
-  }, [connecting, getCredentials, isConnected, sendCurrentContextSoon, startTextMode, conversation]);
+  }, [connecting, getCredentials, isConnected, sendCurrentContextSoon, openTextMode, conversation]);
 
   const stop = useCallback(async () => {
+    intentionalStopRef.current = true;
+    pendingTextMessageRef.current = null;
     setConnecting(false);
     setChatOpen(false);
     await conversation.endSession();
@@ -794,19 +823,20 @@ function AssistenteSISLACInner() {
   const sendTextMessage = useCallback(() => {
     const text = chatInput.trim();
     if (!text) return;
+    setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
+    setChatInput("");
     if (conversation.status !== "connected") {
-      toast.error("Assistente ainda não conectado");
+      pendingTextMessageRef.current = text;
+      void startTextSession();
       return;
     }
     try {
       conversation.sendUserMessage(text);
       conversation.sendUserActivity();
-      setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
-      setChatInput("");
     } catch (error) {
       toast.error("Não consegui enviar a mensagem", { description: normalizeErrorMessage(error) });
     }
-  }, [chatInput, conversation]);
+  }, [chatInput, conversation, startTextSession]);
 
   const onClick = isConnected ? stop : start;
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
@@ -823,7 +853,7 @@ function AssistenteSISLACInner() {
               <div>
                 <p className="text-sm font-semibold leading-none">Assistente SISLAC</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Fallback sem microfone"}
+                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Modo texto pronto"}
                 </p>
               </div>
             </div>
@@ -873,11 +903,11 @@ function AssistenteSISLACInner() {
             <Input
               value={chatInput}
               onChange={(event) => setChatInput(event.target.value)}
-              placeholder={isConnected ? "Digite um comando..." : "Aguarde a conexão..."}
-              disabled={!isConnected}
+              placeholder={connecting ? "Conectando..." : "Digite um comando..."}
+              disabled={connecting}
               className="h-10"
             />
-            <Button type="submit" size="icon" disabled={!isConnected || !chatInput.trim()} aria-label="Enviar mensagem">
+            <Button type="submit" size="icon" disabled={connecting || !chatInput.trim()} aria-label="Enviar mensagem">
               <Send className="h-4 w-4" />
             </Button>
           </form>
