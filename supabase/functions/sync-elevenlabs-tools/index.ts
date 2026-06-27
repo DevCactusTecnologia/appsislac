@@ -1,9 +1,14 @@
 // Sync ElevenLabs Agent tools via Management API.
 // POST -> aplica catálogo de tools no agente. Idempotente.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY")!;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 type Param = {
   id: string;
