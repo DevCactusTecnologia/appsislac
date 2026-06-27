@@ -932,6 +932,7 @@ export type Database = {
           paciente_nascimento: string | null
           paciente_nome: string
           protocolo: string
+          risco_cardiovascular: string | null
           solicitante: string
           status_atendimento: string
           status_pagamento: string
@@ -963,6 +964,7 @@ export type Database = {
           paciente_nascimento?: string | null
           paciente_nome: string
           protocolo: string
+          risco_cardiovascular?: string | null
           solicitante?: string
           status_atendimento?: string
           status_pagamento?: string
@@ -994,6 +996,7 @@ export type Database = {
           paciente_nascimento?: string | null
           paciente_nome?: string
           protocolo?: string
+          risco_cardiovascular?: string | null
           solicitante?: string
           status_atendimento?: string
           status_pagamento?: string
@@ -2242,6 +2245,7 @@ export type Database = {
           created_at: string
           critico_max: string
           critico_min: string
+          estratificado_risco_cv: boolean
           exame_id: string
           exibir_anterior: string
           exibir_mapa: string
@@ -2254,6 +2258,7 @@ export type Database = {
           qtd_caracteres: string
           qtd_digitos: number | null
           rotulo: string
+          sensivel_jejum: boolean
           separador_decimal: string
           tenant_id: string
           tipo: string
@@ -2269,6 +2274,7 @@ export type Database = {
           created_at?: string
           critico_max?: string
           critico_min?: string
+          estratificado_risco_cv?: boolean
           exame_id: string
           exibir_anterior?: string
           exibir_mapa?: string
@@ -2281,6 +2287,7 @@ export type Database = {
           qtd_caracteres?: string
           qtd_digitos?: number | null
           rotulo: string
+          sensivel_jejum?: boolean
           separador_decimal?: string
           tenant_id: string
           tipo?: string
@@ -2296,6 +2303,7 @@ export type Database = {
           created_at?: string
           critico_max?: string
           critico_min?: string
+          estratificado_risco_cv?: boolean
           exame_id?: string
           exibir_anterior?: string
           exibir_mapa?: string
@@ -2308,6 +2316,7 @@ export type Database = {
           qtd_caracteres?: string
           qtd_digitos?: number | null
           rotulo?: string
+          sensivel_jejum?: boolean
           separador_decimal?: string
           tenant_id?: string
           tipo?: string
@@ -7045,6 +7054,7 @@ export type Database = {
           parametro_id: number | null
           parametro_nome: string
           prioridade: number
+          risco_cv: string
           sexo: string
           tenant_id: string
           unidade: string
@@ -7075,6 +7085,7 @@ export type Database = {
           parametro_id?: number | null
           parametro_nome?: string
           prioridade?: number
+          risco_cv?: string
           sexo?: string
           tenant_id: string
           unidade?: string
@@ -7105,6 +7116,7 @@ export type Database = {
           parametro_id?: number | null
           parametro_nome?: string
           prioridade?: number
+          risco_cv?: string
           sexo?: string
           tenant_id?: string
           unidade?: string
