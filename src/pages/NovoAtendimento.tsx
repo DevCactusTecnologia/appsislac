@@ -465,6 +465,19 @@ const NovoAtendimento = () => {
   // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
   const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Idempotency key: gerada uma vez por sessão de formulário e persistida em
+  // sessionStorage para sobreviver a reloads. Reenvios com a mesma chave
+  // retornam o atendimento já criado em vez de duplicar.
+  const idempotencyKeyRef = useRef<string>("");
+  if (!idempotencyKeyRef.current && typeof window !== "undefined" && !isEditing) {
+    const storageKey = "novoAtendimento:idempotencyKey";
+    let stored = sessionStorage.getItem(storageKey);
+    if (!stored) {
+      stored = crypto.randomUUID();
+      sessionStorage.setItem(storageKey, stored);
+    }
+    idempotencyKeyRef.current = stored;
+  }
   
 
   // Edit mode
