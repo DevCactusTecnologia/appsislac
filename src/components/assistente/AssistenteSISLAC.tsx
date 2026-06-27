@@ -1023,11 +1023,11 @@ function AssistenteSISLACInner() {
             <Input
               value={chatInput}
               onChange={(event) => setChatInput(event.target.value)}
-              placeholder={connecting ? "Conectando..." : "Digite um comando..."}
-              disabled={connecting}
+              placeholder="Digite um comando..."
               className="h-10"
+              autoFocus
             />
-            <Button type="submit" size="icon" disabled={connecting || !chatInput.trim()} aria-label="Enviar mensagem">
+            <Button type="submit" size="icon" disabled={sending || !chatInput.trim()} aria-label="Enviar mensagem">
               <Send className="h-4 w-4" />
             </Button>
           </form>
