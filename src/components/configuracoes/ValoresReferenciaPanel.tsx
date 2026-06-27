@@ -215,6 +215,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     (vr?.criticoMax ?? "") !== critMax ||
     (vr?.unidade ?? "") !== unidade ||
     (((vr?.jejum as JejumVR) ?? "qualquer")) !== jejum ||
+    (((vr?.riscoCv as RiscoCV) ?? "qualquer")) !== riscoCv ||
     (((vr?.operador as OperadorVR) ?? "entre")) !== operador ||
     (vr?.sexo ?? defaultSexo) !== sexo ||
     (vr?.idadeMin ?? defaultIdadeMin) !== idadeMin ||
