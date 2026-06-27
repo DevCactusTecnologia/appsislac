@@ -890,13 +890,16 @@ function AssistenteSISLACInner() {
     await conversation.endSession();
   }, [conversation]);
 
+  const [sending, setSending] = useState(false);
+
   const sendTextMessage = useCallback(async () => {
     const text = chatInput.trim();
-    if (!text) return;
-    setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
+    if (!text || sending) return;
+    const userMsg = { role: "user" as const, message: text };
+    setChatMessages((current) => [...current.slice(-30), userMsg]);
     setChatInput("");
 
-    // 1) Tenta interpretar localmente — executa na hora sem depender do agente.
+    // 1) Atalho local — navegação executa instantaneamente.
     const intent = parseLocalIntent(text, navigateRef.current);
     if (intent) {
       try {
@@ -911,19 +914,52 @@ function AssistenteSISLACInner() {
       return;
     }
 
-    // 2) Caso contrário, encaminha para o agente remoto.
-    if (conversation.status !== "connected") {
-      pendingTextMessageRef.current = text;
-      void startTextSession();
-      return;
-    }
+    // 2) Caso contrário, conversa com ai-chat (acesso total às skills do servidor).
+    setSending(true);
+    // placeholder do agente (vai sendo preenchido pelo stream)
+    setChatMessages((current) => [...current.slice(-30), { role: "agent", message: "" }]);
     try {
-      conversation.sendUserMessage(text);
-      conversation.sendUserActivity();
+      const history = [...chatMessages, userMsg].map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("assistant" as const),
+        text: m.message,
+      }));
+      await streamAiChat({
+        messages: history,
+        routePath: location.pathname,
+        onDelta: (chunk) => {
+          setChatMessages((current) => {
+            const next = [...current];
+            const last = next[next.length - 1];
+            if (last && last.role === "agent") {
+              next[next.length - 1] = { ...last, message: last.message + chunk };
+            }
+            return next;
+          });
+        },
+      });
+      setChatMessages((current) => {
+        const last = current[current.length - 1];
+        if (last && last.role === "agent" && !last.message.trim()) {
+          return [...current.slice(0, -1), { role: "agent", message: "Pronto." }];
+        }
+        return current;
+      });
     } catch (error) {
-      toast.error("Não consegui enviar a mensagem", { description: normalizeErrorMessage(error) });
+      setChatMessages((current) => {
+        const next = [...current];
+        const last = next[next.length - 1];
+        const msg = `Não consegui responder agora: ${normalizeErrorMessage(error)}`;
+        if (last && last.role === "agent" && !last.message) {
+          next[next.length - 1] = { role: "agent", message: msg };
+        } else {
+          next.push({ role: "agent", message: msg });
+        }
+        return next;
+      });
+    } finally {
+      setSending(false);
     }
-  }, [chatInput, conversation, startTextSession]);
+  }, [chatInput, sending, chatMessages, location.pathname]);
 
   const onClick = isConnected ? stop : start;
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
