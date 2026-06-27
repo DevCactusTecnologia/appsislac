@@ -80,6 +80,7 @@ function normalizeErrorMessage(error: unknown): string {
 async function streamAiChat(opts: {
   messages: Array<{ role: "user" | "assistant"; text: string }>;
   routePath: string;
+  mode: "text" | "voice";
   onDelta: (chunk: string) => void;
 }): Promise<string> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -102,7 +103,7 @@ async function streamAiChat(opts: {
     },
     body: JSON.stringify({
       messages: uiMessages,
-      context: { route: { path: opts.routePath } },
+      context: { route: { path: opts.routePath }, mode: opts.mode },
     }),
   });
 
