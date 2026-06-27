@@ -717,9 +717,12 @@ const Index = () => {
       pagamentosRealizados: novos,
       statusPagamento: statusPag,
     };
+    // Redistribuição SEMPRE com base no desconto/acréscimo FINAL retornado pelo modal
+    // (que já inclui histórico + novos ajustes). Isso garante que remoção do desconto
+    // histórico seja efetivamente aplicada nos `valor` dos exames.
     const ajusteLiquidoCents = Math.round((acrescimo - desconto) * 100); // pode ser negativo
     const examesCobrancaAtuais = selectedAtendimento.examesCobranca;
-    if (ajusteLiquidoCents !== 0 && examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+    if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
       const pacienteIdxs = examesCobrancaAtuais
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.cobrancaDestino !== "convenio");
@@ -730,7 +733,6 @@ const Index = () => {
       });
       const subtotalOriginalCents = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + Math.round(v * 100), 0);
       if (subtotalOriginalCents > 0) {
-        // Clamp do desconto para nunca passar do subtotal (acréscimo não tem teto).
         const ajusteCentsClamped = ajusteLiquidoCents < 0
           ? Math.max(ajusteLiquidoCents, -subtotalOriginalCents)
           : ajusteLiquidoCents;
