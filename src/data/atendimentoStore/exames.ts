@@ -28,8 +28,11 @@ export async function getAtendimentoExamesDB(protocolo: string): Promise<Atendim
       .select("id, protocolo")
       .eq("protocolo", protocolo)
       .maybeSingle();
-    if (atError || !at) {
+    if (atError) {
       showError(atError, { scope: "atendimentoStore.getAtendimentoExamesDB.resolveAtendimento", silent: true });
+      return [];
+    }
+    if (!at) {
       return [];
     }
     id = Number(at.id);
