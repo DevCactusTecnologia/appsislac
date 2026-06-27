@@ -287,13 +287,33 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={setTab} className="w-full">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="templates"><Sparkles className="h-3.5 w-3.5 mr-1.5" /> Templates clínicos</TabsTrigger>
-            <TabsTrigger value="matriz"><Grid3x3 className="h-3.5 w-3.5 mr-1.5" /> Matriz personalizada</TabsTrigger>
-          </TabsList>
+        <div className="w-full">
+          <div className="inline-flex rounded-md border border-border bg-muted/40 p-0.5 mb-3">
+            <button
+              type="button"
+              onClick={() => setTab("templates")}
+              className={cn(
+                "inline-flex items-center px-3 py-1.5 rounded-[5px] text-[12px] font-medium transition-colors",
+                tab === "templates" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Templates clínicos
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("matriz")}
+              className={cn(
+                "inline-flex items-center px-3 py-1.5 rounded-[5px] text-[12px] font-medium transition-colors",
+                tab === "matriz" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Grid3x3 className="h-3.5 w-3.5 mr-1.5" /> Matriz personalizada
+            </button>
+          </div>
 
-          <TabsContent value="templates" className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+          {tab === "templates" && (
+          <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+
             {templatesRelevantes.length > 0 && (
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-primary font-semibold mb-2">
