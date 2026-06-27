@@ -123,10 +123,48 @@ export const TEMPLATES: TemplatePreset[] = [
   },
 ];
 
-const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCreated }: Props) => {
+/** Aplica um template clínico diretamente, sem abrir o diálogo. Retorna nº de regras criadas. */
+export async function aplicarTemplatePreset(
+  tpl: TemplatePreset,
+  exameNome: string,
+  parametroNome: string,
+): Promise<number> {
+  let ok = 0;
+  for (const l of tpl.linhas) {
+    const isEntre = l.operador === "entre" && l.valor.includes("-");
+    const [vMin, vMax] = isEntre ? l.valor.split("-").map((s) => s.trim()) : ["", l.valor];
+    const r = await addValorReferencia({
+      exameNome,
+      parametroNome,
+      sexo: "Ambos",
+      idadeMin: l.faixa.de,
+      idadeMax: l.faixa.ate,
+      unidadeIdade: l.faixa.unidade,
+      unidadeIdadeMax: l.faixa.unidade,
+      valorMin: vMin,
+      valorMax: vMax,
+      unidade: tpl.unidade,
+      descricao: "",
+      criticoMin: "",
+      criticoMax: "",
+      categoria: "custom",
+      jejum: l.jejum ?? "qualquer",
+      riscoCv: l.riscoCv ?? "qualquer",
+      operador: l.operador,
+    });
+    if (r) ok++;
+  }
+  return ok;
+}
+
+const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCreated, initialTab = "templates" }: Props) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("templates");
+  const [tab, setTab] = useState<"templates" | "matriz">(initialTab);
+
+  useEffect(() => {
+    if (open) setTab(initialTab);
+  }, [open, initialTab]);
   const titleId = `variacao-matriz-title-${parametro.id}`;
 
   const parametroNome = parametro.chave || parametro.rotulo;
