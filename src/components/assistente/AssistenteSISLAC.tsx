@@ -205,7 +205,6 @@ function AssistenteSISLACInner() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const pendingTextStartRef = useRef(false);
   const lastStartAttemptRef = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -652,7 +651,6 @@ function AssistenteSISLACInner() {
     setMode("text");
     setChatOpen(true);
     setConnecting(true);
-    pendingTextStartRef.current = true;
     if (notice) toast.warning(notice);
 
     try {
@@ -728,7 +726,6 @@ function AssistenteSISLACInner() {
   }, [connecting, getCredentials, isConnected, sendCurrentContextSoon, startTextMode, conversation]);
 
   const stop = useCallback(async () => {
-    pendingTextStartRef.current = false;
     setConnecting(false);
     await conversation.endSession();
   }, [conversation]);
