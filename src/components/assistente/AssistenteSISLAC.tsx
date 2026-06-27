@@ -205,7 +205,6 @@ function AssistenteSISLACInner() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const credentialsRef = useRef<ElevenLabsCredentials | null>(null);
   const pendingTextStartRef = useRef(false);
   const lastStartAttemptRef = useRef(0);
   const navigate = useNavigate();
@@ -634,15 +633,12 @@ function AssistenteSISLACInner() {
   }, [conversation.status]);
 
   const getCredentials = useCallback(async (): Promise<ElevenLabsCredentials> => {
-    if (credentialsRef.current?.token || credentialsRef.current?.signedUrl) return credentialsRef.current;
     const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
     if (error) throw error;
-    const credentials = {
+    return {
       token: typeof data?.token === "string" ? data.token : undefined,
       signedUrl: typeof data?.signed_url === "string" ? data.signed_url : undefined,
     };
-    credentialsRef.current = credentials;
-    return credentials;
   }, []);
 
   const sendCurrentContextSoon = useCallback(() => {
@@ -652,7 +648,7 @@ function AssistenteSISLACInner() {
   }, [conversation, location.pathname]);
 
   const startTextMode = useCallback(async (notice?: string) => {
-    if (conversation.status === "connected" || conversation.status === "connecting" || connecting) return;
+    if (conversation.status === "connected" || conversation.status === "connecting") return;
     setMode("text");
     setChatOpen(true);
     setConnecting(true);
@@ -682,7 +678,7 @@ function AssistenteSISLACInner() {
         description: normalizeErrorMessage(error),
       });
     }
-  }, [connecting, conversation, getCredentials, sendCurrentContextSoon]);
+  }, [conversation, getCredentials, sendCurrentContextSoon]);
 
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
