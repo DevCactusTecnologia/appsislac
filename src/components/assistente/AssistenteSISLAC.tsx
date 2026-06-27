@@ -713,13 +713,13 @@ function AssistenteSISLACInner() {
       if (credentials.signedUrl) {
         conversation.startSession({
           signedUrl: credentials.signedUrl,
-          connectionType: "websocket",
+          connectionType: "websocket", overrides: AGENT_OVERRIDES,
           textOnly: true,
         });
       } else {
         conversation.startSession({
           agentId: AGENT_ID,
-          connectionType: "websocket",
+          connectionType: "websocket", overrides: AGENT_OVERRIDES,
           textOnly: true,
         });
       }
@@ -756,13 +756,13 @@ function AssistenteSISLACInner() {
         if (credentials.signedUrl) {
           conversation.startSession({
             signedUrl: credentials.signedUrl,
-            connectionType: "websocket",
+            connectionType: "websocket", overrides: AGENT_OVERRIDES,
           });
           started = true;
         } else if (credentials.token) {
           conversation.startSession({
             conversationToken: credentials.token,
-            connectionType: "webrtc",
+            connectionType: "webrtc", overrides: AGENT_OVERRIDES,
           });
           started = true;
         }
@@ -773,7 +773,7 @@ function AssistenteSISLACInner() {
       if (!started) {
         conversation.startSession({
           agentId: AGENT_ID,
-          connectionType: "webrtc",
+          connectionType: "webrtc", overrides: AGENT_OVERRIDES,
         });
       }
       sendCurrentContextSoon();
