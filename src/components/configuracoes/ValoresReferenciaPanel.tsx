@@ -11,7 +11,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles } from "lucide-react";
-import VariacaoMatrizDialog from "./VariacaoMatrizDialog";
+import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
+import { Grid3x3 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
