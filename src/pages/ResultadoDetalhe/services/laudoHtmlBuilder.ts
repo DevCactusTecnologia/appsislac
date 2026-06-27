@@ -145,22 +145,26 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
 
         table.laudo-a4-page {
           width: 100% !important;
+          height: calc(297mm - ${m.top}mm - ${printBottomMarginMm}mm) !important;
+          min-height: calc(297mm - ${m.top}mm - ${printBottomMarginMm}mm) !important;
           border-collapse: collapse !important;
           border-spacing: 0 !important;
-          background: #ffffff !important;
+          background: transparent !important;
         }
         table.laudo-a4-page > thead { display: table-header-group !important; }
+        table.laudo-a4-page > tbody { height: 100% !important; }
+        table.laudo-a4-page > tbody > tr { height: 100% !important; }
         table.laudo-a4-page > tfoot { display: table-footer-group !important; }
         table.laudo-a4-page > thead > tr > td,
         table.laudo-a4-page > tbody > tr > td,
         table.laudo-a4-page > tfoot > tr > td {
-          padding: 0 !important; border: 0 !important; vertical-align: top !important;
+          padding: 0 !important; border: 0 !important; vertical-align: top !important; background: transparent !important;
         }
         .laudo-a4-cabecalho { padding: 0 !important; margin: 0 !important; }
         .laudo-a4-cabecalho > *:last-child, .laudo-a4-cabecalho * :last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .laudo-cabecalho-wrap > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
         .laudo-a4-corpo { padding-top: 0 !important; margin-top: 0 !important; }
-        .laudo-a4-rodape { margin-top: 0 !important; }
+        .laudo-a4-rodape { margin-top: 0 !important; background: transparent !important; }
         /* Fontes do corpo do laudo: respeitamos a fonte definida no editor
            do Layout Científico (font-family inline). Aplicamos apenas um
            fallback quando o layout não define fonte alguma, sem !important
@@ -394,7 +398,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
         }
         /* Marca d'água global (configurada em /configuracoes → Laboratório). */
-        ${buildWatermarkCss(getLabConfig().watermark)}
+        ${buildWatermarkCss(getLabConfig().watermark, { target: "body" })}
       </style>
 
       <table class="laudo-a4-page">

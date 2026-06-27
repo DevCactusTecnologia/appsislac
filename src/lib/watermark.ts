@@ -2,12 +2,11 @@
 // orçamentos, etc.). A configuração vive em `tenant_lab_config.watermark` (jsonb)
 // e é replicada no `LabConfig` para consumo síncrono pelos builders de HTML.
 //
-// O CSS produzido por `buildWatermarkCss` é puramente aditivo:
-//   - Usa `body::before` com `position: fixed` (cobre o A4 inteiro em cada
-//     página impressa via @media print)
-//   - Para o laudo, também aplica `.laudo-a4-page::before` (cada folha A4 é
-//     uma região independente, então o pseudo precisa repetir por página)
-// Não toca em nenhuma regra existente — basta concatenar ao final do <style>.
+// O CSS produzido por `buildWatermarkCss` pinta a marca d'água com um único
+// pseudo-elemento por documento/escopo. No laudo, o alvo correto é `body::before`
+// com `position: fixed`, pois o Chrome reaplica elementos fixed em cada página
+// impressa. Usar `body::before` + `.laudo-a4-page::before` ao mesmo tempo duplica
+// a marca e desloca uma cópia para o centro da tabela/conteúdo.
 //
 // Para evitar render incorreto, o navegador precisa de
 // `-webkit-print-color-adjust: exact` e `print-color-adjust: exact` (já
@@ -67,10 +66,16 @@ function clamp(n: number, min: number, max: number): number {
  *
  * Retorna string vazia quando desabilitado ou sem imagem.
  */
-export function buildWatermarkCss(wm: WatermarkConfig | null | undefined): string {
+export type WatermarkTarget = "body" | "laudo-page" | "both";
+
+export function buildWatermarkCss(
+  wm: WatermarkConfig | null | undefined,
+  options: { target?: WatermarkTarget } = {},
+): string {
   const w = normalizeWatermark(wm);
   if (!w.enabled || !w.url) return "";
   const url = JSON.stringify(w.url);
+  const target = options.target ?? "both";
   const common = `
     content: "";
     position: absolute;
@@ -87,12 +92,26 @@ export function buildWatermarkCss(wm: WatermarkConfig | null | undefined): strin
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   `;
-  return `
-    /* Marca d'água — gerada por buildWatermarkCss(). */
+  const bodyCss = target === "body" || target === "both"
+    ? `
     body { position: relative; }
     body::before { ${common} position: fixed; }
+  `
+    : `
+    body::before { content: none !important; display: none !important; }
+  `;
+  const laudoCss = target === "laudo-page" || target === "both"
+    ? `
     .laudo-a4-page { position: relative; }
     .laudo-a4-page::before { ${common} }
     .laudo-a4-page > * { position: relative; z-index: 1; }
+  `
+    : `
+    .laudo-a4-page::before { content: none !important; display: none !important; }
+  `;
+  return `
+    /* Marca d'água — gerada por buildWatermarkCss(). */
+    ${bodyCss}
+    ${laudoCss}
   `;
 }
