@@ -715,7 +715,14 @@ const ParametroBloco = ({
               </div>
             </DropdownMenuItem>
             <div className="border-t my-1" />
-            <DropdownMenuItem onClick={() => setMatrizOpen(true)} className="gap-2 text-[13px] py-2">
+            <DropdownMenuItem
+              onSelect={(e) => {
+                // Evita corrida entre fechar o dropdown e abrir o Dialog
+                e.preventDefault();
+                setTimeout(() => setMatrizOpen(true), 0);
+              }}
+              className="gap-2 text-[13px] py-2"
+            >
               <Sparkles className="h-4 w-4 text-primary" />
               <div className="flex flex-col min-w-0">
                 <span className="font-medium">Template ou matriz em lote…</span>
