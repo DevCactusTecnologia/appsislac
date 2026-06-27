@@ -24,9 +24,12 @@ export const isValueInRange = (valor: string, refMin: string, refMax: string): b
   const min = parseRef(refMin);
   const max = parseRef(refMax);
   if (min !== null && max !== null) return v >= min && v <= max;
+  // Apenas limite superior (ex.: "Inferior a 6,0") → normal se v <= max
+  if (max !== null && min === null) return v <= max;
+  // Apenas limite inferior (ex.: "Superior a X") → normal se v >= min
+  if (min !== null && max === null) return v >= min;
   if (refMin.includes("<") && max !== null) return v < max;
   if (refMin.includes(">") && max !== null) return v > max;
-  if (max !== null && min !== null) return v >= min && v <= max;
   return null;
 };
 
