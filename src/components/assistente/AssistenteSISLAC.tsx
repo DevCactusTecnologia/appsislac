@@ -585,9 +585,13 @@ function AssistenteSISLACInner() {
       setConnecting(false);
       toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
-    onDisconnect: () => {
+    onDisconnect: (details?: unknown) => {
       setConnecting(false);
-      toast.message("Assistente SISLAC desconectado");
+      console.warn("[AssistenteSISLAC] disconnect details", details);
+      const reason = (details && typeof details === "object" && "reason" in (details as Record<string, unknown>))
+        ? String((details as Record<string, unknown>).reason ?? "")
+        : "";
+      toast.message("Assistente SISLAC desconectado", reason ? { description: reason } : undefined);
     },
     onMessage: ({ role, message }) => {
       if (!message?.trim()) return;
