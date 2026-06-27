@@ -222,7 +222,6 @@ const AGENT_OVERRIDES = {
         "Mapa de destinos: dashboard, atendimentos, novo_atendimento, coleta, analise, resultados, pacientes, orcamentos, lab_apoio, auditoria, especialistas, producao, impressao.",
       ].join(" "),
     },
-    firstMessage: "",
     language: "pt",
   },
 } as const;
