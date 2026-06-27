@@ -629,50 +629,130 @@ function AssistenteSISLACInner() {
     }
   }, [isConnected, location.pathname, conversation]);
 
+  useEffect(() => {
+    if (conversation.status === "error") setConnecting(false);
+  }, [conversation.status]);
+
+  const getCredentials = useCallback(async (): Promise<ElevenLabsCredentials> => {
+    if (credentialsRef.current?.token || credentialsRef.current?.signedUrl) return credentialsRef.current;
+    const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
+    if (error) throw error;
+    const credentials = {
+      token: typeof data?.token === "string" ? data.token : undefined,
+      signedUrl: typeof data?.signed_url === "string" ? data.signed_url : undefined,
+    };
+    credentialsRef.current = credentials;
+    return credentials;
+  }, []);
+
+  const sendCurrentContextSoon = useCallback(() => {
+    setTimeout(() => {
+      try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
+    }, 600);
+  }, [conversation, location.pathname]);
+
+  const startTextMode = useCallback(async (notice?: string) => {
+    if (conversation.status === "connected" || conversation.status === "connecting" || connecting) return;
+    setMode("text");
+    setChatOpen(true);
+    setConnecting(true);
+    pendingTextStartRef.current = true;
+    if (notice) toast.warning(notice);
+
+    try {
+      const credentials = await getCredentials();
+      if (credentials.signedUrl) {
+        conversation.startSession({
+          signedUrl: credentials.signedUrl,
+          connectionType: "websocket",
+          textOnly: true,
+        });
+      } else {
+        conversation.startSession({
+          agentId: AGENT_ID,
+          connectionType: "websocket",
+          textOnly: true,
+        });
+      }
+      sendCurrentContextSoon();
+    } catch (error) {
+      console.error("[AssistenteSISLAC] start text", error);
+      setConnecting(false);
+      toast.error("Não foi possível iniciar o Assistente SISLAC em modo texto", {
+        description: normalizeErrorMessage(error),
+      });
+    }
+  }, [connecting, conversation, getCredentials, sendCurrentContextSoon]);
+
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
+    const now = Date.now();
+    if (now - lastStartAttemptRef.current < 800) return;
+    lastStartAttemptRef.current = now;
     setConnecting(true);
+    setMode("voice");
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mic = await checkMicrophone();
+      if (!mic.ok) {
+        console.warn("[AssistenteSISLAC] microphone unavailable", mic);
+        setConnecting(false);
+        await startTextMode(getMicrophoneErrorMessage(mic));
+        return;
+      }
 
       // Tenta obter token (agente privado). Faz fallback para agentId público se a function falhar.
       let started = false;
       try {
-        const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
-        if (!error && data?.token) {
-          await conversation.startSession({
-            conversationToken: data.token as string,
+        const credentials = await getCredentials();
+        if (credentials.token) {
+          conversation.startSession({
+            conversationToken: credentials.token,
             connectionType: "webrtc",
           });
           started = true;
-        } else if (error) {
-          console.warn("[AssistenteSISLAC] token fn falhou, tentando agente público", error);
         }
       } catch (e) {
         console.warn("[AssistenteSISLAC] token fn exceção, tentando agente público", e);
       }
 
       if (!started) {
-        await conversation.startSession({
+        conversation.startSession({
           agentId: AGENT_ID,
           connectionType: "webrtc",
         });
       }
-
-      setTimeout(() => {
-        try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
-      }, 300);
+      sendCurrentContextSoon();
     } catch (e) {
       console.error("[AssistenteSISLAC] start", e);
-      toast.error("Não foi possível iniciar o Assistente SISLAC. Verifique o microfone.");
-    } finally {
       setConnecting(false);
+      toast.error("Não foi possível iniciar o Assistente SISLAC. Verifique o microfone.", {
+        description: normalizeErrorMessage(e),
+      });
     }
-  }, [conversation, connecting, isConnected, location.pathname]);
+  }, [connecting, getCredentials, isConnected, sendCurrentContextSoon, startTextMode, conversation]);
 
   const stop = useCallback(async () => {
+    pendingTextStartRef.current = false;
+    setConnecting(false);
     await conversation.endSession();
   }, [conversation]);
+
+  const sendTextMessage = useCallback(() => {
+    const text = chatInput.trim();
+    if (!text) return;
+    if (conversation.status !== "connected") {
+      toast.error("Assistente ainda não conectado");
+      return;
+    }
+    try {
+      conversation.sendUserMessage(text);
+      conversation.sendUserActivity();
+      setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
+      setChatInput("");
+    } catch (error) {
+      toast.error("Não consegui enviar a mensagem", { description: normalizeErrorMessage(error) });
+    }
+  }, [chatInput, conversation]);
 
   const onClick = isConnected ? stop : start;
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
