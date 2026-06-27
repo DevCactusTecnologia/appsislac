@@ -200,8 +200,12 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
-    setJejum((vr?.jejum as JejumVR) ?? "qualquer");
-    setRiscoCv((vr?.riscoCv as RiscoCV) ?? "qualquer");
+    // Coerção: se a flag do parâmetro está desligada, força "qualquer" mesmo que o
+    // registro persistido contenha valor antigo (legado ou template aplicado antes).
+    const jPersist = (vr?.jejum as JejumVR) ?? "qualquer";
+    setJejum(parametro.sensivelJejum ? jPersist : "qualquer");
+    const rPersist = (vr?.riscoCv as RiscoCV) ?? "qualquer";
+    setRiscoCv(parametro.estratificadoRiscoCv ? rPersist : "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
@@ -209,7 +213,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
     setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vr?.id]);
+  }, [vr?.id, parametro.sensivelJejum, parametro.estratificadoRiscoCv]);
 
   const dirty =
     (vr?.valorMin ?? "") !== normMin ||
