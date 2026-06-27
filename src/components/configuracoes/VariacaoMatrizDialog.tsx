@@ -62,7 +62,7 @@ export interface TemplatePreset {
     valor: string;
   }>;
 }
-const TEMPLATES: TemplatePreset[] = [
+export const TEMPLATES: TemplatePreset[] = [
   {
     id: "triglicerides",
     label: "Triglicérides — SBC 2017 (idade × jejum)",
