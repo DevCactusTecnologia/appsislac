@@ -178,6 +178,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [critMax, setCritMax] = useState(vr?.criticoMax ?? "");
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
   const [jejum, setJejum] = useState<JejumVR>((vr?.jejum as JejumVR) ?? "qualquer");
+  const [riscoCv, setRiscoCv] = useState<RiscoCV>((vr?.riscoCv as RiscoCV) ?? "qualquer");
   const [operador, setOperador] = useState<OperadorVR>((vr?.operador as OperadorVR) ?? "entre");
   const [sexo, setSexo] = useState<SexoVR>(defaultSexo);
   const [idadeMin, setIdadeMin] = useState(defaultIdadeMin);
