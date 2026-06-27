@@ -642,6 +642,15 @@ function AssistenteSISLACInner() {
     }
   }, [isConnected, location.pathname, conversation]);
 
+  // Keep-alive: previne timeout por inatividade especialmente em modo texto.
+  useEffect(() => {
+    if (!isConnected) return;
+    const id = window.setInterval(() => {
+      try { conversation.sendUserActivity(); } catch {}
+    }, 12_000);
+    return () => window.clearInterval(id);
+  }, [isConnected, conversation]);
+
   useEffect(() => {
     if (conversation.status === "error") setConnecting(false);
   }, [conversation.status]);
