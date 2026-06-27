@@ -206,6 +206,72 @@ const ROUTE_MAP: Record<string, string> = {
 };
 
 /**
+ * Chama a Edge Function `ai-chat` em streaming SSE (AI SDK UI message stream)
+ * e invoca `onDelta` a cada pedaço de texto recebido. Acesso completo a todas as
+ * tools/skills do servidor (paciente, atendimento, resultado).
+ */
+async function streamAiChat(opts: {
+  messages: Array<{ role: "user" | "assistant"; text: string }>;
+  routePath: string;
+  onDelta: (chunk: string) => void;
+}): Promise<void> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? anonKey;
+
+  const uiMessages = opts.messages.map((m) => ({
+    id: crypto.randomUUID(),
+    role: m.role,
+    parts: [{ type: "text", text: m.text }],
+  }));
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      apikey: anonKey,
+    },
+    body: JSON.stringify({
+      messages: uiMessages,
+      context: { route: { path: opts.routePath } },
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(errText || `ai-chat ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      try {
+        const event = JSON.parse(data) as { type?: string; delta?: string; textDelta?: string };
+        const delta = event.delta ?? event.textDelta;
+        if ((event.type === "text-delta" || event.type === "text") && typeof delta === "string") {
+          opts.onDelta(delta);
+        }
+      } catch {
+        /* ignore non-JSON heartbeats */
+      }
+    }
+  }
+}
+
+/**
  * Interpretador local de intents — executa comandos comuns sem depender do agente remoto.
  * Garante que comandos como "abrir atendimentos", "novo atendimento", "ir para pacientes"
  * funcionem mesmo quando as tools não estão registradas no painel do ElevenLabs.
