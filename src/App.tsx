@@ -346,6 +346,21 @@ function AppRoutes() {
     );
   }
 
+  // Página dedicada de impressão: precisa renderizar FORA do AppLayout.
+  // Se ficar dentro do layout operacional, o navegador/Paged.js captura menu,
+  // botões flutuantes e assistente junto com o laudo.
+  if (/^\/resultado\/[^/]+\/print$/.test(location.pathname)) {
+    return (
+      <ChunkErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/resultado/:id/print" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><LaudoPrintPage /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
+      </ChunkErrorBoundary>
+    );
+  }
+
   return (
     <ChunkErrorBoundary>
       <Suspense fallback={<PageLoader />}>
