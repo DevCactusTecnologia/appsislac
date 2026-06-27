@@ -700,9 +700,14 @@ const NovoAtendimento = () => {
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
         jejum: jejum === "sim",
+        idempotencyKey: idempotencyKeyRef.current || undefined,
       };
       await addAtendimento(novoAt);
       setLastGuiaNumero(novoAt.guiaNumero ?? null);
+      // Sucesso: limpa a chave de idempotência para que o próximo atendimento
+      // gere uma nova (evita que dois pacientes diferentes compartilhem a chave).
+      try { sessionStorage.removeItem("novoAtendimento:idempotencyKey"); } catch { /* noop */ }
+      idempotencyKeyRef.current = "";
       }
       const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
         contarEtiquetas(exames, getExamesCatalogo());
