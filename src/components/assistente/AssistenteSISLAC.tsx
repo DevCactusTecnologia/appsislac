@@ -976,7 +976,7 @@ function AssistenteSISLACInner() {
               <div>
                 <p className="text-sm font-semibold leading-none">Assistente SISLAC</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Modo texto pronto"}
+                  {sending ? "Pensando…" : "Pronto"}
                 </p>
               </div>
             </div>
