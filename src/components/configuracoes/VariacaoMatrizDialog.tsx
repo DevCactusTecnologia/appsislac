@@ -141,8 +141,10 @@ const VariacaoMatrizDialog = ({ open, onOpenChange, exameNome, parametro, onCrea
   );
 
   // -------- MATRIZ PERSONALIZADA --------
-  const usaJejum = !!parametro.sensivelJejum;
-  const usaRisco = !!parametro.estratificadoRiscoCv;
+  // Dimensões agora são escolhidas localmente (checkboxes na aba Matriz),
+  // pré-preenchidas a partir do parâmetro quando ele já estava marcado.
+  const [usaJejum, setUsaJejum] = useState<boolean>(!!parametro.sensivelJejum);
+  const [usaRisco, setUsaRisco] = useState<boolean>(!!parametro.estratificadoRiscoCv);
 
   const [faixas, setFaixas] = useState<FaixaIdade[]>([
     { label: "0–9 anos",   de: "0",  ate: "9",   unidade: "Anos" },
