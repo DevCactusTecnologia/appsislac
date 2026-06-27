@@ -1430,7 +1430,11 @@ const ResultadoDetalhe = () => {
                                 <div className="text-right">
                                   {(ref.refMin || ref.refMax) ? (
                                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-accent/50 rounded-lg text-xs text-foreground">
-                                      {ref.refMin} - {ref.refMax}
+                                      {ref.refMin && ref.refMax
+                                        ? `${ref.refMin} - ${ref.refMax}`
+                                        : ref.refMin
+                                          ? `≥ ${ref.refMin}`
+                                          : `≤ ${ref.refMax}`}
                                       <span className="text-muted-foreground ml-0.5">{ref.refUnidade}</span>
                                     </span>
                                   ) : (
