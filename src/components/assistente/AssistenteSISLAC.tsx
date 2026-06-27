@@ -864,11 +864,28 @@ function AssistenteSISLACInner() {
     await conversation.endSession();
   }, [conversation]);
 
-  const sendTextMessage = useCallback(() => {
+  const sendTextMessage = useCallback(async () => {
     const text = chatInput.trim();
     if (!text) return;
     setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
     setChatInput("");
+
+    // 1) Tenta interpretar localmente — executa na hora sem depender do agente.
+    const intent = parseLocalIntent(text, navigateRef.current);
+    if (intent) {
+      try {
+        await intent.run();
+        setChatMessages((current) => [...current.slice(-30), { role: "agent", message: intent.reply }]);
+      } catch (error) {
+        setChatMessages((current) => [...current.slice(-30), {
+          role: "agent",
+          message: `Não consegui executar: ${normalizeErrorMessage(error)}`,
+        }]);
+      }
+      return;
+    }
+
+    // 2) Caso contrário, encaminha para o agente remoto.
     if (conversation.status !== "connected") {
       pendingTextMessageRef.current = text;
       void startTextSession();
