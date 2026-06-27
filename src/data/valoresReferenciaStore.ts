@@ -263,6 +263,7 @@ export interface ResolverContexto {
   idade: string;
   gestante?: boolean;
   jejum?: boolean;
+  riscoCv?: RiscoCV | null;
 }
 
 export const resolverReferencia = (
@@ -272,6 +273,7 @@ export const resolverReferencia = (
   idadePaciente: string,
   gestante: boolean = false,
   jejum: boolean | null = null,
+  riscoCv: RiscoCV | null = null,
 ): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string; operador?: OperadorVR } | null => {
   const candidatos = valoresReferencia.filter(
     (v) => v.exameNome.toLowerCase() === exameNome.toLowerCase() &&
@@ -284,7 +286,7 @@ export const resolverReferencia = (
     s.startsWith("m") ? "Masculino" : s.startsWith("f") ? "Feminino" : null;
   const idadeDias = idadeStrParaDias(idadePaciente);
 
-  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante, jejum));
+  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante, jejum, riscoCv));
   if (compats.length === 0) return null;
 
   compats.sort((a, b) => {
@@ -295,6 +297,10 @@ export const resolverReferencia = (
     const ja = ((a.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     const jb = ((b.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     if (jb !== ja) return jb - ja;
+    // Risco CV específico vence empate
+    const ra = ((a.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    const rb = ((b.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    if (rb !== ra) return rb - ra;
     // Sexo específico vence Ambos
     const sa = a.sexo !== "Ambos" ? 1 : 0;
     const sb = b.sexo !== "Ambos" ? 1 : 0;
