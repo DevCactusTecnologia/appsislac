@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sparkles, Square, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAtendimentoByProtocolo, updateAtendimento } from "@/data/atendimentoStore";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /** Resolve intervalo [ini, fim) a partir de uma palavra ou par de datas ISO. */
 function resolvePeriodo(periodo?: string, data_inicio?: string, data_fim?: string): { ini?: Date; fim?: Date; label: string } {
@@ -32,6 +34,146 @@ function resolvePeriodo(periodo?: string, data_inicio?: string, data_fim?: strin
 }
 
 const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
+
+type AssistantMode = "voice" | "text";
+
+type ChatMessage = {
+  role: "user" | "agent";
+  message: string;
+};
+
+type ElevenLabsCredentials = {
+  token?: string;
+  signedUrl?: string;
+};
+
+type MicrophoneCheck = {
+  ok: boolean;
+  reason?: "unsupported" | "not-found" | "permission-denied" | "busy" | "unavailable";
+  error?: unknown;
+};
+
+const TOOL_LABELS: Record<string, string> = {
+  navegar_para: "Navegando",
+  abrir_atendimento: "Abrindo atendimento",
+  abrir_resultado: "Abrindo resultado",
+  contar_atendimentos: "Contando atendimentos",
+  buscar_paciente: "Buscando paciente",
+  resultado_set_valor: "Preenchendo resultado",
+  resultado_set_varios: "Preenchendo resultados",
+  resultado_salvar: "Salvando resultado",
+  resultado_liberar: "Liberando resultado",
+  resultado_imprimir: "Preparando impressão",
+  criar_atendimento: "Criando atendimento",
+  adicionar_exame: "Adicionando exame",
+  cancelar_atendimento: "Cancelando atendimento",
+  registrar_pagamento: "Registrando pagamento",
+  atendimento_resumo: "Consultando atendimento",
+  listar_atendimentos_por_protocolo: "Listando atendimentos",
+  detalhes_atendimento_por_protocolo: "Consultando detalhes",
+  imprimir_atendimento: "Abrindo impressão",
+  liberar_resultado_atendimento: "Liberando resultado",
+  registrar_observacao_atendimento: "Registrando observação",
+  pacientes_com_dividas: "Consultando pendências",
+  gerar_pdf_devedores_por_convenio: "Gerando relatório",
+};
+
+function normalizeErrorMessage(error: unknown): string {
+  if (!error) return "Erro desconhecido";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message);
+  return String(error);
+}
+
+function getMicrophoneErrorMessage(check: MicrophoneCheck): string {
+  switch (check.reason) {
+    case "not-found":
+      return "Microfone não encontrado. Abri o modo texto do Assistente SISLAC.";
+    case "permission-denied":
+      return "Permissão do microfone bloqueada. Abri o modo texto do Assistente SISLAC.";
+    case "busy":
+      return "Microfone em uso por outro aplicativo. Abri o modo texto do Assistente SISLAC.";
+    case "unsupported":
+      return "Este navegador não permite áudio aqui. Abri o modo texto do Assistente SISLAC.";
+    default:
+      return "Não foi possível usar o microfone. Abri o modo texto do Assistente SISLAC.";
+  }
+}
+
+function isMicrophoneStartupError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes("microphone")
+    || normalized.includes("microfone")
+    || normalized.includes("notfounderror")
+    || normalized.includes("requested device not found")
+    || normalized.includes("permission denied")
+    || normalized.includes("notallowederror")
+    || normalized.includes("device not found");
+}
+
+async function checkMicrophone(): Promise<MicrophoneCheck> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return { ok: false, reason: "unsupported" };
+  }
+
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices?.();
+    if (devices?.length && !devices.some((device) => device.kind === "audioinput")) {
+      return { ok: false, reason: "not-found" };
+    }
+  } catch (error) {
+    console.warn("[AssistenteSISLAC] enumerateDevices", error);
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    return { ok: true };
+  } catch (error) {
+    const name = error instanceof DOMException ? error.name : "";
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return { ok: false, reason: "not-found", error };
+    }
+    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+      return { ok: false, reason: "permission-denied", error };
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return { ok: false, reason: "busy", error };
+    }
+    return { ok: false, reason: "unavailable", error };
+  }
+}
+
+function getToolName(event: unknown): string {
+  if (!event || typeof event !== "object") return "ferramenta";
+  const value = event as Record<string, unknown>;
+  return String(value.tool_name ?? value.name ?? value.toolName ?? "ferramenta");
+}
+
+function withToolFeedback<T extends Record<string, (parameters: any) => any>>(tools: T): T {
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, handler]) => [
+      name,
+      async (parameters: any) => {
+        const label = TOOL_LABELS[name] ?? `Executando ${name}`;
+        const id = toast.loading(`${label}...`);
+        console.info("[AssistenteSISLAC] tool:start", name, parameters);
+        try {
+          const result = await handler(parameters);
+          toast.success("Concluído", { id, description: label });
+          console.info("[AssistenteSISLAC] tool:success", name, result);
+          return result;
+        } catch (error) {
+          const message = normalizeErrorMessage(error);
+          toast.error("Falha ao executar", { id, description: `${label}: ${message}` });
+          console.error("[AssistenteSISLAC] tool:error", name, error);
+          throw error;
+        }
+      },
+    ]),
+  ) as T;
+}
 
 
 /**
@@ -70,13 +212,18 @@ function describeRoute(pathname: string): string {
 
 function AssistenteSISLACInner() {
   const [connecting, setConnecting] = useState(false);
+  const [mode, setMode] = useState<AssistantMode>("voice");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const lastStartAttemptRef = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
   const conversation = useConversation({
-    clientTools: {
+    clientTools: withToolFeedback({
       /** Navega para uma área do sistema. */
       navegar_para: ({ destino }: { destino: string }) => {
         const path = ROUTE_MAP[destino?.toLowerCase?.()] ?? destino;
@@ -431,14 +578,50 @@ function AssistenteSISLACInner() {
         printHtmlInHiddenFrame({ html, documentTitle: "Devedores por convênio" });
         return `Relatório de ${data.length} devedor(es) gerado — use 'Salvar como PDF'`;
       },
+    }),
+
+
+    onConnect: () => {
+      setConnecting(false);
+      toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
-
-
-    onConnect: () => toast.success("Assistente SISLAC conectado"),
-    onDisconnect: () => toast.message("Assistente SISLAC desconectado"),
-    onError: (err) => {
-      console.error("[AssistenteSISLAC]", err);
-      toast.error("Falha na conexão com o Assistente SISLAC");
+    onDisconnect: () => {
+      setConnecting(false);
+      toast.message("Assistente SISLAC desconectado");
+    },
+    onMessage: ({ role, message }) => {
+      if (!message?.trim()) return;
+      setChatMessages((current) => {
+        const last = current[current.length - 1];
+        if (last?.role === role && last.message === message) return current;
+        return [...current.slice(-30), { role: role === "agent" ? "agent" : "user", message }];
+      });
+    },
+    onStatusChange: ({ status }) => {
+      if (status === "connected" || status === "disconnected") setConnecting(false);
+    },
+    onError: (err, context) => {
+      const message = normalizeErrorMessage(err);
+      console.error("[AssistenteSISLAC]", err, context);
+      setConnecting(false);
+      if (mode === "voice" && isMicrophoneStartupError(message)) {
+        toast.warning("Microfone indisponível. Tentando modo texto...");
+        setTimeout(() => void startTextMode("Continue usando o Assistente SISLAC por texto."), 0);
+        return;
+      }
+      toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
+        description: message,
+      });
+    },
+    onAgentToolRequest: (toolCall) => {
+      const name = getToolName(toolCall);
+      console.info("[AssistenteSISLAC] agent tool request", toolCall);
+      toast.loading(`${TOOL_LABELS[name] ?? `Executando ${name}`}...`, { id: `assistant-tool-${name}` });
+    },
+    onAgentToolResponse: (toolCall) => {
+      const name = getToolName(toolCall);
+      console.info("[AssistenteSISLAC] agent tool response", toolCall);
+      toast.success("Ação processada", { id: `assistant-tool-${name}`, description: TOOL_LABELS[name] ?? name });
     },
   });
 
@@ -455,77 +638,226 @@ function AssistenteSISLACInner() {
     }
   }, [isConnected, location.pathname, conversation]);
 
+  useEffect(() => {
+    if (conversation.status === "error") setConnecting(false);
+  }, [conversation.status]);
+
+  const getCredentials = useCallback(async (): Promise<ElevenLabsCredentials> => {
+    const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
+    if (error) throw error;
+    return {
+      token: typeof data?.token === "string" ? data.token : undefined,
+      signedUrl: typeof data?.signed_url === "string" ? data.signed_url : undefined,
+    };
+  }, []);
+
+  const sendCurrentContextSoon = useCallback(() => {
+    setTimeout(() => {
+      try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
+    }, 600);
+  }, [conversation, location.pathname]);
+
+  const startTextMode = useCallback(async (notice?: string) => {
+    if (conversation.status === "connected" || conversation.status === "connecting") return;
+    setMode("text");
+    setChatOpen(true);
+    setConnecting(true);
+    if (notice) toast.warning(notice);
+
+    try {
+      const credentials = await getCredentials();
+      if (credentials.signedUrl) {
+        conversation.startSession({
+          signedUrl: credentials.signedUrl,
+          connectionType: "websocket",
+          textOnly: true,
+        });
+      } else {
+        conversation.startSession({
+          agentId: AGENT_ID,
+          connectionType: "websocket",
+          textOnly: true,
+        });
+      }
+      sendCurrentContextSoon();
+    } catch (error) {
+      console.error("[AssistenteSISLAC] start text", error);
+      setConnecting(false);
+      toast.error("Não foi possível iniciar o Assistente SISLAC em modo texto", {
+        description: normalizeErrorMessage(error),
+      });
+    }
+  }, [conversation, getCredentials, sendCurrentContextSoon]);
+
   const start = useCallback(async () => {
     if (connecting || isConnected) return;
+    const now = Date.now();
+    if (now - lastStartAttemptRef.current < 800) return;
+    lastStartAttemptRef.current = now;
     setConnecting(true);
+    setMode("voice");
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mic = await checkMicrophone();
+      if (!mic.ok) {
+        console.warn("[AssistenteSISLAC] microphone unavailable", mic);
+        setConnecting(false);
+        await startTextMode(getMicrophoneErrorMessage(mic));
+        return;
+      }
 
       // Tenta obter token (agente privado). Faz fallback para agentId público se a function falhar.
       let started = false;
       try {
-        const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
-        if (!error && data?.token) {
-          await conversation.startSession({
-            conversationToken: data.token as string,
+        const credentials = await getCredentials();
+        if (credentials.token) {
+          conversation.startSession({
+            conversationToken: credentials.token,
             connectionType: "webrtc",
           });
           started = true;
-        } else if (error) {
-          console.warn("[AssistenteSISLAC] token fn falhou, tentando agente público", error);
         }
       } catch (e) {
         console.warn("[AssistenteSISLAC] token fn exceção, tentando agente público", e);
       }
 
       if (!started) {
-        await conversation.startSession({
+        conversation.startSession({
           agentId: AGENT_ID,
           connectionType: "webrtc",
         });
       }
-
-      setTimeout(() => {
-        try { conversation.sendContextualUpdate(describeRoute(location.pathname)); } catch {}
-      }, 300);
+      sendCurrentContextSoon();
     } catch (e) {
       console.error("[AssistenteSISLAC] start", e);
-      toast.error("Não foi possível iniciar o Assistente SISLAC. Verifique o microfone.");
-    } finally {
       setConnecting(false);
+      toast.error("Não foi possível iniciar o Assistente SISLAC. Verifique o microfone.", {
+        description: normalizeErrorMessage(e),
+      });
     }
-  }, [conversation, connecting, isConnected, location.pathname]);
+  }, [connecting, getCredentials, isConnected, sendCurrentContextSoon, startTextMode, conversation]);
 
   const stop = useCallback(async () => {
+    setConnecting(false);
+    setChatOpen(false);
     await conversation.endSession();
   }, [conversation]);
+
+  const sendTextMessage = useCallback(() => {
+    const text = chatInput.trim();
+    if (!text) return;
+    if (conversation.status !== "connected") {
+      toast.error("Assistente ainda não conectado");
+      return;
+    }
+    try {
+      conversation.sendUserMessage(text);
+      conversation.sendUserActivity();
+      setChatMessages((current) => [...current.slice(-30), { role: "user", message: text }]);
+      setChatInput("");
+    } catch (error) {
+      toast.error("Não consegui enviar a mensagem", { description: normalizeErrorMessage(error) });
+    }
+  }, [chatInput, conversation]);
 
   const onClick = isConnected ? stop : start;
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full",
-        "flex items-center justify-center border border-border/60",
-        "bg-muted/60 text-muted-foreground backdrop-blur-sm shadow-sm",
-        "hover:bg-muted hover:text-foreground transition-all",
-        isConnected && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15",
-        isSpeaking && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background animate-pulse",
+    <>
+      {chatOpen && mode === "text" && (
+        <div className="fixed bottom-16 right-4 z-40 w-[min(92vw,380px)] overflow-hidden rounded-2xl border border-border/70 bg-background/95 shadow-2xl backdrop-blur">
+          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              </span>
+              <div>
+                <p className="text-sm font-semibold leading-none">Assistente SISLAC</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Fallback sem microfone"}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setChatOpen(false);
+                if (isConnected || connecting) void stop();
+              }}
+              aria-label="Fechar Assistente SISLAC"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="max-h-[360px] min-h-[220px] space-y-3 overflow-y-auto px-4 py-3">
+            {!chatMessages.length && (
+              <div className="rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>Seu microfone não está disponível. Você pode digitar comandos aqui e o assistente continuará executando ações no sistema.</p>
+                </div>
+              </div>
+            )}
+            {chatMessages.map((item, index) => (
+              <div key={`${item.role}-${index}-${item.message.slice(0, 12)}`} className={cn("flex", item.role === "user" ? "justify-end" : "justify-start")}>
+                <div className={cn(
+                  "max-w-[82%] rounded-2xl px-3 py-2 text-sm",
+                  item.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                )}>
+                  {item.message}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <form
+            className="flex gap-2 border-t border-border/70 p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendTextMessage();
+            }}
+          >
+            <Input
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              placeholder={isConnected ? "Digite um comando..." : "Aguarde a conexão..."}
+              disabled={!isConnected}
+              className="h-10"
+            />
+            <Button type="submit" size="icon" disabled={!isConnected || !chatInput.trim()} aria-label="Enviar mensagem">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       )}
-    >
-      {connecting ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : isConnected ? (
-        <Square className="h-3.5 w-3.5 fill-current" />
-      ) : (
-        <Sparkles className="h-4 w-4" />
-      )}
-    </button>
+
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        title={label}
+        className={cn(
+          "fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full",
+          "flex items-center justify-center border border-border/60",
+          "bg-muted/60 text-muted-foreground backdrop-blur-sm shadow-sm",
+          "hover:bg-muted hover:text-foreground transition-all",
+          isConnected && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15",
+          isSpeaking && mode === "voice" && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background animate-pulse",
+        )}
+      >
+        {connecting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isConnected ? (
+          mode === "text" ? <MessageCircle className="h-4 w-4" /> : <Square className="h-3.5 w-3.5 fill-current" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
+      </button>
+    </>
   );
 }
 
