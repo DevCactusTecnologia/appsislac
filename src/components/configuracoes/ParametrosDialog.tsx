@@ -128,6 +128,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setCriticoMin(p.criticoMin ?? "");
     setCriticoMax(p.criticoMax ?? "");
     setFormatoTempo(p.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg");
+    setSensivelJejum(!!p.sensivelJejum);
+    setEstratificadoRiscoCv(!!p.estratificadoRiscoCv);
   };
 
   const chaveJaUsada = useMemo(
