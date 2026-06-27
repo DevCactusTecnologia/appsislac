@@ -112,6 +112,15 @@ function isMicrophoneStartupError(message: string): boolean {
     || normalized.includes("device not found");
 }
 
+function isRealtimeSignalStartupError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes("could not establish signal connection")
+    || normalized.includes("abort handler called")
+    || normalized.includes("signal connection")
+    || normalized.includes("livekit")
+    || normalized.includes("serverunreachable");
+}
+
 async function checkMicrophone(): Promise<MicrophoneCheck> {
   if (!navigator.mediaDevices?.getUserMedia) {
     return { ok: false, reason: "unsupported" };
@@ -608,8 +617,8 @@ function AssistenteSISLACInner() {
       const message = normalizeErrorMessage(err);
       console.error("[AssistenteSISLAC]", err, context);
       setConnecting(false);
-      if (mode === "voice" && isMicrophoneStartupError(message)) {
-        toast.warning("Microfone indisponível. Tentando modo texto...");
+      if (mode === "voice" && (isMicrophoneStartupError(message) || isRealtimeSignalStartupError(message))) {
+        toast.warning("Conexão de voz indisponível. Tentando modo texto...");
         setTimeout(() => void startTextMode("Continue usando o Assistente SISLAC por texto."), 0);
         return;
       }
@@ -718,11 +727,17 @@ function AssistenteSISLACInner() {
         return;
       }
 
-      // Tenta obter token (agente privado). Faz fallback para agentId público se a function falhar.
+      // Prioriza WebSocket para evitar falhas de sinalização WebRTC/LiveKit em redes restritivas.
       let started = false;
       try {
         const credentials = await getCredentials();
-        if (credentials.token) {
+        if (credentials.signedUrl) {
+          conversation.startSession({
+            signedUrl: credentials.signedUrl,
+            connectionType: "websocket",
+          });
+          started = true;
+        } else if (credentials.token) {
           conversation.startSession({
             conversationToken: credentials.token,
             connectionType: "webrtc",
