@@ -1,49 +1,67 @@
-# Sexo e Idade editáveis por linha
+# AI-SISLAC 2.0 — Core Consolidation
 
-## Problema
-
-Hoje cada variação (Gestante, Recém-nascido, Criança, Adulto, Idoso, Masculino, Feminino…) tem **sexo e faixa etária fixos no código** (`CATEGORIA_META`). Isso não funciona na prática clínica: para "Hemácias" o usuário precisa de ~10 linhas — 5 Masculino e 5 Feminino — com faixas etárias específicas do exame, que mudam entre parâmetros.
-
-A solução é simples: **cada linha vira uma regra livre** onde o próprio usuário escolhe o sexo e a faixa etária (de / até / unidade). As categorias atuais viram apenas atalhos para criar uma linha pré-preenchida que o usuário pode editar.
-
-## O que muda na UI
-
-Cada linha do bloco de um parâmetro passa a ter, antes da "Condição":
-
-- **Sexo** (select): Ambos / Masculino / Feminino
-- **Idade De** (input numérico) + **Idade Até** (input numérico) + **Unidade** (Dias / Meses / Anos)
-
-Tudo editável e auto-salvo no blur, igual aos outros campos da matriz.
-
-O chip colorido da categoria continua existindo (Gestante, Adulto, Masculino…) como **rótulo/atalho**, mas o sexo e a idade reais são os que o usuário digitou na linha — não mais os fixos do `CATEGORIA_META`.
-
-O menu "Adicionar variação" continua oferecendo os presets (Recém-nascido 0–28d, Idoso ≥65a, etc.), mas agora eles **pré-preenchem** sexo + idade da nova linha; o usuário pode ajustar livremente em seguida. Acrescenta-se também a opção "Personalizada" para criar uma linha em branco.
-
-Layout proposto da linha (grid 14 colunas, leve aumento da densidade):
+Intervenção estrutural única e final. Reduz o Assistente ao caminho operacional oficial:
 
 ```text
-Categoria | Sexo | Idade De–Até + Un. | Condição | Normal | Crítica | Un. | Preview | Ações
+Usuário → Texto/Voz → AssistenteSISLAC.tsx → ai-chat → Skills → Tools → Serviços → Banco → Resposta
 ```
 
-## O que muda no resolver
+Tudo fora desse caminho será removido por completo (sem comentários, sem deprecation, sem legado).
 
-`resolverReferencia` em `valoresReferenciaStore.ts` passa a usar, **para todas as categorias**, os campos `sexo`, `idadeMin`, `idadeMax`, `unidadeIdade` da própria linha (igual à categoria `custom` faz hoje). `CATEGORIA_META.idadeMinDias/idadeMaxDias/sexo` deixam de ser fonte da verdade — viram apenas defaults na criação.
+## Escopo de remoção (consumidor zero confirmado antes de apagar)
 
-Prioridade continua: Gestante > variações por sexo+idade > Padrão. Empate: linha com sexo específico vence "Ambos"; faixa etária mais estreita vence mais larga.
+**Frontend**
+- `src/lib/ai/manifestClient.ts`, `src/lib/ai/contextEngine.ts`, `src/lib/ai/capabilityRegistry.ts` (espelho)
+- Quick Actions, Discovery, Suggestions, Memory não usada
+- Componentes/hook órfãos do antigo `AiShell` (após confirmar que `AssistenteSISLAC.tsx` é o único montado)
 
-## Migração de dados
+**Backend (Edge Functions)**
+- `supabase/functions/ai-manifest/` (deleta deploy)
+- `supabase/functions/_shared/registry.ts` reduzido ao mínimo (`id`, `description`, `permission`, `category`, `needsApproval`, `tool`)
+- `supabase/functions/_shared/aiAuth.ts` mantém apenas `authenticate`, `jsonResponse`, `aiCorsHeaders`, `resolveAllowedCapabilities`
 
-Para regras já cadastradas hoje sem `idadeMin/idadeMax` (recém-nascido, idoso, etc., que dependem do meta), uma migração SQL preenche esses campos a partir do `CATEGORIA_META` correspondente — assim nada muda de comportamento para o que já existe.
+**Banco (migração destrutiva)**
+- DROP `ai_threads`, `ai_messages`, `ai_user_preferences`, `ai_metrics_daily` (policies, índices, triggers, types)
+- **Mantém `ai_audit`** — único registro de execução exigido pela Etapa 9
 
-## Arquivos afetados
+**Skills**
+- Funde `resultado.set_valor` + `resultado.set_varios` em uma única tool `resultado_set` (aceita 1..N parâmetros)
 
-- `src/data/valoresReferenciaStore.ts` — resolver passa a ler sexo/idade da linha; manter compatibilidade.
-- `src/components/configuracoes/ValoresReferenciaPanel.tsx` — `RegraLinha` ganha campos editáveis Sexo + Idade De/Até/Unidade; grid passa de 12 para 14 colunas; menu de adicionar usa presets como defaults; nova opção "Personalizada".
-- Migração SQL — backfill de `idade_min/idade_max/unidade_idade/sexo` nas linhas existentes onde estão vazios.
+**Prompts**
+- `ai-chat` passa a montar dois system prompts mínimos: `PROMPT_TEXT` e `PROMPT_VOICE`, escolhidos por `context.mode`
+- Remove qualquer referência a Manifest/Discovery/Quick Actions/ElevenAgent
 
-## Fora do escopo
+**Documentação**
+- Remove `docs/intelligence-platform/` inteiro
+- Remove `docs/ai-agent-1.0/`, `docs/ai-agent-rollback/`, `AI-SISLAC/` (radiografia antiga)
+- Avalia `docs/assistant-knowledge/`: se não for carregada em runtime, **remove**; o `ai-chat` atual não a injeta, então será removida
+- Consolida tudo em `docs/AI-SISLAC/` com 7 documentos finais:
+  - `Architecture.md`, `Capabilities.md`, `Voice.md`, `Security.md`, `Developer.md`, `UserGuide.md`
+  - + relatórios: `core-consolidation.md`, `cleanup-report.md`, `architecture-final.md`, `performance-final.md`, `security-final.md`, `operational-validation.md`, `executive-report.md`
 
-- Não mexer em catálogo de exames, parâmetros, layout do laudo, ou crítico global.
-- Não remover as categorias existentes — continuam como presets visuais e rótulos.
+## Segurança (Etapa 10)
+- `needsApproval` deixa de ser apenas hint do prompt. O `ai-chat` retorna `requires_approval` para tools marcadas; o `AssistenteSISLAC.tsx` exibe diálogo de confirmação **na interface** antes de re-emitir a chamada com `_confirmed: true`.
 
-Confirma para eu implementar?
+## Performance (Etapa 11)
+- `authenticate()` resolve JWT + tenant + permissões em **uma** chamada e cacheia no escopo da request
+- Remove RPCs redundantes em `resolveAllowedCapabilities`
+
+## Auditoria (Etapa 9)
+- `ai_audit` registra por execução: `tool`, `capability`, `user_id`, `tenant_id`, `duration_ms`, `status`, `error_code`, `result_summary`
+- Remove auditoria genérica de "router"
+
+## O que NÃO muda
+- `AssistenteSISLAC.tsx` (UI já em produção)
+- Pipeline de voz ElevenLabs (mesma tool chain do texto)
+- Capabilities operacionais: `paciente.search`, `paciente.create`, `paciente.exames`, `atendimento.*`, `resultado.open`, `resultado.set`
+- Tabela `ai_audit`
+
+## Critério de sucesso (resposta final)
+Relatório executivo com contagem exata de: arquivos removidos, LoC removidas, tabelas eliminadas, edge functions eliminadas, documentos consolidados, componentes remanescentes, e validação de que texto+voz usam o mesmo pipeline.
+
+## Riscos a confirmar antes de executar
+1. **DROP de 4 tabelas é destrutivo e irreversível.** Confirmo: nenhum dado em produção, apenas estrutura órfã? (a radiografia AI-SISLAC indicou consumidor zero)
+2. **Remoção de `docs/intelligence-platform/` (~80 arquivos) e `AI-SISLAC/` (radiografia)** — confirmo consolidação total em `docs/AI-SISLAC/`?
+3. **Remoção de `docs/assistant-knowledge/`** caso não seja injetada no prompt do `ai-chat` (confirmação por leitura do código antes de apagar)?
+
+Aprovando, executo as 13 etapas em sequência e entrego o relatório final com "Assistente SISLAC 2.0 — Core Consolidado."
