@@ -597,11 +597,6 @@ function AssistenteSISLACInner() {
         description: message,
       });
     },
-    onUnhandledClientToolCall: (toolCall) => {
-      const name = getToolName(toolCall);
-      console.warn("[AssistenteSISLAC] ferramenta não registrada", toolCall);
-      toast.error("Ação não disponível", { description: `Ferramenta não registrada: ${name}` });
-    },
     onAgentToolRequest: (toolCall) => {
       const name = getToolName(toolCall);
       console.info("[AssistenteSISLAC] agent tool request", toolCall);
