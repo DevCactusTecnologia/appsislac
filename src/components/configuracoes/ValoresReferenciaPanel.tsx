@@ -716,10 +716,10 @@ const ParametroBloco = ({
             </DropdownMenuItem>
             <div className="border-t my-1" />
             <DropdownMenuItem
-              onSelect={(e) => {
-                // Evita corrida entre fechar o dropdown e abrir o Dialog
-                e.preventDefault();
-                setTimeout(() => setMatrizOpen(true), 0);
+              onSelect={() => {
+                // Deixa o dropdown fechar e abre o Dialog no próximo tick,
+                // evitando conflito de focus-trap com o portal do Radix.
+                setTimeout(() => setMatrizOpen(true), 50);
               }}
               className="gap-2 text-[13px] py-2"
             >
