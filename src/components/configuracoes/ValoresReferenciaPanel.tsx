@@ -607,6 +607,13 @@ const ParametroBloco = ({
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [aplicandoTpl, setAplicandoTpl] = useState<string | null>(null);
+  const collapseKey = `vr.collapsed.${exameNome}.${parametro.id}`;
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(collapseKey) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(collapseKey, collapsed ? "1" : "0"); } catch { /* ignore */ }
+  }, [collapsed, collapseKey]);
 
   const abrirMatrizPersonalizada = () => {
     setMenuOpen(false);
