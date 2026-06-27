@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import {
   Settings, Sparkles, Mail, Info, Save, Loader2, Eye, EyeOff,
-  Plug, Lock, Brain, Cloud, MessageCircle, PlugZap, CheckCircle2, XCircle, Mic2,
+  Plug, Lock, Brain, Cloud, MessageCircle, PlugZap, CheckCircle2, XCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -88,12 +88,8 @@ interface WhatsappConfig {
   businessAccountId: string;
 }
 
-interface ElevenLabsConfig {
-  apiKey: string;
-  voiceId: string;
-  /** Modelo fixo `eleven_v3` — mantido por compatibilidade de leitura; não editável. */
-  modelId?: string;
-}
+
+
 
 const EMPTY_SMTP: SmtpConfig = {
   host: "", port: 587, user: "", password: "",
@@ -102,7 +98,7 @@ const EMPTY_SMTP: SmtpConfig = {
 const EMPTY_AI: AiConfig = { geminiApiKey: "", openaiApiKey: "", openaiOrgId: "" };
 const EMPTY_S3: S3Config = { accessKeyId: "", secretAccessKey: "", region: "us-east-1", bucket: "", endpoint: "" };
 const EMPTY_WPP: WhatsappConfig = { provider: "meta", phoneNumberId: "", accessToken: "", verifyToken: "", businessAccountId: "" };
-const EMPTY_ELEVEN: ElevenLabsConfig = { apiKey: "", voiceId: "7iqXtOF3wl3pomwXFY7G" };
+
 
 
 const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defaultPort: number }[] = [
@@ -111,7 +107,7 @@ const SECURITY_OPTIONS: { value: SmtpSecurity; label: string; hint: string; defa
   { value: "ssl", label: "SSL/TLS", hint: "Criptografia direta (porta 465)", defaultPort: 465 },
 ];
 
-type IntegrationTab = "smtp" | "gemini" | "openai" | "s3" | "whatsapp" | "elevenlabs";
+type IntegrationTab = "smtp" | "gemini" | "openai" | "s3" | "whatsapp";
 
 const INTEGRATION_TABS: { id: IntegrationTab; label: string; icon: typeof Mail }[] = [
   { id: "smtp", label: "Servidor SMTP", icon: Mail },
@@ -119,7 +115,6 @@ const INTEGRATION_TABS: { id: IntegrationTab; label: string; icon: typeof Mail }
   { id: "openai", label: "OpenAI", icon: Brain },
   { id: "s3", label: "AWS S3", icon: Cloud },
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { id: "elevenlabs", label: "ElevenLabs", icon: Mic2 },
 ];
 
 async function loadSetting<T>(key: string, fallback: T): Promise<T> {
@@ -152,8 +147,8 @@ export default function SuperAdminConfiguracoes() {
   const [s3Original, setS3Original] = useState<S3Config>(EMPTY_S3);
   const [wpp, setWpp] = useState<WhatsappConfig>(EMPTY_WPP);
   const [wppOriginal, setWppOriginal] = useState<WhatsappConfig>(EMPTY_WPP);
-  const [eleven, setEleven] = useState<ElevenLabsConfig>(EMPTY_ELEVEN);
-  const [elevenOriginal, setElevenOriginal] = useState<ElevenLabsConfig>(EMPTY_ELEVEN);
+
+
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -166,12 +161,11 @@ export default function SuperAdminConfiguracoes() {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [smtpV, aiV, s3V, wppV, elevenV] = await Promise.all([
+      const [smtpV, aiV, s3V, wppV] = await Promise.all([
         loadSetting<SmtpConfig>("smtp_config", EMPTY_SMTP),
         loadSetting<AiConfig>("ai_config", EMPTY_AI),
         loadSetting<S3Config>("s3_config", EMPTY_S3),
         loadSetting<WhatsappConfig>("whatsapp_config", EMPTY_WPP),
-        loadSetting<ElevenLabsConfig>("elevenlabs_config", EMPTY_ELEVEN),
       ]);
       if (!alive) return;
       // Compat SMTP legado
@@ -192,7 +186,6 @@ export default function SuperAdminConfiguracoes() {
       setAi(aiV); setAiOriginal(aiV);
       setS3(s3V); setS3Original(s3V);
       setWpp(wppV); setWppOriginal(wppV);
-      setEleven(elevenV); setElevenOriginal(elevenV);
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -205,13 +198,12 @@ export default function SuperAdminConfiguracoes() {
     ai.openaiOrgId !== aiOriginal.openaiOrgId;
   const isS3Dirty = JSON.stringify(s3) !== JSON.stringify(s3Original);
   const isWppDirty = JSON.stringify(wpp) !== JSON.stringify(wppOriginal);
-  const isElevenDirty = JSON.stringify(eleven) !== JSON.stringify(elevenOriginal);
 
   const updSmtp = <K extends keyof SmtpConfig>(k: K, v: SmtpConfig[K]) => setSmtp((p) => ({ ...p, [k]: v }));
   const updAi = <K extends keyof AiConfig>(k: K, v: AiConfig[K]) => setAi((p) => ({ ...p, [k]: v }));
   const updS3 = <K extends keyof S3Config>(k: K, v: S3Config[K]) => setS3((p) => ({ ...p, [k]: v }));
   const updWpp = <K extends keyof WhatsappConfig>(k: K, v: WhatsappConfig[K]) => setWpp((p) => ({ ...p, [k]: v }));
-  const updEleven = <K extends keyof ElevenLabsConfig>(k: K, v: ElevenLabsConfig[K]) => setEleven((p) => ({ ...p, [k]: v }));
+
 
   const onSecurityChange = (sec: SmtpSecurity) => {
     const opt = SECURITY_OPTIONS.find((o) => o.value === sec)!;
@@ -275,24 +267,8 @@ export default function SuperAdminConfiguracoes() {
     setWppOriginal(wpp);
     toast.success("Configuração WhatsApp salva.");
   };
-  const saveEleven = async () => {
-    if (!eleven.voiceId.trim()) {
-      toast.error("Informe o Voice ID do ElevenLabs.");
-      return;
-    }
-    setSaving(true);
-    const payload: ElevenLabsConfig = {
-      apiKey: eleven.apiKey.trim(),
-      voiceId: eleven.voiceId.trim(),
-      modelId: "eleven_v3",
-    };
-    const { error } = await saveSetting("elevenlabs_config", payload);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    setEleven(payload);
-    setElevenOriginal(payload);
-    toast.success("Configuração ElevenLabs salva.");
-  };
+
+
 
   /** Validação client-side dos campos antes de testar a conexão de fato. */
   const testConnection = async (tab: IntegrationTab) => {
@@ -754,58 +730,8 @@ export default function SuperAdminConfiguracoes() {
               </div>
             )}
 
-            {/* ElevenLabs */}
-            {activeTab === "elevenlabs" && (
-              <div className="p-5 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground">ElevenLabs</h3>
-                    <p className="text-[11px] text-muted-foreground">
-                      Voz e transcrição do Assistente (TTS + STT)
-                    </p>
-                  </div>
-                  <StatusBadge configured={!!elevenOriginal.voiceId} />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="sm:col-span-2">
-                    <FieldLabel>API Key</FieldLabel>
-                    <SecretInput
-                      value={eleven.apiKey}
-                      onChange={(v) => updEleven("apiKey", v)}
-                      placeholder="Deixe vazio para usar a chave da plataforma"
-                      visible={!!revealKeys.eleven}
-                      onToggle={() => toggleReveal("eleven")}
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel>Voice ID</FieldLabel>
-                    <Input
-                      value={eleven.voiceId}
-                      onChange={(e) => updEleven("voiceId", e.target.value)}
-                      placeholder="7iqXtOF3wl3pomwXFY7G"
-                    />
-                  </div>
-                </div>
-
-                <InfoNote>
-                  O <strong>Voice ID</strong> personalizado já vem pré-configurado
-                  (<code className="font-mono text-[11px]">7iqXtOF3wl3pomwXFY7G</code>).
-                  A <strong>API Key</strong> é opcional — se deixada em branco, o sistema
-                  usa a chave global gerenciada pela plataforma. Modelo travado em
-                  <code className="font-mono text-[11px]"> eleven_v3</code> (não editável).
-                </InfoNote>
 
 
-                <ActionsBar
-                  onTest={undefined}
-                  testing={false}
-                  onSave={saveEleven}
-                  saving={saving}
-                  dirty={isElevenDirty}
-                />
-              </div>
-            )}
           </>
         )}
       </section>
