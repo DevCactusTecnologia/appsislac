@@ -10,7 +10,8 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles } from "lucide-react";
+import VariacaoMatrizDialog from "./VariacaoMatrizDialog";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -573,6 +574,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
+  const [matrizOpen, setMatrizOpen] = useState(false);
+
 
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
   const meusRefs = useMemo(
@@ -711,10 +714,26 @@ const ParametroBloco = ({
                 <span className="text-[10px] text-muted-foreground truncate">Sexo e idade definidos por você</span>
               </div>
             </DropdownMenuItem>
+            <div className="border-t my-1" />
+            <DropdownMenuItem onClick={() => setMatrizOpen(true)} className="gap-2 text-[13px] py-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium">Template ou matriz em lote…</span>
+                <span className="text-[10px] text-muted-foreground truncate">Triglicérides, LDL, glicemia ou grade personalizada</span>
+              </div>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <span className="text-[11px] text-muted-foreground/70">Alterações salvas automaticamente ao sair do campo.</span>
       </footer>
+
+      <VariacaoMatrizDialog
+        open={matrizOpen}
+        onOpenChange={setMatrizOpen}
+        exameNome={exameNome}
+        parametro={parametro}
+        onCreated={onMutate}
+      />
     </section>
   );
 };
