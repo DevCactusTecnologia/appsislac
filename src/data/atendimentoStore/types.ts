@@ -30,6 +30,9 @@ export interface AtendimentoExameRow {
   motivo_cancelamento: string | null;
   resultados: Record<string, unknown>;
   ordem: number;
+  valor?: number | string | null;
+  valor_original?: number | string | null;
+  cobranca_destino?: "paciente" | "convenio" | string | null;
   analista: string;
   /** Solicitante específico deste exame (vazio = todos os solicitantes do atendimento). */
   solicitante: string;
