@@ -14,6 +14,7 @@ export type CategoriaVR =
   | "adulto" | "idoso" | "masculino" | "feminino" | "custom";
 
 export type JejumVR = "qualquer" | "com_jejum" | "sem_jejum";
+export type RiscoCV = "qualquer" | "baixo" | "intermediario" | "alto" | "muito_alto";
 export type OperadorVR = "entre" | "menor" | "menor_igual" | "maior" | "maior_igual" | "igual";
 
 export interface ValorReferencia {
