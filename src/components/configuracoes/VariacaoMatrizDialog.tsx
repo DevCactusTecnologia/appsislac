@@ -45,7 +45,23 @@ interface FaixaIdade {
   unidade: UnidIdade;
 }
 
-interface TemplatePreset {
+export interface TemplatePreset {
+  id: string;
+  label: string;
+  fonte: string;
+  /** Substrings que ativam o template (testado contra nome do exame + parâmetro, lowercase). */
+  match: string[];
+  unidade: string;
+  /** Rótulo curto da régua: ex.: "Idade × Jejum". */
+  resumo: string;
+  linhas: Array<{
+    faixa: { label: string; de: string; ate: string; unidade: UnidIdade };
+    jejum?: JejumVR;
+    riscoCv?: RiscoCV;
+    operador: OperadorVR;
+    valor: string;
+  }>;
+}
   id: string;
   label: string;
   fonte: string;
