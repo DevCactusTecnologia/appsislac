@@ -40,6 +40,10 @@ export interface ExameParametro {
   qtdDigitos: number;
   /** Formato de exibição (apenas tipo "Tempo"). */
   formatoExibicao?: FormatoTempo;
+  /** Quando true, o VR varia conforme o paciente esteja em jejum (ex.: Triglicérides). */
+  sensivelJejum?: boolean;
+  /** Quando true, o VR varia conforme o risco cardiovascular (ex.: LDL, Não-HDL). */
+  estratificadoRiscoCv?: boolean;
 }
 
 const cache = new Map<string, ExameParametro[]>();
