@@ -646,10 +646,8 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
-  const { toast } = useToast();
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [aplicandoTpl, setAplicandoTpl] = useState<string | null>(null);
   const collapseKey = `vr.collapsed.${exameNome}.${parametro.id}`;
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(collapseKey) === "1"; } catch { return false; }
@@ -663,19 +661,6 @@ const ParametroBloco = ({
     setMatrizOpen(true);
   };
 
-  const aplicarTemplate = async (tplId: string) => {
-    const tpl = TEMPLATES.find((t) => t.id === tplId);
-    if (!tpl) return;
-    setAplicandoTpl(tplId);
-    try {
-      const ok = await aplicarTemplatePreset(tpl, exameNome, parametro.chave || parametro.rotulo);
-      toast({ title: "Template aplicado", description: `${ok} regra(s) criada(s).` });
-      setMenuOpen(false);
-      onMutate();
-    } finally {
-      setAplicandoTpl(null);
-    }
-  };
 
 
 
