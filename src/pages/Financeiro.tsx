@@ -461,9 +461,9 @@ const Financeiro = () => {
         const valor = Number(e.valor) || 0;
         const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
         const voRaw = Number(e.valorOriginal) || 0;
-        // Respeitar `valorOriginal` quando já gravado (SSOT do preço cheio).
-        // Sem ele, fallback = max(valor, tabela) — preserva compatibilidade com dados legados.
-        const valorOriginal = voRaw > 0 ? voRaw : Math.max(valor, valorTabela);
+        // Preço cheio deve considerar também a tabela vigente para reparar dados legados
+        // em que `valor_original` foi gravado já com desconto/zerado por exame.
+        const valorOriginal = Math.max(voRaw, valor, valorTabela);
         return { ...e, valor, valorOriginal };
       });
     const subtotal = examesPaciente.reduce((s, e) => s + e.valorOriginal, 0);
