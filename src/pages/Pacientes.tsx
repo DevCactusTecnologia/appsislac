@@ -580,6 +580,18 @@ const Pacientes = () => {
                         <span className="mx-1.5 text-muted-foreground/40">·</span>
                         <span className="text-foreground font-medium">{idadeDetalhada}</span>
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(String(detailPaciente.id));
+                          toast({ title: "ID copiado", description: String(detailPaciente.id) });
+                        }}
+                        title="Clique para copiar o ID interno"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                      >
+                        <span className="opacity-70">UID</span>
+                        <span className="tracking-wider">{String(detailPaciente.id)}</span>
+                      </button>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 mr-10">
                       <button
