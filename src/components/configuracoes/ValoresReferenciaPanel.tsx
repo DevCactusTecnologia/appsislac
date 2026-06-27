@@ -767,6 +767,10 @@ const ParametroBloco = ({
           <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
+      </>
+      )}
+
+
 
       {/* Footer */}
       <footer className="px-5 py-3 bg-muted/30 border-t border-border/40 flex items-center justify-between">
