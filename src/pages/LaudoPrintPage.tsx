@@ -1,21 +1,21 @@
 /**
  * LaudoPrintPage — página dedicada de impressão de laudo.
  *
- * Fluxo Document Engine 3.0:
+ * Document Engine 3.0:
  *
  *   ResultadoDetalhe → savePrintContext(...) → window.open('/resultado/:id/print')
  *                                                            ↓
- *                                              loadPrintContext()  ← html + watermark
+ *                                              loadPrintContext()
  *                                                            ↓
  *                                              DocumentRenderer.render(host)
  *                                                            ↓
- *                                              Paged.js (isolado no adapter)
+ *                                              Paged.js (isolado em PagedRenderer)
  *                                                            ↓
  *                                              window.print()  ← DOM JÁ paginado
  *
- * Quem decide a composição agora é o Document Engine, NÃO o navegador.
- * O Paged.js é apenas o adapter ativo — está totalmente encapsulado por
- * `src/domains/print/document-engine/adapters/PagedRenderer.ts`.
+ * Quem decide a composição agora é o Document Engine, não o navegador.
+ * O adapter Paged.js é detalhe interno e pode ser substituído sem
+ * impacto neste arquivo.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -30,28 +30,26 @@ import {
 import { renderDocument, resolveGeometry, type ComposedDocument, type WatermarkSpec } from "@/domains/print/document-engine";
 
 const PAGED_RUNTIME_CSS = `
-  /* Paged.js renderiza páginas reais — o navegador só materializa. */
-  html, body { background: #e9ecef; margin: 0; padding: 0; }
-  .pagedjs_pages { display: flex; flex-direction: column; align-items: center; gap: 8mm; padding: 8mm 0; }
-  .pagedjs_page { background: #ffffff; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+  /* Visualização em tela: páginas A4 reais empilhadas. */
+  .print-host { display: flex; flex-direction: column; align-items: center; gap: 8mm; padding: 8mm 0; }
+  .print-host .pagedjs_page { background: #ffffff; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
   @media print {
-    html, body { background: #ffffff; }
-    .pagedjs_pages { gap: 0; padding: 0; }
-    .pagedjs_page { box-shadow: none; break-after: page; }
+    html, body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
+    .print-host { gap: 0 !important; padding: 0 !important; }
+    .print-host .pagedjs_page { box-shadow: none !important; }
+    .no-print { display: none !important; }
   }
 `;
 
 export default function LaudoPrintPage() {
   const { id } = useParams<{ id: string }>();
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [ctx, setCtx] = useState<PrintContext | null>(null);
   const [status, setStatus] = useState<"idle" | "paginating" | "ready" | "error">("idle");
   const [pageCount, setPageCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const printedRef = useRef(false);
 
-  // 1. Carrega contexto (mesmo contrato do fluxo anterior).
   useEffect(() => {
     const loaded = loadPrintContext();
     if (!loaded) {
@@ -70,38 +68,23 @@ export default function LaudoPrintPage() {
     }
   }, [id]);
 
-  // 2. Bootstrap do iframe (isola CSS do app shell) + paginação Paged.js.
   useEffect(() => {
     if (!ctx) return;
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
+    const host = hostRef.current;
+    if (!host) return;
     let cancelled = false;
 
-    const bootstrap = async () => {
-      // Documento vazio dentro do iframe — Paged.js criará as páginas.
-      const doc = iframe.contentDocument;
-      if (!doc) return;
-      doc.open();
-      doc.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><title>${escapeAttr(ctx.title)}</title><style>${PAGED_RUNTIME_CSS}</style></head><body><div id="paged-host"></div></body></html>`);
-      doc.close();
+    const watermark: WatermarkSpec = ctx.watermark ?? { enabled: false, url: null, opacity: 0.08, sizePct: 60, rotation: 0 };
+    const composed: ComposedDocument = {
+      title: ctx.title,
+      html: ctx.html,
+      css: "",
+      geometry: resolveGeometry(),
+      watermark,
+    };
 
-      const host = doc.getElementById("paged-host") as HTMLElement | null;
-      if (!host) return;
-
-      const watermark: WatermarkSpec = ctx.watermark ?? { enabled: false, url: null, opacity: 0.08, sizePct: 60, rotation: 0 };
-
-      // O ctx.html já é "<style>...</style><body content>". Empacotamos como
-      // ComposedDocument — geometria/css principais já estão no <style>.
-      const composed: ComposedDocument = {
-        title: ctx.title,
-        html: ctx.html,
-        css: "",
-        geometry: resolveGeometry(),
-        watermark,
-      };
-
-      setStatus("paginating");
+    setStatus("paginating");
+    (async () => {
       try {
         const result = await renderDocument(composed, host);
         if (cancelled) return;
@@ -110,14 +93,10 @@ export default function LaudoPrintPage() {
 
         if (!printedRef.current) {
           printedRef.current = true;
-          // Aguarda layout final dentro do iframe.
           window.setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-            } catch { /* noop */ }
+            try { window.focus(); window.print(); } catch { /* noop */ }
             clearPrintContext();
-          }, 80);
+          }, 120);
         }
       } catch (e) {
         if (cancelled) return;
@@ -125,22 +104,15 @@ export default function LaudoPrintPage() {
         setError("Não foi possível paginar o laudo.");
         setStatus("error");
       }
-    };
+    })();
 
-    void bootstrap();
     return () => { cancelled = true; };
   }, [ctx]);
 
   const handleReprint = () => {
-    try {
-      iframeRef.current?.contentWindow?.focus();
-      iframeRef.current?.contentWindow?.print();
-    } catch { /* noop */ }
+    try { window.focus(); window.print(); } catch { /* noop */ }
   };
-
-  const handleClose = () => {
-    try { window.close(); } catch { /* noop */ }
-  };
+  const handleClose = () => { try { window.close(); } catch { /* noop */ } };
 
   if (status === "error") {
     return (
@@ -157,7 +129,8 @@ export default function LaudoPrintPage() {
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2 bg-background border-b print:hidden">
+      <style>{PAGED_RUNTIME_CSS}</style>
+      <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2 bg-background border-b">
         <div className="text-xs text-muted-foreground truncate" title={ctx?.title}>
           {ctx?.title}
           {status === "paginating" && <span className="ml-2 italic">— Paginando…</span>}
@@ -172,17 +145,7 @@ export default function LaudoPrintPage() {
           </Button>
         </div>
       </div>
-
-      <div ref={hostRef as never} className="hidden" aria-hidden="true" />
-      <iframe
-        ref={iframeRef}
-        title="Laudo"
-        className="w-full h-[calc(100vh-44px)] border-0 bg-white print:fixed print:inset-0 print:h-screen print:w-screen"
-      />
+      <div ref={hostRef} className="print-host" />
     </div>
   );
-}
-
-function escapeAttr(s: string): string {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
