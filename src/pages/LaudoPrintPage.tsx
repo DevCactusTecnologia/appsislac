@@ -1,24 +1,21 @@
 /**
- * LaudoPrintPage — página dedicada de visualização e impressão de laudo.
+ * LaudoPrintPage — página dedicada de impressão de laudo.
  *
- * Fluxo Worklab/SISLAC:
+ * Fluxo Document Engine 3.0:
  *
  *   ResultadoDetalhe → savePrintContext(...) → window.open('/resultado/:id/print')
  *                                                            ↓
- *                                              loadPrintContext() + iframe
+ *                                              loadPrintContext()  ← html + watermark
  *                                                            ↓
- *                                                    window.print() (vetorial)
+ *                                              DocumentRenderer.render(host)
  *                                                            ↓
- *                                                 clearPrintContext()
+ *                                              Paged.js (isolado no adapter)
+ *                                                            ↓
+ *                                              window.print()  ← DOM JÁ paginado
  *
- * Página mínima por contrato (constraint @worklab-style-print):
- *   • Sem sidebar, sem menu, sem dashboard, sem providers extras.
- *   • Apenas barra superior compacta com "Imprimir novamente" e "Fechar"
- *     (escondida na impressão via @media print).
- *   • Nenhuma query/render extra: o HTML chega pronto via sessionStorage.
- *   • Segurança: ProtectedRoute garante auth/permissão; o HTML embutido
- *     foi construído na sessão autenticada do mesmo usuário/tenant —
- *     RLS já filtrou na origem.
+ * Quem decide a composição agora é o Document Engine, NÃO o navegador.
+ * O Paged.js é apenas o adapter ativo — está totalmente encapsulado por
+ * `src/domains/print/document-engine/adapters/PagedRenderer.ts`.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -30,87 +27,122 @@ import {
   clearPrintContext,
   type PrintContext,
 } from "@/domains/print/printContext";
+import { renderDocument, resolveGeometry, type ComposedDocument, type WatermarkSpec } from "@/domains/print/document-engine";
+
+const PAGED_RUNTIME_CSS = `
+  /* Paged.js renderiza páginas reais — o navegador só materializa. */
+  html, body { background: #e9ecef; margin: 0; padding: 0; }
+  .pagedjs_pages { display: flex; flex-direction: column; align-items: center; gap: 8mm; padding: 8mm 0; }
+  .pagedjs_page { background: #ffffff; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+  @media print {
+    html, body { background: #ffffff; }
+    .pagedjs_pages { gap: 0; padding: 0; }
+    .pagedjs_page { box-shadow: none; break-after: page; }
+  }
+`;
 
 export default function LaudoPrintPage() {
   const { id } = useParams<{ id: string }>();
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [ctx, setCtx] = useState<PrintContext | null>(null);
+  const [status, setStatus] = useState<"idle" | "paginating" | "ready" | "error">("idle");
+  const [pageCount, setPageCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const printedRef = useRef(false);
 
-  // Carrega o contexto uma vez. Validação estrita: o atendimento da URL
-  // precisa coincidir com o atendimento do contexto — protege contra
-  // colagem manual de URL ou contexto residual de outra impressão.
+  // 1. Carrega contexto (mesmo contrato do fluxo anterior).
   useEffect(() => {
     const loaded = loadPrintContext();
     if (!loaded) {
       setError("Sessão de impressão expirada ou inexistente. Volte ao laudo e clique em Imprimir novamente.");
+      setStatus("error");
       return;
     }
     if (id && loaded.atendimentoId !== id) {
       setError("Contexto de impressão inválido para este laudo.");
+      setStatus("error");
       return;
     }
     setCtx(loaded);
-    // Atualiza título da janela (o Chrome usa como nome ao "Salvar como PDF").
     if (loaded.title) {
-      try {
-        document.title = loaded.title;
-      } catch {
-        /* noop */
-      }
+      try { document.title = loaded.title; } catch { /* noop */ }
     }
   }, [id]);
 
-  // Auto-print: dispara assim que o iframe terminar de carregar o laudo.
-  // Não usa setTimeout arbitrário — escuta o `load` do iframe.
+  // 2. Bootstrap do iframe (isola CSS do app shell) + paginação Paged.js.
   useEffect(() => {
     if (!ctx) return;
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const triggerPrint = () => {
-      if (printedRef.current) return;
-      printedRef.current = true;
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      // Documento vazio dentro do iframe — Paged.js criará as páginas.
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      doc.open();
+      doc.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><title>${escapeAttr(ctx.title)}</title><style>${PAGED_RUNTIME_CSS}</style></head><body><div id="paged-host"></div></body></html>`);
+      doc.close();
+
+      const host = doc.getElementById("paged-host") as HTMLElement | null;
+      if (!host) return;
+
+      const watermark: WatermarkSpec = ctx.watermark ?? { enabled: false, url: null, opacity: 0.08, sizePct: 60, rotation: 0 };
+
+      // O ctx.html já é "<style>...</style><body content>". Empacotamos como
+      // ComposedDocument — geometria/css principais já estão no <style>.
+      const composed: ComposedDocument = {
+        title: ctx.title,
+        html: ctx.html,
+        css: "",
+        geometry: resolveGeometry(),
+        watermark,
+      };
+
+      setStatus("paginating");
       try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch {
-        /* noop */
+        const result = await renderDocument(composed, host);
+        if (cancelled) return;
+        setPageCount(result.pageCount);
+        setStatus("ready");
+
+        if (!printedRef.current) {
+          printedRef.current = true;
+          // Aguarda layout final dentro do iframe.
+          window.setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+            } catch { /* noop */ }
+            clearPrintContext();
+          }, 80);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        console.error("[Document Engine 3.0] Falha ao paginar:", e);
+        setError("Não foi possível paginar o laudo.");
+        setStatus("error");
       }
-      // Limpa o contexto após disparar o print — evita reuso indevido.
-      // O usuário ainda pode acionar "Imprimir novamente" via iframe.print().
-      clearPrintContext();
     };
 
-    iframe.addEventListener("load", triggerPrint, { once: true });
-    // Caso o iframe já tenha carregado antes do listener (corrida), tenta agora.
-    if (iframe.contentDocument?.readyState === "complete") {
-      triggerPrint();
-    }
-    return () => {
-      iframe.removeEventListener("load", triggerPrint);
-    };
+    void bootstrap();
+    return () => { cancelled = true; };
   }, [ctx]);
 
   const handleReprint = () => {
     try {
       iframeRef.current?.contentWindow?.focus();
       iframeRef.current?.contentWindow?.print();
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
   };
 
   const handleClose = () => {
-    try {
-      window.close();
-    } catch {
-      /* noop */
-    }
+    try { window.close(); } catch { /* noop */ }
   };
 
-  if (error) {
+  if (status === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="max-w-md text-center space-y-3">
@@ -123,25 +155,16 @@ export default function LaudoPrintPage() {
     );
   }
 
-  if (!ctx) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Carregando laudo…</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-neutral-900">
-      {/* Barra de ações — invisível na impressão */}
-      <div
-        className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2 bg-background border-b print:hidden"
-      >
-        <div className="text-xs text-muted-foreground truncate" title={ctx.title}>
-          {ctx.title}
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2 bg-background border-b print:hidden">
+        <div className="text-xs text-muted-foreground truncate" title={ctx?.title}>
+          {ctx?.title}
+          {status === "paginating" && <span className="ml-2 italic">— Paginando…</span>}
+          {status === "ready" && pageCount > 0 && <span className="ml-2">— {pageCount} página{pageCount > 1 ? "s" : ""}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="default" onClick={handleReprint}>
+          <Button size="sm" variant="default" onClick={handleReprint} disabled={status !== "ready"}>
             <Printer className="h-4 w-4 mr-1.5" /> Imprimir
           </Button>
           <Button size="sm" variant="outline" onClick={handleClose}>
@@ -150,16 +173,16 @@ export default function LaudoPrintPage() {
         </div>
       </div>
 
-      {/* O laudo é renderizado em iframe para isolar o `<html>/<head>/<style>`
-          do laudo (com @page, @media print, fontes etc.) do shell do app.
-          Na impressão, ocultamos o shell via `print:hidden` e expandimos o
-          iframe para 100vh, deixando o laudo ocupar a página de impressão. */}
+      <div ref={hostRef as never} className="hidden" aria-hidden="true" />
       <iframe
         ref={iframeRef}
         title="Laudo"
-        srcDoc={ctx.html}
         className="w-full h-[calc(100vh-44px)] border-0 bg-white print:fixed print:inset-0 print:h-screen print:w-screen"
       />
     </div>
   );
+}
+
+function escapeAttr(s: string): string {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
