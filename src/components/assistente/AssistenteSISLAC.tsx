@@ -6,6 +6,30 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAtendimentoByProtocolo, updateAtendimento } from "@/data/atendimentoStore";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+
+/** Resolve intervalo [ini, fim) a partir de uma palavra ou par de datas ISO. */
+function resolvePeriodo(periodo?: string, data_inicio?: string, data_fim?: string): { ini?: Date; fim?: Date; label: string } {
+  if (data_inicio || data_fim) {
+    const ini = data_inicio ? new Date(data_inicio) : undefined;
+    const fim = data_fim ? new Date(data_fim) : undefined;
+    return { ini, fim, label: `${data_inicio ?? "início"} a ${data_fim ?? "hoje"}` };
+  }
+  const now = new Date();
+  const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+  const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  switch ((periodo ?? "").toLowerCase()) {
+    case "hoje": return { ini: startOfDay(now), label: "hoje" };
+    case "ontem": { const i = startOfDay(addDays(now, -1)); return { ini: i, fim: startOfDay(now), label: "ontem" }; }
+    case "semana": { const i = startOfDay(now); i.setDate(i.getDate() - i.getDay()); return { ini: i, label: "esta semana" }; }
+    case "semana_passada": { const fim = startOfDay(now); fim.setDate(fim.getDate() - fim.getDay()); const ini = addDays(fim, -7); return { ini, fim, label: "semana passada" }; }
+    case "mes": return { ini: new Date(now.getFullYear(), now.getMonth(), 1), label: "este mês" };
+    case "mes_passado": { const ini = new Date(now.getFullYear(), now.getMonth() - 1, 1); const fim = new Date(now.getFullYear(), now.getMonth(), 1); return { ini, fim, label: "mês passado" }; }
+    case "7dias": return { ini: addDays(now, -7), label: "últimos 7 dias" };
+    case "30dias": return { ini: addDays(now, -30), label: "últimos 30 dias" };
+    default: return { label: "no total" };
+  }
+}
 
 const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
 
