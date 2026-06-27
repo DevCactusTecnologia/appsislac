@@ -80,6 +80,7 @@ function normalizeErrorMessage(error: unknown): string {
 async function streamAiChat(opts: {
   messages: Array<{ role: "user" | "assistant"; text: string }>;
   routePath: string;
+  mode: "text" | "voice";
   onDelta: (chunk: string) => void;
 }): Promise<string> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -102,7 +103,7 @@ async function streamAiChat(opts: {
     },
     body: JSON.stringify({
       messages: uiMessages,
-      context: { route: { path: opts.routePath } },
+      context: { route: { path: opts.routePath }, mode: opts.mode },
     }),
   });
 
@@ -175,7 +176,7 @@ export function AssistenteSISLAC() {
     setChatMessages((c) => [...c.slice(-30), { role: "agent", message: text }]);
 
   /** Pipeline: texto → intent local → (se nada) ai-chat streaming. Retorna a resposta final. */
-  const runText = useCallback(async (text: string): Promise<string> => {
+  const runText = useCallback(async (text: string, runMode: AssistantMode = "text"): Promise<string> => {
     const intent = parseLocalIntent(text, navigateRef.current);
     if (intent) {
       await intent.run();
@@ -196,6 +197,7 @@ export function AssistenteSISLAC() {
       const full = await streamAiChat({
         messages: history,
         routePath: location.pathname,
+        mode: runMode,
         onDelta: (chunk) => {
           setChatMessages((current) => {
             const next = [...current];
@@ -235,6 +237,7 @@ export function AssistenteSISLAC() {
       setSending(false);
     }
   }, [chatMessages, location.pathname]);
+
 
   // ===================== Modo Texto =====================
   const sendTextMessage = useCallback(async () => {
@@ -290,7 +293,7 @@ export function AssistenteSISLAC() {
           const transcript: string = (json?.text ?? "").trim();
           if (!transcript) { toast.info("Não entendi o áudio."); return; }
           pushUser(transcript);
-          const reply = await runText(transcript);
+          const reply = await runText(transcript, "voice");
           await speak(reply).catch((e) => console.warn("[Assistente] speak", e));
         } catch (e) {
           toast.error("Falha ao processar voz", { description: normalizeErrorMessage(e) });

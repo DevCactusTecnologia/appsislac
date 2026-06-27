@@ -1,6 +1,5 @@
-// SSOT do bootstrap das Edge Functions do Assistente.
-// Consolida: CORS, validação de JWT, tenant resolver, filtro de permissões.
-// Consumido por ai-chat e ai-manifest. PROIBIDO duplicar essa lógica.
+// Bootstrap único do Assistente: CORS, JWT, tenant, permissões.
+// Usado exclusivamente pela edge ai-chat. Nenhuma outra função pode duplicar.
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { CAPABILITIES, type CapabilityMeta } from "./registry.ts";
 
@@ -28,10 +27,6 @@ export interface AiAuthOk {
 export interface AiAuthFail { ok: false; response: Response }
 export type AiAuthResult = AiAuthOk | AiAuthFail;
 
-/**
- * Bootstrap padrão: valida JWT, resolve tenant via current_tenant_id() e devolve
- * os clientes prontos. Falhas viram Response HTTP coerente (401/403/500).
- */
 export async function authenticate(req: Request): Promise<AiAuthResult> {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -58,16 +53,25 @@ export async function authenticate(req: Request): Promise<AiAuthResult> {
   return { ok: true, userId: userData.user.id, tenantId, admin, userClient, token };
 }
 
-/** Filtra CAPABILITIES pelas permissões do usuário. Única implementação no Core. */
+/**
+ * Resolve em uma única chamada todas as permissões necessárias e devolve a
+ * lista de Capabilities autorizadas para o usuário.
+ */
 export async function resolveAllowedCapabilities(
   admin: SupabaseClient,
   userId: string,
 ): Promise<CapabilityMeta[]> {
-  const out: CapabilityMeta[] = [];
-  for (const cap of CAPABILITIES) {
-    if (!cap.permission) { out.push(cap); continue; }
-    const { data } = await admin.rpc("has_permission", { _user_id: userId, _permission: cap.permission });
-    if (data) out.push(cap);
-  }
-  return out;
+  const required = Array.from(new Set(
+    CAPABILITIES.map((c) => c.permission).filter((p): p is string => !!p),
+  ));
+  if (required.length === 0) return [...CAPABILITIES];
+
+  // Lê profiles.permissoes uma única vez (defesa em profundidade + has_permission RPC).
+  const allowed = new Set<string>();
+  await Promise.all(required.map(async (perm) => {
+    const { data } = await admin.rpc("has_permission", { _user_id: userId, _permission: perm });
+    if (data) allowed.add(perm);
+  }));
+
+  return CAPABILITIES.filter((c) => !c.permission || allowed.has(c.permission));
 }

@@ -1,5 +1,5 @@
-// ResultadoSkill — abrir tela de resultados e gravar valor de parâmetro.
-// Mutação via RLS do usuário; valida exame e parâmetro pelo tenant atual.
+// Skill Resultado — abrir tela de resultado e gravar 1..N parâmetros.
+// Tool única `resultado_set` substitui as antigas set_valor + set_varios.
 import { tool } from "npm:ai@5.0.206";
 import { z } from "npm:zod@3.23.8";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -24,28 +24,20 @@ export function buildResultadoTools(userClient: SupabaseClient) {
   return {
     resultado_open: tool({
       description:
-        "Abre o atendimento/resultado na tela de inserção/edição de resultados. " +
-        "USE SEMPRE que o usuário pedir para 'abrir atendimento', 'abrir paciente', 'abrir resultado', " +
-        "'abrir exame', 'lançar resultado' ou similar. " +
-        "Aceita: nome/CPF/ID do paciente OU número de protocolo do atendimento (ex.: '0000003', '#3', 'atendimento 3'). " +
-        "Opcionalmente o nome do exame. Retorna a rota /resultado/{id} para navegação automática.",
+        "Abre a tela de inserção/edição de resultado. Use para 'abrir atendimento', 'abrir paciente', " +
+        "'abrir resultado', 'abrir exame', 'lançar resultado'. Aceita paciente (nome/CPF/ID) OU protocolo. " +
+        "Opcionalmente o nome do exame. Retorna a rota /resultado/{id}.",
       inputSchema: z.object({
-        paciente: z.string().min(1).max(120).optional().describe("Nome, CPF ou ID do paciente"),
-        protocolo: z.string().min(1).max(40).optional().describe("Número/protocolo do atendimento (ex.: '0000003', '3')"),
-        exame: z.string().optional().describe("Nome (parcial) do exame, opcional"),
+        paciente: z.string().min(1).max(120).optional(),
+        protocolo: z.string().min(1).max(40).optional(),
+        exame: z.string().optional(),
       }),
       execute: async ({ paciente, protocolo, exame }) => {
         try {
-          // 1) Busca direta por protocolo
           if (protocolo && !paciente) {
             const raw = String(protocolo).trim().replace(/^#/, "");
             const digits = raw.replace(/\D/g, "");
-            const candidatos = Array.from(new Set([
-              raw,
-              digits,
-              digits.replace(/^0+/, ""),
-              digits.padStart(7, "0"),
-            ].filter(Boolean)));
+            const candidatos = Array.from(new Set([raw, digits, digits.replace(/^0+/, ""), digits.padStart(7, "0")].filter(Boolean)));
             const { data: ats, error } = await userClient
               .from("atendimentos")
               .select("id, protocolo, data, status, paciente_id, atendimento_exames(nome_exame), pacientes(nome)")
@@ -53,7 +45,7 @@ export function buildResultadoTools(userClient: SupabaseClient) {
               .order("data", { ascending: false })
               .limit(5);
             if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
-            if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: `Atendimento ${protocolo} não encontrado.` } };
+            if (!ats?.length) return { ok: false, error: { code: "NOT_FOUND", message: `Atendimento ${protocolo} não encontrado.` } };
             const chosen: any = ats[0];
             const route = `/resultado/${chosen.id}`;
             return {
@@ -80,7 +72,7 @@ export function buildResultadoTools(userClient: SupabaseClient) {
             .order("data", { ascending: false })
             .limit(10);
           if (error) return { ok: false, error: { code: "INTERNAL", message: error.message } };
-          if (!ats || ats.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Nenhum atendimento encontrado para este paciente." } };
+          if (!ats?.length) return { ok: false, error: { code: "NOT_FOUND", message: "Nenhum atendimento encontrado." } };
 
           let chosen = ats[0];
           if (exame) {
@@ -108,94 +100,23 @@ export function buildResultadoTools(userClient: SupabaseClient) {
       },
     }),
 
-    resultado_set_valor: tool({
+    /**
+     * Tool única para gravar valores. Aceita 1..N parâmetros.
+     * needsApproval=true no registry; o gate real está na UI (AssistenteSISLAC).
+     */
+    resultado_set: tool({
       description:
-        "Insere/atualiza o valor de UM parâmetro de exame no atendimento de um paciente. Use após confirmar paciente e exame. Exige confirmação humana.",
+        "Insere/atualiza 1..N parâmetros de UM exame de um paciente. Aceita um único valor " +
+        "(ex.: 'Hemácias 4,5') ou vários ('Hemácias 4,5, Hemoglobina 13,8'). Exige confirmação humana na UI.",
       inputSchema: z.object({
         paciente: z.string().min(2).max(120),
-        exame: z.string().min(2).max(120).describe("Nome (parcial) do exame"),
-        parametro: z.string().min(1).max(60).describe("Chave OU rótulo do parâmetro (ex: 'ACURIC', 'Ácido Úrico')"),
-        valor: z.union([z.string(), z.number()]).describe("Valor a gravar (string ou número)"),
-        _confirmed: z.boolean().default(true).describe("Sempre passe true — a confirmação ocorre no shell."),
-      }),
-      execute: async (input) => {
-        // Hotfix 2.0: o gate de _confirmed bloqueava silenciosamente as gravações.
-        // A confirmação fica a cargo da UI (frontend) e da auditoria (ai_audit).
-        console.log("[resultado_set_valor]", { paciente: input.paciente, exame: input.exame, parametro: input.parametro, valor: input.valor });
-        try {
-          const pacs = await findPaciente(userClient, input.paciente);
-          if (pacs.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Paciente não encontrado." } };
-          const ids = pacs.map((p) => p.id);
-
-          const ex = norm(input.exame);
-          const { data: ats, error: atErr } = await userClient
-            .from("atendimentos")
-            .select("id, protocolo, data, atendimento_exames(id, nome_exame, exame_id, resultados, status)")
-            .in("paciente_id", ids)
-            .order("data", { ascending: false })
-            .limit(20);
-          if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
-
-          let alvo: any = null;
-          let atProtocolo: string | null = null;
-          let atId: number | null = null;
-          for (const a of ats ?? []) {
-            const hit = (a.atendimento_exames ?? []).find((e: any) => norm(e.nome_exame ?? "").includes(ex));
-            if (hit) { alvo = hit; atProtocolo = a.protocolo; atId = a.id; break; }
-          }
-          if (!alvo) return { ok: false, error: { code: "NOT_FOUND", message: `Exame "${input.exame}" não encontrado nos últimos atendimentos.` } };
-
-          // Resolver chave do parâmetro
-          const { data: params } = await userClient
-            .from("exame_parametros")
-            .select("chave, rotulo")
-            .eq("exame_id", alvo.exame_id);
-          const target = norm(input.parametro);
-          const param = (params ?? []).find((p: any) =>
-            norm(p.chave) === target || norm(p.rotulo) === target ||
-            norm(p.rotulo).includes(target) || norm(p.chave).includes(target)
-          );
-          const chave = param?.chave ?? input.parametro;
-
-          const novos = { ...(alvo.resultados ?? {}), [chave]: String(input.valor) };
-          const { error: upErr } = await userClient
-            .from("atendimento_exames")
-            .update({ resultados: novos })
-            .eq("id", alvo.id);
-          if (upErr) return { ok: false, error: { code: "INTERNAL", message: upErr.message } };
-
-          return {
-            ok: true,
-            navigate: `/resultado/${atId}`,
-            data: {
-              atendimento_id: atId,
-              protocolo: atProtocolo,
-              exame: alvo.nome_exame,
-              parametro: chave,
-              valor: String(input.valor),
-            },
-          };
-        } catch (e) {
-          return { ok: false, error: { code: "INTERNAL", message: (e as Error).message } };
-        }
-      },
-    }),
-
-    resultado_set_varios: tool({
-      description:
-        "Insere/atualiza VÁRIOS parâmetros de UM exame em uma única chamada. Use quando o usuário ditar múltiplos valores de uma vez (ex.: 'hemácias 4,5, hemoglobina 13,8 e VCM 88'). Exige confirmação humana.",
-      inputSchema: z.object({
-        paciente: z.string().min(2).max(120),
-        exame: z.string().min(2).max(120).describe("Nome (parcial) do exame"),
+        exame: z.string().min(2).max(120),
         valores: z.array(z.object({
-          parametro: z.string().min(1).max(60).describe("Chave OU rótulo do parâmetro"),
+          parametro: z.string().min(1).max(60),
           valor: z.union([z.string(), z.number()]),
         })).min(1).max(40),
-        _confirmed: z.boolean().default(true).describe("Sempre passe true — confirmação na UI."),
       }),
       execute: async (input) => {
-        // Hotfix 2.0: removido o gate _confirmed que impedia gravação silenciosamente.
-        console.log("[resultado_set_varios]", { paciente: input.paciente, exame: input.exame, n: input.valores.length });
         try {
           const pacs = await findPaciente(userClient, input.paciente);
           if (pacs.length === 0) return { ok: false, error: { code: "NOT_FOUND", message: "Paciente não encontrado." } };
@@ -210,14 +131,12 @@ export function buildResultadoTools(userClient: SupabaseClient) {
             .limit(20);
           if (atErr) return { ok: false, error: { code: "INTERNAL", message: atErr.message } };
 
-          let alvo: any = null;
-          let atProtocolo: string | null = null;
-          let atId: number | null = null;
+          let alvo: any = null, atProtocolo: string | null = null, atId: number | null = null;
           for (const a of ats ?? []) {
             const hit = (a.atendimento_exames ?? []).find((e: any) => norm(e.nome_exame ?? "").includes(ex));
             if (hit) { alvo = hit; atProtocolo = a.protocolo; atId = a.id; break; }
           }
-          if (!alvo) return { ok: false, error: { code: "NOT_FOUND", message: `Exame "${input.exame}" não encontrado nos últimos atendimentos.` } };
+          if (!alvo) return { ok: false, error: { code: "NOT_FOUND", message: `Exame "${input.exame}" não encontrado.` } };
 
           const { data: params } = await userClient
             .from("exame_parametros")
@@ -235,7 +154,7 @@ export function buildResultadoTools(userClient: SupabaseClient) {
               norm(p.rotulo).includes(target) || norm(p.chave).includes(target)
             );
             if (!param?.chave) {
-              ignorados.push({ parametro: item.parametro, motivo: "Parâmetro não encontrado no exame." });
+              ignorados.push({ parametro: item.parametro, motivo: "Parâmetro não encontrado." });
               continue;
             }
             novos[param.chave] = String(item.valor);
