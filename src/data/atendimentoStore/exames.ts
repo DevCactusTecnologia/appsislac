@@ -21,8 +21,24 @@ import type {
  * coluna jsonb `resultados`). Use para carregar a tela de resultado/detalhe.
  */
 export async function getAtendimentoExamesDB(protocolo: string): Promise<AtendimentoExameRow[]> {
-  const id = cache.idByProtocolo.get(protocolo);
-  if (!id) return [];
+  let id = cache.idByProtocolo.get(protocolo);
+  if (!id) {
+    const { data: at, error: atError } = await supabase
+      .from("atendimentos")
+      .select("id, protocolo")
+      .eq("protocolo", protocolo)
+      .maybeSingle();
+    if (atError) {
+      showError(atError, { scope: "atendimentoStore.getAtendimentoExamesDB.resolveAtendimento", silent: true });
+      return [];
+    }
+    if (!at) {
+      return [];
+    }
+    id = Number(at.id);
+    cache.idByProtocolo.set(at.protocolo, id);
+    cache.protocoloById.set(id, at.protocolo);
+  }
   const { data, error } = await supabase
     .from("atendimento_exames")
     .select("*")

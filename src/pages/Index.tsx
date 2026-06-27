@@ -10,7 +10,7 @@ import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { getOrcamentos, subscribeOrcamentos } from "@/data/orcamentoStore";
 import { ensureLazyStore } from "@/data/lazyStores";
 import { formatIdadeDetalhada, isAniversarioHoje } from "@/lib/idade";
-import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById } from "@/data/atendimentoStore";
+import { getAtendimentos, subscribe, updateAtendimento, reloadAtendimentoById, fetchAtendimentoByProtocolo } from "@/data/atendimentoStore";
 import { getUnidadeById, getUnidades } from "@/data/unidadeStore";
 import type { MockAtendimento } from "@/data/types";
 import { toast } from "@/hooks/use-toast";
@@ -648,10 +648,9 @@ const Index = () => {
 
   /* ── Detalhe (open + hidratar) ── */
   const openDetalheDialog = async (item: MockAtendimento) => {
-    setSelectedAtendimento(item);
+    const full = await fetchAtendimentoByProtocolo(item.protocolo);
+    setSelectedAtendimento(full ?? await ensureHydrated(item));
     setDetalheDialogOpen(true);
-    const full = await ensureHydrated(item);
-    if (full !== item) setSelectedAtendimento(full);
   };
 
   const pagamentoData = useMemo(() => {
