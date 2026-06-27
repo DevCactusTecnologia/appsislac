@@ -577,6 +577,11 @@ const ParametroBloco = ({
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const abrirMatrizEmLote = () => {
+    setMenuOpen(false);
+    setMatrizOpen(true);
+  };
+
 
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
   const meusRefs = useMemo(
@@ -717,10 +722,14 @@ const ParametroBloco = ({
             </DropdownMenuItem>
             <div className="border-t my-1" />
             <DropdownMenuItem
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                abrirMatrizEmLote();
+              }}
               onSelect={(event) => {
                 event.preventDefault();
-                setMenuOpen(false);
-                window.requestAnimationFrame(() => setMatrizOpen(true));
+                abrirMatrizEmLote();
               }}
               className="gap-2 text-[13px] py-2"
             >
