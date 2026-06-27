@@ -72,6 +72,8 @@ const fromRow = (r: any): ExameParametro => ({
   separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
   qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
   formatoExibicao: (r.formato_exibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg") as FormatoTempo,
+  sensivelJejum: !!r.sensivel_jejum,
+  estratificadoRiscoCv: !!r.estratificado_risco_cv,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
