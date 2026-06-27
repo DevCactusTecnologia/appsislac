@@ -21,7 +21,7 @@ const RegistrarColeta = lazy(() => import("./pages/RegistrarColeta"));
 const AnalisarAmostra = lazy(() => import("./pages/AnalisarAmostra"));
 const Resultados = lazy(() => import("./pages/Resultados"));
 const ResultadoDetalhe = lazy(() => import("./pages/ResultadoDetalhe"));
-const LaudoPrintPage = lazy(() => import("./pages/LaudoPrintPage"));
+
 const ConsultarResultados = lazy(() => import("./pages/ConsultarResultados"));
 const LabApoio = lazy(() => import("./pages/LabApoio"));
 const Pacientes = lazy(() => import("./pages/Pacientes"));
@@ -346,20 +346,8 @@ function AppRoutes() {
     );
   }
 
-  // Página dedicada de impressão: precisa renderizar FORA do AppLayout.
-  // Se ficar dentro do layout operacional, o navegador/Paged.js captura menu,
-  // botões flutuantes e assistente junto com o laudo.
-  if (/^\/resultado\/[^/]+\/print$/.test(location.pathname)) {
-    return (
-      <ChunkErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/resultado/:id/print" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><LaudoPrintPage /></ProtectedRoute>} />
-          </Routes>
-        </Suspense>
-      </ChunkErrorBoundary>
-    );
-  }
+  // Rota dedicada de impressão (`/resultado/:id/print`) foi REMOVIDA.
+  // O laudo agora imprime via iframe oculto na própria aba.
 
   return (
     <ChunkErrorBoundary>

@@ -1068,7 +1068,7 @@ const ResultadoDetalhe = () => {
     if (modo === "unica") {
       try {
         // Impressão via iframe oculto (sem abrir nova aba, sem travar o navegador).
-        await doImprimirLaudo(printable, undefined, { useNewTab: false });
+        await doImprimirLaudo(printable, undefined);
         markAsImpresso(printable);
         toast.success(
           action === "imprimir"
