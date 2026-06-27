@@ -758,28 +758,101 @@ function AssistenteSISLACInner() {
   const label = isConnected ? "Encerrar Assistente SISLAC" : "Falar com o Assistente SISLAC";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full",
-        "flex items-center justify-center border border-border/60",
-        "bg-muted/60 text-muted-foreground backdrop-blur-sm shadow-sm",
-        "hover:bg-muted hover:text-foreground transition-all",
-        isConnected && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15",
-        isSpeaking && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background animate-pulse",
+    <>
+      {chatOpen && mode === "text" && (
+        <div className="fixed bottom-16 right-4 z-40 w-[min(92vw,380px)] overflow-hidden rounded-2xl border border-border/70 bg-background/95 shadow-2xl backdrop-blur">
+          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+              </span>
+              <div>
+                <p className="text-sm font-semibold leading-none">Assistente SISLAC</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {isConnected ? "Modo texto ativo" : connecting ? "Conectando..." : "Fallback sem microfone"}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setChatOpen(false);
+                if (isConnected || connecting) void stop();
+              }}
+              aria-label="Fechar Assistente SISLAC"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="max-h-[360px] min-h-[220px] space-y-3 overflow-y-auto px-4 py-3">
+            {!chatMessages.length && (
+              <div className="rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>Seu microfone não está disponível. Você pode digitar comandos aqui e o assistente continuará executando ações no sistema.</p>
+                </div>
+              </div>
+            )}
+            {chatMessages.map((item, index) => (
+              <div key={`${item.role}-${index}-${item.message.slice(0, 12)}`} className={cn("flex", item.role === "user" ? "justify-end" : "justify-start")}>
+                <div className={cn(
+                  "max-w-[82%] rounded-2xl px-3 py-2 text-sm",
+                  item.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+                )}>
+                  {item.message}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <form
+            className="flex gap-2 border-t border-border/70 p-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              sendTextMessage();
+            }}
+          >
+            <Input
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              placeholder={isConnected ? "Digite um comando..." : "Aguarde a conexão..."}
+              disabled={!isConnected}
+              className="h-10"
+            />
+            <Button type="submit" size="icon" disabled={!isConnected || !chatInput.trim()} aria-label="Enviar mensagem">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       )}
-    >
-      {connecting ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : isConnected ? (
-        <Square className="h-3.5 w-3.5 fill-current" />
-      ) : (
-        <Sparkles className="h-4 w-4" />
-      )}
-    </button>
+
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        title={label}
+        className={cn(
+          "fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full",
+          "flex items-center justify-center border border-border/60",
+          "bg-muted/60 text-muted-foreground backdrop-blur-sm shadow-sm",
+          "hover:bg-muted hover:text-foreground transition-all",
+          isConnected && "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15",
+          isSpeaking && mode === "voice" && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background animate-pulse",
+        )}
+      >
+        {connecting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isConnected ? (
+          mode === "text" ? <MessageCircle className="h-4 w-4" /> : <Square className="h-3.5 w-3.5 fill-current" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
+      </button>
+    </>
   );
 }
 
