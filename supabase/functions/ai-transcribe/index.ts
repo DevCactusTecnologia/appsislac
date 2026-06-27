@@ -1,5 +1,5 @@
-// ai-transcribe — voz → texto via ElevenLabs Scribe.
-// Mesmo contrato anterior (multipart `file`, retorna { text }) — apenas troca de provedor.
+// ai-transcribe — voz → texto via Lovable AI Gateway (openai/gpt-4o-mini-transcribe).
+// Contrato: multipart `file` → { text }. Sem dependência de credenciais externas.
 import { aiCorsHeaders, authenticate, jsonResponse } from "../_shared/aiAuth.ts";
 
 Deno.serve(async (req) => {
@@ -8,17 +8,8 @@ Deno.serve(async (req) => {
   const auth = await authenticate(req);
   if (!auth.ok) return auth.response;
 
-  let cfgKey = "";
-  try {
-    const { data } = await auth.admin
-      .from("saas_settings")
-      .select("value")
-      .eq("key", "elevenlabs_config")
-      .maybeSingle();
-    cfgKey = (((data as { value?: unknown } | null)?.value as { apiKey?: string } | null)?.apiKey ?? "").trim();
-  } catch { /* noop */ }
-  const ELEVEN_KEY = (cfgKey || Deno.env.get("ELEVENLABS_API_KEY") || "").trim();
-  if (!ELEVEN_KEY) return jsonResponse({ error: "missing_elevenlabs_api_key" }, 500);
+  const LOVABLE_KEY = (Deno.env.get("LOVABLE_API_KEY") ?? "").trim();
+  if (!LOVABLE_KEY) return jsonResponse({ error: "missing_lovable_api_key" }, 500);
 
   let form: FormData;
   try { form = await req.formData(); }
@@ -33,25 +24,23 @@ Deno.serve(async (req) => {
   }
 
   const upstream = new FormData();
+  upstream.append("model", "openai/gpt-4o-mini-transcribe");
   upstream.append("file", file, file.name || "recording.webm");
-  upstream.append("model_id", "scribe_v1");
-  // ElevenLabs usa ISO 639-3; "por" = português.
-  const lang = form.get("language");
-  upstream.append("language_code", typeof lang === "string" && lang.length >= 2 ? "por" : "por");
-  upstream.append("tag_audio_events", "false");
-  upstream.append("diarize", "false");
 
-  const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
     method: "POST",
-    headers: { "xi-api-key": ELEVEN_KEY },
+    headers: {
+      Authorization: `Bearer ${LOVABLE_KEY}`,
+      "Lovable-API-Key": LOVABLE_KEY,
+    },
     body: upstream,
   });
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    return jsonResponse({ error: "transcription_failed", status: res.status, message: txt.slice(0, 300) }, res.status);
+    return jsonResponse({ error: "stt_failed", status: res.status, message: txt.slice(0, 300) }, res.status);
   }
 
-  const data = await res.json().catch(() => null) as { text?: string } | null;
-  return jsonResponse({ text: (data?.text ?? "").trim() });
+  const data = await res.json().catch(() => ({} as { text?: string }));
+  return jsonResponse({ text: (data as { text?: string })?.text ?? "" });
 });
