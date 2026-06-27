@@ -27,8 +27,7 @@ export class PagedRenderer implements RenderAdapter {
     // HTML legado ainda pode conter CSS de marca d'água por pseudo-elemento.
     // No Document Engine 3.0 a marca é responsabilidade exclusiva do adapter;
     // por isso a neutralização é aplicada DEPOIS do HTML do laudo.
-    const runtimeCss = buildRuntimeCss(doc.geometry);
-    const footerHtml = extractFooterHtml(doc.html);
+    const runtimeCss = buildRuntimeCss();
 
     // Conteúdo passado para o Previewer é HTML; CSS vai como folha embutida.
     const content = `<style>${doc.css}</style>${doc.html}<style>${runtimeCss}</style>`;
@@ -41,7 +40,6 @@ export class PagedRenderer implements RenderAdapter {
 
     // Marca d'água: injetada por página via hook DOM (full-cover, sem disputar @page).
     injectWatermark(host, doc.watermark);
-    injectFixedFooters(host, footerHtml, doc.geometry);
 
     return { pageCount };
   }
@@ -69,7 +67,7 @@ function injectWatermark(host: HTMLElement, wm: WatermarkSpec): void {
       position: "absolute",
       inset: "0",
       pointerEvents: "none",
-      zIndex: "0",
+      zIndex: "1",
       backgroundImage: `url(${JSON.stringify(wm.url)})`,
       backgroundRepeat: "no-repeat",
       backgroundPosition: "center center",
@@ -79,17 +77,17 @@ function injectWatermark(host: HTMLElement, wm: WatermarkSpec): void {
       transformOrigin: "center center",
     } satisfies Partial<CSSStyleDeclaration>);
     pagebox.insertBefore(mark, pagebox.firstChild);
-    // Garante que o conteúdo da página fique acima da marca d'água.
+    // Garante que textos/tabelas fiquem acima da marca d'água.
     Array.from(pagebox.children).forEach((child) => {
       if (child === mark) return;
       const el = child as HTMLElement;
       if (!el.style.position) el.style.position = "relative";
-      if (!el.style.zIndex) el.style.zIndex = "1";
+      if (!el.style.zIndex) el.style.zIndex = "2";
     });
   });
 }
 
-function buildRuntimeCss(geometry: { marginRightMm: number; marginBottomMm: number; marginLeftMm: number }): string {
+function buildRuntimeCss(): string {
   return `
     /* Document Engine 3.0: o adapter controla a marca d'água por página. */
     body::before,
@@ -99,56 +97,16 @@ function buildRuntimeCss(geometry: { marginRightMm: number; marginBottomMm: numb
       background-image: none !important;
     }
 
-    /* O rodapé institucional original continua reservando espaço na paginação,
-       mas a cópia visível é fixada pelo adapter no final de cada folha. */
-    .pagedjs_page .laudo-a4-page > tfoot {
-      visibility: hidden !important;
-    }
-    .sislac-fixed-footer {
-      position: absolute;
-      left: ${geometry.marginLeftMm}mm;
-      right: ${geometry.marginRightMm}mm;
-      bottom: ${geometry.marginBottomMm}mm;
-      z-index: 2;
-      pointer-events: none;
-      color: #000 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .sislac-fixed-footer,
-    .sislac-fixed-footer * {
-      box-sizing: border-box !important;
-      max-width: 100% !important;
+    /* O laudo antigo define a tabela como branca. Dentro das páginas físicas
+       do Paged.js isso cobre a marca d'água. Mantemos a folha branca, mas o
+       conteúdo fica transparente para a marca aparecer no vazio da página. */
+    .pagedjs_pagebox,
+    .pagedjs_area,
+    .pagedjs_page_content,
+    .pagedjs_page .laudo-a4-page,
+    .pagedjs_page .laudo-a4-corpo,
+    .pagedjs_page #laudo-content {
+      background: transparent !important;
     }
   `;
-}
-
-function extractFooterHtml(html: string): string | null {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const footer = template.content.querySelector<HTMLElement>(".laudo-a4-rodape");
-  return footer?.innerHTML?.trim() || null;
-}
-
-function injectFixedFooters(
-  host: HTMLElement,
-  footerHtml: string | null,
-  geometry: { marginRightMm: number; marginBottomMm: number; marginLeftMm: number },
-): void {
-  if (!footerHtml) return;
-  const pages = host.querySelectorAll<HTMLElement>(".pagedjs_page");
-  pages.forEach((page) => {
-    const pagebox = page.querySelector<HTMLElement>(".pagedjs_pagebox") ?? page;
-    pagebox.style.position = "relative";
-    const footer = page.ownerDocument.createElement("div");
-    footer.className = "sislac-fixed-footer laudo-a4-rodape";
-    footer.setAttribute("aria-hidden", "true");
-    footer.innerHTML = footerHtml;
-    Object.assign(footer.style, {
-      left: `${geometry.marginLeftMm}mm`,
-      right: `${geometry.marginRightMm}mm`,
-      bottom: `${geometry.marginBottomMm}mm`,
-    } satisfies Partial<CSSStyleDeclaration>);
-    pagebox.appendChild(footer);
-  });
 }
