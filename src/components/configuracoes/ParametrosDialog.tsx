@@ -67,6 +67,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
   const [criticoMin, setCriticoMin] = useState<string>("");
   const [criticoMax, setCriticoMax] = useState<string>("");
   const [formatoTempo, setFormatoTempo] = useState<FormatoTempo>("min_seg");
+  const [sensivelJejum, setSensivelJejum] = useState(false);
+  const [estratificadoRiscoCv, setEstratificadoRiscoCv] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dragId, setDragId] = useState<number | null>(null);
   const [busca, setBusca] = useState("");
@@ -104,6 +106,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setQtdDigitos(0);
     setCriticoMin(""); setCriticoMax("");
     setFormatoTempo("min_seg");
+    setSensivelJejum(false);
+    setEstratificadoRiscoCv(false);
     setTipoSelecionado("Texto");
   };
 
@@ -126,6 +130,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setCriticoMin(p.criticoMin ?? "");
     setCriticoMax(p.criticoMax ?? "");
     setFormatoTempo(p.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg");
+    setSensivelJejum(!!p.sensivelJejum);
+    setEstratificadoRiscoCv(!!p.estratificadoRiscoCv);
   };
 
   const chaveJaUsada = useMemo(
@@ -193,6 +199,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       separadorDecimal: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? separadorDecimal : ".",
       qtdDigitos: (tipoSelecionado === "Número" || tipoSelecionado === "Formula") ? qtdDigitos : 0,
       formatoExibicao: tipoSelecionado === "Tempo" ? formatoTempo : undefined,
+      sensivelJejum,
+      estratificadoRiscoCv,
     };
     let ok = false;
     if (selectedId) ok = await updateParametro(selectedId, exameId, payload);
@@ -789,6 +797,8 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                   { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
                   { label: "Exibir resultado anterior", desc: "Mostra o último valor registrado deste paciente", value: exibirAnterior, set: setExibirAnterior },
                   { label: "Exibir no mapa de trabalho", desc: "Aparece na grade de análise da bancada", value: exibirMapa, set: setExibirMapa },
+                  { label: "VR sensível a jejum", desc: "Os valores de referência variam conforme o paciente esteja em jejum (ex.: Triglicérides).", value: sensivelJejum, set: setSensivelJejum },
+                  { label: "VR estratificado por risco cardiovascular", desc: "Os valores variam conforme o risco CV do paciente (ex.: LDL, Não-HDL).", value: estratificadoRiscoCv, set: setEstratificadoRiscoCv },
                 ].map((t) => (
                   <div key={t.label} className="flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-muted/30 transition-colors">
                     <div className="min-w-0">

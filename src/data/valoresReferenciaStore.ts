@@ -14,6 +14,7 @@ export type CategoriaVR =
   | "adulto" | "idoso" | "masculino" | "feminino" | "custom";
 
 export type JejumVR = "qualquer" | "com_jejum" | "sem_jejum";
+export type RiscoCV = "qualquer" | "baixo" | "intermediario" | "alto" | "muito_alto";
 export type OperadorVR = "entre" | "menor" | "menor_igual" | "maior" | "maior_igual" | "igual";
 
 export interface ValorReferencia {
@@ -39,6 +40,8 @@ export interface ValorReferencia {
   jejum?: JejumVR;
   /** Operador comparativo do limite. 'entre' usa valorMin–valorMax. */
   operador?: OperadorVR;
+  /** Estratificação por risco cardiovascular. 'qualquer' = não filtra. */
+  riscoCv?: RiscoCV;
 }
 
 
@@ -81,6 +84,7 @@ function fromRow(r: any): ValorReferencia {
     categoria: (r.categoria as CategoriaVR) ?? "custom",
     jejum: (r.jejum as JejumVR) ?? "qualquer",
     operador: (r.operador as OperadorVR) ?? "entre",
+    riscoCv: (r.risco_cv as RiscoCV) ?? "qualquer",
   };
 }
 
@@ -102,6 +106,7 @@ function toRow(v: Partial<ValorReferencia>): any {
   if (v.categoria !== undefined) row.categoria = v.categoria;
   if (v.jejum !== undefined) row.jejum = v.jejum;
   if (v.operador !== undefined) row.operador = v.operador;
+  if (v.riscoCv !== undefined) row.risco_cv = v.riscoCv;
   return row;
 }
 
@@ -210,6 +215,7 @@ const compativel = (
   idadeDias: number | null,
   gestante: boolean,
   jejum: boolean | null,
+  riscoCv: RiscoCV | null,
 ): boolean => {
   const cat: CategoriaVR = (vr.categoria as CategoriaVR) ?? "custom";
 
@@ -219,6 +225,13 @@ const compativel = (
     if (jejum === null) return false;
     if (j === "com_jejum" && !jejum) return false;
     if (j === "sem_jejum" && jejum) return false;
+  }
+
+  // Risco cardiovascular
+  const rcv: RiscoCV = (vr.riscoCv as RiscoCV) ?? "qualquer";
+  if (rcv !== "qualquer") {
+    if (riscoCv === null || riscoCv === "qualquer") return false;
+    if (rcv !== riscoCv) return false;
   }
 
   // Padrão: fallback — não filtra sexo/idade
@@ -250,6 +263,7 @@ export interface ResolverContexto {
   idade: string;
   gestante?: boolean;
   jejum?: boolean;
+  riscoCv?: RiscoCV | null;
 }
 
 export const resolverReferencia = (
@@ -259,6 +273,7 @@ export const resolverReferencia = (
   idadePaciente: string,
   gestante: boolean = false,
   jejum: boolean | null = null,
+  riscoCv: RiscoCV | null = null,
 ): { refMin: string; refMax: string; refUnidade: string; descricao: string; criticoMin?: string; criticoMax?: string; operador?: OperadorVR } | null => {
   const candidatos = valoresReferencia.filter(
     (v) => v.exameNome.toLowerCase() === exameNome.toLowerCase() &&
@@ -271,7 +286,7 @@ export const resolverReferencia = (
     s.startsWith("m") ? "Masculino" : s.startsWith("f") ? "Feminino" : null;
   const idadeDias = idadeStrParaDias(idadePaciente);
 
-  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante, jejum));
+  const compats = candidatos.filter((c) => compativel(c, sexoNorm, idadeDias, gestante, jejum, riscoCv));
   if (compats.length === 0) return null;
 
   compats.sort((a, b) => {
@@ -282,6 +297,10 @@ export const resolverReferencia = (
     const ja = ((a.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     const jb = ((b.jejum as JejumVR) ?? "qualquer") !== "qualquer" ? 1 : 0;
     if (jb !== ja) return jb - ja;
+    // Risco CV específico vence empate
+    const ra = ((a.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    const rb = ((b.riscoCv as RiscoCV) ?? "qualquer") !== "qualquer" ? 1 : 0;
+    if (rb !== ra) return rb - ra;
     // Sexo específico vence Ambos
     const sa = a.sexo !== "Ambos" ? 1 : 0;
     const sb = b.sexo !== "Ambos" ? 1 : 0;

@@ -15,7 +15,7 @@ import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
-  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, CATEGORIA_META,
+  type ValorReferencia, type CategoriaVR, type JejumVR, type OperadorVR, type RiscoCV, CATEGORIA_META,
   addValorReferencia, updateValorReferencia, removeValorReferencia,
 } from "@/data/valoresReferenciaStore";
 import type { ExameParametro } from "@/data/exameParametrosStore";
@@ -34,6 +34,13 @@ const JEJUM_LABEL: Record<JejumVR, string> = {
   qualquer: "Qualquer",
   com_jejum: "Com jejum",
   sem_jejum: "Sem jejum",
+};
+const RISCO_CV_LABEL: Record<RiscoCV, string> = {
+  qualquer: "Qualquer risco",
+  baixo: "Risco baixo",
+  intermediario: "Risco intermediário",
+  alto: "Risco alto",
+  muito_alto: "Risco muito alto",
 };
 const OPERADOR_LABEL: Record<OperadorVR, string> = {
   entre: "Entre",
@@ -171,6 +178,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
   const [critMax, setCritMax] = useState(vr?.criticoMax ?? "");
   const [unidade, setUnidade] = useState(vr?.unidade ?? "");
   const [jejum, setJejum] = useState<JejumVR>((vr?.jejum as JejumVR) ?? "qualquer");
+  const [riscoCv, setRiscoCv] = useState<RiscoCV>((vr?.riscoCv as RiscoCV) ?? "qualquer");
   const [operador, setOperador] = useState<OperadorVR>((vr?.operador as OperadorVR) ?? "entre");
   const [sexo, setSexo] = useState<SexoVR>(defaultSexo);
   const [idadeMin, setIdadeMin] = useState(defaultIdadeMin);
@@ -190,6 +198,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
     setJejum((vr?.jejum as JejumVR) ?? "qualquer");
+    setRiscoCv((vr?.riscoCv as RiscoCV) ?? "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
@@ -206,6 +215,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     (vr?.criticoMax ?? "") !== critMax ||
     (vr?.unidade ?? "") !== unidade ||
     (((vr?.jejum as JejumVR) ?? "qualquer")) !== jejum ||
+    (((vr?.riscoCv as RiscoCV) ?? "qualquer")) !== riscoCv ||
     (((vr?.operador as OperadorVR) ?? "entre")) !== operador ||
     (vr?.sexo ?? defaultSexo) !== sexo ||
     (vr?.idadeMin ?? defaultIdadeMin) !== idadeMin ||
@@ -233,6 +243,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     criticoMin: critMin, criticoMax: critMax,
     categoria,
     jejum,
+    riscoCv,
     operador,
     ...overrides,
   });
@@ -279,11 +290,11 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     try {
       const ok = await persistir(buildPayload({
         valorMin: "", valorMax: "", criticoMin: "", criticoMax: "", unidade: "",
-        jejum: "qualquer", operador: "entre",
+        jejum: "qualquer", riscoCv: "qualquer", operador: "entre",
       }));
       if (ok) {
         setNormMin(""); setNormMax(""); setCritMin(""); setCritMax(""); setUnidade("");
-        setJejum("qualquer"); setOperador("entre");
+        setJejum("qualquer"); setRiscoCv("qualquer"); setOperador("entre");
         onMutate();
         toast({ title: "Valores limpos" });
       }
@@ -409,24 +420,36 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
       </div>
 
 
-      {/* Condição: operador + jejum */}
-      <div className="flex gap-1">
+      {/* Condição: operador + jejum (+ risco CV quando estratificado) */}
+      <div className="flex flex-wrap gap-1">
         <Select value={operador} onValueChange={(v) => { setOperador(v as OperadorVR); }}>
-          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 text-[12px] px-2 min-w-[88px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
           <SelectContent>
             {(Object.keys(OPERADOR_LABEL_LONGO) as OperadorVR[]).map((op) => (
               <SelectItem key={op} value={op} className="text-[12px]">{OPERADOR_LABEL_LONGO[op]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
-          <SelectTrigger className="h-9 text-[12px] px-2" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
-              <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {parametro.sensivelJejum && (
+          <Select value={jejum} onValueChange={(v) => setJejum(v as JejumVR)}>
+            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[96px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(JEJUM_LABEL) as JejumVR[]).map((j) => (
+                <SelectItem key={j} value={j} className="text-[12px]">{JEJUM_LABEL[j]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {parametro.estratificadoRiscoCv && (
+          <Select value={riscoCv} onValueChange={(v) => setRiscoCv(v as RiscoCV)}>
+            <SelectTrigger className="h-9 text-[12px] px-2 min-w-[120px]" onBlur={salvarSeNecessario}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(RISCO_CV_LABEL) as RiscoCV[]).map((r) => (
+                <SelectItem key={r} value={r} className="text-[12px]">{RISCO_CV_LABEL[r]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Faixa Normal */}

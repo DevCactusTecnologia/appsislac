@@ -40,6 +40,10 @@ export interface ExameParametro {
   qtdDigitos: number;
   /** Formato de exibição (apenas tipo "Tempo"). */
   formatoExibicao?: FormatoTempo;
+  /** Quando true, o VR varia conforme o paciente esteja em jejum (ex.: Triglicérides). */
+  sensivelJejum?: boolean;
+  /** Quando true, o VR varia conforme o risco cardiovascular (ex.: LDL, Não-HDL). */
+  estratificadoRiscoCv?: boolean;
 }
 
 const cache = new Map<string, ExameParametro[]>();
@@ -68,6 +72,8 @@ const fromRow = (r: any): ExameParametro => ({
   separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
   qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
   formatoExibicao: (r.formato_exibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg") as FormatoTempo,
+  sensivelJejum: !!r.sensivel_jejum,
+  estratificadoRiscoCv: !!r.estratificado_risco_cv,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
@@ -92,6 +98,8 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.separadorDecimal !== undefined && { separador_decimal: p.separadorDecimal }),
   ...(p.qtdDigitos !== undefined && { qtd_digitos: p.qtdDigitos || null }),
   ...(p.formatoExibicao !== undefined && { formato_exibicao: p.formatoExibicao }),
+  ...(p.sensivelJejum !== undefined && { sensivel_jejum: p.sensivelJejum }),
+  ...(p.estratificadoRiscoCv !== undefined && { estratificado_risco_cv: p.estratificadoRiscoCv }),
 });
 
 /**
