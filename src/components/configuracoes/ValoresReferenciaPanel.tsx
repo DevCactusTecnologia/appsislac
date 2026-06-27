@@ -10,7 +10,7 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles, HelpCircle } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Eraser, EyeOff, Eye, Sparkles, HelpCircle } from "lucide-react";
 import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
 import { Grid3x3 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -607,6 +607,13 @@ const ParametroBloco = ({
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [aplicandoTpl, setAplicandoTpl] = useState<string | null>(null);
+  const collapseKey = `vr.collapsed.${exameNome}.${parametro.id}`;
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(collapseKey) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(collapseKey, collapsed ? "1" : "0"); } catch { /* ignore */ }
+  }, [collapsed, collapseKey]);
 
   const abrirMatrizPersonalizada = () => {
     setMenuOpen(false);
@@ -696,15 +703,27 @@ const ParametroBloco = ({
             {meusRefs.length} {meusRefs.length === 1 ? "regra" : "regras"}
           </span>
         </div>
-        <button
-          onClick={onHide}
-          className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
-          title="Ocultar este parâmetro da tela"
-        >
-          <EyeOff className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
+            title={collapsed ? "Expandir tabela" : "Recolher tabela"}
+            aria-label={collapsed ? "Expandir tabela" : "Recolher tabela"}
+          >
+            {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={onHide}
+            className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center transition-colors"
+            title="Ocultar este parâmetro da tela"
+          >
+            <EyeOff className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
+      {!collapsed && (
+      <>
       {/* Cabeçalho da tabela */}
       <div className={`grid ${ROW_TPL} gap-2 px-4 py-2.5 bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/30`}>
         <div>Categoria</div>
@@ -748,6 +767,10 @@ const ParametroBloco = ({
           <RegraLinha key={key} vr={vr} categoria={cat} exameNome={exameNome} parametro={parametro} onMutate={onMutate} />
         ))}
       </div>
+      </>
+      )}
+
+
 
       {/* Footer */}
       <footer className="px-5 py-3 bg-muted/30 border-t border-border/40 flex items-center justify-between">
