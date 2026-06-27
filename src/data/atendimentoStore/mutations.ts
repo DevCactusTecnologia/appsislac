@@ -5,7 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import type { MockAtendimento } from "../types";
+import type { ExameCobrancaInfo, MockAtendimento } from "../types";
 import {
   cache, notify, brToIso,
   type AtendimentoTxResponse, type ExamesCatalogoRow,
@@ -253,6 +253,7 @@ async function persistUpdateAtendimentoTx(
 
   // 3) Monta payload de exames (somente se substituição explícita)
   let examesPayload: Array<Record<string, unknown>> | null = null;
+  const persistirSomenteCobranca = updates.exames === undefined && updates.examesCobranca !== undefined;
   if (updates.exames !== undefined) {
     if (updates.exames.length === 0) {
       examesPayload = [];
@@ -294,7 +295,7 @@ async function persistUpdateAtendimentoTx(
           nome_exame: nome,
           exame_id: cat?.id ?? null,
           material_id: cat?.material_id ?? null,
-          status: cancelarTudoFlag ? "cancelado" : "pendente",
+          status: cancelarTudoFlag ? "cancelado" : (meta?.status || "pendente"),
           valor: Number(meta?.valor) || 0,
           // Preço cheio antes do desconto distribuído.
           valor_original: Number(meta?.valorOriginal ?? meta?.valor) || 0,
@@ -334,6 +335,26 @@ async function persistUpdateAtendimentoTx(
 
   // 5) Invoca edge function transacional
   try {
+    // Atualização exclusivamente financeira por exame (valor/desconto/acréscimo)
+    // NÃO deve acionar `_exames` na RPC, porque a função transacional legacy
+    // substitui a lista inteira de atendimento_exames. Atualizamos os registros
+    // existentes em-place para preservar status clínico, resultados, amostras e IDs.
+    if (persistirSomenteCobranca) {
+      await persistExamesCobrancaValues(id, updates.examesCobranca ?? []);
+    }
+
+    const hasPagamentoPayload = (pagamentosPayload?.length ?? 0) > 0;
+    const somenteCobrancaSemEdge = persistirSomenteCobranca
+      && !examesPayload
+      && Object.keys(patch).length === 0
+      && !hasPagamentoPayload
+      && !cancelarTudo
+      && updates.jejum === undefined;
+    if (somenteCobrancaSemEdge) {
+      notify();
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke("update-atendimento", {
       body: {
         atendimento_id: id,
@@ -376,5 +397,47 @@ async function persistUpdateAtendimentoTx(
     cache.atendimentos = prev;
     notify();
     throw e;
+  }
+}
+
+async function persistExamesCobrancaValues(
+  atendimentoId: number,
+  examesCobranca: ExameCobrancaInfo[],
+): Promise<void> {
+  if (!examesCobranca.length) return;
+
+  let idsPorIndice = examesCobranca.map((e) => e.atendimentoExameId ?? null);
+  if (idsPorIndice.some((id) => !id)) {
+    const { data, error } = await supabase
+      .from("atendimento_exames")
+      .select("id, ordem")
+      .eq("atendimento_id", atendimentoId)
+      .order("ordem", { ascending: true });
+    if (error) throw error;
+    idsPorIndice = examesCobranca.map((e, idx) => e.atendimentoExameId ?? Number(data?.[idx]?.id) ?? null);
+  }
+
+  for (const [idx, meta] of examesCobranca.entries()) {
+    const rowId = idsPorIndice[idx];
+    if (!rowId) continue;
+
+    const valor = Number.isFinite(Number(meta.valor)) ? Number(meta.valor) : 0;
+    const valorOriginalRaw = Number(meta.valorOriginal);
+    const valorOriginal = Number.isFinite(valorOriginalRaw) && valorOriginalRaw > 0
+      ? valorOriginalRaw
+      : valor;
+
+    const { error } = await supabase
+      .from("atendimento_exames")
+      .update({
+        valor,
+        valor_original: valorOriginal,
+        cobranca_destino: meta.cobrancaDestino ?? "paciente",
+        convenio_cobranca_id: meta.convenioCobrancaId ?? null,
+      })
+      .eq("id", rowId)
+      .eq("atendimento_id", atendimentoId);
+
+    if (error) throw error;
   }
 }

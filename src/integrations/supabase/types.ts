@@ -8538,6 +8538,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_atendimento_exames_cobranca_tx: {
+        Args: {
+          _atendimento_id: number
+          _exames: Json
+          _justificativa?: string
+        }
+        Returns: Json
+      }
       update_atendimento_tx: {
         Args: {
           _atendimento_id: number

@@ -663,10 +663,9 @@ const Index = () => {
         const valor = Number(e.valor) || 0;
         const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
         const voRaw = Number(e.valorOriginal) || 0;
-        // Se já existe `valorOriginal` no registro (SSOT do preço cheio), respeitar — assim
-        // acréscimos (valor > valorOriginal) e descontos (valor < valorOriginal) são preservados.
-        // Sem `valorOriginal`, fallback = max(valor, tabela) para dados legados sem desconto.
-        const valorOriginal = voRaw > 0 ? voRaw : Math.max(valor, valorTabela);
+        // Preço cheio deve considerar também a tabela vigente para reparar dados legados
+        // em que `valor_original` foi gravado já com desconto/zerado por exame.
+        const valorOriginal = Math.max(voRaw, valor, valorTabela);
         return { ...e, valor, valorOriginal };
       });
     // Subtotal = soma dos valores ORIGINAIS (preço cheio antes do desconto).
@@ -723,12 +722,16 @@ const Index = () => {
     const ajusteLiquidoCents = Math.round((acrescimo - desconto) * 100); // pode ser negativo
     const examesCobrancaAtuais = selectedAtendimento.examesCobranca;
     if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+      const convenioNome = selectedAtendimento.convenio ?? "Particular";
       const pacienteIdxs = examesCobrancaAtuais
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.cobrancaDestino !== "convenio");
       const baseOriginalPorIdx = new Map<number, number>();
       pacienteIdxs.forEach(({ e, i }) => {
-        const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0);
+        const valor = Number(e.valor) || 0;
+        const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
+        const valorOriginal = Number(e.valorOriginal) || 0;
+        const orig = Math.max(valorOriginal, valor, valorTabela);
         baseOriginalPorIdx.set(i, orig);
       });
       const subtotalOriginalCents = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + Math.round(v * 100), 0);
@@ -758,7 +761,6 @@ const Index = () => {
           };
         });
         updates.examesCobranca = novaCobranca;
-        updates.exames = novaCobranca.map((e) => e.nome);
       }
     }
 
