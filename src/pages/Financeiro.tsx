@@ -506,13 +506,17 @@ const Financeiro = () => {
     };
     const ajusteLiquidoCents = Math.round((acrescimo - desconto) * 100);
     const examesCobrancaAtuais = pagAtendimento.examesCobranca;
-    if (ajusteLiquidoCents !== 0 && examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+    if (examesCobrancaAtuais && examesCobrancaAtuais.length > 0) {
+      const convenioNome = pagAtendimento.convenio ?? "Particular";
       const pacienteIdxs = examesCobrancaAtuais
         .map((e, i) => ({ e, i }))
         .filter(({ e }) => e.cobrancaDestino !== "convenio");
       const baseOriginalPorIdx = new Map<number, number>();
       pacienteIdxs.forEach(({ e, i }) => {
-        const orig = Number(e.valorOriginal) > 0 ? Number(e.valorOriginal) : (Number(e.valor) || 0);
+        const valor = Number(e.valor) || 0;
+        const valorTabela = calculateExamPrice({ nomeExame: e.nome, convenioNome });
+        const valorOriginal = Number(e.valorOriginal) || 0;
+        const orig = Math.max(valorOriginal, valor, valorTabela);
         baseOriginalPorIdx.set(i, orig);
       });
       const subtotalOriginalCents = Array.from(baseOriginalPorIdx.values()).reduce((s, v) => s + Math.round(v * 100), 0);
@@ -536,7 +540,6 @@ const Financeiro = () => {
           return { ...e, valorOriginal: orig, valor: novosValores.has(i) ? novosValores.get(i)! : orig };
         });
         updates.examesCobranca = novaCobranca;
-        updates.exames = novaCobranca.map(e => e.nome);
       }
     }
 
