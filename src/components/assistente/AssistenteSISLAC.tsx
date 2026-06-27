@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
+import { Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
