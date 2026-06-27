@@ -58,7 +58,7 @@ export const ParamTypedInput = ({
   // Destaque forte no campo focado: ring inset (não é cortado por containers)
   // + borda primária + bg tintado. ring-inset garante que o contorno fique
   // dentro dos limites do próprio input, envolvendo o campo por completo.
-  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background focus:outline-none focus:ring-4 focus:ring-inset focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
+  const base = `px-3 py-2 border-2 rounded-lg text-sm bg-background outline-none focus:outline-none focus-visible:outline-none focus:ring-2 focus:ring-offset-0 focus:bg-primary/10 focus:shadow-md font-semibold text-foreground transition-all ${statusClasses} ${className ?? ""}`;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter") {
