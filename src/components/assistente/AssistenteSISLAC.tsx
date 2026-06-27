@@ -997,12 +997,9 @@ function AssistenteSISLACInner() {
 
           <div className="max-h-[360px] min-h-[220px] space-y-3 overflow-y-auto px-4 py-3">
             {!chatMessages.length && (
-              <div className="rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>Seu microfone não está disponível. Você pode digitar comandos aqui e o assistente continuará executando ações no sistema.</p>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Digite um comando como "abrir atendimentos", "listar pacientes devedores", "abrir resultado 12345".
+              </p>
             )}
             {chatMessages.map((item, index) => (
               <div key={`${item.role}-${index}-${item.message.slice(0, 12)}`} className={cn("flex", item.role === "user" ? "justify-end" : "justify-start")}>
