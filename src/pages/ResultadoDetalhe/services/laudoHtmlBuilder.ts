@@ -136,10 +136,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            real já está no padding interno da folha. */
         @page { size: A4; margin: 0; }
 
-        /* Paginação natural: o container NÃO trava altura nem usa overflow:hidden.
-           Isso permite que o motor de impressão quebre o fluxo entre páginas
-           respeitando `page-break-inside: avoid` em cada `.exame-bloco`.
-           `min-height: 297mm` garante que laudos curtos ainda preencham a folha. */
+        /* Paginacao natural: o container NAO trava altura nem usa overflow:hidden.
+           Isso permite que o motor de impressao quebre o fluxo entre paginas
+           respeitando page-break-inside: avoid em cada bloco .exame-bloco.
+           min-height: 297mm garante que laudos curtos ainda preencham a folha. */
         .laudo-a4-page {
           width: 210mm !important;
           min-height: 297mm !important;
