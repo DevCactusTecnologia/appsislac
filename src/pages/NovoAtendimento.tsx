@@ -465,6 +465,19 @@ const NovoAtendimento = () => {
   // Lock para prevenir submissão duplicada (double-click, re-render, etc.)
   const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Idempotency key: gerada uma vez por sessão de formulário e persistida em
+  // sessionStorage para sobreviver a reloads. Reenvios com a mesma chave
+  // retornam o atendimento já criado em vez de duplicar.
+  const idempotencyKeyRef = useRef<string>("");
+  if (!idempotencyKeyRef.current && typeof window !== "undefined" && !isEditing) {
+    const storageKey = "novoAtendimento:idempotencyKey";
+    let stored = sessionStorage.getItem(storageKey);
+    if (!stored) {
+      stored = crypto.randomUUID();
+      sessionStorage.setItem(storageKey, stored);
+    }
+    idempotencyKeyRef.current = stored;
+  }
   
 
   // Edit mode
@@ -687,9 +700,14 @@ const NovoAtendimento = () => {
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
         jejum: jejum === "sim",
+        idempotencyKey: idempotencyKeyRef.current || undefined,
       };
       await addAtendimento(novoAt);
       setLastGuiaNumero(novoAt.guiaNumero ?? null);
+      // Sucesso: limpa a chave de idempotência para que o próximo atendimento
+      // gere uma nova (evita que dois pacientes diferentes compartilhem a chave).
+      try { sessionStorage.removeItem("novoAtendimento:idempotencyKey"); } catch { /* noop */ }
+      idempotencyKeyRef.current = "";
       }
       const { total: etiquetasTotal, terceirizados: etiquetasTerc, temTerceirizados } =
         contarEtiquetas(exames, getExamesCatalogo());

@@ -47,6 +47,8 @@ interface AtendimentoPayload {
   convenio_nome?: string;
   unidade_id?: string;
   motivo_cancelamento?: string | null;
+  /** UUID gerado pelo cliente para prevenir duplicação em reenvios. */
+  idempotency_key?: string | null;
 }
 
 interface RequestBody {
