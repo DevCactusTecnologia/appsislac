@@ -88,12 +88,8 @@ interface WhatsappConfig {
   businessAccountId: string;
 }
 
-interface ElevenLabsConfig {
-  apiKey: string;
-  voiceId: string;
-  /** Modelo fixo `eleven_v3` — mantido por compatibilidade de leitura; não editável. */
-  modelId?: string;
-}
+
+
 
 const EMPTY_SMTP: SmtpConfig = {
   host: "", port: 587, user: "", password: "",
