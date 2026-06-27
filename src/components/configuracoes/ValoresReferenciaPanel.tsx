@@ -110,8 +110,11 @@ interface Props {
   onMutate: () => void;
 }
 
+// Presets oferecidos no dropdown "Adicionar variação". Faixas etárias clínicas
+// (recém-nascido, criança, adolescente, adulto, idoso) foram removidas por não
+// terem definição oficial única — o usuário usa "Personalizada" com a faixa real.
 const ORDEM_VARIACOES: CategoriaVR[] = [
-  "gestante", "recem_nascido", "crianca", "adolescente", "adulto", "idoso", "masculino", "feminino",
+  "gestante", "masculino", "feminino",
 ];
 
 const previewClass = (
