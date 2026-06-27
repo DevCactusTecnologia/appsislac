@@ -293,7 +293,7 @@ export function AssistenteSISLAC() {
           const transcript: string = (json?.text ?? "").trim();
           if (!transcript) { toast.info("Não entendi o áudio."); return; }
           pushUser(transcript);
-          const reply = await runText(transcript);
+          const reply = await runText(transcript, "voice");
           await speak(reply).catch((e) => console.warn("[Assistente] speak", e));
         } catch (e) {
           toast.error("Falha ao processar voz", { description: normalizeErrorMessage(e) });
