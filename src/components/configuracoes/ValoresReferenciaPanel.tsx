@@ -10,9 +10,10 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles, HelpCircle } from "lucide-react";
 import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
 import { Grid3x3 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
