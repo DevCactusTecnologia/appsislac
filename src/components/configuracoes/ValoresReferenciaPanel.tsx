@@ -258,6 +258,26 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 
   const salvarSeNecessario = async () => {
     if (!dirty) return;
+    // Guarda contra combinações inválidas: jejum/risco CV só são aceitos se o
+    // parâmetro tiver a flag correspondente ligada em "Parâmetros do exame".
+    if (!parametro.sensivelJejum && jejum !== "qualquer") {
+      toast({
+        title: "Condição de jejum não aplicável",
+        description: `O parâmetro "${parametro.rotulo}" não está marcado como sensível a jejum. Ative em Parâmetros do exame ou use "Qualquer".`,
+        variant: "destructive",
+      });
+      setJejum("qualquer");
+      return;
+    }
+    if (!parametro.estratificadoRiscoCv && riscoCv !== "qualquer") {
+      toast({
+        title: "Risco CV não aplicável",
+        description: `O parâmetro "${parametro.rotulo}" não está marcado como estratificado por risco cardiovascular. Ative em Parâmetros do exame ou use "Qualquer risco".`,
+        variant: "destructive",
+      });
+      setRiscoCv("qualquer");
+      return;
+    }
     if (isEntre && nMin !== null && nMax !== null && nMin > nMax) {
       toast({ title: "Mínimo normal maior que máximo", variant: "destructive" });
       return;
