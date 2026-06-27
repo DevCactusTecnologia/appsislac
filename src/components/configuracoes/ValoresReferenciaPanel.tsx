@@ -11,7 +11,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles } from "lucide-react";
-import VariacaoMatrizDialog from "./VariacaoMatrizDialog";
+import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
+import { Grid3x3 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -574,13 +575,30 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 const ParametroBloco = ({
   exameNome, parametro, refs, onMutate, onHide,
 }: { exameNome: string; parametro: ExameParametro; refs: ValorReferencia[]; onMutate: () => void; onHide: () => void }) => {
+  const { toast } = useToast();
   const [matrizOpen, setMatrizOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [aplicandoTpl, setAplicandoTpl] = useState<string | null>(null);
 
-  const abrirMatrizEmLote = () => {
+  const abrirMatrizPersonalizada = () => {
     setMenuOpen(false);
     setMatrizOpen(true);
   };
+
+  const aplicarTemplate = async (tplId: string) => {
+    const tpl = TEMPLATES.find((t) => t.id === tplId);
+    if (!tpl) return;
+    setAplicandoTpl(tplId);
+    try {
+      const ok = await aplicarTemplatePreset(tpl, exameNome, parametro.chave || parametro.rotulo);
+      toast({ title: "Template aplicado", description: `${ok} regra(s) criada(s).` });
+      setMenuOpen(false);
+      onMutate();
+    } finally {
+      setAplicandoTpl(null);
+    }
+  };
+
 
 
   const chave = (parametro.chave || parametro.rotulo).toLowerCase();
@@ -721,22 +739,45 @@ const ParametroBloco = ({
               </div>
             </DropdownMenuItem>
             <div className="border-t my-1" />
+            <div className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+              Templates clínicos (aplicação direta)
+            </div>
+            {TEMPLATES.map((tpl) => (
+              <DropdownMenuItem
+                key={tpl.id}
+                disabled={aplicandoTpl !== null}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  aplicarTemplate(tpl.id);
+                }}
+                className="gap-2 text-[13px] py-2"
+              >
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="font-medium truncate">{tpl.label}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {tpl.resumo} • {tpl.unidade} • {tpl.fonte}
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+            <div className="border-t my-1" />
             <DropdownMenuItem
               onPointerDown={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                abrirMatrizEmLote();
+                abrirMatrizPersonalizada();
               }}
               onSelect={(event) => {
                 event.preventDefault();
-                abrirMatrizEmLote();
+                abrirMatrizPersonalizada();
               }}
               className="gap-2 text-[13px] py-2"
             >
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Grid3x3 className="h-4 w-4 text-primary" />
               <div className="flex flex-col min-w-0">
-                <span className="font-medium">Template ou matriz em lote…</span>
-                <span className="text-[10px] text-muted-foreground truncate">Triglicérides, LDL, glicemia ou grade personalizada</span>
+                <span className="font-medium">Matriz personalizada…</span>
+                <span className="text-[10px] text-muted-foreground truncate">Grade Idade × Jejum × Risco CV definida por você</span>
               </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -750,10 +791,12 @@ const ParametroBloco = ({
         exameNome={exameNome}
         parametro={parametro}
         onCreated={onMutate}
+        initialTab="matriz"
       />
     </section>
   );
 };
+
 
 const ValoresReferenciaPanel = ({ exameNome, parametros, referencias, onMutate }: Props) => {
   const storageKey = `vr.hiddenParams.${exameNome}`;
