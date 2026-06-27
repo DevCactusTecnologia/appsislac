@@ -398,33 +398,26 @@ const ResultadoDetalhe = () => {
   const selectedExame = paciente.exames.find((e) => e.id === selectedExameId);
 
   // Check if exam is terceirizada (sent to support lab).
-  // Considera tanto o tipo_processo da row no banco quanto o catálogo,
-  // já que agora os terceirizados também aparecem na lista lateral.
+  // A página de resultado deve respeitar o destino salvo no atendimento,
+  // não o destino padrão do catálogo — o mesmo exame pode ser solicitado como INTERNO.
   const isExameTerceirizadaById = (uiId: number): boolean => {
     const dbId = dbIdMap[uiId];
     const row = dbRows.find(r => r.id === dbId);
     if (row?.tipo_processo === "TERCEIRIZADO") return true;
     return false;
   };
-  const isExameTerceirizada = (exameNome: string): boolean => {
-    const catalogo = getExamesCatalogo();
-    const labs = getLabsApoio();
-    const entry = catalogo.find(c => c.nome === exameNome);
-    if (!entry) return false;
-    return entry.analise !== "INTERNA" && entry.analise !== "TERCEIRIZADA" && labs.some(l => l.id === entry.analise);
-  };
 
-  const getLabNome = (exameNome: string): string => {
-    const catalogo = getExamesCatalogo();
+  const getLabNome = (uiId: number): string => {
+    const dbId = dbIdMap[uiId];
+    const row = dbRows.find(r => r.id === dbId);
+    if (row?.tipo_processo !== "TERCEIRIZADO" || !row.lab_apoio_id) return "";
     const labs = getLabsApoio();
-    const entry = catalogo.find(c => c.nome === exameNome);
-    if (!entry) return "";
-    const lab = labs.find(l => l.id === entry.analise);
+    const lab = labs.find(l => l.id === row.lab_apoio_id);
     return lab?.nome || "";
   };
 
   const selectedIsTerceirizada = selectedExame
-    ? (isExameTerceirizadaById(selectedExame.id) || isExameTerceirizada(selectedExame.nome))
+    ? isExameTerceirizadaById(selectedExame.id)
     : false;
 
   // Resolve reference values from the shared store based on patient sex/age
@@ -1302,7 +1295,7 @@ const ResultadoDetalhe = () => {
                 {/* Expanded: parameter inputs */}
                 {selectedExameId === exame.id && (
                   <div className="border-t px-3 py-3 space-y-3">
-                    {(isExameTerceirizadaById(exame.id) || isExameTerceirizada(exame.nome)) ? (
+                    {isExameTerceirizadaById(exame.id) ? (
                       <ExamesTerceirizadosPanel
                         rows={dbRows.filter(r => r.id === dbIdMap[exame.id])}
                         onChanged={reloadExames}
@@ -1608,7 +1601,7 @@ const ResultadoDetalhe = () => {
                   const isSelected = selectedExameId === exame.id;
                   const dbId = dbIdMap[exame.id];
                   const dbRow = dbRows.find((r) => r.id === dbId);
-                  const isTerc = isExameTerceirizadaById(exame.id) || isExameTerceirizada(exame.nome);
+                  const isTerc = isExameTerceirizadaById(exame.id);
                   return (
                   <div
                     key={exame.id}
@@ -1631,11 +1624,11 @@ const ResultadoDetalhe = () => {
                           <LabBadge
                             tipoProcesso="TERCEIRIZADO"
                             labApoioId={dbRow?.lab_apoio_id ?? null}
-                            labApoioNome={getLabNome(exame.nome) || undefined}
+                            labApoioNome={getLabNome(exame.id) || undefined}
                             compact
                           />
                           <span className="text-[10px] font-medium text-muted-foreground truncate">
-                            {getLabNome(exame.nome) || "Lab. de apoio"}
+                            {getLabNome(exame.id) || "Lab. de apoio"}
                           </span>
                         </div>
                       )}
@@ -1776,7 +1769,7 @@ const ResultadoDetalhe = () => {
                       />
                       {selectedIsTerceirizada && (
                         <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-lg bg-accent text-accent-foreground">
-                          Apoio: {getLabNome(selectedExame.nome)}
+                          Apoio: {getLabNome(selectedExame.id)}
                         </span>
                       )}
                       {retificados.has(selectedExame.id) && selectedExame.status !== "Em retificação" && selectedExame.status !== "Retificado" && (() => {
