@@ -729,22 +729,11 @@ function AssistenteSISLACInner() {
     onConnect: () => {
       setConnecting(false);
       intentionalStopRef.current = false;
-      toast.success(mode === "text" ? "Assistente SISLAC conectado em modo texto" : "Assistente SISLAC conectado");
     },
     onDisconnect: (details?: unknown) => {
       setConnecting(false);
       console.warn("[AssistenteSISLAC] disconnect details", details);
-      const reason = getDisconnectReason(details);
-      const description = getDisconnectDescription(details);
-      if (intentionalStopRef.current || reason === "user") {
-        intentionalStopRef.current = false;
-        return;
-      }
-      if (mode === "text" && chatOpen) {
-        toast.message("Modo texto em espera", { description: "Digite para reconectar o Assistente SISLAC." });
-        return;
-      }
-      toast.message("Assistente SISLAC desconectado", description ? { description } : undefined);
+      intentionalStopRef.current = false;
     },
     onMessage: ({ role, message }) => {
       if (!message?.trim()) return;
@@ -762,26 +751,21 @@ function AssistenteSISLACInner() {
       console.error("[AssistenteSISLAC]", err, context);
       setConnecting(false);
       if (mode === "voice" && (isMicrophoneStartupError(message) || isRealtimeSignalStartupError(message))) {
-        setTimeout(() => openTextMode("Conexão de voz indisponível. Use o modo texto."), 0);
+        setTimeout(() => openTextMode(), 0);
         return;
       }
-      if (mode === "text") {
-        toast.error("Não consegui conectar o modo texto", { description: message });
-        return;
+      // Modo texto não depende mais do ElevenLabs — engole erros silenciosamente.
+      if (mode === "text") return;
+      // Voz: só notifica erros realmente fatais.
+      if (!message.includes("Client tool")) {
+        toast.error("Falha na conexão de voz", { description: message });
       }
-      toast.error(message.includes("Client tool") ? "Falha ao executar ação do assistente" : "Falha na conexão com o Assistente SISLAC", {
-        description: message,
-      });
     },
     onAgentToolRequest: (toolCall) => {
-      const name = getToolName(toolCall);
       console.info("[AssistenteSISLAC] agent tool request", toolCall);
-      toast.loading(`${TOOL_LABELS[name] ?? `Executando ${name}`}...`, { id: `assistant-tool-${name}` });
     },
     onAgentToolResponse: (toolCall) => {
-      const name = getToolName(toolCall);
       console.info("[AssistenteSISLAC] agent tool response", toolCall);
-      toast.success("Ação processada", { id: `assistant-tool-${name}`, description: TOOL_LABELS[name] ?? name });
     },
   });
 
