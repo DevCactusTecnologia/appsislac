@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationProvider, useConversation } from "@elevenlabs/react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sparkles, Square, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, MessageCircle, Send, Sparkles, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAtendimentoByProtocolo, updateAtendimento } from "@/data/atendimentoStore";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /** Resolve intervalo [ini, fim) a partir de uma palavra ou par de datas ISO. */
 function resolvePeriodo(periodo?: string, data_inicio?: string, data_fim?: string): { ini?: Date; fim?: Date; label: string } {
@@ -32,6 +34,135 @@ function resolvePeriodo(periodo?: string, data_inicio?: string, data_fim?: strin
 }
 
 const AGENT_ID = "agent_2801kw31qjftetpbefenctpfnm8n";
+
+type AssistantMode = "voice" | "text";
+
+type ChatMessage = {
+  role: "user" | "agent";
+  message: string;
+};
+
+type ElevenLabsCredentials = {
+  token?: string;
+  signedUrl?: string;
+};
+
+type MicrophoneCheck = {
+  ok: boolean;
+  reason?: "unsupported" | "not-found" | "permission-denied" | "busy" | "unavailable";
+  error?: unknown;
+};
+
+const TOOL_LABELS: Record<string, string> = {
+  navegar_para: "Navegando",
+  abrir_atendimento: "Abrindo atendimento",
+  abrir_resultado: "Abrindo resultado",
+  contar_atendimentos: "Contando atendimentos",
+  buscar_paciente: "Buscando paciente",
+  resultado_set_valor: "Preenchendo resultado",
+  resultado_set_varios: "Preenchendo resultados",
+  resultado_salvar: "Salvando resultado",
+  resultado_liberar: "Liberando resultado",
+  resultado_imprimir: "Preparando impressão",
+  criar_atendimento: "Criando atendimento",
+  adicionar_exame: "Adicionando exame",
+  cancelar_atendimento: "Cancelando atendimento",
+  registrar_pagamento: "Registrando pagamento",
+  atendimento_resumo: "Consultando atendimento",
+  listar_atendimentos_por_protocolo: "Listando atendimentos",
+  detalhes_atendimento_por_protocolo: "Consultando detalhes",
+  imprimir_atendimento: "Abrindo impressão",
+  liberar_resultado_atendimento: "Liberando resultado",
+  registrar_observacao_atendimento: "Registrando observação",
+  pacientes_com_dividas: "Consultando pendências",
+  gerar_pdf_devedores_por_convenio: "Gerando relatório",
+};
+
+function normalizeErrorMessage(error: unknown): string {
+  if (!error) return "Erro desconhecido";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message);
+  return String(error);
+}
+
+function getMicrophoneErrorMessage(check: MicrophoneCheck): string {
+  switch (check.reason) {
+    case "not-found":
+      return "Microfone não encontrado. Abri o modo texto do Assistente SISLAC.";
+    case "permission-denied":
+      return "Permissão do microfone bloqueada. Abri o modo texto do Assistente SISLAC.";
+    case "busy":
+      return "Microfone em uso por outro aplicativo. Abri o modo texto do Assistente SISLAC.";
+    case "unsupported":
+      return "Este navegador não permite áudio aqui. Abri o modo texto do Assistente SISLAC.";
+    default:
+      return "Não foi possível usar o microfone. Abri o modo texto do Assistente SISLAC.";
+  }
+}
+
+async function checkMicrophone(): Promise<MicrophoneCheck> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return { ok: false, reason: "unsupported" };
+  }
+
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices?.();
+    if (devices?.length && !devices.some((device) => device.kind === "audioinput")) {
+      return { ok: false, reason: "not-found" };
+    }
+  } catch (error) {
+    console.warn("[AssistenteSISLAC] enumerateDevices", error);
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    return { ok: true };
+  } catch (error) {
+    const name = error instanceof DOMException ? error.name : "";
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return { ok: false, reason: "not-found", error };
+    }
+    if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+      return { ok: false, reason: "permission-denied", error };
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return { ok: false, reason: "busy", error };
+    }
+    return { ok: false, reason: "unavailable", error };
+  }
+}
+
+function getToolName(event: unknown): string {
+  if (!event || typeof event !== "object") return "ferramenta";
+  const value = event as Record<string, unknown>;
+  return String(value.tool_name ?? value.name ?? value.toolName ?? "ferramenta");
+}
+
+function withToolFeedback<T extends Record<string, (parameters: any) => any>>(tools: T): T {
+  return Object.fromEntries(
+    Object.entries(tools).map(([name, handler]) => [
+      name,
+      async (parameters: any) => {
+        const label = TOOL_LABELS[name] ?? `Executando ${name}`;
+        const id = toast.loading(`${label}...`);
+        console.info("[AssistenteSISLAC] tool:start", name, parameters);
+        try {
+          const result = await handler(parameters);
+          toast.success("Concluído", { id, description: label });
+          console.info("[AssistenteSISLAC] tool:success", name, result);
+          return result;
+        } catch (error) {
+          const message = normalizeErrorMessage(error);
+          toast.error("Falha ao executar", { id, description: `${label}: ${message}` });
+          console.error("[AssistenteSISLAC] tool:error", name, error);
+          throw error;
+        }
+      },
+    ]),
+  ) as T;
+}
 
 
 /**
