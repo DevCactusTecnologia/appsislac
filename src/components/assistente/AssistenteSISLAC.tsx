@@ -722,6 +722,7 @@ function AssistenteSISLACInner() {
 
   const stop = useCallback(async () => {
     setConnecting(false);
+    setChatOpen(false);
     await conversation.endSession();
   }, [conversation]);
 
