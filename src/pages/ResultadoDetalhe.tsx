@@ -1113,11 +1113,12 @@ const ResultadoDetalhe = () => {
   ) => {
     if (modo === "unica") {
       try {
-        await doImprimirLaudo(printable, undefined, { useNewTab: true });
+        // Impressão via iframe oculto (sem abrir nova aba, sem travar o navegador).
+        await doImprimirLaudo(printable, undefined, { useNewTab: false });
         markAsImpresso(printable);
         toast.success(
           action === "imprimir"
-            ? `Laudo aberto para impressão (${printable.length} exame(s)).`
+            ? `Laudo enviado para impressão (${printable.length} exame(s)).`
             : `Laudo aberto — use "Salvar como PDF" no diálogo de impressão (${printable.length} exame(s)).`,
         );
       } catch {
