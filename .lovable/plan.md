@@ -1,47 +1,78 @@
-## Objetivo
+# Document Service do SISLAC — PDF real via Browserless (isolado)
 
-Substituir o atual fluxo de impressão (Paged.js + rota `/resultado/:id/print` + nova aba) por **geração de PDF real no backend**, no mesmo modelo do Laravel: o botão "Imprimir" chama uma URL → o backend devolve um arquivo `.pdf` pronto → o navegador abre/baixa direto, sem travar a aba original.
+Objetivo: gerar PDF real no backend usando o HTML que já é montado hoje (laudoHtmlBuilder + Layout Científico + cabeçalho + rodapé + marca d'água), abrindo `application/pdf` inline em nova aba. Sem reescrever templates. Browserless tratado como **detalhe de implementação trocável**.
 
-## Decisão técnica que preciso confirmar antes de codar
+## Arquitetura (camadas, do alto para o baixo)
 
-Edge Functions do Lovable Cloud rodam em **Deno (sem Chromium pré-instalado)**. Para gerar um PDF "igual ao Laravel" (HTML → PDF com cabeçalho, rodapé, margens, marca d'água), há 3 caminhos possíveis. **Escolha um antes que eu implemente:**
+```text
+UI (botão Imprimir)
+   │  window.open(pdfUrl, "_blank")
+   ▼
+Document Service (edge function: document-render)
+   │  recebe { kind: "laudo", payload: { atendimentoId, exameIds, ... } }
+   │  monta HTML via builders existentes (server-side)
+   │  delega ao PdfRenderer
+   ▼
+PdfRenderer (interface)  ──►  BrowserlessRenderer (única implementação hoje)
+                              POST {BROWSERLESS_URL}/pdf  +  token
+   ▼
+Response: application/pdf + Content-Disposition: inline; filename="..."
+```
 
-### Opção A — Gotenberg / Browserless (Chromium remoto via HTTP) — **recomendada**
-- Edge function `laudo-pdf` monta o HTML do laudo (cabeçalho/rodapé/marca d'água via CSS `@page`) e faz `POST` para um serviço de Chromium hospedado (Gotenberg self-hosted, Browserless.io ou similar).
-- Recebe o PDF binário pronto, devolve `application/pdf`.
-- **Prós:** fidelidade visual idêntica ao Laravel (wkhtmltopdf/Chromium), suporta `@page`, headers/footers nativos, marca d'água, paginação automática perfeita.
-- **Contras:** depende de **1 secret** (URL/API key do serviço). Custo do serviço (Browserless ~ US$ 50/mês; Gotenberg self-hosted = grátis se você tiver onde rodar).
+Pontos-chave:
+- O Document Service é **genérico** (`kind` discrimina o documento). Laudo é o primeiro caso; mapa de trabalho, comprovantes, etc., entram depois sem nova função.
+- **Nada no app fala com Browserless.** Quem fala é só `PdfRenderer`. Trocar para Gotenberg/Chromium próprio = trocar 1 arquivo.
+- O HTML do laudo é o **mesmo** que já alimenta o iframe hoje — não reescrevemos `laudoHtmlBuilder.ts` nem o Layout Científico.
 
-### Opção B — `pdf-lib` puro no edge (sem Chromium)
-- Construo o PDF "à mão" com `pdf-lib` (desenha texto, tabelas, linhas, imagens).
-- **Prós:** zero dependência externa, zero custo, 100% backend.
-- **Contras:** **não renderiza HTML**. Significa **reescrever todos os templates científicos** (Hemograma, Bioquímica, layouts CKEditor do usuário, fórmulas, tabelas dinâmicas) em código de desenho PDF. Trabalho enorme e qualquer template novo criado pelo usuário no CKEditor precisaria de migração manual.
+## O que será criado
 
-### Opção C — Manter HTML + iframe oculto (fluxo "que funcionava antes") e tratar isto como o "PDF real"
-- Remove Paged.js, remove rota `/print`, volta 100% ao `printHtmlInHiddenFrame` que já existe e funcionava.
-- O "PDF" continua sendo gerado pelo `window.print()` → "Salvar como PDF" do Chrome.
-- **Prós:** zero novo backend, zero dependência, resolve imediatamente os 4 problemas reportados (nova aba, aba travada, Paged.js bagunçado, layout quebrado).
-- **Contras:** não é um endpoint `/laudo.pdf` igual ao Laravel — continua dependendo do navegador para materializar o PDF. Mas é o que **realmente funcionava antes** e o que o usuário descreveu como "perfeito".
+1. **Edge function `document-render`** (`supabase/functions/document-render/index.ts`):
+   - Valida JWT, resolve tenant, valida payload (Zod).
+   - Roteia por `kind`. Para `kind: "laudo"`: chama `buildLaudoHtml(payload)` (server-side, replicando o que o front faz hoje — mesmas queries, mesmos templates, mesmo CSS de impressão).
+   - Passa o HTML + opções (`format: A4`, `margin`, `printBackground: true`, `preferCSSPageSize: true`) para `PdfRenderer.render(html, opts)`.
+   - Devolve `Response(pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": 'inline; filename="laudo-<protocolo>.pdf"' } })`.
 
-## O que será feito em **todas as opções** (cirurgia comum)
+2. **`PdfRenderer` interface + `BrowserlessRenderer`** (dentro da edge, em arquivos separados via `import_map` ou inline no `index.ts` se Lovable Cloud preferir flat):
+   - `interface PdfRenderer { render(html: string, opts: PdfOptions): Promise<Uint8Array> }`.
+   - `BrowserlessRenderer` faz `POST ${BROWSERLESS_URL}/pdf?token=${TOKEN}` com `{ html, options: { format:"A4", printBackground:true, preferCSSPageSize:true, margin:{...} } }`.
+   - Erros do Browserless viram 502 com mensagem clara.
 
-1. **Remover Paged.js do caminho do laudo:**
-   - Apagar `LaudoPrintPage.tsx`, remover rota `/resultado/:id/print` em `src/App.tsx`, remover `savePrintContext` do `ResultadoDetalhe.tsx`.
-   - Tirar a dependência `pagedjs` do `package.json`.
-   - Apagar `src/domains/print/document-engine/adapters/PagedRenderer.ts` e `DocumentRenderer.ts` (ou neutralizar — o constraint "DOCUMENT ENGINE 3.0 — CORE CONGELADO" precisa ser **revogado**, e quero seu OK explícito porque o constraint é uma regra dura do projeto).
-2. **Botão "Imprimir" simplificado:**
-   - Sempre via fluxo único (não há mais `useNewTab`).
-   - Sem abrir aba nova, sem travar a aba do laudo.
-3. **Atualizar memory:** remover `mem://constraints/document-engine-3.0-congelado.md` e adicionar nota explicando a nova arquitetura.
+3. **Frontend — botão Imprimir** (`src/pages/ResultadoDetalhe.tsx`):
+   - Substitui `printHtmlInHiddenFrame` por:
+     ```ts
+     const url = `${SUPABASE_URL}/functions/v1/document-render?kind=laudo&atendimentoId=...&exameIds=...&token=<short-lived>`;
+     window.open(url, "_blank", "noopener,noreferrer");
+     ```
+   - Nova aba abre direto o PDF no viewer nativo do Chrome (igual Laravel). Aba do laudo não trava.
+   - Para autenticação: a edge function aceita Bearer JWT no header **ou** um `token` curto na query (assinado pelo backend, TTL 60s) — necessário porque `window.open` não envia headers customizados.
 
-## O que muda **conforme a opção escolhida**
+4. **Secrets** (vou pedir via `add_secret` depois que você confirmar a plataforma):
+   - `BROWSERLESS_URL` (ex.: `https://chrome.browserless.io` ou self-hosted)
+   - `BROWSERLESS_TOKEN`
+   - Se for outro serviço (Gotenberg etc.), me diga e ajusto o `BrowserlessRenderer` antes de pedir secrets.
 
-- **A:** crio a edge function `laudo-pdf` (POST `{ atendimentoId, exameIds, solicitante? }` → retorna PDF). Botão chama `supabase.functions.invoke` com `responseType: blob`, abre via `URL.createObjectURL` em nova aba (não trava porque é só um download). Preciso do secret `PDF_RENDER_URL` (+ `PDF_RENDER_TOKEN` se Browserless) — pedirei via `add_secret`.
-- **B:** crio a edge function `laudo-pdf` com `pdf-lib`. **Aviso de risco:** os layouts CKEditor atuais não vão sair iguais — vou entregar um template padrão por tipo de exame (resultado tabular + cabeçalho/rodapé/marca d'água) e os layouts customizados ficam para uma segunda fase.
-- **C:** só faço a parte comum acima. Fim.
+## O que será removido / mantido
 
-## Pergunta direta
+Mantém intacto:
+- `laudoHtmlBuilder.ts`, `laudoLayout.ts`, `layoutScientificRuntime.ts`, `printShell.ts`, `watermark.ts`, todo o CSS `@page` e rodapé já congelados.
+- O fluxo iframe atual continua existindo como **fallback** (caso Browserless caia, botão cai para `printHtmlInHiddenFrame`).
 
-Qual opção? **A (recomendada, requer secret e provavelmente custo)**, **B (puro backend mas perde layouts customizados)**, ou **C (volta ao que funcionava antes, sem backend)**?
+Removido:
+- Nada do Paged.js a mais (já foi removido na rodada anterior).
 
-Sem sua resposta não dá para implementar — escolher por você significa ou (A) gastar seus créditos com um secret que talvez você não queira, ou (B) quebrar os layouts CKEditor que você já configurou, ou (C) entregar algo que não é "PDF real no backend" como você pediu.
+## Detalhes técnicos importantes
+
+- **Reuso do builder no Deno:** `laudoHtmlBuilder` hoje vive em `src/` (browser). Para a edge function, vou extrair as funções puras (montagem de HTML a partir de dados) para um módulo isomórfico ou duplicar minimamente a montagem dentro de `supabase/functions/document-render/laudo.ts` consumindo o **mesmo CSS string** e os **mesmos placeholders**. Os layouts vindos do banco (`exame_layouts.conteudo`) e os parâmetros (`exame_parametros`) são lidos via supabase client server-side — exatamente as mesmas tabelas que o front já lê.
+- **CSS de página:** mantido como está hoje (`@page { size: A4; margin: ... }`, rodapé 4mm congelado). Browserless respeita `preferCSSPageSize: true`.
+- **Marca d'água:** continua via `body::before` / classe `.watermark` definida no `printShell` atual.
+- **Performance:** chamada Browserless típica 500ms–2s. Aceitável; abrimos com `target=_blank` então usuário vê o tab loading.
+
+## Riscos e mitigação
+
+- **Browserless fora do ar** → fallback automático para iframe (`window.print()`), com toast "PDF service indisponível, usando impressão local".
+- **Custo do Browserless** → começa em ~US$ 50/mês; alternativa zero-custo é Gotenberg self-hosted (mesma interface no `PdfRenderer`, só muda 1 arquivo).
+- **Layouts customizados no CKEditor** → renderizam exatamente igual pois o HTML enviado ao Chromium é o mesmo que renderiza no navegador hoje.
+
+## Pergunta antes de codar
+
+Confirma **Browserless.io** como provider (eu peço `BROWSERLESS_URL` + `BROWSERLESS_TOKEN` via `add_secret`), ou prefere outro serviço/Gotenberg self-hosted (me passe a URL pública)?
