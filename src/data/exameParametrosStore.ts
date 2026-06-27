@@ -98,6 +98,8 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.separadorDecimal !== undefined && { separador_decimal: p.separadorDecimal }),
   ...(p.qtdDigitos !== undefined && { qtd_digitos: p.qtdDigitos || null }),
   ...(p.formatoExibicao !== undefined && { formato_exibicao: p.formatoExibicao }),
+  ...(p.sensivelJejum !== undefined && { sensivel_jejum: p.sensivelJejum }),
+  ...(p.estratificadoRiscoCv !== undefined && { estratificado_risco_cv: p.estratificadoRiscoCv }),
 });
 
 /**
