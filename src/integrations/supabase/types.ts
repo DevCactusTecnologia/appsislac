@@ -1088,6 +1088,7 @@ export type Database = {
           id: number
           jejum: boolean
           motivo_cancelamento: string | null
+          observacoes_assistente: string | null
           origem_atendimento: string
           paciente_cpf: string
           paciente_id: number | null
@@ -1117,6 +1118,7 @@ export type Database = {
           id?: number
           jejum?: boolean
           motivo_cancelamento?: string | null
+          observacoes_assistente?: string | null
           origem_atendimento?: string
           paciente_cpf: string
           paciente_id?: number | null
@@ -1146,6 +1148,7 @@ export type Database = {
           id?: number
           jejum?: boolean
           motivo_cancelamento?: string | null
+          observacoes_assistente?: string | null
           origem_atendimento?: string
           paciente_cpf?: string
           paciente_id?: number | null
