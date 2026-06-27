@@ -35,6 +35,13 @@ const JEJUM_LABEL: Record<JejumVR, string> = {
   com_jejum: "Com jejum",
   sem_jejum: "Sem jejum",
 };
+const RISCO_CV_LABEL: Record<RiscoCV, string> = {
+  qualquer: "Qualquer risco",
+  baixo: "Risco baixo",
+  intermediario: "Risco intermediário",
+  alto: "Risco alto",
+  muito_alto: "Risco muito alto",
+};
 const OPERADOR_LABEL: Record<OperadorVR, string> = {
   entre: "Entre",
   menor: "<",
