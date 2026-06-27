@@ -10,9 +10,10 @@
 // (1 linha por categoria), salva automaticamente ao sair do campo.
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles } from "lucide-react";
+import { Plus, Trash2, ChevronDown, Eraser, EyeOff, Eye, Sparkles, HelpCircle } from "lucide-react";
 import VariacaoMatrizDialog, { TEMPLATES, aplicarTemplatePreset } from "./VariacaoMatrizDialog";
 import { Grid3x3 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -199,8 +200,12 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setCritMin(vr?.criticoMin ?? "");
     setCritMax(vr?.criticoMax ?? "");
     setUnidade(vr?.unidade ?? "");
-    setJejum((vr?.jejum as JejumVR) ?? "qualquer");
-    setRiscoCv((vr?.riscoCv as RiscoCV) ?? "qualquer");
+    // Coerção: se a flag do parâmetro está desligada, força "qualquer" mesmo que o
+    // registro persistido contenha valor antigo (legado ou template aplicado antes).
+    const jPersist = (vr?.jejum as JejumVR) ?? "qualquer";
+    setJejum(parametro.sensivelJejum ? jPersist : "qualquer");
+    const rPersist = (vr?.riscoCv as RiscoCV) ?? "qualquer";
+    setRiscoCv(parametro.estratificadoRiscoCv ? rPersist : "qualquer");
     setOperador((vr?.operador as OperadorVR) ?? "entre");
     setSexo(vr?.sexo ?? defaultSexo);
     setIdadeMin(vr?.idadeMin ?? defaultIdadeMin);
@@ -208,7 +213,7 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
     setUnidadeIdade(vr?.unidadeIdade ?? defaultUnidIdade);
     setUnidadeIdadeMax((vr?.unidadeIdadeMax as UnidIdade) ?? vr?.unidadeIdade ?? defaultUnidIdade);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vr?.id]);
+  }, [vr?.id, parametro.sensivelJejum, parametro.estratificadoRiscoCv]);
 
   const dirty =
     (vr?.valorMin ?? "") !== normMin ||
@@ -257,6 +262,26 @@ const RegraLinha = ({ vr, categoria, exameNome, parametro, onMutate }: RowProps)
 
   const salvarSeNecessario = async () => {
     if (!dirty) return;
+    // Guarda contra combinações inválidas: jejum/risco CV só são aceitos se o
+    // parâmetro tiver a flag correspondente ligada em "Parâmetros do exame".
+    if (!parametro.sensivelJejum && jejum !== "qualquer") {
+      toast({
+        title: "Condição de jejum não aplicável",
+        description: `O parâmetro "${parametro.rotulo}" não está marcado como sensível a jejum. Ative em Parâmetros do exame ou use "Qualquer".`,
+        variant: "destructive",
+      });
+      setJejum("qualquer");
+      return;
+    }
+    if (!parametro.estratificadoRiscoCv && riscoCv !== "qualquer") {
+      toast({
+        title: "Risco CV não aplicável",
+        description: `O parâmetro "${parametro.rotulo}" não está marcado como estratificado por risco cardiovascular. Ative em Parâmetros do exame ou use "Qualquer risco".`,
+        variant: "destructive",
+      });
+      setRiscoCv("qualquer");
+      return;
+    }
     if (isEntre && nMin !== null && nMax !== null && nMin > nMax) {
       toast({ title: "Mínimo normal maior que máximo", variant: "destructive" });
       return;
@@ -682,7 +707,27 @@ const ParametroBloco = ({
         <div>Categoria</div>
         <div className="text-center">Sexo</div>
         <div className="text-center">Faixa Etária</div>
-        <div>Condição</div>
+        <div className="flex items-center gap-1">
+          <span>Condição</span>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/70 hover:text-foreground transition-colors" aria-label="O que aparece na coluna Condição?">
+                  <HelpCircle className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[320px] text-[11px] leading-snug normal-case tracking-normal font-normal">
+                <p className="mb-1"><strong>Condição</strong> agrupa até 3 qualificadores clínicos da regra:</p>
+                <ul className="space-y-0.5 list-disc pl-4">
+                  <li><strong>Operador</strong> — sempre visível (entre, &lt;, ≤, &gt;, ≥, =).</li>
+                  <li><strong>Jejum</strong> — só quando o parâmetro está marcado como <em>sensível a jejum</em> (ex.: Glicemia, Triglicérides).</li>
+                  <li><strong>Risco CV</strong> — só quando o parâmetro está marcado como <em>estratificado por risco cardiovascular</em> (ex.: LDL, Não-HDL).</li>
+                </ul>
+                <p className="mt-1 text-muted-foreground">Ative essas flags em <em>Parâmetros do exame</em> para liberar os selects.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
         <div className="text-center">Faixa Normal</div>
         <div className="text-center">Faixa Crítica</div>
         <div className="text-center">Un.</div>
