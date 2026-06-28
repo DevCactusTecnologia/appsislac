@@ -6,7 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
 import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
-import { getValueRangeStatus, isValueInRange } from "@/components/ResultadoValidationBar";
+import { getValueRangeStatus } from "@/components/ResultadoValidationBar";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import CelebracaoLiberacaoDialog from "@/components/CelebracaoLiberacaoDialog";
 import AuditoriaPanel from "@/components/AuditoriaPanel";
