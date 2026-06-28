@@ -1036,18 +1036,114 @@ const ResultadoDetalhe = () => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
 
-    const autoPrint = `
+    const paginationHook = `
 <script>
   (function(){
-    function go(){ try { window.focus(); window.print(); } catch (e) {} }
-    if (document.readyState === 'complete') setTimeout(go, 50);
-    else window.addEventListener('load', function(){ setTimeout(go, 50); });
+    window.__lovableBeforePrint = async function(){
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+      await new Promise(function(resolve){ requestAnimationFrame(function(){ requestAnimationFrame(resolve); }); });
+
+      var margins = ${JSON.stringify(margins)};
+      var pageWidthMm = 210 - Number(margins.left || 0) - Number(margins.right || 0);
+      document.documentElement.style.width = pageWidthMm + 'mm';
+      document.body.style.width = pageWidthMm + 'mm';
+
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;left:-1000mm;top:0;width:100mm;height:0;overflow:hidden;';
+      document.body.appendChild(probe);
+      var pxPerMm = probe.getBoundingClientRect().width / 100;
+      probe.remove();
+      if (!pxPerMm || !isFinite(pxPerMm)) return;
+
+      var header = document.querySelector('table.laudo-a4-page > thead');
+      var headerPx = header ? header.getBoundingClientRect().height : 0;
+      var footerReservePx = 32 * pxPerMm;
+      var safeGapPx = 3 * pxPerMm;
+      var availablePx = (297 - Number(margins.top || 0) - Number(margins.bottom || 0)) * pxPerMm - headerPx - footerReservePx - safeGapPx;
+      if (!availablePx || availablePx < 200) return;
+
+      var sourceTable = document.querySelector('table.laudo-a4-page');
+      var sourceContent = document.querySelector('#laudo-content');
+      if (!sourceTable || !sourceContent) return;
+      var blocks = Array.prototype.slice.call(sourceContent.children).filter(function(el){
+        return el.classList && (el.classList.contains('exame-bloco') || el.classList.contains('assinatura-bloco'));
+      });
+      var outerHeight = function(el) {
+        var rect = el.getBoundingClientRect();
+        var cs = window.getComputedStyle(el);
+        return rect.height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+      };
+
+      var pages = [];
+      var current = [];
+      var used = 0;
+      blocks.forEach(function(block){
+        var h = outerHeight(block);
+        if (current.length > 0 && used + h > availablePx) {
+          pages.push(current);
+          current = [];
+          used = 0;
+        }
+        current.push(block);
+        used += h;
+        if (h > availablePx && current.length === 1) {
+          pages.push(current);
+          current = [];
+          used = 0;
+        }
+      });
+      if (current.length) pages.push(current);
+      if (pages.length <= 1) {
+        document.documentElement.setAttribute('data-laudo-paginated', 'single');
+        return;
+      }
+
+      var buildPage = function(){
+        var table = sourceTable.cloneNode(false);
+        table.classList.add('laudo-page-manual');
+        table.style.breakInside = 'avoid';
+        table.style.pageBreakInside = 'avoid';
+        if (header) table.appendChild(header.cloneNode(true));
+        var tbody = document.createElement('tbody');
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        var corpo = document.createElement('div');
+        corpo.className = 'laudo-a4-corpo';
+        var content = document.createElement('div');
+        content.id = 'laudo-content';
+        content.setAttribute('style', sourceContent.getAttribute('style') || '');
+        corpo.appendChild(content);
+        td.appendChild(corpo);
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        table.appendChild(tbody);
+        return { table: table, content: content };
+      };
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'laudo-pages-manual';
+      pages.forEach(function(pageBlocks, pageIndex){
+        var page = buildPage();
+        page.table.style.breakAfter = pageIndex < pages.length - 1 ? 'page' : 'auto';
+        page.table.style.pageBreakAfter = pageIndex < pages.length - 1 ? 'always' : 'auto';
+        pageBlocks.forEach(function(block){
+          block.style.breakBefore = '';
+          block.style.pageBreakBefore = '';
+          page.content.appendChild(block);
+        });
+        wrapper.appendChild(page.table);
+      });
+      sourceTable.replaceWith(wrapper);
+      document.documentElement.setAttribute('data-laudo-pages', String(pages.length));
+      document.documentElement.setAttribute('data-laudo-paginated', 'true');
+    };
   })();
 </script>`;
 
-    const injected = sanitizeHtmlForPrint(html)
-      .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
-      .replace(/<\/body>/i, `${autoPrint}</body>`);
+    const sanitized = sanitizeHtmlForPrint(html);
+    const injected = /<\/body>/i.test(sanitized)
+      ? sanitized.replace(/<\/body>/i, `${paginationHook}</body>`)
+      : `${sanitized}${paginationHook}`;
     printHtmlInHiddenFrame({ html: injected, documentTitle: title });
     const t1 = performance.now();
     // eslint-disable-next-line no-console

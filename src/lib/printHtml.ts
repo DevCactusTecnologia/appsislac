@@ -34,10 +34,10 @@ export function printHtmlInHiddenFrame({
   iframe.id = frameId;
   iframe.setAttribute("aria-hidden", "true");
   iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "210mm";
+  iframe.style.height = "297mm";
   iframe.style.border = "0";
   iframe.style.opacity = "0";
   iframe.style.pointerEvents = "none";
@@ -68,47 +68,56 @@ export function printHtmlInHiddenFrame({
   }
 
   const triggerPrint = () => {
-    const printedAt = Date.now();
-    let cleaned = false;
-    // Só restaura título e remove iframe DEPOIS que o diálogo de impressão
-    // fecha. Chrome lê document.title no momento em que o usuário clica
-    // "Salvar" — se restaurarmos antes, o nome volta para "Sislac - Lovable".
-    const cleanup = () => {
-      if (cleaned) return;
-      cleaned = true;
-      window.removeEventListener("afterprint", onAfter);
-      window.removeEventListener("focus", onFocus);
-      iframe.contentWindow?.removeEventListener?.("afterprint", onAfter);
-      if (documentTitle) {
-        try { document.title = previousParentTitle; } catch { /* noop */ }
-        try { if (previousTopTitle !== undefined && window.top?.document) window.top.document.title = previousTopTitle; } catch { /* noop */ }
+    const runBeforePrint = async () => {
+      try {
+        const hook = (iframe.contentWindow as Window & { __lovableBeforePrint?: () => void | Promise<void> } | null)?.__lovableBeforePrint;
+        if (typeof hook === "function") await hook();
+      } catch { /* noop */ }
+    };
+
+    void runBeforePrint().finally(() => {
+      const printedAt = Date.now();
+      let cleaned = false;
+      // Só restaura título e remove iframe DEPOIS que o diálogo de impressão
+      // fecha. Chrome lê document.title no momento em que o usuário clica
+      // "Salvar" — se restaurarmos antes, o nome volta para "Sislac - Lovable".
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        window.removeEventListener("afterprint", onAfter);
+        window.removeEventListener("focus", onFocus);
+        iframe.contentWindow?.removeEventListener?.("afterprint", onAfter);
+        if (documentTitle) {
+          try { document.title = previousParentTitle; } catch { /* noop */ }
+          try { if (previousTopTitle !== undefined && window.top?.document) window.top.document.title = previousTopTitle; } catch { /* noop */ }
+        }
+        if (removeAfter) {
+          try { iframe.remove(); } catch { /* noop */ }
+        }
+      };
+      // `afterprint` dispara ao fechar/salvar o diálogo (Chrome, Firefox, Edge).
+      const onAfter = () => {
+        const elapsed = Date.now() - printedAt;
+        // Em alguns iframes/sandboxes o afterprint dispara cedo demais. Nesse
+        // caso mantemos o título por mais tempo para cobrir o fluxo "Salvar PDF".
+        window.setTimeout(cleanup, elapsed < 2_000 ? 60_000 : 300);
+      };
+      const onFocus = () => {
+        const elapsed = Date.now() - printedAt;
+        if (elapsed >= 2_000) window.setTimeout(cleanup, 800);
+      };
+      window.addEventListener("afterprint", onAfter);
+      window.addEventListener("focus", onFocus);
+      try { iframe.contentWindow?.addEventListener?.("afterprint", onAfter); } catch { /* noop */ }
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        cleanup();
       }
-      if (removeAfter) {
-        try { iframe.remove(); } catch { /* noop */ }
-      }
-    };
-    // `afterprint` dispara ao fechar/salvar o diálogo (Chrome, Firefox, Edge).
-    const onAfter = () => {
-      const elapsed = Date.now() - printedAt;
-      // Em alguns iframes/sandboxes o afterprint dispara cedo demais. Nesse
-      // caso mantemos o título por mais tempo para cobrir o fluxo "Salvar PDF".
-      window.setTimeout(cleanup, elapsed < 2_000 ? 60_000 : 300);
-    };
-    const onFocus = () => {
-      const elapsed = Date.now() - printedAt;
-      if (elapsed >= 2_000) window.setTimeout(cleanup, 800);
-    };
-    window.addEventListener("afterprint", onAfter);
-    window.addEventListener("focus", onFocus);
-    try { iframe.contentWindow?.addEventListener?.("afterprint", onAfter); } catch { /* noop */ }
-    try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    } catch {
-      cleanup();
-    }
-    // fallback caso afterprint/focus não disparem em algum ambiente (sandbox/preview)
-    window.setTimeout(cleanup, 5 * 60_000);
+      // fallback caso afterprint/focus não disparem em algum ambiente (sandbox/preview)
+      window.setTimeout(cleanup, 5 * 60_000);
+    });
   };
 
   // Algumas engines renderizam imediatamente; outras precisam de onload.
