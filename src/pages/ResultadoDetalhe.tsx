@@ -2066,13 +2066,30 @@ const ResultadoDetalhe = () => {
                           const isObservation = /^\s*observa[cç][aã]o/i.test(param.nome) || (param.tipo === "Texto" && !hasRefMain);
                           return (
                             <Fragment key={rIdx}>
-                              {param.headerAntes && !/valor(es)?\s+de\s+refer[êe]ncia/i.test(param.headerAntes) && (
-                                <tr>
-                                  <td colSpan={hasAnyAbs ? 5 : 4} className="pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
-                                    {param.headerAntes}
-                                  </td>
-                                </tr>
-                              )}
+                              {param.headerAntes && (() => {
+                                // Cabeçalhos válidos são títulos curtos de seção
+                                // (ex.: "ÍNDICES HEMATIMÉTRICOS"). Filtramos texto
+                                // que, na verdade, é vazamento de uma linha do
+                                // bloco de Valor de Referência do layout
+                                // (ex.: "6...........: 1.080 a 56.500 mUI/mL",
+                                // "Idade gestacional (semanas)", "Valores de Referência").
+                                const h = param.headerAntes.trim();
+                                const isVRLeak =
+                                  /valor(es)?\s+de\s+refer[êe]ncia/i.test(h) ||
+                                  /idade\s+gestacional/i.test(h) ||
+                                  /\.{3,}/.test(h) ||                      // pontilhado de tabulação
+                                  /[\d.,]+\s*a\s*[\d.,]+/i.test(h) ||      // "X a Y" (faixa)
+                                  /(mui|mg\/dl|g\/dl|ng\/ml|ui\/ml|fl|pg|%)\b/i.test(h) ||
+                                  h.length > 60;                            // títulos longos ≈ parágrafo
+                                if (isVRLeak) return null;
+                                return (
+                                  <tr>
+                                    <td colSpan={hasAnyAbs ? 5 : 4} className="pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
+                                      {h}
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
                               {isObservation ? (
                                 <tr className="group">
                                   <td className="py-0.5 pr-3 text-[13px] font-medium text-foreground align-middle">
