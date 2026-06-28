@@ -35,7 +35,7 @@ export const ParamTypedInput = ({
   computedValue,
   statusColor,
 }: {
-  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number; formatoExibicao?: "min_seg" | "hh_mm_ss" };
+  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number; formatoExibicao?: "min_seg" | "hh_mm_ss" | "seg" };
   isCritico?: boolean;
   disabled?: boolean;
   className?: string;
@@ -95,16 +95,21 @@ export const ParamTypedInput = ({
     );
   }
   if (param.tipo === "Tempo") {
-    const formato = param.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg";
+    const formato = param.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : param.formatoExibicao === "seg" ? "seg" : "min_seg";
     // Persistência canônica:
     //  • "min_seg"   → "12 min 30 s" | "12 min" | "30 s" | ""
     //  • "hh_mm_ss"  → "HH:MM:SS" (zero-padded) | ""
+    //  • "seg"       → "45 s" | ""
     const parseStored = (raw: string): { h: string; m: string; s: string } => {
       if (!raw) return { h: "", m: "", s: "" };
       if (formato === "hh_mm_ss") {
         const m = raw.match(/^(\d{1,2}):(\d{1,2}):(\d{1,2})$/);
         if (m) return { h: m[1], m: m[2], s: m[3] };
         return { h: "", m: "", s: "" };
+      }
+      if (formato === "seg") {
+        const segMatch = raw.match(/(\d+)\s*s/i);
+        return { h: "", m: "", s: segMatch?.[1] ?? "" };
       }
       const minMatch = raw.match(/(\d+)\s*min/i);
       const segMatch = raw.match(/(\d+)\s*s/i);
@@ -117,6 +122,9 @@ export const ParamTypedInput = ({
         if (!h && !m && !s) return "";
         const pad = (v: string) => (v ? v.padStart(2, "0").slice(-2) : "00");
         return `${pad(h)}:${pad(m)}:${pad(s)}`;
+      }
+      if (formato === "seg") {
+        return s ? `${parseInt(s, 10)} s` : "";
       }
       const parts: string[] = [];
       if (m) parts.push(`${parseInt(m, 10)} min`);
@@ -143,6 +151,16 @@ export const ParamTypedInput = ({
           <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.s}
             onChange={(e) => onPart("s", e.target.value)} onKeyDown={handleKeyDown}
             disabled={disabled} className={inputCls} placeholder="ss" />
+        </div>
+      );
+    }
+    if (formato === "seg") {
+      return (
+        <div className="flex items-center gap-2">
+          <input data-result-nav="true" inputMode="numeric" maxLength={5} value={cur.s}
+            onChange={(e) => onPart("s", e.target.value)} onKeyDown={handleKeyDown}
+            disabled={disabled} className={inputCls} placeholder="0" />
+          <span className="text-xs font-semibold text-muted-foreground">s</span>
         </div>
       );
     }
