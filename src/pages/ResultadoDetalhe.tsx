@@ -1036,18 +1036,59 @@ const ResultadoDetalhe = () => {
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
 
-    const autoPrint = `
+    const paginationHook = `
 <script>
   (function(){
-    function go(){ try { window.focus(); window.print(); } catch (e) {} }
-    if (document.readyState === 'complete') setTimeout(go, 50);
-    else window.addEventListener('load', function(){ setTimeout(go, 50); });
+    window.__lovableBeforePrint = async function(){
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+      await new Promise(function(resolve){ requestAnimationFrame(function(){ requestAnimationFrame(resolve); }); });
+
+      var margins = ${JSON.stringify(margins)};
+      var pageWidthMm = 210 - Number(margins.left || 0) - Number(margins.right || 0);
+      document.documentElement.style.width = pageWidthMm + 'mm';
+      document.body.style.width = pageWidthMm + 'mm';
+
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;left:-1000mm;top:0;width:100mm;height:0;overflow:hidden;';
+      document.body.appendChild(probe);
+      var pxPerMm = probe.getBoundingClientRect().width / 100;
+      probe.remove();
+      if (!pxPerMm || !isFinite(pxPerMm)) return;
+
+      var header = document.querySelector('table.laudo-a4-page > thead');
+      var headerPx = header ? header.getBoundingClientRect().height : 0;
+      var footerReservePx = 32 * pxPerMm;
+      var safeGapPx = 3 * pxPerMm;
+      var availablePx = (297 - Number(margins.top || 0) - Number(margins.bottom || 0)) * pxPerMm - headerPx - footerReservePx - safeGapPx;
+      if (!availablePx || availablePx < 200) return;
+
+      var blocks = Array.prototype.slice.call(document.querySelectorAll('#laudo-content > .exame-bloco, #laudo-content > .assinatura-bloco'));
+      var outerHeight = function(el) {
+        var rect = el.getBoundingClientRect();
+        var cs = window.getComputedStyle(el);
+        return rect.height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+      };
+
+      var used = 0;
+      blocks.forEach(function(block, index){
+        block.style.breakBefore = '';
+        block.style.pageBreakBefore = '';
+        var h = outerHeight(block);
+        if (index > 0 && used > 0 && used + h > availablePx) {
+          block.style.breakBefore = 'page';
+          block.style.pageBreakBefore = 'always';
+          used = h;
+        } else {
+          used += h;
+        }
+        if (used > availablePx && h > availablePx) used = 0;
+      });
+      document.documentElement.setAttribute('data-laudo-paginated', 'true');
+    };
   })();
 </script>`;
 
-    const injected = sanitizeHtmlForPrint(html)
-      .replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`)
-      .replace(/<\/body>/i, `${autoPrint}</body>`);
+    const injected = `${sanitizeHtmlForPrint(html)}${paginationHook}`;
     printHtmlInHiddenFrame({ html: injected, documentTitle: title });
     const t1 = performance.now();
     // eslint-disable-next-line no-console

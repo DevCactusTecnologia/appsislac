@@ -395,7 +395,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         /* REGRA: nunca quebrar um exame entre páginas — se não couber,
            empurra o bloco inteiro para a página seguinte. !important fora
            do @media print porque a impressão usa @page diretamente. */
-        .exame-bloco {
+        .exame-bloco,
+        .exame-bloco-custom {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
           display: block !important;
@@ -431,7 +432,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
         .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; margin-top: 14px !important; }
         @media print {
-          .exame-bloco, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
+          .exame-bloco, .exame-bloco-custom, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
           .exame-bloco + .exame-bloco { margin-top: 14px !important; }
           .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; }
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
