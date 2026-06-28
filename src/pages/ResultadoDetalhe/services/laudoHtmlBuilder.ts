@@ -392,8 +392,18 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           margin-top: 0 !important;
           padding-top: 0 !important;
         }
-        /* Evita quebra de exame e assinatura entre páginas. */
-        .exame-bloco { page-break-inside: avoid; break-inside: avoid; }
+        /* REGRA: nunca quebrar um exame entre páginas — se não couber,
+           empurra o bloco inteiro para a página seguinte. !important fora
+           do @media print porque a impressão usa @page diretamente. */
+        .exame-bloco {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          display: block !important;
+        }
+        /* REGRA: espaçamento consistente entre exames — o 2º exame em diante
+           ganha um respiro do bloco anterior (igual ao espaço que o 1º exame
+           recebe do cabeçalho via thead padding-bottom). */
+        .exame-bloco + .exame-bloco { margin-top: 14px !important; }
         /* Remove parágrafos vazios (deixados pelo editor CKEditor) que criavam
            grandes espaços entre o cabeçalho, o nome do exame e o resultado nos
            layouts científicos customizados. */
@@ -402,6 +412,15 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content .exame-bloco-custom p > br:only-child { display: none !important; }
         #laudo-content .exame-bloco-custom > *:first-child { margin-top: 0 !important; padding-top: 0 !important; }
         #laudo-content .exame-bloco-custom > *:last-child { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+        /* Garante que tabelas/linhas internas do layout científico também
+           não quebrem (Chrome às vezes fragmenta dentro do exame-bloco
+           quando o conteúdo é uma <table> longa). */
+        #laudo-content .exame-bloco table,
+        #laudo-content .exame-bloco tbody,
+        #laudo-content .exame-bloco tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
         /* CKEditor envolve tabelas em <figure class="table">. O navegador
            aplica margin 1em 40px por padrão a &lt;figure&gt;, o que empurra todo
            o corpo do exame ~40px à direita e desalinha do título. html2canvas
@@ -409,10 +428,11 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            figure/figcaption no laudo para preservar o alinhamento original. */
         #laudo-content figure, #laudo-content figcaption { margin: 0 !important; padding: 0 !important; }
         #laudo-content figure.table { display: block !important; width: 100% !important; max-width: 100% !important; }
-        .assinatura-bloco { page-break-inside: avoid; break-inside: avoid; }
-        .exame-bloco + .assinatura-bloco { page-break-before: avoid; break-before: avoid; }
+        .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
+        .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; margin-top: 14px !important; }
         @media print {
           .exame-bloco, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
+          .exame-bloco + .exame-bloco { margin-top: 14px !important; }
           .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; }
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
         }
