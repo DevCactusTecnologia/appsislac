@@ -23,6 +23,7 @@ import { ParamTypedInput } from "./ParamTypedInput";
 import type { Parametro } from "./types";
 import type { NivelCritico } from "@/domains/result/services/criticoChecker";
 import { toast } from "@/hooks/use-toast";
+import { getValueRangeStatus } from "@/components/ResultadoValidationBar";
 
 /** Regex que casa elementos cujo conteúdo de texto é exatamente um único placeholder. */
 const ALONE_PLACEHOLDER_RE = /^\s*##[A-Za-z0-9_+\-.]+##\s*$/;
@@ -133,14 +134,12 @@ const RefText: React.FC<{ resolved?: ResolvedRef | null }> = ({ resolved }) => {
   return <span className="text-muted-foreground italic">—</span>;
 };
 
-const FlagSymbol: React.FC<{ resolved?: ResolvedRef | null; valor: string }> = ({ resolved, valor }) => {
+const FlagSymbol: React.FC<{ resolved?: ResolvedRef | null; valor: string; unidade?: string }> = ({ resolved, valor, unidade }) => {
   if (!resolved) return null;
-  const v = parseFloat((valor || "").replace(",", "."));
-  const lo = parseFloat((resolved.refMin || "").replace(",", "."));
-  const hi = parseFloat((resolved.refMax || "").replace(",", "."));
-  if (!isFinite(v)) return null;
-  if (isFinite(lo) && v < lo) return <span className="text-status-danger font-bold ml-1">↓</span>;
-  if (isFinite(hi) && v > hi) return <span className="text-status-danger font-bold ml-1">↑</span>;
+  const status = getValueRangeStatus(valor, resolved.refMin, resolved.refMax, resolved.refUnidade || unidade);
+  if (status === "below") return <span className="text-status-danger font-bold ml-1">↓</span>;
+  if (status === "above") return <span className="text-status-danger font-bold ml-1">↑</span>;
+  if (status === "normal") return <span className="text-status-success font-bold ml-1">✓</span>;
   return null;
 };
 
@@ -246,7 +245,7 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
         if (idx != null) {
           const param = parametros[idx];
           const valor = param.tipo === "Formula" ? evaluateFormulaFor(param) : param.valor;
-          out.push(<FlagSymbol key={placeholderKey} resolved={getResolvedRef(param)} valor={valor} />);
+          out.push(<FlagSymbol key={placeholderKey} resolved={getResolvedRef(param)} valor={valor} unidade={param.unidade} />);
         }
       } else {
         const idx = paramIndexByKey.get(upKey);

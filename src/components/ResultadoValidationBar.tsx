@@ -16,7 +16,7 @@ interface ResultadoValidationBarProps {
  *   • "12 min"          → 720
  * Retorna null se não reconhecer um padrão de tempo.
  */
-const parseTimeToSeconds = (raw: string): number | null => {
+export const parseTimeToSeconds = (raw: string): number | null => {
   if (!raw) return null;
   const s = raw.trim();
   // HH:MM:SS
@@ -63,19 +63,26 @@ const unitFactorToSeconds = (unidade?: string): number => {
   const u = unidade.trim().toLowerCase();
   if (/^h(oras?)?$/.test(u)) return 3600;
   if (/^min(utos?)?$/.test(u)) return 60;
+  if (/^(s|seg|segundos?)$/.test(u)) return 1;
   return 1;
 };
 
-export const isValueInRange = (
+export type ValueRangeStatus = "normal" | "below" | "above";
+
+export const getValueRangeStatus = (
   valor: string,
   refMin: string,
   refMax: string,
   unidade?: string,
-): boolean | null => {
+): ValueRangeStatus | null => {
   const v = parseNumericValue(valor);
   if (v === null) return null;
   let min = parseRef(refMin);
   let max = parseRef(refMax);
+
+  // Campos do tipo Tempo persistem o resultado como segundos totais. Quando a
+  // faixa vem cadastrada como números puros e a unidade de referência é "min",
+  // "1 - 3 min" precisa ser comparado como 60 - 180 segundos.
   const valorEhTempo = parseTimeToSeconds(valor) !== null;
   if (valorEhTempo) {
     const f = unitFactorToSeconds(unidade);
@@ -84,12 +91,43 @@ export const isValueInRange = (
       if (max !== null && parseTimeToSeconds(refMax) === null) max = max * f;
     }
   }
-  if (min !== null && max !== null) return v >= min && v <= max;
-  if (max !== null && min === null) return v <= max;
-  if (min !== null && max === null) return v >= min;
-  if (refMin.includes("<") && max !== null) return v < max;
-  if (refMin.includes(">") && max !== null) return v > max;
+
+  const minText = refMin.trim();
+  const maxText = refMax.trim();
+  const minIsUpperLimit = /^[<≤]/.test(minText);
+  const minIsLowerLimit = /^[>≥]/.test(minText);
+  const maxIsUpperLimit = /^[<≤]/.test(maxText);
+  const maxIsLowerLimit = /^[>≥]/.test(maxText);
+
+  if (min !== null && max !== null) {
+    if (v < min) return "below";
+    if (v > max) return "above";
+    return "normal";
+  }
+
+  if (min !== null) {
+    if (minIsUpperLimit) return v <= min ? "normal" : "above";
+    if (minIsLowerLimit) return v >= min ? "normal" : "below";
+    return v >= min ? "normal" : "below";
+  }
+
+  if (max !== null) {
+    if (maxIsLowerLimit) return v >= max ? "normal" : "below";
+    if (maxIsUpperLimit) return v <= max ? "normal" : "above";
+    return v <= max ? "normal" : "above";
+  }
+
   return null;
+};
+
+export const isValueInRange = (
+  valor: string,
+  refMin: string,
+  refMax: string,
+  unidade?: string,
+): boolean | null => {
+  const status = getValueRangeStatus(valor, refMin, refMax, unidade);
+  return status === null ? null : status === "normal";
 };
 
 const ResultadoValidationBar = ({ valor, refMin, refMax }: ResultadoValidationBarProps) => {

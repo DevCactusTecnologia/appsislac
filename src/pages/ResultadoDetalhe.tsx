@@ -6,7 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
 import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
-import { isValueInRange } from "@/components/ResultadoValidationBar";
+import { getValueRangeStatus } from "@/components/ResultadoValidationBar";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import CelebracaoLiberacaoDialog from "@/components/CelebracaoLiberacaoDialog";
 import AuditoriaPanel from "@/components/AuditoriaPanel";
@@ -1337,13 +1337,11 @@ const ResultadoDetalhe = () => {
                         ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax, param.unidade) : null;
-                      const isOutOfRange = inRange === false;
-                      const v = parseFloat((displayValor || "").replace(",", "."));
-                      const lo = parseFloat((ref.refMin || "").replace(",", "."));
-                      const hi = parseFloat((ref.refMax || "").replace(",", "."));
-                      const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
-                      const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
+                      const rangeStatus = displayValor ? getValueRangeStatus(displayValor, ref.refMin, ref.refMax, ref.refUnidade || param.unidade) : null;
+                      const inRange = rangeStatus === null ? null : rangeStatus === "normal";
+                      const isOutOfRange = rangeStatus === "below" || rangeStatus === "above";
+                      const below = rangeStatus === "below";
+                      const above = rangeStatus === "above";
 
 
                       // Texto livre (observação, etc.) — não tem referência e
@@ -1909,13 +1907,11 @@ const ResultadoDetalhe = () => {
                         ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax, param.unidade) : null;
-                      const isOutOfRange = inRange === false;
-                      const v = parseFloat((displayValor || "").replace(",", "."));
-                      const lo = parseFloat((ref.refMin || "").replace(",", "."));
-                      const hi = parseFloat((ref.refMax || "").replace(",", "."));
-                      const below = isOutOfRange && isFinite(v) && isFinite(lo) && v < lo;
-                      const above = isOutOfRange && isFinite(v) && isFinite(hi) && v > hi;
+                      const rangeStatus = displayValor ? getValueRangeStatus(displayValor, ref.refMin, ref.refMax, ref.refUnidade || param.unidade) : null;
+                      const inRange = rangeStatus === null ? null : rangeStatus === "normal";
+                      const isOutOfRange = rangeStatus === "below" || rangeStatus === "above";
+                      const below = rangeStatus === "below";
+                      const above = rangeStatus === "above";
                       const nivelCritico = avaliarNivelCritico(selectedExame.nome, param.nome, displayValor);
                       const isCriticoParam = nivelCritico !== "normal";
                       // Status semântico do contador da série branca (CONT):

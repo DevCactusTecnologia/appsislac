@@ -472,7 +472,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           // Fallback: tabela padrão de parâmetros.
           const resolvedParams = exame.parametros.map((p) => {
             const ref = getResolvedRef(exame.nome, p);
-            const outOfRange = p.valor && ref.refMin && ref.refMax && !isValueInRange(p.valor, ref.refMin, ref.refMax, p.unidade);
+            const outOfRange = p.valor && ref.refMin && ref.refMax && !isValueInRange(p.valor, ref.refMin, ref.refMax, ref.refUnidade || p.unidade);
             return { ...p, ...ref, outOfRange };
           });
           return `
