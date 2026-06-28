@@ -155,10 +155,33 @@ export const ParamTypedInput = ({
       );
     }
     if (formato === "seg") {
+      // Máscara estilo calculadora com 1 casa decimal:
+      //  • 1–2 dígitos → inteiro ("36")
+      //  • 3+ dígitos  → último vira decimal ("365" → "36,5")
+      const segMatch = param.valor.match(/(\d+(?:[.,]\d+)?)\s*s/i);
+      const rawNum = segMatch?.[1]?.replace(",", ".") ?? "";
+      // Reconstrói os dígitos sem separador para servir como "buffer" da máscara
+      let digits = "";
+      if (rawNum) {
+        const [intP, decP = ""] = rawNum.split(".");
+        digits = (intP + decP.slice(0, 1)).replace(/^0+(?=\d)/, "");
+      }
+      const display = digits.length <= 2
+        ? digits
+        : `${digits.slice(0, -1).replace(/^0+(?=\d)/, "") || "0"},${digits.slice(-1)}`;
+      const onSeg = (v: string) => {
+        const d = v.replace(/\D/g, "").slice(0, 5);
+        if (!d) { onChange(""); return; }
+        if (d.length <= 2) onChange(`${parseInt(d, 10)} s`);
+        else {
+          const intPart = parseInt(d.slice(0, -1), 10);
+          onChange(`${intPart},${d.slice(-1)} s`);
+        }
+      };
       return (
         <div className="flex items-center gap-2">
-          <input data-result-nav="true" inputMode="numeric" maxLength={5} value={cur.s}
-            onChange={(e) => onPart("s", e.target.value)} onKeyDown={handleKeyDown}
+          <input data-result-nav="true" inputMode="decimal" maxLength={6} value={display}
+            onChange={(e) => onSeg(e.target.value)} onKeyDown={handleKeyDown}
             disabled={disabled} className={inputCls} placeholder="0" />
           <span className="text-xs font-semibold text-muted-foreground">s</span>
         </div>
