@@ -201,7 +201,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
     // Faixa do cabeçalho do exame (nome + data coleta) com fundo claro —
     // SÓ é aplicada no fallback. Layouts científicos customizados já
     // possuem cabeçalho próprio com nome/data; prepender aqui duplicaria.
-    const _dataColetaRightMm = Math.max(10, Math.max(m.right, 15) - m.right + 10);
+    const _dataColetaRightMm = 5;
     const exameHeaderBand = `<table class="exame-header-band" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background-color:#f7f8f9 !important;margin:0 0 8px 0;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;table-layout:fixed;"><tr><td width="60%" style="width:60%;padding:8px 10px;vertical-align:middle;text-align:left;font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:1;">${exame.nome}</td><td width="40%" style="width:40%;padding:0 ${_dataColetaRightMm}mm 0 10px;vertical-align:middle;text-align:right;white-space:nowrap;line-height:1.4;">${dataColetaHtml}</td></tr></table>`;
 
     // Se houver layout cadastrado para este exame, usa-o (sem prepender faixa).
@@ -629,18 +629,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
               var r = el.getBoundingClientRect().right;
               if (r > maxRight) maxRight = r;
             });
-            // Data Coleta — célula direita da faixa do exame
-            document.querySelectorAll('.exame-header-band tr > td:last-child').forEach(function(el){
-              var cur = el.getBoundingClientRect().right;
-              var diff = cur - maxRight;
-              if (diff > 0.5) {
-                var prev = parseFloat(getComputedStyle(el).paddingRight) || 0;
-                el.style.paddingRight = (prev + diff) + 'px';
-              } else if (diff < -0.5) {
-                var prev2 = parseFloat(getComputedStyle(el).paddingRight) || 0;
-                el.style.paddingRight = Math.max(0, prev2 + diff) + 'px';
-              }
-            });
+            // Data Coleta — recuo fixo de 5mm já aplicado inline; nada a fazer.
             // Assinatura "CONFERIDO E LIBERADO POR"
             document.querySelectorAll('.assinatura-liberado-linha').forEach(function(el){
               var cur = el.getBoundingClientRect().right;
