@@ -170,7 +170,7 @@ export const ParamTypedInput = ({
         ? digits
         : `${digits.slice(0, -1).replace(/^0+(?=\d)/, "") || "0"},${digits.slice(-1)}`;
       const onSeg = (v: string) => {
-        const d = v.replace(/\D/g, "").slice(0, 5);
+        const d = v.replace(/\D/g, "").slice(0, 3);
         if (!d) { onChange(""); return; }
         if (d.length <= 2) onChange(`${parseInt(d, 10)} s`);
         else {
@@ -180,7 +180,7 @@ export const ParamTypedInput = ({
       };
       return (
         <div className="flex items-center gap-2">
-          <input data-result-nav="true" inputMode="decimal" maxLength={6} value={display}
+          <input data-result-nav="true" inputMode="decimal" maxLength={4} value={display}
             onChange={(e) => onSeg(e.target.value)} onKeyDown={handleKeyDown}
             disabled={disabled} className={inputCls} placeholder="0" />
           <span className="text-xs font-semibold text-muted-foreground">s</span>
