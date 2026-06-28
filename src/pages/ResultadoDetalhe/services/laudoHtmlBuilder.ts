@@ -527,8 +527,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
         #laudo-content th, #laudo-content td { text-align: left !important; vertical-align: top !important; }
-        /* Espaçamento entre linhas padrão. */
-        #laudo-content, #laudo-content * { line-height: 1.4 !important; }
+        /* Espaçamento entre linhas DEFAULT (sem !important) — permite que
+           o Layout Científico do exame sobrescreva com line-height próprio
+           (ex.: Simples 1.0, 1.15, 1.5) definido inline no editor. */
+        #laudo-content, #laudo-content * { line-height: 1.4; }
         /* Cor preta forçada em todos os textos do laudo, cabeçalho e rodapé. */
         #laudo-content, #laudo-content *,
         .laudo-cabecalho-wrap, .laudo-cabecalho-wrap *,
