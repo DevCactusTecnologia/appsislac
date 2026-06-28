@@ -201,6 +201,16 @@ export const ParamTypedInput = ({
         </div>
       );
     }
+    if (formato === "min") {
+      return (
+        <div className="flex items-center gap-2">
+          <input data-result-nav="true" inputMode="numeric" maxLength={2} value={cur.m}
+            onChange={(e) => onPart("m", e.target.value)} onKeyDown={handleKeyDown}
+            disabled={disabled} className={inputCls} placeholder="0" />
+          <span className="text-xs font-semibold text-muted-foreground">min</span>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-2">
         <input data-result-nav="true" inputMode="numeric" maxLength={3} value={cur.m}
