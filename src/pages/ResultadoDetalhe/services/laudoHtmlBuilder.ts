@@ -250,7 +250,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
             ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
           </div>
         </div>` };
-  const pages = paginateLaudoBlocks([...exameBlocks, assinaturaBlock]);
+  // Renderiza UMA única tabela com todos os blocos. O Chrome pagina o
+  // <tbody> naturalmente respeitando `break-inside: avoid` em cada
+  // `.exame-bloco`, evitando espaços vazios quando o próximo exame caberia
+  // ainda na página atual. A heurística server-side anterior causava
+  // quebras prematuras (ex.: SÓDIO empurrado para nova página enquanto
+  // sobrava espaço logo abaixo de SÍFILIS).
+  const pages: LaudoHtmlBlock[][] = [[...exameBlocks, assinaturaBlock]];
   const renderPage = (blocks: LaudoHtmlBlock[], index: number) => `
       <table class="laudo-a4-page${index > 0 ? " laudo-a4-page-break" : ""}">
         <thead><tr><td>
