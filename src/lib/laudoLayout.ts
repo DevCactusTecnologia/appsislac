@@ -268,11 +268,11 @@ export async function renderExameComLayout(
   // Espaçamentos: 0px entre cabeçalho e nome do exame (o nome encosta no
   // cabeçalho via first-child margin-top:0) e 12px entre o nome do exame e o
   // início do layout científico (corpo do resultado).
-  // Offset à direita espelhando o cálculo usado pela linha "CONFERIDO E
-  // LIBERADO POR" no laudoHtmlBuilder — garante alinhamento idêntico entre
-  // a data da coleta (header do exame) e a assinatura do analista (rodapé).
-  const _assinaturaRightOffsetMm = Math.max(0, Math.max(margins.right, 15) - margins.right);
-  const tituloHtml = `<table class="exame-header-band" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 12px 0;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;table-layout:fixed;"><tr><td width="60%" style="width:60%;background-color:#f7f8f9 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;padding:10px 10px;vertical-align:middle;text-align:left;font-size:10pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:1.2;">${exameNome}</td><td width="40%" style="width:40%;background-color:#f7f8f9 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;padding:0 ${_assinaturaRightOffsetMm}mm 0 10px;vertical-align:middle;text-align:right;white-space:nowrap;line-height:1.4;">${dataColetaHtml}</td></tr></table>`;
+  // Recuo direito da "Data Coleta" — alinha com a coluna direita do
+  // cabeçalho institucional (linha vermelha do bloco Protocolo/Sexo/etc.).
+  // Mínimo de 10mm, somando offset extra caso a margem direita seja menor que 15mm.
+  const _dataColetaRightMm = Math.max(10, Math.max(margins.right, 15) - margins.right + 10);
+  const tituloHtml = `<table class="exame-header-band" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 12px 0;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;table-layout:fixed;"><tr><td width="60%" style="width:60%;background-color:#f7f8f9 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;padding:10px 10px;vertical-align:middle;text-align:left;font-size:10pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:1.2;">${exameNome}</td><td width="40%" style="width:40%;background-color:#f7f8f9 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;padding:0 ${_dataColetaRightMm}mm 0 10px;vertical-align:middle;text-align:right;white-space:nowrap;line-height:1.4;">${dataColetaHtml}</td></tr></table>`;
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
