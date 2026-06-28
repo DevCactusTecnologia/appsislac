@@ -93,21 +93,38 @@ export async function _initDocumentoTemplatesStore(): Promise<void> {
   if (_initPromise) return _initPromise;
   _initStarted = true;
   _initPromise = (async () => {
-  // Select explícito: lista todos os campos consumidos por fromRow().
-  // Mantém payload previsível e evita trafegar colunas futuras não usadas.
-  const { data, error } = await supabase
-    .from("documento_templates")
-    .select(
-      "id, tipo, nome, descricao, conteudo, placeholders_usados, config, ativo, padrao, criado_por, created_at, updated_at, tenant_id"
-    )
-    .order("tipo")
-    .order("nome");
-  if (error) {
-    showError(error, { scope: "documentoTemplatesStore.init", silent: true });
-    return;
-  }
-  _templates = ((data ?? []) as DocumentoTemplateRow[]).map(fromRow);
-  notify();
+    // Retry com backoff: o conteudo dos templates (cabeçalho institucional)
+    // pode passar de 150KB e ocasionalmente falha com "Failed to fetch"
+    // em redes instáveis. Sem o cabeçalho carregado o laudo cai no
+    // fallback "LAUDO DE EXAMES LABORATORIAIS" — comportamento que o
+    // usuário interpreta (com razão) como cabeçalho destruído.
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from("documento_templates")
+          .select(
+            "id, tipo, nome, descricao, conteudo, placeholders_usados, config, ativo, padrao, criado_por, created_at, updated_at, tenant_id"
+          )
+          .order("tipo")
+          .order("nome");
+        if (error) throw error;
+        _templates = ((data ?? []) as DocumentoTemplateRow[]).map(fromRow);
+        notify();
+        return;
+      } catch (e) {
+        lastError = e;
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 400 * attempt));
+        }
+      }
+    }
+    // Falha persistente: solta o lock para que próxima chamada possa
+    // re-tentar (ex.: ao clicar em Imprimir o caller faz ensureLoaded).
+    _initStarted = false;
+    _initPromise = null;
+    showError(lastError, { scope: "documentoTemplatesStore.init", silent: true });
   })();
   return _initPromise;
 }
