@@ -670,18 +670,20 @@ const ParametroBloco = ({
     [refs, chave],
   );
 
-  // (linha "Padrão" foi removida da UI — só variações)
-  // Variações: TODAS as linhas que não são padrão (pode haver várias por categoria,
-  // pois o usuário define sexo+idade livres em cada linha).
-  const variacoes = meusRefs
-    .filter((r) => r.categoria && r.categoria !== "padrao")
+  // Regras cadastradas: exibe também a linha "Padrão". Ela é essencial para exames
+  // qualitativos/descritivos, onde a referência costuma ser uma descrição única.
+  const regrasOrdenadas = meusRefs
     .sort((a, b) => {
-      const pa = CATEGORIA_META[a.categoria as CategoriaVR].prioridade;
-      const pb = CATEGORIA_META[b.categoria as CategoriaVR].prioridade;
+      const catA = (a.categoria as CategoriaVR) ?? "custom";
+      const catB = (b.categoria as CategoriaVR) ?? "custom";
+      if (catA === "padrao" && catB !== "padrao") return -1;
+      if (catB === "padrao" && catA !== "padrao") return 1;
+      const pa = CATEGORIA_META[catA].prioridade;
+      const pb = CATEGORIA_META[catB].prioridade;
       if (pb !== pa) return pb - pa;
       return a.id - b.id;
     })
-    .map((vr) => ({ cat: vr.categoria as CategoriaVR, vr }));
+    .map((vr) => ({ cat: ((vr.categoria as CategoriaVR) ?? "custom"), vr }));
 
   // O dropdown sempre oferece TODOS os presets — é só atalho para criar nova linha.
   const variacoesDisponiveis = ORDEM_VARIACOES;
@@ -713,10 +715,8 @@ const ParametroBloco = ({
     onMutate();
   };
 
-
-  // Apenas variações (sem linha "Padrão"). Usuário define sexo+idade em cada linha.
   const linhas: Array<{ key: string; cat: CategoriaVR; vr: ValorReferencia | null }> =
-    variacoes.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr }));
+    regrasOrdenadas.map((v) => ({ key: `vr-${v.vr.id}`, cat: v.cat, vr: v.vr }));
 
   return (
     <section className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
