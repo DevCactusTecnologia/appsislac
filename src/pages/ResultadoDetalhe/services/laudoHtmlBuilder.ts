@@ -198,9 +198,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
       : "";
 
+    // Faixa do cabeçalho do exame (nome + data coleta) com fundo claro,
+    // aplicada uniformemente a TODOS os exames — custom layout ou fallback.
+    const exameHeaderBand = `<div class="exame-header-band" style="background:#eef0f4;padding:5px 10px;margin:0 0 8px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;">${exame.nome}</div>${dataColetaHtml}</div>`;
+
     // Se houver layout cadastrado para este exame, usa-o.
     const custom = customByExame?.[exame.id];
-    if (custom) return { kind: "exame", html: `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${custom}${regFooter}</div>` };
+    if (custom) return { kind: "exame", html: `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${exameHeaderBand}${custom}${regFooter}</div>` };
 
     // Fallback: tabela padrão de parâmetros.
     const resolvedParams = exame.parametros.map((p) => {
@@ -210,7 +214,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
     });
     return { kind: "exame", html: `
             <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;"><div style="font-size:12pt;font-weight:700;color:#000000;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>${dataColetaHtml}</div>
+              ${exameHeaderBand}
               <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:Courier,'Courier New',monospace;">
 
                 <thead><tr>
@@ -246,7 +250,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
             ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
           </div>
         </div>` };
-  const pages = paginateLaudoBlocks([...exameBlocks, assinaturaBlock]);
+  // Renderiza UMA única tabela com todos os blocos. O Chrome pagina o
+  // <tbody> naturalmente respeitando `break-inside: avoid` em cada
+  // `.exame-bloco`, evitando espaços vazios quando o próximo exame caberia
+  // ainda na página atual. A heurística server-side anterior causava
+  // quebras prematuras (ex.: SÓDIO empurrado para nova página enquanto
+  // sobrava espaço logo abaixo de SÍFILIS).
+  const pages: LaudoHtmlBlock[][] = [[...exameBlocks, assinaturaBlock]];
   const renderPage = (blocks: LaudoHtmlBlock[], index: number) => `
       <table class="laudo-a4-page${index > 0 ? " laudo-a4-page-break" : ""}">
         <thead><tr><td>
@@ -517,8 +527,10 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
         #laudo-content th, #laudo-content td { text-align: left !important; vertical-align: top !important; }
-        /* Espaçamento entre linhas padrão. */
-        #laudo-content, #laudo-content * { line-height: 1.4 !important; }
+        /* Espaçamento entre linhas DEFAULT (sem !important) — permite que
+           o Layout Científico do exame sobrescreva com line-height próprio
+           (ex.: Simples 1.0, 1.15, 1.5) definido inline no editor. */
+        #laudo-content, #laudo-content * { line-height: 1.4; }
         /* Cor preta forçada em todos os textos do laudo, cabeçalho e rodapé. */
         #laudo-content, #laudo-content *,
         .laudo-cabecalho-wrap, .laudo-cabecalho-wrap *,
