@@ -18,6 +18,54 @@ import { getLabConfig } from "@/data/labConfigStore";
 import { buildWatermarkCss } from "@/lib/watermark";
 import type { Exame, Paciente, Parametro } from "../types";
 
+type LaudoHtmlBlock = { kind: "exame" | "assinatura"; html: string };
+
+const stripHtmlTags = (html: string): string =>
+  html
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const estimateLaudoBlockUnits = (blockHtml: string): number => {
+  const text = stripHtmlTags(blockHtml);
+  const explicitBreaks = (blockHtml.match(/<br\s*\/?\s*>/gi) || []).length;
+  const tableRows = (blockHtml.match(/<tr\b/gi) || []).length;
+  const blockTags = (blockHtml.match(/<(?:p|div|li|h[1-6]|table|figure)\b/gi) || []).length;
+  const visualLines = Math.ceil(text.length / 112);
+  return Math.max(3, visualLines + explicitBreaks + tableRows * 1.25 + blockTags * 0.45 + 2);
+};
+
+const paginateLaudoBlocks = (blocks: LaudoHtmlBlock[]): LaudoHtmlBlock[][] => {
+  const pages: LaudoHtmlBlock[][] = [];
+  let current: LaudoHtmlBlock[] = [];
+  let used = 0;
+  // Unidade heurística calibrada para A4 com cabeçalho institucional + rodapé fixo.
+  // O hook no iframe ainda recalcula pela altura real; esta paginação server-side
+  // garante o comportamento mesmo quando o navegador ignora break-inside dentro de table.
+  const maxUnits = 58;
+  for (const block of blocks) {
+    const units = block.kind === "assinatura" ? 10 : estimateLaudoBlockUnits(block.html);
+    if (current.length > 0 && used + units > maxUnits) {
+      pages.push(current);
+      current = [];
+      used = 0;
+    }
+    current.push(block);
+    used += units;
+    if (units > maxUnits) {
+      pages.push(current);
+      current = [];
+      used = 0;
+    }
+  }
+  if (current.length) pages.push(current);
+  return pages.length ? pages : [[]];
+};
+
 export interface AnalistaAtual {
   nome: string;
   iniciais: string;
@@ -122,6 +170,104 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       dataFinalizacao: new Date().toLocaleDateString("pt-BR"),
     },
   });
+  const exameBlocks: LaudoHtmlBlock[] = printable.map((exame) => {
+    // Snapshot regulatório (metodologia/unidade) — exibido de forma discreta
+    // abaixo do bloco do exame, respeitando flags do catálogo.
+    const reg = resolveResultadoRegulatorio({
+      exameNome: exame.nome,
+      metodologiaSnapshot: exame.metodologiaSnapshot,
+      unidadeSnapshot: exame.unidadeSnapshot,
+    });
+    const regFooter = renderRegulatorioFooterHtml(reg);
+
+    // "Data Coleta: DD/MM/AAAA às HH:MM:SS" à direita do nome do exame —
+    // espelha o padrão Laravel/LabMedCenter. Fallback: dataCadastro do
+    // atendimento quando não houver carimbo de coleta/análise.
+    const isoColeta = exame.dataColetaISO || exame.dataAnaliseISO || null;
+    let dataColetaLabel = "";
+    if (isoColeta) {
+      const d = new Date(isoColeta);
+      if (!Number.isNaN(d.getTime())) {
+        dataColetaLabel = `Data Coleta: ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", { hour12: false })}`;
+      }
+    }
+    if (!dataColetaLabel && paciente.dataCadastro) {
+      dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
+    }
+    const dataColetaHtml = dataColetaLabel
+      ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
+      : "";
+
+    // Se houver layout cadastrado para este exame, usa-o.
+    const custom = customByExame?.[exame.id];
+    if (custom) return { kind: "exame", html: `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${custom}${regFooter}</div>` };
+
+    // Fallback: tabela padrão de parâmetros.
+    const resolvedParams = exame.parametros.map((p) => {
+      const ref = getResolvedRef(exame.nome, p);
+      const outOfRange = p.valor && ref.refMin && ref.refMax && !isValueInRange(p.valor, ref.refMin, ref.refMax, ref.refUnidade || p.unidade);
+      return { ...p, ...ref, outOfRange };
+    });
+    return { kind: "exame", html: `
+            <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;"><div style="font-size:12pt;font-weight:700;color:#000000;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>${dataColetaHtml}</div>
+              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:Courier,'Courier New',monospace;">
+
+                <thead><tr>
+                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
+                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Resultado</th>
+                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Unidade</th>
+                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Referência</th>
+                </tr></thead>
+                <tbody>
+                  ${resolvedParams.map((p) => `
+                    <tr>
+                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.nome}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;${p.outOfRange ? 'color:#dc2626;font-weight:600;' : ''}">${(p.tipo === "Select" ? (p.valor || "").toUpperCase() : p.valor) || "—"}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.unidade}</td>
+                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.refMin && p.refMax ? `${p.refMin} - ${p.refMax} ${p.refUnidade}` : "—"}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+              ${regFooter}
+            </div>
+          ` };
+  });
+  const assinaturaBlock: LaudoHtmlBlock = { kind: "assinatura", html: `<div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
+          <p class="assinatura-liberado-linha" style="font-size:6pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.4;"><span class="assinatura-liberado-prefixo" style="font-size:6pt;">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome" style="font-size:6pt;">${(analistaAtual.nome || "").toUpperCase()}</span></p>
+          <div style="height:28px;"></div>
+          <div style="text-align:center;color:#000;line-height:1.6;">
+            ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
+              ? `<img src="${assinaturaLaudo.url}" alt="Assinatura" style="max-height:60px;max-width:240px;object-fit:contain;margin:0 auto 2px;display:block;" />`
+              : ``}
+            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;line-height:1.6;">${(analistaAtual.nome || "").toUpperCase()}</p>
+            <p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">Responsável Técnico</p>
+            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
+          </div>
+        </div>` };
+  const pages = paginateLaudoBlocks([...exameBlocks, assinaturaBlock]);
+  const renderPage = (blocks: LaudoHtmlBlock[], index: number) => `
+      <table class="laudo-a4-page${index > 0 ? " laudo-a4-page-break" : ""}">
+        <thead><tr><td>
+          <div class="laudo-a4-cabecalho">
+            ${cabecalhoPadraoTrimmed
+              ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadraoTrimmed}</div>`
+              : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
+                  <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
+                  <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
+                  ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
+                </div>`}
+          </div>
+        </td></tr></thead>
+        <tbody><tr><td>
+        <div class="laudo-a4-corpo">
+          <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
+            ${blocks.map((b) => b.html).join("")}
+          </div>
+        </div>
+        </td></tr></tbody>
+      </table>`;
   return `
       <style>
         /* Usamos a fonte "Courier" nativa (base PDF Type 1) para o corpo dos
@@ -405,6 +551,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            ganha um respiro do bloco anterior (igual ao espaço que o 1º exame
            recebe do cabeçalho via thead padding-bottom). */
         #laudo-content > .exame-bloco + .exame-bloco { padding-top: 14px !important; }
+        .laudo-a4-page-break { page-break-before: always !important; break-before: page !important; }
         .laudo-page-manual { page-break-inside: avoid !important; break-inside: avoid !important; }
         /* Remove parágrafos vazios (deixados pelo editor CKEditor) que criavam
            grandes espaços entre o cabeçalho, o nome do exame e o resultado nos
@@ -435,6 +582,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         @media print {
           .exame-bloco, .exame-bloco-custom, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
           #laudo-content > .exame-bloco + .exame-bloco { padding-top: 14px !important; }
+          .laudo-a4-page-break { page-break-before: always !important; break-before: page !important; }
           .laudo-page-manual { page-break-inside: avoid !important; break-inside: avoid !important; }
           .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; }
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
@@ -443,102 +591,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         ${buildWatermarkCss(getLabConfig().watermark, { target: "body" })}
       </style>
 
-      <table class="laudo-a4-page">
-        <thead><tr><td>
-          <div class="laudo-a4-cabecalho">
-            ${cabecalhoPadraoTrimmed
-              ? `<div class="laudo-cabecalho-wrap">${cabecalhoPadraoTrimmed}</div>`
-              : `<div style="text-align:center;border-bottom:2px solid #3b3b98;padding-bottom:8px;">
-                  <h1 style="font-size:14pt;color:#3b3b98;margin:0 0 4px;">LAUDO DE EXAMES LABORATORIAIS</h1>
-                  <p style="font-size:9pt;color:#666;margin:0;">Protocolo: ${paciente.protocolo} | Data: ${paciente.dataCadastro}</p>
-                  ${solicitanteLabel ? `<p style="font-size:9pt;color:#3b3b98;margin:4px 0 0;font-weight:600;">Solicitante: ${solicitanteLabel}</p>` : ""}
-                </div>`}
-          </div>
-        </td></tr></thead>
-        <tbody><tr><td>
-        <div class="laudo-a4-corpo">
-          <div id="laudo-content" style="font-family:Helvetica,Arial,sans-serif;color:#1a1a2e;font-size:12px;">
-
-
-        ${printable.map((exame) => {
-          // Snapshot regulatório (metodologia/unidade) — exibido de forma discreta
-          // abaixo do bloco do exame, respeitando flags do catálogo.
-          const reg = resolveResultadoRegulatorio({
-            exameNome: exame.nome,
-            metodologiaSnapshot: exame.metodologiaSnapshot,
-            unidadeSnapshot: exame.unidadeSnapshot,
-          });
-          const regFooter = renderRegulatorioFooterHtml(reg);
-
-          // "Data Coleta: DD/MM/AAAA às HH:MM:SS" à direita do nome do exame —
-          // espelha o padrão Laravel/LabMedCenter. Fallback: dataCadastro do
-          // atendimento quando não houver carimbo de coleta/análise.
-          const isoColeta = exame.dataColetaISO || exame.dataAnaliseISO || null;
-          let dataColetaLabel = "";
-          if (isoColeta) {
-            const d = new Date(isoColeta);
-            if (!Number.isNaN(d.getTime())) {
-              dataColetaLabel = `Data Coleta: ${d.toLocaleDateString("pt-BR")} às ${d.toLocaleTimeString("pt-BR", { hour12: false })}`;
-            }
-          }
-          if (!dataColetaLabel && paciente.dataCadastro) {
-            dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
-          }
-          const dataColetaHtml = dataColetaLabel
-            ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
-            : "";
-
-          // Se houver layout cadastrado para este exame, usa-o.
-          const custom = customByExame?.[exame.id];
-          if (custom) return `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${custom}${regFooter}</div>`;
-
-          // Fallback: tabela padrão de parâmetros.
-          const resolvedParams = exame.parametros.map((p) => {
-            const ref = getResolvedRef(exame.nome, p);
-            const outOfRange = p.valor && ref.refMin && ref.refMax && !isValueInRange(p.valor, ref.refMin, ref.refMax, ref.refUnidade || p.unidade);
-            return { ...p, ...ref, outOfRange };
-          });
-          return `
-            <div class="exame-bloco" style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding-bottom:0;margin-bottom:2px;font-family:Helvetica,Arial,sans-serif;"><div style="font-size:12pt;font-weight:700;color:#000000;">${exame.nome} <span style="font-size:12pt;font-weight:400;color:#888;">(${exame.material})</span></div>${dataColetaHtml}</div>
-              <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:Courier,'Courier New',monospace;">
-
-                <thead><tr>
-                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Parâmetro</th>
-                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Resultado</th>
-                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Unidade</th>
-                  <th style="background:#f0f0f8;text-align:left;padding:6px 8px;font-size:9pt;text-transform:uppercase;color:#555;border-bottom:1px solid #ddd;font-family:Helvetica,Arial,sans-serif;">Referência</th>
-                </tr></thead>
-                <tbody>
-                  ${resolvedParams.map((p) => `
-                    <tr>
-                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.nome}</td>
-                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;${p.outOfRange ? 'color:#dc2626;font-weight:600;' : ''}">${(p.tipo === "Select" ? (p.valor || "").toUpperCase() : p.valor) || "—"}</td>
-                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.unidade}</td>
-                      <td style="padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;">${p.refMin && p.refMax ? `${p.refMin} - ${p.refMax} ${p.refUnidade}` : "—"}</td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-              ${regFooter}
-            </div>
-          `;
-        }).join("")}
-        <div class="assinatura-bloco" style="margin-top:18px;page-break-inside:avoid;break-inside:avoid;font-family:Helvetica,Arial,sans-serif;color:#000;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;">
-          <p class="assinatura-liberado-linha" style="font-size:6pt;color:#000;display:block;width:${assinaturaLineWidthMm}mm;max-width:calc(100% - ${assinaturaRightOffsetMm}mm);min-width:0;text-align:right;box-sizing:border-box;padding:0;margin:0 ${assinaturaRightOffsetMm}mm 0 auto;overflow:visible;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.4;"><span class="assinatura-liberado-prefixo" style="font-size:6pt;">CONFERIDO E LIBERADO POR: </span><span class="assinatura-liberado-nome" style="font-size:6pt;">${(analistaAtual.nome || "").toUpperCase()}</span></p>
-          <div style="height:28px;"></div>
-          <div style="text-align:center;color:#000;line-height:1.6;">
-            ${assinaturaLaudo.tipo === "imagem" && assinaturaLaudo.url
-              ? `<img src="${assinaturaLaudo.url}" alt="Assinatura" style="max-height:60px;max-width:240px;object-fit:contain;margin:0 auto 2px;display:block;" />`
-              : ``}
-            <p style="font-size:10pt;margin:0;font-weight:700;color:#000;line-height:1.6;">${(analistaAtual.nome || "").toUpperCase()}</p>
-            <p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">Responsável Técnico</p>
-            ${assinaturaLaudo.conselho ? `<p style="font-size:9pt;margin:0;color:#000;line-height:1.6;">${assinaturaLaudo.conselho}</p>` : ""}
-          </div>
-        </div>
-          </div>
-        </td></tr></tbody>
-      </table>
+      ${pages.map((blocks, index) => renderPage(blocks, index)).join("")}
       <div class="laudo-a4-rodape-fixed">
         ${rodapePadrao
           ? `<div class="laudo-rodape-wrap">${rodapePadrao}</div>`
