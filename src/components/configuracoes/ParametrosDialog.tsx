@@ -573,6 +573,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
                         { v: "min_seg" as const, lbl: "Min / Seg", sample: "12 min 30 s" },
                         { v: "hh_mm_ss" as const, lbl: "HH:MM:SS", sample: "00:12:30" },
                         { v: "seg" as const, lbl: "Segundos", sample: "45 s" },
+                        { v: "min" as const, lbl: "Minutos", sample: "10 min" },
                       ]).map((opt) => (
                         <button
                           key={opt.v}
