@@ -629,18 +629,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
               var r = el.getBoundingClientRect().right;
               if (r > maxRight) maxRight = r;
             });
-            // Data Coleta — célula direita da faixa do exame
-            document.querySelectorAll('.exame-header-band tr > td:last-child').forEach(function(el){
-              var cur = el.getBoundingClientRect().right;
-              var diff = cur - maxRight;
-              if (diff > 0.5) {
-                var prev = parseFloat(getComputedStyle(el).paddingRight) || 0;
-                el.style.paddingRight = (prev + diff) + 'px';
-              } else if (diff < -0.5) {
-                var prev2 = parseFloat(getComputedStyle(el).paddingRight) || 0;
-                el.style.paddingRight = Math.max(0, prev2 + diff) + 'px';
-              }
-            });
+            // Data Coleta — recuo fixo de 5mm já aplicado inline; nada a fazer.
             // Assinatura "CONFERIDO E LIBERADO POR"
             document.querySelectorAll('.assinatura-liberado-linha').forEach(function(el){
               var cur = el.getBoundingClientRect().right;
