@@ -298,7 +298,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
            ja desconte as bordas — assim thead/tfoot ocupam exatamente a faixa
            reservada em cada pagina. */
         @page { size: A4; margin: ${m.top}mm ${m.right}mm ${printBottomMarginMm}mm ${m.left}mm; }
-        html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+        html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         /* Reserva espaço, em CADA página impressa, para o rodapé fixo abaixo.
            O rodapé é renderizado via position:fixed; bottom:0 (Chrome repete
            elementos fixos em todas as páginas impressas, sempre na mesma
