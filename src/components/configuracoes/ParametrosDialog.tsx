@@ -129,7 +129,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setQtdDigitos(typeof p.qtdDigitos === "number" ? p.qtdDigitos : 0);
     setCriticoMin(p.criticoMin ?? "");
     setCriticoMax(p.criticoMax ?? "");
-    setFormatoTempo(p.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : "min_seg");
+    setFormatoTempo(p.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : p.formatoExibicao === "seg" ? "seg" : "min_seg");
     setSensivelJejum(!!p.sensivelJejum);
     setEstratificadoRiscoCv(!!p.estratificadoRiscoCv);
   };
