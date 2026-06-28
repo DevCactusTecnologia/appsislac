@@ -194,10 +194,6 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
     if (!dataColetaLabel && paciente.dataCadastro) {
       dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
     }
-    const dataColetaHtml = dataColetaLabel
-      ? `<span style="font-size:6pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;">${dataColetaLabel}</span>`
-      : "";
-
     // Faixa do cabeçalho do exame (nome + data coleta) com fundo claro —
     // SÓ é aplicada no fallback. Layouts científicos customizados já
     // possuem cabeçalho próprio com nome/data; prepender aqui duplicaria.
