@@ -1140,7 +1140,10 @@ const ResultadoDetalhe = () => {
   })();
 </script>`;
 
-    const injected = `${sanitizeHtmlForPrint(html)}${paginationHook}`;
+    const sanitized = sanitizeHtmlForPrint(html);
+    const injected = /<\/body>/i.test(sanitized)
+      ? sanitized.replace(/<\/body>/i, `${paginationHook}</body>`)
+      : `${sanitized}${paginationHook}`;
     printHtmlInHiddenFrame({ html: injected, documentTitle: title });
     const t1 = performance.now();
     // eslint-disable-next-line no-console
