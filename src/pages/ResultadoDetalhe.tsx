@@ -1033,6 +1033,14 @@ const ResultadoDetalhe = () => {
     const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
     const t0 = performance.now();
+    // Garante que o template de cabeçalho/rodapé está carregado antes
+    // de montar o HTML — sem isso, uma falha transitória de rede no
+    // boot deixa o laudo cair no fallback institucional sem dados do
+    // paciente. Import dinâmico para não criar ciclo de módulo.
+    try {
+      const mod = await import("@/data/documentoTemplatesStore");
+      await mod.ensureDocumentoTemplatesLoaded();
+    } catch {}
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
     const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
 
