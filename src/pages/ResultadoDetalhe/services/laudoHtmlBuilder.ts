@@ -195,13 +195,13 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
       dataColetaLabel = `Data Coleta: ${paciente.dataCadastro}`;
     }
     const dataColetaHtml = dataColetaLabel
-      ? `<span style="font-size:14px;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;line-height:1;">${dataColetaLabel}</span>`
+      ? `<span style="font-size:8pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;line-height:1;">${dataColetaLabel}</span>`
       : "";
 
     // Faixa do cabeçalho do exame (nome + data coleta) com fundo claro —
     // SÓ é aplicada no fallback. Layouts científicos customizados já
     // possuem cabeçalho próprio com nome/data; prepender aqui duplicaria.
-    const exameHeaderBand = `<table class="exame-header-band" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background-color:#f7f8f9 !important;margin:0 0 8px 0;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;"><tr><td style="padding:8px 10px;vertical-align:middle;text-align:left;font-size:14px;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:1;">${exame.nome}</td><td style="padding:8px 10px;vertical-align:middle;text-align:right;line-height:1;">${dataColetaHtml}</td></tr></table>`;
+    const exameHeaderBand = `<table class="exame-header-band" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background-color:#f7f8f9 !important;margin:0 0 8px 0;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;"><tr><td style="padding:8px 10px;vertical-align:middle;text-align:left;font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:1;">${exame.nome}</td><td style="padding:8px 10px;vertical-align:middle;text-align:right;line-height:1;">${dataColetaHtml}</td></tr></table>`;
 
     // Se houver layout cadastrado para este exame, usa-o (sem prepender faixa).
     const custom = customByExame?.[exame.id];
