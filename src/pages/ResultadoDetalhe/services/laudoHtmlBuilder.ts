@@ -614,5 +614,47 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
               <p style="margin:0;">Documento gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
             </div>`}
       </div>
+      <script>
+      (function(){
+        // Alinha "Data Coleta" e linha "CONFERIDO E LIBERADO POR" exatamente
+        // na mesma coluna vertical da borda direita do cabeçalho institucional
+        // (linha vermelha do template). Mede o cabeçalho renderizado e ajusta
+        // padding/margin-right dos blocos correspondentes.
+        function align(){
+          try {
+            var wrap = document.querySelector('.laudo-cabecalho-wrap');
+            if (!wrap) return;
+            var maxRight = wrap.getBoundingClientRect().right;
+            wrap.querySelectorAll('*').forEach(function(el){
+              var r = el.getBoundingClientRect().right;
+              if (r > maxRight) maxRight = r;
+            });
+            // Data Coleta — célula direita da faixa do exame
+            document.querySelectorAll('.exame-header-band tr > td:last-child').forEach(function(el){
+              var cur = el.getBoundingClientRect().right;
+              var diff = cur - maxRight;
+              if (diff > 0.5) {
+                var prev = parseFloat(getComputedStyle(el).paddingRight) || 0;
+                el.style.paddingRight = (prev + diff) + 'px';
+              } else if (diff < -0.5) {
+                var prev2 = parseFloat(getComputedStyle(el).paddingRight) || 0;
+                el.style.paddingRight = Math.max(0, prev2 + diff) + 'px';
+              }
+            });
+            // Assinatura "CONFERIDO E LIBERADO POR"
+            document.querySelectorAll('.assinatura-liberado-linha').forEach(function(el){
+              var cur = el.getBoundingClientRect().right;
+              var diff = cur - maxRight;
+              if (Math.abs(diff) > 0.5) {
+                var prev = parseFloat(el.style.marginRight) || 0;
+                el.style.marginRight = (prev + diff) + 'px';
+              }
+            });
+          } catch(_) {}
+        }
+        if (document.readyState === 'complete') align();
+        else window.addEventListener('load', align);
+      })();
+      </script>
     `;
 }
