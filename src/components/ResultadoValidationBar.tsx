@@ -25,12 +25,12 @@ const parseTimeToSeconds = (raw: string): number | null => {
   // MM:SS
   m = s.match(/^(\d{1,2}):(\d{1,2})$/);
   if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-  // "X min Y s" — ambas as partes opcionais, mas pelo menos uma presente
+  // "X min Y[,Z] s" — ambas as partes opcionais; segundos aceitam 1 casa decimal
   const minMatch = s.match(/(\d+)\s*min/i);
-  const segMatch = s.match(/(\d+)\s*s(?:eg)?\b/i);
+  const segMatch = s.match(/(\d+(?:[.,]\d+)?)\s*s(?:eg)?\b/i);
   if (minMatch || segMatch) {
     const mins = minMatch ? parseInt(minMatch[1], 10) : 0;
-    const segs = segMatch ? parseInt(segMatch[1], 10) : 0;
+    const segs = segMatch ? parseFloat(segMatch[1].replace(",", ".")) : 0;
     return mins * 60 + segs;
   }
   return null;
