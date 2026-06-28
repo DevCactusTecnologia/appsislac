@@ -95,11 +95,18 @@ export const ParamTypedInput = ({
     );
   }
   if (param.tipo === "Tempo") {
-    const formato = param.formatoExibicao === "hh_mm_ss" ? "hh_mm_ss" : param.formatoExibicao === "seg" ? "seg" : "min_seg";
+    const formato = param.formatoExibicao === "hh_mm_ss"
+      ? "hh_mm_ss"
+      : param.formatoExibicao === "seg"
+        ? "seg"
+        : param.formatoExibicao === "min"
+          ? "min"
+          : "min_seg";
     // Persistência canônica:
     //  • "min_seg"   → "12 min 30 s" | "12 min" | "30 s" | ""
     //  • "hh_mm_ss"  → "HH:MM:SS" (zero-padded) | ""
     //  • "seg"       → "45 s" | ""
+    //  • "min"       → "10 min" | ""
     const parseStored = (raw: string): { h: string; m: string; s: string } => {
       if (!raw) return { h: "", m: "", s: "" };
       if (formato === "hh_mm_ss") {
@@ -110,6 +117,10 @@ export const ParamTypedInput = ({
       if (formato === "seg") {
         const segMatch = raw.match(/(\d+)\s*s/i);
         return { h: "", m: "", s: segMatch?.[1] ?? "" };
+      }
+      if (formato === "min") {
+        const minMatch = raw.match(/(\d+)\s*min/i);
+        return { h: "", m: minMatch?.[1] ?? "", s: "" };
       }
       const minMatch = raw.match(/(\d+)\s*min/i);
       const segMatch = raw.match(/(\d+)\s*s/i);
@@ -125,6 +136,9 @@ export const ParamTypedInput = ({
       }
       if (formato === "seg") {
         return s ? `${parseInt(s, 10)} s` : "";
+      }
+      if (formato === "min") {
+        return m ? `${parseInt(m, 10)} min` : "";
       }
       const parts: string[] = [];
       if (m) parts.push(`${parseInt(m, 10)} min`);
