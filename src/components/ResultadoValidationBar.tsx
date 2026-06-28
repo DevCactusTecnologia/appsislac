@@ -52,15 +52,40 @@ const parseRef = (ref: string): number | null => {
   return isNaN(num) ? null : num;
 };
 
-export const isValueInRange = (valor: string, refMin: string, refMax: string): boolean | null => {
+/**
+ * Quando o parâmetro tem unidade de tempo (min, h), os refs (ex.: "5" e "12")
+ * são cadastrados na MESMA unidade do parâmetro. Como o resultado digitado em
+ * "MM:SS" ou "X min Y s" é convertido para segundos totais, precisamos elevar
+ * os refs à mesma escala.
+ */
+const unitFactorToSeconds = (unidade?: string): number => {
+  if (!unidade) return 1;
+  const u = unidade.trim().toLowerCase();
+  if (/^h(oras?)?$/.test(u)) return 3600;
+  if (/^min(utos?)?$/.test(u)) return 60;
+  return 1;
+};
+
+export const isValueInRange = (
+  valor: string,
+  refMin: string,
+  refMax: string,
+  unidade?: string,
+): boolean | null => {
   const v = parseNumericValue(valor);
   if (v === null) return null;
-  const min = parseRef(refMin);
-  const max = parseRef(refMax);
+  let min = parseRef(refMin);
+  let max = parseRef(refMax);
+  const valorEhTempo = parseTimeToSeconds(valor) !== null;
+  if (valorEhTempo) {
+    const f = unitFactorToSeconds(unidade);
+    if (f !== 1) {
+      if (min !== null && parseTimeToSeconds(refMin) === null) min = min * f;
+      if (max !== null && parseTimeToSeconds(refMax) === null) max = max * f;
+    }
+  }
   if (min !== null && max !== null) return v >= min && v <= max;
-  // Apenas limite superior (ex.: "Inferior a 6,0") → normal se v <= max
   if (max !== null && min === null) return v <= max;
-  // Apenas limite inferior (ex.: "Superior a X") → normal se v >= min
   if (min !== null && max === null) return v >= min;
   if (refMin.includes("<") && max !== null) return v < max;
   if (refMin.includes(">") && max !== null) return v > max;

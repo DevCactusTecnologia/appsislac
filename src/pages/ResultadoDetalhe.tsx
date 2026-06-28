@@ -1337,7 +1337,7 @@ const ResultadoDetalhe = () => {
                         ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
+                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax, param.unidade) : null;
                       const isOutOfRange = inRange === false;
                       const v = parseFloat((displayValor || "").replace(",", "."));
                       const lo = parseFloat((ref.refMin || "").replace(",", "."));
@@ -1909,7 +1909,7 @@ const ResultadoDetalhe = () => {
                         ? evaluateFormula(param.formula || param.valorReferencia, valuesByChave, param.casasDecimais ?? 2, (param.chave ?? "").toUpperCase() === "CONT")
                         : "";
                       const displayValor = param.tipo === "Formula" ? computedFormula : param.valor;
-                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax) : null;
+                      const inRange = displayValor ? isValueInRange(displayValor, ref.refMin, ref.refMax, param.unidade) : null;
                       const isOutOfRange = inRange === false;
                       const v = parseFloat((displayValor || "").replace(",", "."));
                       const lo = parseFloat((ref.refMin || "").replace(",", "."));
