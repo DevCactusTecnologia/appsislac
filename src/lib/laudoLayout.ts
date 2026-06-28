@@ -268,7 +268,7 @@ export async function renderExameComLayout(
   // Espaçamentos: 0px entre cabeçalho e nome do exame (o nome encosta no
   // cabeçalho via first-child margin-top:0) e 12px entre o nome do exame e o
   // início do layout científico (corpo do resultado).
-  const tituloHtml = `<div class="exame-header-band" style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;background-color:#f7f8f9 !important;padding:5px 10px;margin:0 0 12px 0;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;text-transform:uppercase;letter-spacing:0.2px;">${exameNome}</div>${dataColetaHtml}</div>`;
+  const tituloHtml = `<div class="exame-header-band" style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;background-color:#f7f8f9 !important;padding:6px 10px;margin:0 0 12px 0;line-height:1;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;"><div style="font-size:10pt;font-weight:700;color:#000000;white-space:normal;text-transform:uppercase;letter-spacing:0.2px;line-height:1;">${exameNome}</div>${dataColetaHtml}</div>`;
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
