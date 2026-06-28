@@ -105,18 +105,23 @@ function buildValueMap(
     setBoth("PROTOCOLO", pacienteExtra.protocolo);
   }
 
+  // Envolve o valor do parâmetro em <strong> para destaque no laudo (Courier 12 + negrito).
+  const bold = (v: string) => (v ? `<strong>${v}</strong>` : "");
+
   // 1) Resultados crus indexados pelo nome usado em runtime (ex.: "Hemoglobina").
   for (const [nome, valor] of Object.entries(resultados)) {
-    setBoth(nome, valor ?? "");
+    setBoth(nome, bold(valor ?? ""));
   }
 
   // 2) Parâmetros cadastrados: cruza chave/abreviação/rótulo com os resultados
   //    e enriquece com placeholders especiais REF_/FLAG_ baseados em valores_referencia.
   for (const p of parametrosCadastrados) {
     const valor = resultados[p.rotulo] ?? resultados[p.chave] ?? resultados[p.abreviacao] ?? "";
-    if (p.chave) setBoth(p.chave, valor);
-    if (p.abreviacao) setBoth(p.abreviacao, valor);
-    if (p.rotulo) setBoth(p.rotulo, valor);
+    const valorBold = bold(valor);
+    if (p.chave) setBoth(p.chave, valorBold);
+    if (p.abreviacao) setBoth(p.abreviacao, valorBold);
+    if (p.rotulo) setBoth(p.rotulo, valorBold);
+
 
     // Resolve referência clínica (sexo/idade do paciente, com fallback para Ambos).
     // Tenta casar parametro_nome por rótulo → chave → abreviação (case-insensitive),
