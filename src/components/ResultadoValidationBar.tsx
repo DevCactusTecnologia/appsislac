@@ -6,13 +6,47 @@ interface ResultadoValidationBarProps {
   refMax: string;
 }
 
+/**
+ * Converte uma string de tempo nos formatos suportados para segundos totais.
+ * Aceita:
+ *   • "HH:MM:SS"        → H*3600 + M*60 + S
+ *   • "MM:SS"           → M*60 + S
+ *   • "X min Y s"       → X*60 + Y (qualquer parte opcional)
+ *   • "12 s"            → 12
+ *   • "12 min"          → 720
+ * Retorna null se não reconhecer um padrão de tempo.
+ */
+const parseTimeToSeconds = (raw: string): number | null => {
+  if (!raw) return null;
+  const s = raw.trim();
+  // HH:MM:SS
+  let m = s.match(/^(\d{1,2}):(\d{1,2}):(\d{1,2})$/);
+  if (m) return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + parseInt(m[3], 10);
+  // MM:SS
+  m = s.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  // "X min Y s" — ambas as partes opcionais, mas pelo menos uma presente
+  const minMatch = s.match(/(\d+)\s*min/i);
+  const segMatch = s.match(/(\d+)\s*s(?:eg)?\b/i);
+  if (minMatch || segMatch) {
+    const mins = minMatch ? parseInt(minMatch[1], 10) : 0;
+    const segs = segMatch ? parseInt(segMatch[1], 10) : 0;
+    return mins * 60 + segs;
+  }
+  return null;
+};
+
 const parseNumericValue = (val: string): number | null => {
+  const t = parseTimeToSeconds(val);
+  if (t !== null) return t;
   const cleaned = val.replace(",", ".");
   const num = parseFloat(cleaned);
   return isNaN(num) ? null : num;
 };
 
 const parseRef = (ref: string): number | null => {
+  const t = parseTimeToSeconds(ref);
+  if (t !== null) return t;
   const cleaned = ref.replace(",", ".").replace("<", "").replace(">", "").trim();
   const num = parseFloat(cleaned);
   return isNaN(num) ? null : num;
