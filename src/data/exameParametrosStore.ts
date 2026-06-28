@@ -7,7 +7,7 @@ import { showError } from "@/lib/showError";
 export type ParametroTipo = "Texto" | "Número" | "Select" | "Formula" | "Tempo";
 
 /** Formato de exibição para parâmetros do tipo "Tempo". */
-export type FormatoTempo = "min_seg" | "hh_mm_ss";
+export type FormatoTempo = "min_seg" | "hh_mm_ss" | "seg";
 
 export interface ExameParametro {
   id: number;
