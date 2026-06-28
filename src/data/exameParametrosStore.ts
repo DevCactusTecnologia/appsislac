@@ -71,7 +71,7 @@ const fromRow = (r: any): ExameParametro => ({
   criticoMax: r.critico_max ?? "",
   separadorDecimal: (r.separador_decimal === "," ? "," : ".") as "." | ",",
   qtdDigitos: typeof r.qtd_digitos === "number" ? r.qtd_digitos : 0,
-  formatoExibicao: (r.formato_exibicao === "hh_mm_ss" ? "hh_mm_ss" : r.formato_exibicao === "seg" ? "seg" : "min_seg") as FormatoTempo,
+  formatoExibicao: ((["hh_mm_ss", "seg", "min", "min_seg"].includes(r.formato_exibicao) ? r.formato_exibicao : "min_seg")) as FormatoTempo,
   sensivelJejum: !!r.sensivel_jejum,
   estratificadoRiscoCv: !!r.estratificado_risco_cv,
 });
