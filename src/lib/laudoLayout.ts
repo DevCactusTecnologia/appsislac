@@ -272,7 +272,7 @@ export async function renderExameComLayout(
 
   // Força Courier no corpo dos resultados (espelhando o padrão do laudo de referência),
   // mantendo Helvetica no título do exame.
-  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:Courier,'Courier New',monospace;white-space:break-spaces;">${tituloHtml}<div style="font-size:9pt;line-height:1.4;color:#1a1a2e;font-family:Courier,'Courier New',monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
+  const html = `<div class="exame-bloco-custom" style="margin-bottom:20px;page-break-inside:avoid;font-family:Courier,'Courier New',monospace;white-space:break-spaces;">${tituloHtml}<div style="font-size:12pt;line-height:1.4;color:#1a1a2e;font-family:Courier,'Courier New',monospace;white-space:break-spaces;">${corpo.replace(/^\s+/, "").replace(/\s+$/, "")}</div></div>`;
   return { html, margins };
 }
 
