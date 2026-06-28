@@ -404,7 +404,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         /* REGRA: espaçamento consistente entre exames — o 2º exame em diante
            ganha um respiro do bloco anterior (igual ao espaço que o 1º exame
            recebe do cabeçalho via thead padding-bottom). */
-        .exame-bloco + .exame-bloco { margin-top: 14px !important; }
+        #laudo-content > .exame-bloco + .exame-bloco { margin-top: 14px !important; }
+        .laudo-page-manual { page-break-inside: avoid !important; break-inside: avoid !important; }
         /* Remove parágrafos vazios (deixados pelo editor CKEditor) que criavam
            grandes espaços entre o cabeçalho, o nome do exame e o resultado nos
            layouts científicos customizados. */
@@ -433,7 +434,8 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; margin-top: 14px !important; }
         @media print {
           .exame-bloco, .exame-bloco-custom, .assinatura-bloco { page-break-inside: avoid !important; break-inside: avoid !important; }
-          .exame-bloco + .exame-bloco { margin-top: 14px !important; }
+          #laudo-content > .exame-bloco + .exame-bloco { margin-top: 14px !important; }
+          .laudo-page-manual { page-break-inside: avoid !important; break-inside: avoid !important; }
           .exame-bloco + .assinatura-bloco { page-break-before: avoid !important; break-before: avoid !important; }
           html, body { margin:0 !important; padding:0 !important; height:100% !important; }
         }

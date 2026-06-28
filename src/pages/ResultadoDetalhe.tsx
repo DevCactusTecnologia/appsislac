@@ -1062,27 +1062,79 @@ const ResultadoDetalhe = () => {
       var availablePx = (297 - Number(margins.top || 0) - Number(margins.bottom || 0)) * pxPerMm - headerPx - footerReservePx - safeGapPx;
       if (!availablePx || availablePx < 200) return;
 
-      var blocks = Array.prototype.slice.call(document.querySelectorAll('#laudo-content > .exame-bloco, #laudo-content > .assinatura-bloco'));
+      var sourceTable = document.querySelector('table.laudo-a4-page');
+      var sourceContent = document.querySelector('#laudo-content');
+      if (!sourceTable || !sourceContent) return;
+      var blocks = Array.prototype.slice.call(sourceContent.children).filter(function(el){
+        return el.classList && (el.classList.contains('exame-bloco') || el.classList.contains('assinatura-bloco'));
+      });
       var outerHeight = function(el) {
         var rect = el.getBoundingClientRect();
         var cs = window.getComputedStyle(el);
         return rect.height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
       };
 
+      var pages = [];
+      var current = [];
       var used = 0;
-      blocks.forEach(function(block, index){
-        block.style.breakBefore = '';
-        block.style.pageBreakBefore = '';
+      blocks.forEach(function(block){
         var h = outerHeight(block);
-        if (index > 0 && used > 0 && used + h > availablePx) {
-          block.style.breakBefore = 'page';
-          block.style.pageBreakBefore = 'always';
-          used = h;
-        } else {
-          used += h;
+        if (current.length > 0 && used + h > availablePx) {
+          pages.push(current);
+          current = [];
+          used = 0;
         }
-        if (used > availablePx && h > availablePx) used = 0;
+        current.push(block);
+        used += h;
+        if (h > availablePx && current.length === 1) {
+          pages.push(current);
+          current = [];
+          used = 0;
+        }
       });
+      if (current.length) pages.push(current);
+      if (pages.length <= 1) {
+        document.documentElement.setAttribute('data-laudo-paginated', 'single');
+        return;
+      }
+
+      var buildPage = function(){
+        var table = sourceTable.cloneNode(false);
+        table.classList.add('laudo-page-manual');
+        table.style.breakInside = 'avoid';
+        table.style.pageBreakInside = 'avoid';
+        if (header) table.appendChild(header.cloneNode(true));
+        var tbody = document.createElement('tbody');
+        var tr = document.createElement('tr');
+        var td = document.createElement('td');
+        var corpo = document.createElement('div');
+        corpo.className = 'laudo-a4-corpo';
+        var content = document.createElement('div');
+        content.id = 'laudo-content';
+        content.setAttribute('style', sourceContent.getAttribute('style') || '');
+        corpo.appendChild(content);
+        td.appendChild(corpo);
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        table.appendChild(tbody);
+        return { table: table, content: content };
+      };
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'laudo-pages-manual';
+      pages.forEach(function(pageBlocks, pageIndex){
+        var page = buildPage();
+        page.table.style.breakAfter = pageIndex < pages.length - 1 ? 'page' : 'auto';
+        page.table.style.pageBreakAfter = pageIndex < pages.length - 1 ? 'always' : 'auto';
+        pageBlocks.forEach(function(block){
+          block.style.breakBefore = '';
+          block.style.pageBreakBefore = '';
+          page.content.appendChild(block);
+        });
+        wrapper.appendChild(page.table);
+      });
+      sourceTable.replaceWith(wrapper);
+      document.documentElement.setAttribute('data-laudo-pages', String(pages.length));
       document.documentElement.setAttribute('data-laudo-paginated', 'true');
     };
   })();
