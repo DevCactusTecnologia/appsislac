@@ -2074,6 +2074,17 @@ const ResultadoDetalhe = () => {
                                 // (ex.: "6...........: 1.080 a 56.500 mUI/mL",
                                 // "Idade gestacional (semanas)", "Valores de Referência").
                                 const h = param.headerAntes.trim();
+                                // Normaliza para detectar "label leak" — a célula
+                                // de rótulo do layout (ex.: "*eGFR:..", "Resultado:....")
+                                // vazando como cabeçalho da próxima linha.
+                                const norm = (s: string) => s.toLowerCase().replace(/[\s.:*]+/g, "").trim();
+                                const headerNorm = norm(h);
+                                const labelNorm = norm(param.nome || "");
+                                const chaveNorm = norm((param as any).chave || "");
+                                const isLabelLeak =
+                                  (!!labelNorm && (headerNorm === labelNorm || headerNorm.startsWith(labelNorm))) ||
+                                  (!!chaveNorm && headerNorm === chaveNorm) ||
+                                  /^\*?\s*[\wÀ-ÿ*]+\s*:?\.{2,}$/i.test(h);
                                 const isVRLeak =
                                   /valor(es)?\s+de\s+refer[êe]ncia/i.test(h) ||
                                   /idade\s+gestacional/i.test(h) ||
@@ -2081,7 +2092,7 @@ const ResultadoDetalhe = () => {
                                   /[\d.,]+\s*a\s*[\d.,]+/i.test(h) ||      // "X a Y" (faixa)
                                   /(mui|mg\/dl|g\/dl|ng\/ml|ui\/ml|fl|pg|%)\b/i.test(h) ||
                                   h.length > 60;                            // títulos longos ≈ parágrafo
-                                if (isVRLeak) return null;
+                                if (isVRLeak || isLabelLeak) return null;
                                 return (
                                   <tr>
                                     <td colSpan={hasAnyAbs ? 5 : 4} className="pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/70">
