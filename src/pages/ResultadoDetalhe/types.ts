@@ -32,7 +32,7 @@ export interface Parametro {
   casasDecimais?: number;
   separadorDecimal?: "." | ",";
   qtdDigitos?: number;
-  formatoExibicao?: "min_seg" | "hh_mm_ss" | "seg";
+  formatoExibicao?: "min_seg" | "hh_mm_ss" | "seg" | "min";
   criticoMin?: string;
   criticoMax?: string;
   parametroId?: number;
