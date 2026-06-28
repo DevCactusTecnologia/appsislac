@@ -170,7 +170,7 @@ export const ParamTypedInput = ({
         ? digits
         : `${digits.slice(0, -1).replace(/^0+(?=\d)/, "") || "0"},${digits.slice(-1)}`;
       const onSeg = (v: string) => {
-        const d = v.replace(/\D/g, "").slice(0, 5);
+        const d = v.replace(/\D/g, "").slice(0, 3);
         if (!d) { onChange(""); return; }
         if (d.length <= 2) onChange(`${parseInt(d, 10)} s`);
         else {
