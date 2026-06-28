@@ -35,7 +35,7 @@ export const ParamTypedInput = ({
   computedValue,
   statusColor,
 }: {
-  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number; formatoExibicao?: "min_seg" | "hh_mm_ss" | "seg" };
+  param: { valor: string; tipo?: ExameParametro["tipo"]; opcoesSelect?: string[]; casasDecimais?: number; separadorDecimal?: "." | ","; qtdDigitos?: number; formatoExibicao?: "min_seg" | "hh_mm_ss" | "seg" | "min" };
   isCritico?: boolean;
   disabled?: boolean;
   className?: string;
