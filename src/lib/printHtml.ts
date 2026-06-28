@@ -71,16 +71,23 @@ export function printHtmlInHiddenFrame({
     const runBeforePrint = async () => {
       try {
         const hook = (iframe.contentWindow as Window & { __lovableBeforePrint?: () => void | Promise<void> } | null)?.__lovableBeforePrint;
-        if (typeof hook === "function") await hook();
-      } catch { /* noop */ }
+        if (typeof hook === "function") {
+          // Aplica timeout — se o hook travar (fonts.ready, etc.) seguimos
+          // mesmo assim para imprimir, ao invés de nunca chamar print().
+          await Promise.race([
+            Promise.resolve().then(() => hook()),
+            new Promise((resolve) => window.setTimeout(resolve, 2000)),
+          ]);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[printHtml] beforePrint hook falhou:", err);
+      }
     };
 
     void runBeforePrint().finally(() => {
       const printedAt = Date.now();
       let cleaned = false;
-      // Só restaura título e remove iframe DEPOIS que o diálogo de impressão
-      // fecha. Chrome lê document.title no momento em que o usuário clica
-      // "Salvar" — se restaurarmos antes, o nome volta para "Sislac - Lovable".
       const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
@@ -95,11 +102,8 @@ export function printHtmlInHiddenFrame({
           try { iframe.remove(); } catch { /* noop */ }
         }
       };
-      // `afterprint` dispara ao fechar/salvar o diálogo (Chrome, Firefox, Edge).
       const onAfter = () => {
         const elapsed = Date.now() - printedAt;
-        // Em alguns iframes/sandboxes o afterprint dispara cedo demais. Nesse
-        // caso mantemos o título por mais tempo para cobrir o fluxo "Salvar PDF".
         window.setTimeout(cleanup, elapsed < 2_000 ? 60_000 : 300);
       };
       const onFocus = () => {
@@ -112,13 +116,15 @@ export function printHtmlInHiddenFrame({
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
-      } catch {
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[printHtml] print() falhou:", err);
         cleanup();
       }
-      // fallback caso afterprint/focus não disparem em algum ambiente (sandbox/preview)
       window.setTimeout(cleanup, 5 * 60_000);
     });
   };
+
 
   // Algumas engines renderizam imediatamente; outras precisam de onload.
   if (doc.readyState === "complete") {
