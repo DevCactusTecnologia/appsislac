@@ -340,8 +340,14 @@ export const LayoutScientificFormRenderer: React.FC<LayoutScientificFormRenderer
   const tree = renderChildren(rootDoc, "lsr", false);
 
   return (
-    <div className="layout-scientific-form text-sm text-foreground">
+    <div className="layout-scientific-form text-foreground" style={{ fontFamily: "Courier, 'Courier New', monospace", fontSize: "12pt", fontWeight: 700 }}>
       <style>{`
+        .layout-scientific-form,
+        .layout-scientific-form * {
+          font-family: Courier, 'Courier New', monospace !important;
+          font-size: 12pt !important;
+          font-weight: 700 !important;
+        }
         .layout-scientific-form table { width: 100%; border-collapse: collapse; }
         .layout-scientific-form td, .layout-scientific-form th { vertical-align: middle; }
         .layout-scientific-form figure.table { margin: 0; }
