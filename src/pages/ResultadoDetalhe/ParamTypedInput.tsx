@@ -180,7 +180,7 @@ export const ParamTypedInput = ({
       };
       return (
         <div className="flex items-center gap-2">
-          <input data-result-nav="true" inputMode="decimal" maxLength={6} value={display}
+          <input data-result-nav="true" inputMode="decimal" maxLength={4} value={display}
             onChange={(e) => onSeg(e.target.value)} onKeyDown={handleKeyDown}
             disabled={disabled} className={inputCls} placeholder="0" />
           <span className="text-xs font-semibold text-muted-foreground">s</span>
