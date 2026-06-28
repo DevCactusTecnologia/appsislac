@@ -201,7 +201,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
     // Faixa do cabeçalho do exame (nome + data coleta) com fundo claro —
     // SÓ é aplicada no fallback. Layouts científicos customizados já
     // possuem cabeçalho próprio com nome/data; prepender aqui duplicaria.
-    const exameHeaderBand = `<div class="exame-header-band" style="background:#f7f8f9;padding:5px 10px;margin:0 0 8px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;">${exame.nome}</div>${dataColetaHtml}</div>`;
+    const exameHeaderBand = `<div class="exame-header-band" style="background-color:#f7f8f9 !important;padding:5px 10px;margin:0 0 8px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;"><div style="font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;">${exame.nome}</div>${dataColetaHtml}</div>`;
 
     // Se houver layout cadastrado para este exame, usa-o (sem prepender faixa).
     const custom = customByExame?.[exame.id];
