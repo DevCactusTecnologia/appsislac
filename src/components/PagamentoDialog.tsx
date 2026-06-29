@@ -755,76 +755,78 @@ const PagamentoDialog = ({
           </button>
         </div>
 
-        {/* PIX QR Code overlay */}
-        {pixOpen && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-card/95 backdrop-blur-sm p-5 sm:p-6">
-            <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-9 w-9 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <QrCode className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground leading-tight">Pagamento PIX</h3>
-                    <p className="text-[11px] text-muted-foreground">{fmtBRL(pixValor)}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPixOpen(false)}
-                  className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all"
-                  aria-label="Fechar"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+      </div>
 
-              <div className="px-5 py-5 flex flex-col items-center gap-4">
-                {pixStatus === "aprovado" ? (
-                  <div className="flex flex-col items-center gap-3 py-6">
-                    <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${hsl("var(--status-success)")}15` }}>
-                      <CheckCircle2 className="h-8 w-8" style={{ color: hsl("var(--status-success)") }} />
-                    </div>
-                    <p className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>
-                      Pagamento aprovado!
-                    </p>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Registrando como PIX no atendimento…
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="p-3 rounded-2xl bg-white border border-border">
-                      {pixDataUrl
-                        ? <img src={pixDataUrl} alt="QRCode PIX" className="w-[240px] h-[240px] block" />
-                        : <div className="w-[240px] h-[240px] flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground text-center">
-                      Aponte a câmera do app do banco para o QRCode<br />ou copie o código abaixo.
-                    </p>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(pixPayload); toast.success("Código PIX copiado"); }}
-                      className="w-full h-9 rounded-xl border border-border bg-card flex items-center justify-center gap-2 text-[11px] font-medium text-foreground hover:border-primary/40 transition"
-                    >
-                      <Copy className="h-3.5 w-3.5" /> Copiar Pix Copia e Cola
-                    </button>
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Aguardando pagamento…
-                    </div>
-                    <button
-                      onClick={aprovarPix}
-                      className="w-full h-11 rounded-2xl text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition shadow-sm"
-                      style={{ backgroundColor: hsl("var(--status-success)") }}
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
-                    </button>
-                  </>
-                )}
+      {/* PIX QR Code overlay — fora do card do modal, cobrindo a viewport */}
+      {pixOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-[3px]" onClick={() => setPixOpen(false)} />
+          <div className="relative w-full max-w-sm bg-card rounded-3xl border border-border shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.25)] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-9 w-9 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <QrCode className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground leading-tight">Pagamento PIX</h3>
+                  <p className="text-[11px] text-muted-foreground">{fmtBRL(pixValor)}</p>
+                </div>
               </div>
+              <button
+                onClick={() => setPixOpen(false)}
+                className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-5 flex flex-col items-center gap-4">
+              {pixStatus === "aprovado" ? (
+                <div className="flex flex-col items-center gap-3 py-6">
+                  <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${hsl("var(--status-success)")}15` }}>
+                    <CheckCircle2 className="h-8 w-8" style={{ color: hsl("var(--status-success)") }} />
+                  </div>
+                  <p className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>
+                    Pagamento aprovado!
+                  </p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Registrando como PIX no atendimento…
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-3 rounded-2xl bg-white border border-border">
+                    {pixDataUrl
+                      ? <img src={pixDataUrl} alt="QRCode PIX" className="w-[240px] h-[240px] block" />
+                      : <div className="w-[240px] h-[240px] flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Aponte a câmera do app do banco para o QRCode<br />ou copie o código abaixo.
+                  </p>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(pixPayload); toast.success("Código PIX copiado"); }}
+                    className="w-full h-9 rounded-xl border border-border bg-card flex items-center justify-center gap-2 text-[11px] font-medium text-foreground hover:border-primary/40 transition"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Copiar Pix Copia e Cola
+                  </button>
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Aguardando pagamento…
+                  </div>
+                  <button
+                    onClick={aprovarPix}
+                    className="w-full h-11 rounded-2xl text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition shadow-sm"
+                    style={{ backgroundColor: hsl("var(--status-success)") }}
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>,
     document.body,
   );
