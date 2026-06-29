@@ -80,6 +80,7 @@ const defaultConfig: LabConfig = {
   responsavelTecnicoUf: "",
   watermark: { ...DEFAULT_WATERMARK },
   rotinaColetaAnaliseEnabled: true,
+  terceirizadoRecebimentoAutomatico: false,
 };
 
 let _listeners: Array<() => void> = [];
