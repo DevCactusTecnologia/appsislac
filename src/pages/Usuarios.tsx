@@ -181,6 +181,10 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
   const handleSalvar = async () => {
     if (!form.nome.trim()) { toast.error("Informe o nome."); return; }
     if (!editingId && !form.email.trim()) { toast.error("Informe o e-mail."); return; }
+    if (form.unidadeIds.length === 0) {
+      toast.error("Selecione pelo menos uma unidade.");
+      return;
+    }
     if (form.password && form.password.length < 8) {
       toast.error("A senha deve ter no mínimo 8 caracteres.");
       return;
