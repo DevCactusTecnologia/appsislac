@@ -17,6 +17,8 @@
 // ── Queries / boot / cache / paginação ──
 export {
   _initAtendimentosStore,
+  isAtendimentosBooting,
+  hasAtendimentosBooted,
   stopProgressiveHydration,
   getAtendimentos,
   fetchAtendimentosPage,
