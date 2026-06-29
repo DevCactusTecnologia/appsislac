@@ -1889,18 +1889,22 @@ const ResultadoDetalhe = () => {
                         <span className="text-[11px] font-extrabold tracking-[0.08em] text-primary uppercase font-mono truncate">
                           {getMnemonico(exame.nome)}
                         </span>
-                        <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
-
-
-                      </div>
-                      {isTerc && (
-                        <div className="mt-1.5 flex items-center gap-1.5">
+                        {isTerc ? (
                           <LabBadge
                             tipoProcesso="TERCEIRIZADO"
                             labApoioId={dbRow?.lab_apoio_id ?? null}
                             labApoioNome={getLabNome(exame.id) || undefined}
                             compact
                           />
+                        ) : (
+                          <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
+                        )}
+
+
+                      </div>
+                      {isTerc && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
                           <span className="text-[10px] font-medium text-muted-foreground truncate">
                             {getLabNome(exame.id) || "Lab. de apoio"}
                           </span>
