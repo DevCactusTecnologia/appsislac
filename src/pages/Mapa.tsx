@@ -21,6 +21,7 @@ import {
 } from "@/components/mapa/MapaConstants";
 import { getAtendimentos, subscribe as subscribeAtendimentos, setAnalistaParaExames } from "@/data/atendimentoStore";
 import { getExamesCatalogo, subscribeExamesCatalogo } from "@/data/exameCatalogoStore";
+import { getSetoresCustomizados, subscribeSetoresCustomizados, loadSetoresCustomizados, isSetoresLoaded } from "@/data/setoresLaboratoriaisStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { buildMapasHtml, prefetchParametrosForTickets, type MapaExameTicket } from "@/lib/mapaPrint";
