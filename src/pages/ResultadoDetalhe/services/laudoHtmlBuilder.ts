@@ -489,8 +489,15 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           table-layout: fixed !important;
           box-sizing: border-box !important;
         }
+        /* Tabelas do corpo do exame: ocupam a largura útil (igual ao preview do
+           editor, que renderiza dentro de um container 100%), mas com
+           "table-layout:auto" para respeitar as larguras declaradas pelo
+           usuário em cada <td>/<col>. Sem o "auto", o motor redistribui
+           colunas igualmente e separa visualmente valor e unidade. */
         #laudo-content .exame-bloco-custom table {
+          width: 100% !important;
           max-width: 100% !important;
+          table-layout: auto !important;
           box-sizing: border-box !important;
         }
         #laudo-content img { max-width: 100% !important; height: auto !important; }
