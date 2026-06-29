@@ -76,6 +76,7 @@ const fromRow = (r: any): ExameParametro => ({
   formatoExibicao: ((["hh_mm_ss", "seg", "min", "min_seg"].includes(r.formato_exibicao) ? r.formato_exibicao : "min_seg")) as FormatoTempo,
   sensivelJejum: !!r.sensivel_jejum,
   estratificadoRiscoCv: !!r.estratificado_risco_cv,
+  qtdResultadosAnteriores: typeof r.qtd_resultados_anteriores === "number" ? r.qtd_resultados_anteriores : 5,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
