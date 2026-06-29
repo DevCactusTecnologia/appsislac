@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, Fragment } from "react";
 import { searchNormalize } from "@/lib/utils";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck } from "lucide-react";
+import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
@@ -183,6 +183,14 @@ const ResultadoDetalhe = () => {
   }, []);
   const [statusAnterior, setStatusAnterior] = useState<Record<number, ExameStatus>>({});
   const [auditLog, setAuditLog] = useState<Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]>>({});
+  // Rastreia QUEM analisou (salvou) e QUEM liberou cada exame — podem ser
+  // usuários diferentes. Usado pela UI do card de cada exame e pela auditoria.
+  type AnaliseInfo = { analisadoPor?: { nome: string; iniciais: string }; analisadoEm?: string; liberadoPor?: { nome: string; iniciais: string }; liberadoEm?: string };
+  const [analiseInfoMap, setAnaliseInfoMap] = useState<Record<number, AnaliseInfo>>({});
+  const formatDataHora = (d: Date = new Date()) => {
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    return `${String(d.getDate()).padStart(2, "0")} de ${meses[d.getMonth()]} de ${d.getFullYear()} - ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+  };
   const [statusFilter, setStatusFilter] = useState<"todos" | "pendentes" | "salvos" | "liberados" | "cancelados">("todos");
   const [showCelebracao, setShowCelebracao] = useState(false);
   const [liberandoTodos, setLiberandoTodos] = useState(false);
@@ -604,6 +612,15 @@ const ResultadoDetalhe = () => {
     updatePacienteExames((exames) =>
       exames.map((e) => e.id === selectedExameId ? { ...e, status: "Resultado salvo" } : e)
     );
+    // Marca o analista responsável pela análise (digitação/salvamento).
+    setAnaliseInfoMap((prev) => ({
+      ...prev,
+      [selectedExameId]: {
+        ...(prev[selectedExameId] || {}),
+        analisadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+        analisadoEm: formatDataHora(),
+      },
+    }));
     if (retificando) {
       setRetificados((prev) => new Set(prev).add(selectedExameId));
       const diffText = diffsRetificacao
@@ -691,7 +708,32 @@ const ResultadoDetalhe = () => {
     updatePacienteExames((exames) =>
       exames.map((e) => e.id === selectedExameId ? { ...e, status: retificados.has(e.id) ? "Retificado" : "Digitado" } : e)
     );
-    addAuditEntry(selectedExameId, "Resultado liberado");
+    // Marca o liberador. Pode ser usuário diferente do analista que salvou.
+    setAnaliseInfoMap((prev) => {
+      const info = prev[selectedExameId] || {};
+      const liberadoEm = formatDataHora();
+      // Se ninguém marcou análise (caso raro: liberou direto), assume mesmo usuário.
+      const analisadoPor = info.analisadoPor ?? { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais };
+      const analisadoEm = info.analisadoEm ?? liberadoEm;
+      return {
+        ...prev,
+        [selectedExameId]: {
+          ...info,
+          analisadoPor,
+          analisadoEm,
+          liberadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+          liberadoEm,
+        },
+      };
+    });
+    {
+      const info = analiseInfoMap[selectedExameId];
+      const analista = info?.analisadoPor?.nome ?? analistaAtual.nome;
+      const detalhe = analista !== analistaAtual.nome
+        ? `Analisado por: ${analista} · Liberado por: ${analistaAtual.nome}`
+        : `Analisado e liberado por: ${analistaAtual.nome}`;
+      addAuditEntry(selectedExameId, "Resultado liberado", detalhe);
+    }
 
     // Verifica se este era o ÚLTIMO exame não-liberado/cancelado.
     // Se sim, dispara celebração com confettis. Caso contrário, popup simples.
@@ -778,7 +820,26 @@ const ResultadoDetalhe = () => {
       if (res.ok) {
         okCount++;
         // P0 #1 — auditoria individual por exame (não em bloco)
-        addAuditEntry(exame.id, "Resultado liberado (lote validado sem críticos)");
+        setAnaliseInfoMap((prev) => {
+          const info = prev[exame.id] || {};
+          const analisadoPor = info.analisadoPor ?? { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais };
+          const analisadoEm = info.analisadoEm ?? formatDataHora();
+          return {
+            ...prev,
+            [exame.id]: {
+              ...info,
+              analisadoPor,
+              analisadoEm,
+              liberadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+              liberadoEm: formatDataHora(),
+            },
+          };
+        });
+        const analista = analiseInfoMap[exame.id]?.analisadoPor?.nome ?? analistaAtual.nome;
+        const detalhe = analista !== analistaAtual.nome
+          ? `Analisado por: ${analista} · Liberado por: ${analistaAtual.nome}`
+          : `Analisado e liberado por: ${analistaAtual.nome}`;
+        addAuditEntry(exame.id, "Resultado liberado (lote validado sem críticos)", detalhe);
       } else {
         failCount++;
       }
@@ -1576,60 +1637,118 @@ const ResultadoDetalhe = () => {
 
 
                     {/* Mobile footer actions — secundárias estão em "Mais ações" no topo */}
-                    <div className="flex flex-col gap-3 pt-3 border-t border-border/60">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 border border-status-info/40">
-                          <AvatarFallback className="bg-status-info-bg text-status-info text-[10px] font-semibold">
-                            {analistaAtual.iniciais}
-                          </AvatarFallback>
-                        </Avatar>
-                        {modoConsulta ? (
-                          <span className="text-xs text-foreground">
-                            <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
-                            <span className="font-medium">{analistaAtual.nome}</span>
-                          </span>
-                        ) : (
-                          <>
-                            <div className="flex flex-col leading-tight flex-1 min-w-0">
-                              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analista</span>
-                              <span className="text-xs font-medium text-foreground truncate">{analistaAtual.nome}</span>
-                            </div>
-                            <button
-                              onClick={() => { setAnalistaEmail(""); setAnalistaSenha(""); setAnalistaErro(""); setShowAlterarAnalista(true); }}
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1"
-                            >
-                              <Edit className="h-3 w-3" />
-                              Trocar
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      {!modoConsulta && (canAnalisar || canLiberar) && (
-                      <div className="flex gap-2">
-                        {canAnalisar && (
-                          <button
-                            data-result-nav="true"
-                            onClick={handleSalvar}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
-                          >
-                            <Save className="h-3.5 w-3.5" />
-                            Salvar
-                          </button>
-                        )}
-                        {canLiberar && (exame.status === "Resultado salvo" || exame.status === "Em retificação") && (
-                          <button
-                            onClick={() => setShowConfirmarLiberar(true)}
-                            className="flex-[1.6] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
-                            title="Disponível somente após salvar o resultado"
-                          >
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            Assinar e Liberar
-                          </button>
-                        )}
+                    {(() => {
+                      const info = analiseInfoMap[exame.id];
+                      const isSalvo = exame.status === "Resultado salvo" || exame.status === "Em retificação";
+                      const isLiberado = exame.status === "Digitado" || exame.status === "Impresso" || exame.status === "Retificado";
+                      const analisadoPor = info?.analisadoPor;
+                      const analisadoEm = info?.analisadoEm;
+                      const liberadoPor = info?.liberadoPor;
+                      const liberadoEm = info?.liberadoEm;
+                      const diffUsers = !!(analisadoPor && liberadoPor && analisadoPor.nome !== liberadoPor.nome);
+                      const avatarUser = isLiberado && liberadoPor ? liberadoPor
+                        : (isSalvo && analisadoPor ? analisadoPor : analistaAtual);
+                      return (
+                        <div className="flex flex-col gap-3 pt-3 border-t border-border/60">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 border border-status-info/40">
+                              <AvatarFallback className="bg-status-info-bg text-status-info text-[10px] font-semibold">
+                                {avatarUser.iniciais}
+                              </AvatarFallback>
+                            </Avatar>
 
-                      </div>
-                      )}
-                    </div>
+                            {isLiberado ? (
+                              <div className="flex flex-col leading-tight flex-1 min-w-0 text-[11px]">
+                                {diffUsers ? (
+                                  <>
+                                    <span className="text-foreground truncate">
+                                      <span className="text-muted-foreground">Analisado por:</span>{" "}
+                                      <span className="font-medium">{analisadoPor!.nome}</span>
+                                      {analisadoEm && <span className="text-muted-foreground"> · {analisadoEm}</span>}
+                                    </span>
+                                    <span className="text-foreground truncate">
+                                      <span className="text-muted-foreground">Liberado por:</span>{" "}
+                                      <span className="font-medium">{liberadoPor!.nome}</span>
+                                      {liberadoEm && <span className="text-muted-foreground"> · {liberadoEm}</span>}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-foreground truncate">
+                                    <span className="text-muted-foreground">Analisado e liberado por:</span>{" "}
+                                    <span className="font-medium">{(liberadoPor || analisadoPor || analistaAtual).nome}</span>
+                                    {(liberadoEm || analisadoEm) && (
+                                      <span className="text-muted-foreground"> · {liberadoEm || analisadoEm}</span>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            ) : isSalvo ? (
+                              <>
+                                <div className="flex flex-col leading-tight flex-1 min-w-0">
+                                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analisado por</span>
+                                  <span className="text-xs font-medium text-foreground truncate">
+                                    {(analisadoPor || analistaAtual).nome}
+                                    {analisadoEm && <span className="text-[10px] font-normal text-muted-foreground"> · {analisadoEm}</span>}
+                                  </span>
+                                </div>
+                                <span
+                                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-accent/60 rounded-md px-2 py-1"
+                                  title="Para alterar o analista é necessário retificar o resultado."
+                                >
+                                  <Lock className="h-3 w-3" />
+                                  Bloqueado
+                                </span>
+                              </>
+                            ) : modoConsulta ? (
+                              <span className="text-xs text-foreground">
+                                <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
+                                <span className="font-medium">{analistaAtual.nome}</span>
+                              </span>
+                            ) : (
+                              <>
+                                <div className="flex flex-col leading-tight flex-1 min-w-0">
+                                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analista</span>
+                                  <span className="text-xs font-medium text-foreground truncate">{analistaAtual.nome}</span>
+                                </div>
+                                <button
+                                  onClick={() => { setAnalistaEmail(""); setAnalistaSenha(""); setAnalistaErro(""); setShowAlterarAnalista(true); }}
+                                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                  Trocar
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Botões de ação — Salvar oculto após "Resultado salvo"; apenas Assinar e Liberar restante. */}
+                          {!modoConsulta && !isLiberado && (canAnalisar || canLiberar) && (
+                            <div className="flex gap-2">
+                              {canAnalisar && !isSalvo && (
+                                <button
+                                  data-result-nav="true"
+                                  onClick={handleSalvar}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
+                                >
+                                  <Save className="h-3.5 w-3.5" />
+                                  Salvar
+                                </button>
+                              )}
+                              {canLiberar && isSalvo && (
+                                <button
+                                  onClick={() => setShowConfirmarLiberar(true)}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                                  title="Disponível somente após salvar o resultado"
+                                >
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  Assinar e Liberar
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     </>
                     )}
