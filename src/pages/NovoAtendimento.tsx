@@ -675,6 +675,7 @@ const NovoAtendimento = () => {
         ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         jejum: jejum === "sim",
+        prioridadeClinica: prioridade,
       });
       } else {
       const protocolo = getNextProtocolo();
