@@ -908,6 +908,7 @@ const ResultadoDetalhe = () => {
       customByExame?: Record<number, string>,
       solicitanteLabel?: string,
       pageMargins?: { top: number; right: number; bottom: number; left: number },
+      historicoByExameId?: Record<number, { linhaHtml: string; graficoHtml: string }>,
     ) =>
       buildLaudoHtmlPure({
         paciente,
@@ -918,6 +919,7 @@ const ResultadoDetalhe = () => {
         customByExame,
         solicitanteLabel,
         pageMargins,
+        historicoByExameId,
       }),
     [paciente, analistaAtual, assinaturaLaudo, getResolvedRef],
   );
