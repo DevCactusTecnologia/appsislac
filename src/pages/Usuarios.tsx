@@ -543,72 +543,216 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
           </>
         }
       >
-        <div className="px-6 py-5 space-y-5">
-          <div className="space-y-2">
-            <Label>Nome *</Label>
-            <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Nome completo" className="rounded-xl" />
-          </div>
-          <div className="space-y-2">
-            <Label>E-mail *</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              placeholder="usuario@email.com"
-              className="rounded-xl"
-              disabled={!!editingId}
-            />
-            {editingId && <p className="text-[11px] text-muted-foreground">O e-mail não pode ser alterado.</p>}
-          </div>
-
-          {/* Senha (Supabase Auth oficial — sem hash paralelo) */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4" />
-              {editingId ? "Redefinir senha" : "Definir senha"}
-              <span className="text-[11px] font-normal text-muted-foreground">(opcional)</span>
-            </Label>
-            <Input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              placeholder={editingId ? "Deixe em branco para manter a atual" : "Mínimo 8 caracteres ou envie convite"}
-              className="rounded-xl"
-              autoComplete="new-password"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              {editingId
-                ? "Se preenchida, a senha será atualizada imediatamente no login do usuário."
-                : "Se preenchida, o usuário é criado já ativo. Caso contrário, ele recebe e-mail de convite."}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Perfil</Label>
-            <Select value={form.perfil} onValueChange={(v) => handlePerfilChange(v as Perfil)} disabled={form.isAdmin}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PERFIS_SELECIONAVEIS.map((k) => <SelectItem key={k} value={k}>{perfilLabels[k]}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Admin toggle */}
-          <label className={cn("flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-colors", form.isAdmin ? "border-primary/40 bg-primary/5" : "border-border/60 hover:bg-muted/40")}>
-            <Switch
-              checked={form.isAdmin}
-              onCheckedChange={toggleAdmin}
-              disabled={!!editingId && currentUser?.id === editingId}
-            />
-            <div className="flex-1">
-              <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-primary" /> Administrador
-              </span>
-              <p className="text-[11px] text-muted-foreground">Acesso total a todas as áreas e ações do sistema.</p>
+        <div className="px-6 py-5 space-y-6">
+          {/* ── PASSO 1 · Selecione o perfil ───────────────────── */}
+          <section className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Passo 1</span>
+              <h3 className="text-sm font-semibold text-foreground">Tipo de acesso</h3>
             </div>
-          </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {([
+                { key: "analista" as Perfil, icon: Microscope, label: "Analista", desc: "Análise e liberação" },
+                { key: "recepcionista" as Perfil, icon: ClipboardList, label: "Recepcionista", desc: "Atendimentos" },
+                { key: "financeiro" as Perfil, icon: Calculator, label: "Financeiro", desc: "Caixa e relatórios" },
+                { key: "__admin" as const, icon: ShieldCheck, label: "Administrador", desc: "Acesso total" },
+              ]).map((opt) => {
+                const isAdminCard = opt.key === "__admin";
+                const selected = isAdminCard ? form.isAdmin : (!form.isAdmin && form.perfil === opt.key);
+                const disabled = isAdminCard && !!editingId && currentUser?.id === editingId;
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      if (isAdminCard) toggleAdmin(true);
+                      else { if (form.isAdmin) toggleAdmin(false); handlePerfilChange(opt.key as Perfil); }
+                    }}
+                    className={cn(
+                      "flex flex-col items-start gap-1.5 p-3 rounded-2xl border text-left transition-all",
+                      selected
+                        ? "border-primary/50 bg-primary/5 ring-2 ring-primary/15"
+                        : "border-border/60 hover:bg-muted/40 hover:border-border",
+                      disabled && "opacity-50 cursor-not-allowed",
+                    )}
+                  >
+                    <div className={cn("p-1.5 rounded-lg", selected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span className="text-[13px] font-semibold text-foreground">{opt.label}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-          {/* Permissões agrupadas — colapsadas por padrão (Equipe 2.1) */}
+          {/* ── PASSO 2 · Identificação ──────────────────────── */}
+          <section className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Passo 2</span>
+              <h3 className="text-sm font-semibold text-foreground">Identificação</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> Nome completo *</Label>
+                <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Maria Silva Souza" className="rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> E-mail *</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="usuario@email.com"
+                  className="rounded-xl"
+                  disabled={!!editingId}
+                />
+                {editingId && <p className="text-[10px] text-muted-foreground">O e-mail não pode ser alterado.</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" /> {editingId ? "Redefinir senha" : "Senha"} <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder={editingId ? "Manter atual" : "Min. 8 caracteres"}
+                  className="rounded-xl"
+                  autoComplete="new-password"
+                />
+                <p className="text-[10px] text-muted-foreground">{editingId ? "Em branco mantém a atual." : "Em branco envia convite por e-mail."}</p>
+              </div>
+            </div>
+          </section>
+
+          {/* ── PASSO 3 · Dados profissionais (somente Analista) ─ */}
+          {form.perfil === "analista" && !form.isAdmin && (
+            <section className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Passo 3</span>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> Dados profissionais do analista</h3>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs">Tipo de profissional *</Label>
+                    <Select value={form.tipoProfissional} onValueChange={(v) => setForm((f) => ({ ...f, tipoProfissional: v }))}>
+                      <SelectTrigger className="rounded-xl"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {TIPOS_PROFISSIONAL.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1.5"><IdCard className="h-3.5 w-3.5" /> CPF</Label>
+                    <Input value={form.cpf} onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))} placeholder="000.000.000-00" className="rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone</Label>
+                    <Input value={form.telefone} onChange={(e) => setForm((f) => ({ ...f, telefone: maskPhoneBR(e.target.value) }))} placeholder="(00) 00000-0000" className="rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">CBO</Label>
+                    <Input value={form.cbo} onChange={(e) => setForm((f) => ({ ...f, cbo: e.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="Ex.: 223505" className="rounded-xl" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">CNS</Label>
+                    <Input value={form.cns} onChange={(e) => setForm((f) => ({ ...f, cns: e.target.value.replace(/\D/g, "").slice(0, 15) }))} placeholder="Cartão Nacional de Saúde" className="rounded-xl" />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border/50">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Registro no conselho</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Conselho *</Label>
+                      <Select value={form.conselhoClasse} onValueChange={(v) => setForm((f) => ({ ...f, conselhoClasse: v }))}>
+                        <SelectTrigger className="rounded-xl"><SelectValue placeholder="CRBM..." /></SelectTrigger>
+                        <SelectContent>
+                          {CONSELHOS_CLASSE.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">UF *</Label>
+                      <Select value={form.conselhoUf} onValueChange={(v) => setForm((f) => ({ ...f, conselhoUf: v }))}>
+                        <SelectTrigger className="rounded-xl"><SelectValue placeholder="UF" /></SelectTrigger>
+                        <SelectContent>
+                          {UFS.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs">Número do registro *</Label>
+                      <Input value={form.conselhoNumero} onChange={(e) => setForm((f) => ({ ...f, conselhoNumero: e.target.value }))} placeholder="Ex.: 12345" className="rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+
+                {editingId ? (
+                  <div className="pt-2 border-t border-border/50">
+                    <AssinaturaSection
+                      userId={editingId}
+                      tipo={form.assinaturaTipo}
+                      conselho={
+                        form.conselhoClasse && form.conselhoUf && form.conselhoNumero
+                          ? `${form.conselhoClasse}/${form.conselhoUf} ${form.conselhoNumero}`
+                          : form.assinaturaConselho
+                      }
+                      imagemKey={form.assinaturaImagemKey}
+                      nome={form.nome}
+                      onChangeTipo={(t) => setForm((f) => ({ ...f, assinaturaTipo: t }))}
+                      onChangeConselho={(v) => setForm((f) => ({ ...f, assinaturaConselho: v }))}
+                      onImagemChange={(k) => setForm((f) => ({ ...f, assinaturaImagemKey: k }))}
+                    />
+                  </div>
+                ) : (
+                  <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
+                    A assinatura scaneada poderá ser enviada após criar o usuário (reabra em "Editar").
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* ── PASSO · Unidades ───────────────────────────── */}
+          <section className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/80">{form.perfil === "analista" && !form.isAdmin ? "Passo 4" : "Passo 3"}</span>
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Unidades de acesso</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {getUnidadesAtivas().map((u) => {
+                const checked = form.unidadeIds.includes(u.id);
+                return (
+                  <label
+                    key={u.id}
+                    className={cn(
+                      "flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors",
+                      checked ? "border-primary/40 bg-primary/5" : "border-border/60 hover:bg-muted/50",
+                    )}
+                  >
+                    <Switch
+                      checked={checked}
+                      onCheckedChange={() => setForm((f) => ({
+                        ...f,
+                        unidadeIds: checked ? f.unidadeIds.filter((id) => id !== u.id) : [...f.unidadeIds, u.id],
+                      }))}
+                      className="scale-90"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-foreground truncate block">{u.nome}</span>
+                      <p className="text-[11px] text-muted-foreground truncate">{getTipoLabel(u.tipo)} · {u.cidade}/{u.estado}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ── Permissões avançadas (colapsado) ──────────── */}
           {!form.isAdmin && (
             <details className="group rounded-2xl border border-border/60 overflow-hidden">
               <summary className="flex items-center justify-between gap-2 px-4 py-3 cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors list-none">
@@ -616,9 +760,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-semibold text-foreground">Permissões avançadas</span>
                 </div>
-                <span className="text-[11px] text-muted-foreground">
-                  Ajustes finos — só altere se souber o que está fazendo.
-                </span>
+                <span className="text-[11px] text-muted-foreground">Ajustes finos — opcional</span>
               </summary>
               <div className="p-3 space-y-3">
                 {PERMISSOES_AGRUPADAS.map((grupo) => (
@@ -649,162 +791,9 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
               </div>
             </details>
           )}
-
-          {/* Dados profissionais — somente para perfil Analista */}
-          {form.perfil === "analista" && !form.isAdmin && (
-            <div className="rounded-2xl border border-border/60 overflow-hidden">
-              <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Dados profissionais do analista</span>
-              </div>
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Tipo de profissional *</Label>
-                  <Select
-                    value={form.tipoProfissional}
-                    onValueChange={(v) => setForm((f) => ({ ...f, tipoProfissional: v }))}
-                  >
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {TIPOS_PROFISSIONAL.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>CBO</Label>
-                  <Input
-                    value={form.cbo}
-                    onChange={(e) => setForm((f) => ({ ...f, cbo: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
-                    placeholder="Ex.: 223505"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>CPF</Label>
-                  <Input
-                    value={form.cpf}
-                    onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
-                    placeholder="000.000.000-00"
-                    className="rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>CNS</Label>
-                  <Input
-                    value={form.cns}
-                    onChange={(e) => setForm((f) => ({ ...f, cns: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
-                    placeholder="Cartão Nacional de Saúde"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Telefone</Label>
-                  <Input
-                    value={form.telefone}
-                    onChange={(e) => setForm((f) => ({ ...f, telefone: maskPhoneBR(e.target.value) }))}
-                    placeholder="(00) 00000-0000"
-                    className="rounded-xl"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Conselho de Classe *</Label>
-                  <Select
-                    value={form.conselhoClasse}
-                    onValueChange={(v) => setForm((f) => ({ ...f, conselhoClasse: v }))}
-                  >
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="CRBM, CRF..." /></SelectTrigger>
-                    <SelectContent>
-                      {CONSELHOS_CLASSE.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>UF emissora *</Label>
-                  <Select
-                    value={form.conselhoUf}
-                    onValueChange={(v) => setForm((f) => ({ ...f, conselhoUf: v }))}
-                  >
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="UF" /></SelectTrigger>
-                    <SelectContent>
-                      {UFS.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Número do registro *</Label>
-                  <Input
-                    value={form.conselhoNumero}
-                    onChange={(e) => setForm((f) => ({ ...f, conselhoNumero: e.target.value }))}
-                    placeholder="Ex.: 12345"
-                    className="rounded-xl"
-                  />
-                </div>
-              </div>
-
-              {/* Assinatura scaneada — só após criar (precisa de userId) */}
-              {editingId ? (
-                <div className="border-t border-border/60 p-4">
-                  <AssinaturaSection
-                    userId={editingId}
-                    tipo={form.assinaturaTipo}
-                    conselho={
-                      form.conselhoClasse && form.conselhoUf && form.conselhoNumero
-                        ? `${form.conselhoClasse}/${form.conselhoUf} ${form.conselhoNumero}`
-                        : form.assinaturaConselho
-                    }
-                    imagemKey={form.assinaturaImagemKey}
-                    nome={form.nome}
-                    onChangeTipo={(t) => setForm((f) => ({ ...f, assinaturaTipo: t }))}
-                    onChangeConselho={(v) => setForm((f) => ({ ...f, assinaturaConselho: v }))}
-                    onImagemChange={(k) => setForm((f) => ({ ...f, assinaturaImagemKey: k }))}
-                  />
-                </div>
-              ) : (
-                <div className="border-t border-border/60 px-4 py-3 text-[11px] text-muted-foreground">
-                  A assinatura scaneada pode ser enviada após criar o usuário (reabra o cadastro em "Editar").
-                </div>
-              )}
-            </div>
-          )}
-
-
-          {/* Unidades */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Unidades</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {getUnidadesAtivas().map((u) => {
-                const checked = form.unidadeIds.includes(u.id);
-                return (
-                  <label
-                    key={u.id}
-                    className={cn(
-                      "flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors",
-                      checked ? "border-primary/40 bg-primary/5" : "border-border/60 hover:bg-muted/50",
-                    )}
-                  >
-                    <Switch
-                      checked={checked}
-                      onCheckedChange={() => setForm((f) => ({
-                        ...f,
-                        unidadeIds: checked ? f.unidadeIds.filter((id) => id !== u.id) : [...f.unidadeIds, u.id],
-                      }))}
-                      className="scale-90"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-foreground">{u.nome}</span>
-                      <p className="text-[11px] text-muted-foreground">{getTipoLabel(u.tipo)} · {u.cidade}/{u.estado}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </StandardDialog>
+
 
       {/* Desativar Dialog */}
       <StandardDialog
