@@ -127,6 +127,33 @@ const ImpressaoGeral = () => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
+  const fetchProtocolosFinalizados = async (unidadeId: string | undefined, selectedDate: Date): Promise<string[]> => {
+    const start = new Date(selectedDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    let query = supabase
+      .from("atendimentos")
+      .select("protocolo, atendimento_exames!inner(status)")
+      .gte("data", start.toISOString())
+      .lt("data", end.toISOString())
+      .eq("atendimento_exames.status", "finalizado")
+      .neq("status_atendimento", "Cancelado")
+      .neq("status_atendimento", "Pedido cancelado");
+
+    if (unidadeId) query = query.eq("unidade_id", unidadeId);
+
+    const { data: rows, error } = await query;
+    if (error) throw error;
+
+    return Array.from(new Set(
+      ((rows ?? []) as Array<{ protocolo?: string | null }>)
+        .map((r) => r.protocolo)
+        .filter((p): p is string => !!p),
+    )).sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+  };
+
   const handleImprimirLote = async () => {
     if (gerando) return;
     if (!date || !selectedUnidade) {
@@ -135,15 +162,25 @@ const ImpressaoGeral = () => {
     }
     const unidade = unidadesAtivas.find(u => u.nome === selectedUnidade);
     const dateStr = format(date, "dd/MM/yyyy");
-    const LIBERADOS = new Set(["Digitado", "Impresso", "Retificado"]);
-    const elegiveis = getAtendimentos()
-      .filter(a => a.data.startsWith(dateStr))
-      .filter(a => !unidade || a.unidadeId === unidade.id)
-      .filter(a => a.statusAtendimento.label !== "Cancelado")
-      .slice()
-      .sort((a, b) => a.protocolo.localeCompare(b.protocolo, "pt-BR", { numeric: true }));
-    if (elegiveis.length === 0) {
-      toast.error("Nenhum atendimento encontrado para essa unidade e data.");
+
+    let protocolosElegiveis: string[] = [];
+    try {
+      protocolosElegiveis = await fetchProtocolosFinalizados(unidade?.id, date);
+    } catch (error) {
+      logger.warn("ImpressaoGeral", "consulta server-side de protocolos finalizados falhou; usando cache local", {
+        error: (error as Error)?.message,
+      });
+      protocolosElegiveis = getAtendimentos()
+        .filter(a => a.data.startsWith(dateStr))
+        .filter(a => !unidade || a.unidadeId === unidade.id)
+        .filter(a => a.statusAtendimento.label !== "Cancelado" && a.statusAtendimento.label !== "Pedido cancelado")
+        .filter(a => a.exames?.some((e) => ["Digitado", "Impresso", "Retificado"].includes(e.status)))
+        .map(a => a.protocolo)
+        .sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+    }
+
+    if (protocolosElegiveis.length === 0) {
+      toast.error("Nenhum resultado finalizado encontrado para essa unidade e data.");
       return;
     }
     // Resolve assinatura do usuário logado (mesma lógica do laudo individual).
@@ -176,10 +213,10 @@ const ImpressaoGeral = () => {
     const safeUnidade = selectedUnidade.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Unidade";
     const filename = `Resultados_${safeUnidade}_${isoDate}`;
     setGerando(true);
-    const toastId = toast.loading(`Preparando laudos (${elegiveis.length} atendimentos)…`);
+    const toastId = toast.loading(`Preparando laudos (${protocolosElegiveis.length} atendimentos)…`);
     try {
       const result = await gerarLaudoLotePdf({
-        protocolos: elegiveis.map(a => a.protocolo),
+        protocolos: protocolosElegiveis,
         analistaAtual,
         assinaturaLaudo,
         filename,
