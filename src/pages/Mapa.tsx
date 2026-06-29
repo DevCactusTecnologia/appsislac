@@ -27,6 +27,7 @@ import { buildMapasHtml, prefetchParametrosForTickets, type MapaExameTicket } fr
 import MapaPreviewDialog, { type MapaOrientation } from "@/components/mapa/MapaPreviewDialog";
 import type { MockAtendimento } from "@/data/types";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
+import { getUsuarios, subscribeUsuarios } from "@/data/usuariosStore";
 
 const tipoIcons: Record<TipoMapa, React.ReactNode> = {
   paciente: <Users className="h-4 w-4" />,
