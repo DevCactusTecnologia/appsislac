@@ -44,7 +44,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 type ExameStatus = "analisado" | "pendente" | "cancelado" | "finalizada";
 
 interface Exame { id: number; nome: string; material: string; status: ExameStatus; dataAnalise: string | null; amostraId?: string | null; tipoProcesso?: "INTERNO" | "TERCEIRIZADO"; labApoioId?: string | null; }
-interface Paciente { id: number; protocolo: string; nome: string; cpf: string; sexo: string; nascimento: string; idade: string; analisado: boolean; analista: string; exames: Exame[]; }
+interface Paciente { id: number; protocolo: string; nome: string; cpf: string; sexo: string; nascimento: string; idade: string; analisado: boolean; analista: string; exames: Exame[]; jejum: boolean; prioridadeClinica: "normal" | "urgencia" | "emergencia"; }
 
 const isoToBR = (iso: string): string => {
   if (!iso) return "";
