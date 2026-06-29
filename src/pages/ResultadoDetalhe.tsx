@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, Fragment } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from "react";
 import { searchNormalize } from "@/lib/utils";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
@@ -142,7 +142,25 @@ const ResultadoDetalhe = () => {
   const [analistaSenha, setAnalistaSenha] = useState("");
   const [analistaErro, setAnalistaErro] = useState("");
   const [analistaValidando, setAnalistaValidando] = useState(false);
-  const [analistaAtual, setAnalistaAtual] = useState({ nome: "Felipe Andrade Melo", iniciais: "FA" });
+  const computeIniciais = (nome: string): string => {
+    const parts = (nome || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+  const [analistaAtual, setAnalistaAtual] = useState(() => {
+    const nome = authUser?.nome || "Analista";
+    return { nome, iniciais: computeIniciais(nome) };
+  });
+  // Mantém o analista atual sincronizado com o usuário logado enquanto o
+  // operador não confirmar credenciais de outro analista pelo diálogo.
+  const analistaTrocadoRef = useRef(false);
+  useEffect(() => {
+    if (analistaTrocadoRef.current) return;
+    const nome = authUser?.nome;
+    if (!nome) return;
+    setAnalistaAtual({ nome, iniciais: computeIniciais(nome) });
+  }, [authUser?.nome]);
   const [assinaturaLaudo, setAssinaturaLaudo] = useState<{ tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null }>({ tipo: "carimbo", conselho: null, url: null });
   useEffect(() => {
     const uid = authUser?.id;
@@ -338,10 +356,10 @@ const ResultadoDetalhe = () => {
     }
 
     // Reconstrói o log a partir do estado vindo do banco, preservando hora/minuto/segundo.
-    const log = buildAuditLogFromDb(rows, exames, idMap);
+    const log = buildAuditLogFromDb(rows, exames, idMap, analistaAtual);
     setAuditLog(log);
     setIsHydrating(false);
-  }, [id]);
+  }, [id, analistaAtual]);
 
   useEffect(() => {
     reloadExames();
@@ -2959,6 +2977,7 @@ const ResultadoDetalhe = () => {
                 const res = await validarCredenciaisAnalista(analistaEmail, analistaSenha);
                 setAnalistaValidando(false);
                 if (res.ok) {
+                  analistaTrocadoRef.current = true;
                   setAnalistaAtual({ nome: res.nome, iniciais: res.iniciais });
                   setShowAlterarAnalista(false);
                   toast.success(`Analista alterado para ${res.nome}`);

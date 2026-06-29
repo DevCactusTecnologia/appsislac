@@ -12,6 +12,11 @@ export interface AuditLogEntry {
   dados?: string;
 }
 
+export interface AuditUser {
+  nome: string;
+  iniciais: string;
+}
+
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const fmtDateTime = (d: Date) =>
@@ -25,11 +30,14 @@ const isLiberado = (s: ExameStatus) =>
 
 /**
  * Reconstrói o log a partir do estado vindo do banco, preservando hh:mm:ss.
+ * `defaultUser` é usado quando o banco ainda não armazena o autor real de
+ * cada evento (legado) — normalmente o usuário operacional logado.
  */
 export function buildAuditLogFromDb(
   rows: AtendimentoExameRow[],
   exames: Exame[],
   idMap: DbIdMap,
+  defaultUser: AuditUser = { nome: "—", iniciais: "?" },
 ): Record<number, AuditLogEntry[]> {
   const now = new Date();
   const log: Record<number, AuditLogEntry[]> = {};
@@ -38,6 +46,7 @@ export function buildAuditLogFromDb(
     const row = rows.find((r) => r.id === dbId);
     if (row) rowByUiId.set(Number(uiIdStr), row);
   });
+  const u = { usuario: defaultUser.nome, iniciais: defaultUser.iniciais };
   exames.forEach((exame) => {
     const row = rowByUiId.get(exame.id);
     const dbStatus = row?.status;
@@ -46,15 +55,15 @@ export function buildAuditLogFromDb(
     const dataAnal = fmtIso(exame.dataAnaliseISO, now);
     const dataLib = fmtIso(exame.dataLiberacaoISO, now);
     const entries: AuditLogEntry[] = [
-      { acao: "Pedido realizado", dataHora: dataPedido, usuario: "Felipe Andrade Melo", iniciais: "FA" },
-      { acao: "Amostra coletada", dataHora: dataColeta, usuario: "Felipe Andrade Melo", iniciais: "FA" },
+      { acao: "Pedido realizado", dataHora: dataPedido, ...u },
+      { acao: "Amostra coletada", dataHora: dataColeta, ...u },
     ];
     if (dbStatus === "em_bancada" || dbStatus === "analisado" ||
         dbStatus === "em_analise" || dbStatus === "finalizado") {
-      entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, usuario: "Felipe Andrade Melo", iniciais: "FA" });
+      entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, ...u });
     }
     if (dbStatus === "analisado" || dbStatus === "em_analise" || dbStatus === "finalizado") {
-      entries.push({ acao: "Análise concluída", dataHora: dataAnal, usuario: "Felipe Andrade Melo", iniciais: "FA" });
+      entries.push({ acao: "Análise concluída", dataHora: dataAnal, ...u });
     }
     if (exame.status === "Resultado salvo" || exame.status === "Em retificação" || isLiberado(exame.status)) {
       const dadosAtuais = exame.parametros.map((p) => `${p.nome}: ${p.valor || "—"}`).join("\n");
@@ -64,38 +73,34 @@ export function buildAuditLogFromDb(
         entries.push({
           acao: "Resultado salvo",
           dataHora: dataAnal,
-          usuario: "Felipe Andrade Melo",
-          iniciais: "FA",
+          ...u,
           dados: "Valores anteriores à retificação (não versionados).",
         });
         entries.push({
           acao: "Resultado retificado",
           dataHora: dataRetificacao,
-          usuario: "Felipe Andrade Melo",
-          iniciais: "FA",
+          ...u,
         });
         entries.push({
           acao: "Resultado salvo (após retificação)",
           dataHora: dataRetificacao,
-          usuario: "Felipe Andrade Melo",
-          iniciais: "FA",
+          ...u,
           dados: dadosAtuais,
         });
       } else {
         entries.push({
           acao: "Resultado salvo",
           dataHora: dataAnal,
-          usuario: "Felipe Andrade Melo",
-          iniciais: "FA",
+          ...u,
           dados: dadosAtuais,
         });
       }
     }
     if (isLiberado(exame.status)) {
-      entries.push({ acao: "Resultado liberado", dataHora: dataLib, usuario: "Felipe Andrade Melo", iniciais: "FA" });
+      entries.push({ acao: "Resultado liberado", dataHora: dataLib, ...u });
     }
     if (exame.status === "Cancelado") {
-      entries.push({ acao: "Análise cancelada", dataHora: fmtIso(exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now), usuario: "Felipe Andrade Melo", iniciais: "FA" });
+      entries.push({ acao: "Análise cancelada", dataHora: fmtIso(exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now), ...u });
     }
     log[exame.id] = entries;
   });

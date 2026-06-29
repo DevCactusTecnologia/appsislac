@@ -69,23 +69,32 @@ export async function validarCredenciaisAnalista(
       return { ok: false, error: "E-mail ou senha incorretos." };
     }
 
-    // Verificação de role server-side via RPC SECURITY DEFINER `has_role`.
-    // Não confiamos no cache local (`usuariosStore`): o cache pode estar vazio
-    // ou pertencer a outro tenant. A RPC roda no banco com o JWT recém-emitido
-    // pelo signIn transitório e responde "true" apenas se o user tiver o role
-    // pedido (admin OU analista) — qualquer outra resposta = rejeição.
-    const [{ data: isAnalista }, { data: isAdmin }] = await Promise.all([
-      transient.rpc("has_role", { _user_id: data.user.id, _role: "analista" }),
-      transient.rpc("has_role", { _user_id: data.user.id, _role: "admin" }),
-    ]);
-    if (!isAnalista && !isAdmin) {
+    // Verificação de perfil server-side via tabela `profiles`.
+    // `profiles.perfil` é a fonte da verdade operacional (admin | analista |
+    // recepcionista | financeiro). A enum `app_role` (usada por `has_role`)
+    // só contém roles de plataforma (admin/manager/user/super_admin) e NÃO
+    // possui o valor "analista" — chamar has_role('analista') falha no enum.
+    // A consulta roda com o JWT recém-emitido (RLS aplicada) e só retorna
+    // a linha se o user estiver no tenant correto.
+    const { data: prof, error: profErr } = await transient
+      .from("profiles")
+      .select("nome, perfil, status")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    if (profErr || !prof) {
+      return { ok: false, error: "Usuário sem perfil ativo neste laboratório." };
+    }
+    if (prof.status && prof.status !== "Ativo") {
+      return { ok: false, error: "Usuário inativo neste laboratório." };
+    }
+    if (prof.perfil !== "analista" && prof.perfil !== "admin") {
       return { ok: false, error: "Este usuário não tem perfil de analista." };
     }
 
     const cache = getUsuarios();
     const found = cache.find((u) => u.email.toLowerCase() === emailNorm);
     const meta = (data.user.user_metadata ?? {}) as { nome?: string; full_name?: string };
-    const nome = found?.nome || meta.nome || meta.full_name || emailNorm.split("@")[0];
+    const nome = prof.nome || found?.nome || meta.nome || meta.full_name || emailNorm.split("@")[0];
 
     return {
       ok: true,
