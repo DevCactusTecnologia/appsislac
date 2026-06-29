@@ -1637,60 +1637,118 @@ const ResultadoDetalhe = () => {
 
 
                     {/* Mobile footer actions — secundárias estão em "Mais ações" no topo */}
-                    <div className="flex flex-col gap-3 pt-3 border-t border-border/60">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 border border-status-info/40">
-                          <AvatarFallback className="bg-status-info-bg text-status-info text-[10px] font-semibold">
-                            {analistaAtual.iniciais}
-                          </AvatarFallback>
-                        </Avatar>
-                        {modoConsulta ? (
-                          <span className="text-xs text-foreground">
-                            <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
-                            <span className="font-medium">{analistaAtual.nome}</span>
-                          </span>
-                        ) : (
-                          <>
-                            <div className="flex flex-col leading-tight flex-1 min-w-0">
-                              <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analista</span>
-                              <span className="text-xs font-medium text-foreground truncate">{analistaAtual.nome}</span>
-                            </div>
-                            <button
-                              onClick={() => { setAnalistaEmail(""); setAnalistaSenha(""); setAnalistaErro(""); setShowAlterarAnalista(true); }}
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1"
-                            >
-                              <Edit className="h-3 w-3" />
-                              Trocar
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      {!modoConsulta && (canAnalisar || canLiberar) && (
-                      <div className="flex gap-2">
-                        {canAnalisar && (
-                          <button
-                            data-result-nav="true"
-                            onClick={handleSalvar}
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
-                          >
-                            <Save className="h-3.5 w-3.5" />
-                            Salvar
-                          </button>
-                        )}
-                        {canLiberar && (exame.status === "Resultado salvo" || exame.status === "Em retificação") && (
-                          <button
-                            onClick={() => setShowConfirmarLiberar(true)}
-                            className="flex-[1.6] inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
-                            title="Disponível somente após salvar o resultado"
-                          >
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            Assinar e Liberar
-                          </button>
-                        )}
+                    {(() => {
+                      const info = analiseInfoMap[exame.id];
+                      const isSalvo = exame.status === "Resultado salvo" || exame.status === "Em retificação";
+                      const isLiberado = exame.status === "Digitado" || exame.status === "Impresso" || exame.status === "Retificado";
+                      const analisadoPor = info?.analisadoPor;
+                      const analisadoEm = info?.analisadoEm;
+                      const liberadoPor = info?.liberadoPor;
+                      const liberadoEm = info?.liberadoEm;
+                      const diffUsers = !!(analisadoPor && liberadoPor && analisadoPor.nome !== liberadoPor.nome);
+                      const avatarUser = isLiberado && liberadoPor ? liberadoPor
+                        : (isSalvo && analisadoPor ? analisadoPor : analistaAtual);
+                      return (
+                        <div className="flex flex-col gap-3 pt-3 border-t border-border/60">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 border border-status-info/40">
+                              <AvatarFallback className="bg-status-info-bg text-status-info text-[10px] font-semibold">
+                                {avatarUser.iniciais}
+                              </AvatarFallback>
+                            </Avatar>
 
-                      </div>
-                      )}
-                    </div>
+                            {isLiberado ? (
+                              <div className="flex flex-col leading-tight flex-1 min-w-0 text-[11px]">
+                                {diffUsers ? (
+                                  <>
+                                    <span className="text-foreground truncate">
+                                      <span className="text-muted-foreground">Analisado por:</span>{" "}
+                                      <span className="font-medium">{analisadoPor!.nome}</span>
+                                      {analisadoEm && <span className="text-muted-foreground"> · {analisadoEm}</span>}
+                                    </span>
+                                    <span className="text-foreground truncate">
+                                      <span className="text-muted-foreground">Liberado por:</span>{" "}
+                                      <span className="font-medium">{liberadoPor!.nome}</span>
+                                      {liberadoEm && <span className="text-muted-foreground"> · {liberadoEm}</span>}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-foreground truncate">
+                                    <span className="text-muted-foreground">Analisado e liberado por:</span>{" "}
+                                    <span className="font-medium">{(liberadoPor || analisadoPor || analistaAtual).nome}</span>
+                                    {(liberadoEm || analisadoEm) && (
+                                      <span className="text-muted-foreground"> · {liberadoEm || analisadoEm}</span>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            ) : isSalvo ? (
+                              <>
+                                <div className="flex flex-col leading-tight flex-1 min-w-0">
+                                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analisado por</span>
+                                  <span className="text-xs font-medium text-foreground truncate">
+                                    {(analisadoPor || analistaAtual).nome}
+                                    {analisadoEm && <span className="text-[10px] font-normal text-muted-foreground"> · {analisadoEm}</span>}
+                                  </span>
+                                </div>
+                                <span
+                                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground bg-accent/60 rounded-md px-2 py-1"
+                                  title="Para alterar o analista é necessário retificar o resultado."
+                                >
+                                  <Lock className="h-3 w-3" />
+                                  Bloqueado
+                                </span>
+                              </>
+                            ) : modoConsulta ? (
+                              <span className="text-xs text-foreground">
+                                <span className="text-muted-foreground">Analisado e Liberado por:</span>{" "}
+                                <span className="font-medium">{analistaAtual.nome}</span>
+                              </span>
+                            ) : (
+                              <>
+                                <div className="flex flex-col leading-tight flex-1 min-w-0">
+                                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Analista</span>
+                                  <span className="text-xs font-medium text-foreground truncate">{analistaAtual.nome}</span>
+                                </div>
+                                <button
+                                  onClick={() => { setAnalistaEmail(""); setAnalistaSenha(""); setAnalistaErro(""); setShowAlterarAnalista(true); }}
+                                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                  Trocar
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Botões de ação — Salvar oculto após "Resultado salvo"; apenas Assinar e Liberar restante. */}
+                          {!modoConsulta && !isLiberado && (canAnalisar || canLiberar) && (
+                            <div className="flex gap-2">
+                              {canAnalisar && !isSalvo && (
+                                <button
+                                  data-result-nav="true"
+                                  onClick={handleSalvar}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
+                                >
+                                  <Save className="h-3.5 w-3.5" />
+                                  Salvar
+                                </button>
+                              )}
+                              {canLiberar && isSalvo && (
+                                <button
+                                  onClick={() => setShowConfirmarLiberar(true)}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-lg text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
+                                  title="Disponível somente após salvar o resultado"
+                                >
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  Assinar e Liberar
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     </>
                     )}
