@@ -145,6 +145,7 @@ function configToRow(config: LabConfig, tenantId: string) {
     responsavel_tecnico_numero: config.responsavelTecnicoNumero ?? "",
     responsavel_tecnico_uf: config.responsavelTecnicoUf ?? "",
     watermark: normalizeWatermark(config.watermark),
+    rotina_coleta_analise_enabled: config.rotinaColetaAnaliseEnabled ?? true,
   };
 }
 
