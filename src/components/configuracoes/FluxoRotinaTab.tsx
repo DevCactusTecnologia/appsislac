@@ -23,11 +23,17 @@ const FluxoRotinaTab = () => {
   const [enabled, setEnabled] = useState<boolean>(
     () => getLabConfig().rotinaColetaAnaliseEnabled !== false,
   );
+  const [autoTerc, setAutoTerc] = useState<boolean>(
+    () => getLabConfig().terceirizadoRecebimentoAutomatico === true,
+  );
   const [saving, setSaving] = useState(false);
+  const [savingTerc, setSavingTerc] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeLabConfig(() => {
-      setEnabled(getLabConfig().rotinaColetaAnaliseEnabled !== false);
+      const cfg = getLabConfig();
+      setEnabled(cfg.rotinaColetaAnaliseEnabled !== false);
+      setAutoTerc(cfg.terceirizadoRecebimentoAutomatico === true);
     });
     return unsub;
   }, []);
@@ -54,6 +60,31 @@ const FluxoRotinaTab = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleAutoTerc = async (next: boolean) => {
+    setSavingTerc(true);
+    const previous = autoTerc;
+    setAutoTerc(next);
+    try {
+      const current = getLabConfig();
+      await saveLabConfig({ ...current, terceirizadoRecebimentoAutomatico: next });
+      toast({
+        title: next ? "Recebimento automático ativado" : "Recebimento manual ativado",
+        description: next
+          ? "Exames terceirizados serão marcados como finalizados automaticamente ao abrir Inserir Resultado."
+          : "O usuário precisará clicar em 'Marcar como recebido' para cada exame terceirizado.",
+      });
+    } catch (err) {
+      setAutoTerc(previous);
+      toast({
+        title: "Não foi possível salvar",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingTerc(false);
     }
   };
 
