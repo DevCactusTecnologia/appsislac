@@ -271,7 +271,11 @@ export async function _initUsuariosStore(): Promise<void> {
 }
 
 export function isUsuariosLoaded() { return _loaded; }
-export function getUsuarios(): Usuario[] { return [..._cache]; }
+// IMPORTANTE: retorna a MESMA referência enquanto `_cache` não muda.
+// Necessário para `useSyncExternalStore` evitar loop infinito (React #185).
+// Toda mutação reatribui `_cache` para uma nova array, então a igualdade
+// referencial só falha quando os dados realmente mudaram.
+export function getUsuarios(): Usuario[] { return _cache; }
 export function getUsuarioById(userId: string): Usuario | undefined { return _cache.find((u) => u.userId === userId); }
 
 export function subscribeUsuarios(listener: () => void): () => void {
