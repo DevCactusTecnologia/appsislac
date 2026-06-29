@@ -75,6 +75,8 @@ interface Paciente {
   coletador: string;
   exames: Exame[];
   pacienteId?: number | null;
+  jejum: boolean;
+  prioridadeClinica: "normal" | "urgencia" | "emergencia";
 }
 
 const isoToBR = (iso: string): string => {
