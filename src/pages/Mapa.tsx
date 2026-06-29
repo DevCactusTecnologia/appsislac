@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/shared/PageHeader";
+
 // ============================================================================
 // OWNERSHIP OFICIAL — Página /mapa: workflow operacional de bancada.
 // Tela de triagem, agrupamento e disparo de impressão. NÃO renderiza ciência
