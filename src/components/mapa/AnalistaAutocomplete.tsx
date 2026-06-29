@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, type ComponentType } from "react";
 import { Search, User, X } from "lucide-react";
 import { normalize } from "./MapaConstants";
 
@@ -10,9 +10,22 @@ interface Props {
   onClear: () => void;
   /** Lista real de analistas (do runtime). Sem fallback mock. */
   analistas?: string[];
+  placeholder?: string;
+  emptyText?: string;
+  ItemIcon?: ComponentType<{ className?: string }>;
 }
 
-const AnalistaAutocomplete = ({ value, query, onQueryChange, onSelect, onClear, analistas = [] }: Props) => {
+const AnalistaAutocomplete = ({
+  value,
+  query,
+  onQueryChange,
+  onSelect,
+  onClear,
+  analistas = [],
+  placeholder = "Digite o nome do analista...",
+  emptyText = "Nenhum analista encontrado",
+  ItemIcon = User,
+}: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
