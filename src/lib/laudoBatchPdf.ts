@@ -14,8 +14,8 @@
 //     (mesma função `buildLaudoHtml` do individual).
 //  2. Concatena os fragmentos em UM único documento, separando atendimentos
 //     com page-break forçado.
-//  3. Injeta o mesmo hook de paginação do individual — adaptado para
-//     iterar sobre TODAS as `table.laudo-a4-page` (uma por atendimento).
+//  3. Injeta um hook leve somente para ajuste de largura antes do print — a
+//     paginação fica a cargo do CSS nativo do laudo, sem recalcular o DOM todo.
 //  4. Dispara `printHtmlInHiddenFrame` — o usuário recebe o diálogo nativo
 //     de impressão e escolhe "Salvar como PDF" (mesma UX do individual).
 
@@ -24,6 +24,8 @@ import { buildLaudoHtml } from "@/pages/ResultadoDetalhe/services/laudoHtmlBuild
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { fetchHistoricoPorExame } from "@/pages/ResultadoDetalhe/services/historicoResultados";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
+import { runWithConcurrency } from "@/lib/runWithConcurrency";
+import { logger } from "@/lib/logger";
 
 export interface GerarLaudoLoteArgs {
   /** Protocolos na ordem desejada (asc por número de atendimento). */
@@ -44,16 +46,39 @@ export interface GerarLaudoLoteResult {
   ms: number;
 }
 
+interface PreparedLaudoFragment {
+  protocolo: string;
+  html: string;
+  totalExames: number;
+  margins: { top: number; right: number; bottom: number; left: number };
+}
+
+const HYDRATION_CONCURRENCY = 3;
+const HYDRATION_TIMEOUT_MS = 45_000;
+const HISTORICO_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(`${label} excedeu ${Math.round(timeoutMs / 1000)}s`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer !== undefined) window.clearTimeout(timer);
+  }) as Promise<T>;
+}
+
 /**
- * Hook de paginação multi-atendimento.
+ * Hook leve para impressão em lote.
  *
- * Espelha o hook usado em `ResultadoDetalhe.doImprimirLaudo`, mas itera
- * sobre TODAS as `table.laudo-a4-page` (uma por atendimento) — não apenas
- * a primeira. Cada atendimento é paginado de forma independente e os
- * page-breaks entre eles continuam garantidos pela classe
- * `laudo-a4-page-break` aplicada na 2ª, 3ª, … tabelas.
+ * O hook anterior tentava recalcular a paginação real de TODAS as tabelas no
+ * iframe antes do print. Em lotes isso escala mal (muitas medições de DOM,
+ * cloneNode e reflow) e pode deixar a UI presa em "Preparando laudos…".
+ *
+ * Aqui mantemos apenas o ajuste de largura do pipeline individual e deixamos
+ * o próprio CSS do laudo (`@page`, `thead` repetido, `break-inside: avoid` e
+ * `.laudo-a4-page-break`) fazer a paginação vetorial nativa do navegador.
  */
-function buildMultiPaginationHook(margins: { top: number; right: number; bottom: number; left: number }): string {
+function buildBatchPrintHook(margins: { top: number; right: number; bottom: number; left: number }): string {
   return `
 <script>
   (function(){
@@ -65,109 +90,59 @@ function buildMultiPaginationHook(margins: { top: number; right: number; bottom:
       var pageWidthMm = 210 - Number(margins.left || 0) - Number(margins.right || 0);
       document.documentElement.style.width = pageWidthMm + 'mm';
       document.body.style.width = pageWidthMm + 'mm';
-
-      var probe = document.createElement('div');
-      probe.style.cssText = 'position:absolute;visibility:hidden;left:-1000mm;top:0;width:100mm;height:0;overflow:hidden;';
-      document.body.appendChild(probe);
-      var pxPerMm = probe.getBoundingClientRect().width / 100;
-      probe.remove();
-      if (!pxPerMm || !isFinite(pxPerMm)) return;
-
-      var tables = Array.prototype.slice.call(document.querySelectorAll('table.laudo-a4-page'));
-      if (tables.length === 0) return;
-
-      var outerHeight = function(el) {
-        var rect = el.getBoundingClientRect();
-        var cs = window.getComputedStyle(el);
-        return rect.height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
-      };
-
-      tables.forEach(function(sourceTable, atendIdx){
-        var sourceContent = sourceTable.querySelector('#laudo-content');
-        var header = sourceTable.querySelector('thead');
-        if (!sourceContent) return;
-
-        var headerPx = header ? header.getBoundingClientRect().height : 0;
-        var footerReservePx = 32 * pxPerMm;
-        var safeGapPx = 3 * pxPerMm;
-        var availablePx = (297 - Number(margins.top || 0) - Number(margins.bottom || 0)) * pxPerMm - headerPx - footerReservePx - safeGapPx;
-        if (!availablePx || availablePx < 200) return;
-
-        var blocks = Array.prototype.slice.call(sourceContent.children).filter(function(el){
-          return el.classList && (el.classList.contains('exame-bloco') || el.classList.contains('assinatura-bloco'));
-        });
-
-        var pages = [];
-        var current = [];
-        var used = 0;
-        blocks.forEach(function(block){
-          var h = outerHeight(block);
-          if (current.length > 0 && used + h > availablePx) {
-            pages.push(current);
-            current = [];
-            used = 0;
-          }
-          current.push(block);
-          used += h;
-          if (h > availablePx && current.length === 1) {
-            pages.push(current);
-            current = [];
-            used = 0;
-          }
-        });
-        if (current.length) pages.push(current);
-        if (pages.length <= 1) return;
-
-        var isFirstAtendimento = atendIdx === 0;
-        var wrapper = document.createElement('div');
-        wrapper.className = 'laudo-pages-manual';
-
-        pages.forEach(function(pageBlocks, pageIndex){
-          var table = sourceTable.cloneNode(false);
-          // Preserva quebra entre atendimentos: a 1ª página de qualquer
-          // atendimento (exceto o primeiro) força nova folha.
-          if (!isFirstAtendimento && pageIndex === 0) {
-            table.classList.add('laudo-a4-page-break');
-          } else {
-            table.classList.remove('laudo-a4-page-break');
-          }
-          table.classList.add('laudo-page-manual');
-          table.style.breakInside = 'avoid';
-          table.style.pageBreakInside = 'avoid';
-          if (header) table.appendChild(header.cloneNode(true));
-
-          var tbody = document.createElement('tbody');
-          var tr = document.createElement('tr');
-          var td = document.createElement('td');
-          var corpo = document.createElement('div');
-          corpo.className = 'laudo-a4-corpo';
-          var content = document.createElement('div');
-          content.id = 'laudo-content';
-          content.setAttribute('style', sourceContent.getAttribute('style') || '');
-          corpo.appendChild(content);
-          td.appendChild(corpo);
-          tr.appendChild(td);
-          tbody.appendChild(tr);
-          table.appendChild(tbody);
-
-          var isLastPage = pageIndex >= pages.length - 1;
-          table.style.breakAfter = isLastPage ? 'auto' : 'page';
-          table.style.pageBreakAfter = isLastPage ? 'auto' : 'always';
-
-          pageBlocks.forEach(function(block){
-            block.style.breakBefore = '';
-            block.style.pageBreakBefore = '';
-            content.appendChild(block);
-          });
-          wrapper.appendChild(table);
-        });
-        sourceTable.replaceWith(wrapper);
-      });
-
-      document.documentElement.setAttribute('data-laudo-batch-paginated', String(tables.length));
+      document.documentElement.setAttribute('data-laudo-batch-ready', 'true');
     };
   })();
 </script>`;
+}
+
+function stripFixedFooter(html: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  template.content.querySelectorAll(".laudo-a4-rodape-fixed").forEach((el) => el.remove());
+  return template.innerHTML;
+}
+
+async function prepareFragment(
+  proto: string,
+  analistaAtual: GerarLaudoLoteArgs["analistaAtual"],
+  assinaturaLaudo: GerarLaudoLoteArgs["assinaturaLaudo"],
+): Promise<PreparedLaudoFragment | null> {
+  const hyd = await withTimeout(hydrateAtendimentoForLaudo(proto), HYDRATION_TIMEOUT_MS, `Hidratação de ${proto}`);
+  if (!hyd || hyd.printable.length === 0) return null;
+
+  let historicoByExameId: Record<number, { linhaHtml: string; graficoHtml: string }> = {};
+  try {
+    historicoByExameId = await withTimeout(fetchHistoricoPorExame({
+      pacienteCpf: hyd.paciente.cpf,
+      excludeProtocolo: hyd.paciente.protocolo,
+      exames: hyd.printable,
+      customByExame: hyd.customByExame,
+    }), HISTORICO_TIMEOUT_MS, `Histórico de ${proto}`);
+  } catch (error) {
+    logger.warn("laudoBatchPdf", "histórico ignorado no lote", {
+      protocolo: proto,
+      error: (error as Error)?.message,
+    });
+  }
+
+  const html = buildLaudoHtml({
+    paciente: hyd.paciente,
+    analistaAtual,
+    assinaturaLaudo,
+    getResolvedRef: hyd.getResolvedRef,
+    printable: hyd.printable,
+    customByExame: hyd.customByExame,
+    pageMargins: hyd.margins,
+    historicoByExameId,
+  });
+
+  return {
+    protocolo: proto,
+    html,
+    totalExames: hyd.printable.length,
+    margins: hyd.margins,
+  };
 }
 
 export async function gerarLaudoLotePdf({
@@ -182,53 +157,27 @@ export async function gerarLaudoLotePdf({
     throw new Error("Nenhum atendimento elegível para impressão.");
   }
 
-  const fragmentos: string[] = [];
-  let totalExames = 0;
-  let sharedMargins = { top: 4, right: 11, bottom: 4, left: 11 };
-
-  for (let i = 0; i < protocolos.length; i++) {
-    const proto = protocolos[i];
-    onProgress?.(i / protocolos.length, `Preparando ${proto}…`);
-    const hyd = await hydrateAtendimentoForLaudo(proto);
-    if (!hyd || hyd.printable.length === 0) continue;
-
-    let historicoByExameId: Record<number, { linhaHtml: string; graficoHtml: string }> = {};
+  let completed = 0;
+  const prepared = await runWithConcurrency(protocolos, HYDRATION_CONCURRENCY, async (proto) => {
+    onProgress?.(completed / protocolos.length, `Preparando ${proto}…`);
     try {
-      historicoByExameId = await fetchHistoricoPorExame({
-        pacienteCpf: hyd.paciente.cpf,
-        excludeProtocolo: hyd.paciente.protocolo,
-        exames: hyd.printable,
-        customByExame: hyd.customByExame,
+      return await prepareFragment(proto, analistaAtual, assinaturaLaudo);
+    } catch (error) {
+      logger.warn("laudoBatchPdf", "atendimento ignorado no lote", {
+        protocolo: proto,
+        error: (error as Error)?.message,
       });
-    } catch { /* opcional */ }
+      return null;
+    } finally {
+      completed += 1;
+      onProgress?.(Math.min(0.88, completed / protocolos.length), `Preparados ${completed}/${protocolos.length}`);
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    }
+  });
 
-    const html = buildLaudoHtml({
-      paciente: hyd.paciente,
-      analistaAtual,
-      assinaturaLaudo,
-      getResolvedRef: hyd.getResolvedRef,
-      printable: hyd.printable,
-      customByExame: hyd.customByExame,
-      pageMargins: hyd.margins,
-      historicoByExameId,
-    });
-
-    // Marca a PRIMEIRA tabela.laudo-a4-page do 2º atendimento em diante com
-    // a classe de page-break. buildLaudoHtml já entrega exatamente uma
-    // tabela por atendimento (pages.length === 1 no caller), então é seguro
-    // injetar a classe no primeiro match.
-    const isFirst = fragmentos.length === 0;
-    const adapted = isFirst
-      ? html
-      : html.replace(
-          /<table class="laudo-a4-page(?!\s+laudo-a4-page-break)"/,
-          '<table class="laudo-a4-page laudo-a4-page-break"',
-        );
-
-    fragmentos.push(adapted);
-    totalExames += hyd.printable.length;
-    sharedMargins = hyd.margins;
-  }
+  const fragmentos = prepared.filter((p): p is PreparedLaudoFragment => !!p);
+  const totalExames = fragmentos.reduce((sum, f) => sum + f.totalExames, 0);
+  const sharedMargins = fragmentos[0]?.margins ?? { top: 4, right: 11, bottom: 4, left: 11 };
 
   if (fragmentos.length === 0) {
     throw new Error("Nenhum exame liberado encontrado para os atendimentos selecionados.");
@@ -237,8 +186,19 @@ export async function gerarLaudoLotePdf({
   onProgress?.(0.9, "Abrindo diálogo de impressão…");
 
   // Mesma sanitização do individual; concatena fragmentos como UM documento.
-  const sanitized = sanitizeHtmlForPrint(fragmentos.join("\n"));
-  const hook = buildMultiPaginationHook(sharedMargins);
+  const htmlConcatenado = fragmentos.map((frag, index) => {
+    const html = index === 0 ? frag.html : stripFixedFooter(frag.html);
+    // Marca a PRIMEIRA tabela.laudo-a4-page do 2º atendimento em diante com
+    // page-break antes, preservando a ordem de atendimento sem recalcular o DOM.
+    if (index === 0) return html;
+    return html.replace(
+      /<table class="laudo-a4-page(?!\s+laudo-a4-page-break)"/,
+      '<table class="laudo-a4-page laudo-a4-page-break"',
+    );
+  }).join("\n");
+
+  const sanitized = sanitizeHtmlForPrint(htmlConcatenado);
+  const hook = buildBatchPrintHook(sharedMargins);
   const injected = /<\/body>/i.test(sanitized)
     ? sanitized.replace(/<\/body>/i, `${hook}</body>`)
     : `${sanitized}${hook}`;
