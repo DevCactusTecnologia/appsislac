@@ -2257,6 +2257,7 @@ export type Database = {
           ordem: number
           qtd_caracteres: string
           qtd_digitos: number | null
+          qtd_resultados_anteriores: number
           rotulo: string
           sensivel_jejum: boolean
           separador_decimal: string
@@ -2286,6 +2287,7 @@ export type Database = {
           ordem?: number
           qtd_caracteres?: string
           qtd_digitos?: number | null
+          qtd_resultados_anteriores?: number
           rotulo: string
           sensivel_jejum?: boolean
           separador_decimal?: string
@@ -2315,6 +2317,7 @@ export type Database = {
           ordem?: number
           qtd_caracteres?: string
           qtd_digitos?: number | null
+          qtd_resultados_anteriores?: number
           rotulo?: string
           sensivel_jejum?: boolean
           separador_decimal?: string
