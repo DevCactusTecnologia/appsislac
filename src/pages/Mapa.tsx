@@ -1033,10 +1033,14 @@ const Mapa = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Analista</label>
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Pesquisar..." className="h-10 text-sm rounded-2xl pl-10 border-border/60" value={filters.nomeAnalista} onChange={e => updateFilter("nomeAnalista", e.target.value)} />
-                  </div>
+                  <AnalistaAutocomplete
+                    value={filters.nomeAnalista}
+                    query={analistaTabQuery}
+                    analistas={analistasReais}
+                    onQueryChange={(q) => { setAnalistaTabQuery(q); updateFilter("nomeAnalista", q); }}
+                    onSelect={(name) => { updateFilter("nomeAnalista", name); setAnalistaTabQuery(""); }}
+                    onClear={() => { setAnalistaTabQuery(""); updateFilter("nomeAnalista", ""); }}
+                  />
                 </div>
                 <MapaDatePicker label="Data de Atendimento" value={filters.dataAnalista} onChange={d => updateFilter("dataAnalista", d)} />
               </div>
