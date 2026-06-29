@@ -312,6 +312,7 @@ const ResultadoDetalhe = () => {
     }
     setPaciente(pac);
     setPacienteJejum(!!atFromDb?.jejum);
+    setPacientePrioridade((atFromDb?.prioridadeClinica ?? "normal") as "normal" | "urgencia" | "emergencia");
     setDbIdMap(idMap);
     setSelectedExameId(prev => prev || (exames[0]?.id ?? 0));
 
