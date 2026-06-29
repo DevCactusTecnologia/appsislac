@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import QRCode from "qrcode";
+import { buildPixPayload, getPixConfig, savePixConfig } from "@/lib/pixBrCode";
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -223,18 +224,51 @@ const PagamentoDialog = ({
       toast.error("Nenhum saldo a cobrar.");
       return;
     }
-    // BR Code payload simplificado (não certificado BCB — apto a leitura por apps de teste).
-    const payload = `00020126360014BR.GOV.BCB.PIX0114+55SISLAC-DEMO5204000053039865406${valor.toFixed(2)}5802BR5910LABORATORIO6009SAO PAULO62070503***6304`;
+
+    let { chave, merchant, cidade } = getPixConfig();
+    if (!chave) {
+      const entrada = window.prompt(
+        "Informe a chave PIX do laboratório\n(CPF/CNPJ só números, e-mail, telefone +55DDDNUMERO ou EVP UUID):",
+        ""
+      );
+      if (!entrada || !entrada.trim()) {
+        toast.error("Chave PIX é obrigatória para gerar o QRCode.");
+        return;
+      }
+      chave = entrada.trim();
+      savePixConfig({ chave, merchant, cidade });
+    }
+
     try {
-      const url = await QRCode.toDataURL(payload, { width: 280, margin: 1 });
+      const txid = `SISLAC${Date.now().toString().slice(-10)}`;
+      const payload = buildPixPayload({
+        chave,
+        valor,
+        merchantName: merchant,
+        merchantCity: cidade,
+        txid,
+      });
+      const url = await QRCode.toDataURL(payload, { width: 280, margin: 1, errorCorrectionLevel: "M" });
       setPixDataUrl(url);
       setPixPayload(payload);
       setPixValor(valor);
       setPixStatus("aguardando");
       setPixOpen(true);
-    } catch {
-      toast.error("Falha ao gerar QRCode.");
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao gerar QRCode.");
     }
+  };
+
+  /** Permite trocar a chave PIX configurada (link discreto no overlay). */
+  const editarChavePix = () => {
+    const cfg = getPixConfig();
+    const nova = window.prompt("Chave PIX do laboratório:", cfg.chave);
+    if (nova === null) return;
+    const nome = window.prompt("Nome do recebedor (máx. 25):", cfg.merchant) || cfg.merchant;
+    const cid = window.prompt("Cidade (máx. 15):", cfg.cidade) || cfg.cidade;
+    savePixConfig({ chave: nova.trim(), merchant: nome, cidade: cid });
+    toast.success("Configuração PIX atualizada. Gere o QRCode novamente.");
+    setPixOpen(false);
   };
 
   /** Aprova manualmente o pagamento PIX (operador confirma recebimento no caixa). */
