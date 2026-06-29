@@ -477,10 +477,20 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
           word-wrap: normal !important;
           hyphens: none !important;
         }
-        #laudo-content table {
+        /* Cabeçalho/rodapé institucional: travado em 100% / fixed para evitar overflow.
+           Tabelas DENTRO do corpo do exame (.exame-bloco-custom) NÃO são tocadas —
+           devem respeitar a largura natural das colunas definidas no Layout
+           Científico (caso contrário, "table-layout:fixed" redistribui colunas
+           igualmente em A4 e separa visualmente valor e unidade). */
+        #laudo-content .laudo-cabecalho-wrap table,
+        #laudo-content .laudo-rodape-wrap table {
           width: 100% !important;
           max-width: 100% !important;
           table-layout: fixed !important;
+          box-sizing: border-box !important;
+        }
+        #laudo-content .exame-bloco-custom table {
+          max-width: 100% !important;
           box-sizing: border-box !important;
         }
         #laudo-content img { max-width: 100% !important; height: auto !important; }
