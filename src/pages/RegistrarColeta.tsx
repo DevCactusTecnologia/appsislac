@@ -144,6 +144,8 @@ async function fetchPacientesColeta(): Promise<Paciente[]> {
         coletador: r.responsavel || "—",
         exames,
         pacienteId: r.paciente_id ?? null,
+        jejum: !!r.jejum,
+        prioridadeClinica: r.prioridade_clinica ?? "normal",
       } as Paciente;
     })
     .filter((p): p is Paciente => p !== null);
