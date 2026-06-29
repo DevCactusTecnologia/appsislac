@@ -118,7 +118,7 @@ BEGIN
    WHERE id=v_id_b
      AND coletor='COLETOR JOAO'
      AND data_coleta=v_dt_coleta_b
-     AND amostra_id=v_amostra_id
+     AND amostra_seq=1
      AND grupo_exame_id=v_grupo_b;
   IF NOT FOUND THEN RAISE EXCEPTION 'FALHOU: metadados clínicos do exame B perdidos'; END IF;
 
