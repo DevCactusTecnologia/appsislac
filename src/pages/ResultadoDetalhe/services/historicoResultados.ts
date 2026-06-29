@@ -1,18 +1,17 @@
 // historicoResultados — busca resultados anteriores do MESMO paciente
 // para cada exame/parâmetro do laudo que esteja com a flag
-// "Exibir resultado anterior" (`exibir_anterior = SIM`).
+// "Exibir resultado anterior" ativa (`exibir_anterior = SIM`).
 //
 // Saída por exame (UI id):
-//   - linhaHtml: "Resultados anteriores: DD/MM/AAAA - CHAVE = valor | …"
-//                renderizada quando o layout NÃO contém ##GRAFICOHIST##.
+//   - linhaHtml:   "Resultados anteriores: DD/MM/AAAA - CHAVE = valor | …"
+//                  usada quando o layout NÃO contém ##GRAFICOHIST##.
 //   - graficoHtml: SVG inline para substituir ##GRAFICOHIST## quando o
 //                  layout/parâmetro do exame possui o token.
 //
-// Implementação enxuta: 1 query por exame uuid, agrupando todos os
-// parâmetros visíveis. Exclui o atendimento corrente (`excludeProtocolo`).
+// Implementação enxuta: resolve UUID por nome do exame, agrupa parâmetros
+// ativos e dispara uma query por exame. Exclui o atendimento corrente.
 
 import { supabase } from "@/integrations/supabase/client";
-import type { ExameParametro } from "@/data/exameParametrosStore";
 import type { Exame } from "../types";
 import { escapeHtml } from "@/lib/escapeHtml";
 
@@ -29,11 +28,21 @@ interface ParamHist {
   pontos: Array<{ data: string; valor: string }>;
 }
 
+interface ExameParamRow {
+  id: number;
+  exame_id: string;
+  chave: string;
+  rotulo: string;
+  abreviacao: string | null;
+  exibir_anterior: string | null;
+  qtd_resultados_anteriores: number | null;
+  visivel: boolean | null;
+}
+
 interface PrevRow {
   data_coleta: string | null;
   data_analise: string | null;
   resultados: Record<string, unknown> | null;
-  atendimentos?: { protocolo?: string | null } | null;
 }
 
 const fmtDataBR = (iso: string | null): string => {
@@ -42,7 +51,6 @@ const fmtDataBR = (iso: string | null): string => {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
 };
 
-/** Linha inline: "Resultados anteriores: 26/08/2025 - UREIA = 25 | …" */
 function renderLinha(params: ParamHist[]): string {
   const partes: string[] = [];
   for (const p of params) {
@@ -57,11 +65,8 @@ function renderLinha(params: ParamHist[]): string {
   </div>`;
 }
 
-/** SVG inline simples (barras) com os pontos do parâmetro. */
 function renderChart(p: ParamHist): string {
-  // Adiciona o ponto atual como referência opcional? Mantemos só os anteriores
-  // (conforme pedido). Ordena cronologicamente para o gráfico.
-  const pts = [...p.pontos].reverse();
+  const pts = [...p.pontos].reverse(); // cronológico
   const nums = pts.map((pt) => Number(String(pt.valor).replace(",", "."))).filter((n) => Number.isFinite(n));
   if (nums.length === 0) {
     return `<div style="font-family:Helvetica,Arial,sans-serif;font-size:8pt;color:#666;font-style:italic;">Sem histórico anterior para ${escapeHtml(p.rotulo || p.chave)}.</div>`;
@@ -95,48 +100,81 @@ export async function fetchHistoricoPorExame(args: {
   pacienteCpf: string;
   excludeProtocolo: string;
   exames: Exame[];
-  parametrosConfigPorExame: Record<string, ExameParametro[]>;
+  /** Layout HTML do exame (para detectar ##GRAFICOHIST##). Keyed by UI id. */
+  customByExame?: Record<number, string>;
 }): Promise<Record<number, ExameHistOutput>> {
   const cpf = (args.pacienteCpf || "").replace(/\D/g, "");
-  if (cpf.length !== 11) return {};
+  if (cpf.length !== 11 || args.exames.length === 0) return {};
+
+  // 1) Resolve UUID por nome (1 query).
+  const nomes = Array.from(new Set(args.exames.map((e) => (e.nome || "").trim()).filter(Boolean)));
+  const { data: exRows } = await supabase
+    .from("exames")
+    .select("id,nome")
+    .in("nome", nomes);
+  const uuidByNome: Record<string, string> = {};
+  (exRows ?? []).forEach((r) => { uuidByNome[(r.nome || "").trim()] = r.id; });
+
+  // 2) Parâmetros ativos para esses exames (1 query).
+  const uuids = Object.values(uuidByNome);
+  if (uuids.length === 0) return {};
+  const { data: paramRows } = await supabase
+    .from("exame_parametros")
+    .select("id,exame_id,chave,rotulo,abreviacao,exibir_anterior,qtd_resultados_anteriores,visivel")
+    .in("exame_id", uuids);
+  const paramsByExameUuid: Record<string, ExameParamRow[]> = {};
+  ((paramRows ?? []) as ExameParamRow[]).forEach((p) => {
+    if ((p.exibir_anterior ?? "").toUpperCase() !== "SIM") return;
+    if (p.visivel === false) return;
+    (paramsByExameUuid[p.exame_id] ||= []).push(p);
+  });
+
   const out: Record<number, ExameHistOutput> = {};
 
+  // 3) Para cada exame do laudo, busca atendimentos anteriores do paciente.
   await Promise.all(args.exames.map(async (exame) => {
-    const conf = args.parametrosConfigPorExame[exame.nome] ?? [];
-    const ativos = conf.filter((p) => (p.exibirAnterior ?? "").toUpperCase() === "SIM" && p.visivel !== false);
+    const uuid = uuidByNome[(exame.nome || "").trim()];
+    if (!uuid) return;
+    const ativos = paramsByExameUuid[uuid] ?? [];
     if (ativos.length === 0) return;
-    const exameUuid = conf[0]?.exameId;
-    if (!exameUuid) return;
-    const maxLimite = Math.min(20, Math.max(...ativos.map((p) => p.qtdResultadosAnteriores || 5)));
+    const limGlobal = Math.min(20, Math.max(...ativos.map((p) => p.qtd_resultados_anteriores || 5)));
 
     const { data, error } = await supabase
       .from("atendimento_exames")
-      .select("data_coleta,data_analise,resultados,atendimentos!inner(protocolo,paciente_cpf,id)")
-      .eq("exame_id", exameUuid)
+      .select("data_coleta,data_analise,resultados,atendimentos!inner(protocolo,paciente_cpf)")
+      .eq("exame_id", uuid)
       .eq("atendimentos.paciente_cpf", cpf)
       .neq("atendimentos.protocolo", args.excludeProtocolo)
       .not("resultados", "is", null)
       .order("data_coleta", { ascending: false, nullsFirst: false })
-      .limit(maxLimite);
+      .limit(limGlobal);
     if (error || !data) return;
 
     const params: ParamHist[] = ativos.map((p) => {
+      const lim = Math.max(1, p.qtd_resultados_anteriores || 5);
       const pontos: ParamHist["pontos"] = [];
-      const lim = Math.max(1, p.qtdResultadosAnteriores || 5);
-      for (const row of data as PrevRow[]) {
+      for (const row of data as unknown as PrevRow[]) {
         if (pontos.length >= lim) break;
         const v = row.resultados?.[p.chave];
         if (v == null || String(v).trim() === "") continue;
         const dt = fmtDataBR(row.data_coleta ?? row.data_analise ?? null);
         pontos.push({ data: dt, valor: String(v).trim() });
       }
-      return { chave: p.chave, rotulo: p.rotulo, abrev: p.abreviacao, limite: lim, pontos };
+      return {
+        chave: p.chave,
+        rotulo: p.rotulo,
+        abrev: p.abreviacao ?? "",
+        limite: lim,
+        pontos,
+      };
     }).filter((p) => p.pontos.length > 0);
 
     if (params.length === 0) return;
+    const layout = args.customByExame?.[exame.id] ?? "";
+    const hasToken = /##GRAFICOHIST##/i.test(layout);
     out[exame.id] = {
-      linhaHtml: renderLinha(params),
-      graficoHtml: params.map(renderChart).join(""),
+      linhaHtml: hasToken ? "" : renderLinha(params),
+      graficoHtml: hasToken ? params.map(renderChart).join("") : "",
     };
   }));
 
