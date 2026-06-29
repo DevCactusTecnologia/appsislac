@@ -6115,6 +6115,7 @@ export type Database = {
           rotina_coleta_analise_enabled: boolean
           telefone: string
           tenant_id: string
+          terceirizado_recebimento_automatico: boolean
           updated_at: string
           watermark: Json
         }
@@ -6139,6 +6140,7 @@ export type Database = {
           rotina_coleta_analise_enabled?: boolean
           telefone?: string
           tenant_id: string
+          terceirizado_recebimento_automatico?: boolean
           updated_at?: string
           watermark?: Json
         }
@@ -6163,6 +6165,7 @@ export type Database = {
           rotina_coleta_analise_enabled?: boolean
           telefone?: string
           tenant_id?: string
+          terceirizado_recebimento_automatico?: boolean
           updated_at?: string
           watermark?: Json
         }
