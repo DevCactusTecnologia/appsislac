@@ -1924,7 +1924,7 @@ const ResultadoDetalhe = () => {
                         );
                       })()}
                     </button>
-                    {isSelected && liberado && (
+                    {isSelected && liberado && !isTerc && (
                       <div className="px-3 pb-3">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleImprimir([exame]); }}
@@ -1936,6 +1936,7 @@ const ResultadoDetalhe = () => {
                         </button>
                       </div>
                     )}
+
                   </div>
                   );
                 })}
