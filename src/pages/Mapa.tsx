@@ -492,7 +492,7 @@ const Mapa = () => {
     return (
       <>
         {/* Header com contadores e ação de impressão em lote */}
-        <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-5 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <Checkbox checked={allSelected} onCheckedChange={toggleAll} className="h-4 w-4" />
             <div>
@@ -512,7 +512,7 @@ const Mapa = () => {
           </div>
           <div className="flex items-center gap-2">
             {pacientesSelecionados.size > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setPacientesSelecionados(new Set())} className="h-9 rounded-2xl text-xs">
+              <Button variant="ghost" size="sm" onClick={() => setPacientesSelecionados(new Set())} className="h-9 rounded-lg text-xs">
                 Limpar seleção
               </Button>
             )}
@@ -520,7 +520,7 @@ const Mapa = () => {
               onClick={printSelecionados}
               disabled={printing || pacientesSelecionados.size === 0}
               size="sm"
-              className="gap-2 rounded-2xl h-9"
+              className="gap-2 rounded-lg h-9"
             >
               {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
               Pré-visualizar selecionados
@@ -532,14 +532,14 @@ const Mapa = () => {
         {lista.length === 0 ? (
           <EmptyState message="Nenhum paciente corresponde à busca. Tente outro nome, CPF ou protocolo." />
         ) : (
-          <ul className="divide-y divide-border/20 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <ul className="divide-y divide-border/40 max-h-[calc(100vh-200px)] overflow-y-auto">
             {lista.map((g) => {
               const selected = pacientesSelecionados.has(g.protocolo);
               return (
                 <li
                   key={g.protocolo}
                   className={cn(
-                    "px-5 py-4 transition-colors hover:bg-muted/20",
+                    "px-5 py-3 transition-colors hover:bg-muted/30",
                     selected && "bg-primary/5"
                   )}
                 >
@@ -549,7 +549,7 @@ const Mapa = () => {
                       onCheckedChange={() => toggleOne(g.protocolo)}
                       className="h-4 w-4 mt-1 shrink-0"
                     />
-                    <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-primary/10 text-primary shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary shrink-0">
                       <User className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -647,7 +647,7 @@ const Mapa = () => {
 
     return (
       <>
-        <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-5 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <Checkbox checked={allSelected} onCheckedChange={toggleAll} className="h-4 w-4" />
             <div>
@@ -667,7 +667,7 @@ const Mapa = () => {
           </div>
           <div className="flex items-center gap-2">
             {setoresSelecionados.size > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setSetoresSelecionados(new Set())} className="h-9 rounded-2xl text-xs">
+              <Button variant="ghost" size="sm" onClick={() => setSetoresSelecionados(new Set())} className="h-9 rounded-lg text-xs">
                 Limpar seleção
               </Button>
             )}
@@ -675,7 +675,7 @@ const Mapa = () => {
               onClick={printSelecionados}
               disabled={printing || setoresSelecionados.size === 0}
               size="sm"
-              className="gap-2 rounded-2xl h-9"
+              className="gap-2 rounded-lg h-9"
             >
               {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
               Pré-visualizar selecionados
@@ -686,7 +686,7 @@ const Mapa = () => {
         {lista.length === 0 ? (
           <EmptyState message="Nenhum setor corresponde à busca. Tente outro nome." />
         ) : (
-          <ul className="divide-y divide-border/20 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <ul className="divide-y divide-border/40 max-h-[calc(100vh-200px)] overflow-y-auto">
             {lista.map((g) => {
               const selected = setoresSelecionados.has(g.setor);
               const examesPreview = g.examesUnicos.slice(0, 6);
@@ -695,7 +695,7 @@ const Mapa = () => {
                 <li
                   key={g.setor}
                   className={cn(
-                    "px-5 py-4 transition-colors hover:bg-muted/20",
+                    "px-5 py-3 transition-colors hover:bg-muted/30",
                     selected && "bg-primary/5"
                   )}
                 >
@@ -705,7 +705,7 @@ const Mapa = () => {
                       onCheckedChange={() => toggleOne(g.setor)}
                       className="h-4 w-4 mt-1 shrink-0"
                     />
-                    <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-primary/10 text-primary shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary shrink-0">
                       <Building2 className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -845,7 +845,7 @@ const Mapa = () => {
     return (
       <>
         {/* Header */}
-        <div className="px-5 py-4 border-b border-border/30 bg-muted/10 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-5 py-3 border-b border-border/40 bg-muted/20 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <Checkbox checked={allSelected} onCheckedChange={toggleAll} className="h-4 w-4" />
             <div>
@@ -865,7 +865,7 @@ const Mapa = () => {
           </div>
           <div className="flex items-center gap-2">
             {examesNomesSelecionados.size > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setExamesNomesSelecionados(new Set())} className="h-9 rounded-2xl text-xs">
+              <Button variant="ghost" size="sm" onClick={() => setExamesNomesSelecionados(new Set())} className="h-9 rounded-lg text-xs">
                 Limpar seleção
               </Button>
             )}
@@ -873,7 +873,7 @@ const Mapa = () => {
               onClick={aplicarEImprimirExameTab}
               disabled={printing || examesNomesSelecionados.size === 0}
               size="sm"
-              className="gap-2 rounded-2xl h-9"
+              className="gap-2 rounded-lg h-9"
             >
               {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
               Atribuir a {filters.analistaExame.split(" ")[0] || "analista"} e pré-visualizar
@@ -884,7 +884,7 @@ const Mapa = () => {
         {lista.length === 0 ? (
           <EmptyState message="Nenhum exame corresponde à busca. Tente outro nome." />
         ) : (
-          <ul className="divide-y divide-border/20 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <ul className="divide-y divide-border/40 max-h-[calc(100vh-200px)] overflow-y-auto">
             {lista.map((g) => {
               const selected = examesNomesSelecionados.has(g.nome);
               return (
@@ -892,7 +892,7 @@ const Mapa = () => {
                   key={g.nome}
                   onClick={() => toggleOne(g.nome)}
                   className={cn(
-                    "px-5 py-4 transition-colors hover:bg-muted/20 cursor-pointer",
+                    "px-5 py-3 transition-colors hover:bg-muted/30 cursor-pointer",
                     selected && "bg-primary/5"
                   )}
                 >
@@ -903,7 +903,7 @@ const Mapa = () => {
                       onClick={(e) => e.stopPropagation()}
                       className="h-4 w-4 mt-1 shrink-0"
                     />
-                    <div className="flex items-center justify-center h-10 w-10 rounded-2xl bg-primary/10 text-primary shrink-0">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary shrink-0">
                       <TestTube2 className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -958,7 +958,7 @@ const Mapa = () => {
             <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">{filters.nomeAnalista}</h4>
             <p className="text-xs text-muted-foreground mt-0.5">{analistaResultado.length} exame(s) pendentes</p>
           </div>
-          <Button onClick={() => abrirPreview(analistaResultado, `Mapa do analista — ${filters.nomeAnalista}`, filters.nomeAnalista)} disabled={printing} size="sm" className="gap-2 rounded-2xl h-9">
+          <Button onClick={() => abrirPreview(analistaResultado, `Mapa do analista — ${filters.nomeAnalista}`, filters.nomeAnalista)} disabled={printing} size="sm" className="gap-2 rounded-lg h-9">
             {printing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
             Pré-visualizar
           </Button>
