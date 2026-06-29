@@ -612,6 +612,15 @@ const ResultadoDetalhe = () => {
     updatePacienteExames((exames) =>
       exames.map((e) => e.id === selectedExameId ? { ...e, status: "Resultado salvo" } : e)
     );
+    // Marca o analista responsável pela análise (digitação/salvamento).
+    setAnaliseInfoMap((prev) => ({
+      ...prev,
+      [selectedExameId]: {
+        ...(prev[selectedExameId] || {}),
+        analisadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+        analisadoEm: formatDataHora(),
+      },
+    }));
     if (retificando) {
       setRetificados((prev) => new Set(prev).add(selectedExameId));
       const diffText = diffsRetificacao
