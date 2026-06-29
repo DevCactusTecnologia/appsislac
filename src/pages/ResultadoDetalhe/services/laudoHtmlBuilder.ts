@@ -92,6 +92,8 @@ export interface BuildLaudoHtmlArgs {
   customByExame?: Record<number, string>;
   solicitanteLabel?: string;
   pageMargins?: { top: number; right: number; bottom: number; left: number };
+  /** Histórico por exame (UI id) — gerado por `historicoResultados.fetchHistoricoPorExame`. */
+  historicoByExameId?: Record<number, { linhaHtml: string; graficoHtml: string }>;
 }
 
 /**
