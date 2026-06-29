@@ -1953,11 +1953,9 @@ const ResultadoDetalhe = () => {
                   { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined, disabled: !podeImprimirTodos },
                   
                 ]) as PacienteHeaderAction[]}
-                belowAvatar={
-                  <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
-                }
                 actionsExtraLeft={
                   <>
+                    <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
                     {!modoConsulta && todosLiberados && (
                       <WhatsappActionButton
                         onClick={handleEnviarResultadoWhatsapp}
