@@ -65,7 +65,7 @@ const AnalistaAutocomplete = ({
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border/60 rounded-2xl shadow-xl z-50 overflow-hidden">
           {filtrados.length === 0 ? (
-            <div className="px-4 py-4 text-center text-sm text-muted-foreground">Nenhum analista encontrado</div>
+            <div className="px-4 py-4 text-center text-sm text-muted-foreground">{emptyText}</div>
           ) : (
             <ul className="py-1.5 max-h-[200px] overflow-y-auto">
               {filtrados.map((a) => (
