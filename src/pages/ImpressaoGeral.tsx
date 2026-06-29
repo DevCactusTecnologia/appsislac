@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Printer, Search, Calendar as CalendarIcon, FileText, Users, TestTube, XCircle, TrendingUp } from "lucide-react";
+import { Printer, Search, Calendar as CalendarIcon, FileText, Users, TestTube, XCircle, TrendingUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,13 +11,18 @@ import { cn } from "@/lib/utils";
 import { useFeatureFlag, isFeatureEnabled } from "@/lib/featureFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { gerarLaudoLotePdf } from "@/lib/laudoBatchPdf";
 
 const ImpressaoGeral = () => {
+  const { user: authUser } = useAuth();
   const unidadesAtivas = useMemo(() => getUnidades().filter(u => u.ativo), []);
   const unidades = useMemo(() => unidadesAtivas.map(u => u.nome), [unidadesAtivas]);
   const [selectedUnidade, setSelectedUnidade] = useState<string>(unidades[0] || "");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [gerando, setGerando] = useState(false);
   const [, setTick] = useState(0);
 
   // ── Branch por flag ──────────────────────────────────────────────────
@@ -114,6 +119,92 @@ const ImpressaoGeral = () => {
     exames: summary.reduce((s, r) => s + r.totalExames, 0),
     cancelados: summary.reduce((s, r) => s + r.cancelados, 0),
   }), [summary]);
+
+  const computeIniciais = (nome: string): string => {
+    const parts = (nome || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const handleImprimirLote = async () => {
+    if (gerando) return;
+    if (!date || !selectedUnidade) {
+      toast.error("Selecione unidade e data antes de imprimir.");
+      return;
+    }
+    const unidade = unidadesAtivas.find(u => u.nome === selectedUnidade);
+    const dateStr = format(date, "dd/MM/yyyy");
+    const LIBERADOS = new Set(["Digitado", "Impresso", "Retificado"]);
+    const elegiveis = getAtendimentos()
+      .filter(a => a.data.startsWith(dateStr))
+      .filter(a => !unidade || a.unidadeId === unidade.id)
+      .filter(a => a.statusAtendimento.label !== "Cancelado")
+      .slice()
+      .sort((a, b) => a.protocolo.localeCompare(b.protocolo, "pt-BR", { numeric: true }));
+    if (elegiveis.length === 0) {
+      toast.error("Nenhum atendimento encontrado para essa unidade e data.");
+      return;
+    }
+    // Resolve assinatura do usuário logado (mesma lógica do laudo individual).
+    let assinaturaLaudo: { tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null } = {
+      tipo: "carimbo", conselho: null, url: null,
+    };
+    const uid = authUser?.id;
+    if (uid && typeof uid === "string") {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("assinatura_tipo,assinatura_imagem_key,assinatura_conselho")
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (data) {
+          const p = data as { assinatura_tipo?: string; assinatura_imagem_key?: string | null; assinatura_conselho?: string | null };
+          const tipo: "carimbo" | "imagem" = p.assinatura_tipo === "imagem" ? "imagem" : "carimbo";
+          let url: string | null = null;
+          if (tipo === "imagem" && p.assinatura_imagem_key) {
+            const r = await supabase.functions.invoke("assinatura-url", { body: { userId: uid } });
+            url = (r.data as { url?: string | null } | null)?.url ?? null;
+          }
+          assinaturaLaudo = { tipo, conselho: p.assinatura_conselho ?? null, url };
+        }
+      } catch { /* segue sem assinatura */ }
+    }
+    const nome = authUser?.nome || "Analista";
+    const analistaAtual = { nome, iniciais: computeIniciais(nome) };
+    const isoDate = format(date, "yyyy-MM-dd");
+    const safeUnidade = selectedUnidade.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Unidade";
+    const filename = `Resultados_${safeUnidade}_${isoDate}`;
+    setGerando(true);
+    const toastId = toast.loading(`Gerando PDF (${elegiveis.length} atendimentos)…`);
+    try {
+      const result = await gerarLaudoLotePdf({
+        protocolos: elegiveis.map(a => a.protocolo),
+        analistaAtual,
+        assinaturaLaudo,
+        filename,
+        onProgress: (frac, msg) => {
+          toast.loading(`${msg ?? "Gerando…"} (${Math.round(frac * 100)}%)`, { id: toastId });
+        },
+      });
+      toast.success(
+        `PDF gerado: ${result.totalAtendimentos} atendimentos · ${result.totalExames} exames`,
+        { id: toastId },
+      );
+      logger.info("ImpressaoGeral", "lote gerado", {
+        unidade: selectedUnidade, data: dateStr,
+        totalAtendimentos: result.totalAtendimentos, totalExames: result.totalExames,
+        ms: Math.round(result.ms),
+      });
+    } catch (e) {
+      const msg = (e as Error)?.message || "Falha ao gerar PDF.";
+      toast.error(msg, { id: toastId });
+      logger.warn("ImpressaoGeral", "falha ao gerar lote", { error: msg });
+    } finally {
+      setGerando(false);
+    }
+  };
+
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
@@ -220,8 +311,15 @@ const ImpressaoGeral = () => {
                     </div>
                   ))}
                 </div>
-                <button className="w-full sm:w-auto px-4 py-2 rounded-2xl border border-border/60 text-xs font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5">
-                  <Printer className="h-3.5 w-3.5" /> Imprimir resultados
+                <button
+                  type="button"
+                  onClick={handleImprimirLote}
+                  disabled={gerando}
+                  className="w-full sm:w-auto px-4 py-2 rounded-2xl border border-border/60 text-xs font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {gerando
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando PDF…</>
+                    : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
                 </button>
               </div>
             ))}
