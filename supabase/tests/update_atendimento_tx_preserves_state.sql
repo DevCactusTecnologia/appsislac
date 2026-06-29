@@ -25,7 +25,7 @@ DECLARE
   v_tenant     uuid := '00000000-0000-0000-0000-000000000001';
   v_at_id      bigint;
   v_protocolo  text := 'TEST-' || to_char(now(), 'YYYYMMDDHH24MISSMS');
-  v_amostra_id uuid := gen_random_uuid();
+  v_amostra_id uuid;
 
   -- IDs e snapshots originais
   v_id_a bigint; v_id_b bigint; v_id_c bigint;
