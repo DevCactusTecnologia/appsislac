@@ -121,6 +121,7 @@ function rowToConfig(row: Record<string, unknown>): LabConfig {
     responsavelTecnicoNumero: (row.responsavel_tecnico_numero as string) ?? "",
     responsavelTecnicoUf: (row.responsavel_tecnico_uf as string) ?? "",
     watermark: normalizeWatermark(row.watermark),
+    rotinaColetaAnaliseEnabled: (row.rotina_coleta_analise_enabled as boolean | null) ?? true,
   };
 }
 
