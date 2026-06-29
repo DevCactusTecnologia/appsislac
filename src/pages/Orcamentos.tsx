@@ -9,8 +9,8 @@ import ResultadoPopup from "@/components/ResultadoPopup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StandardDialog from "@/components/ui/standard-dialog";
-import PdfPreviewDialog from "@/components/PdfPreviewDialog";
 import { buildOrcamentoHtml } from "@/lib/comprovantes";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { enqueueNotification, buildIdempotencyKey } from "@/lib/whatsapp/enqueueNotification";
 import { useAuth } from "@/contexts/AuthContext";
 import { showError } from "@/lib/showError";
@@ -38,7 +38,7 @@ const Orcamentos = () => {
   const [convertDescontoApplied, setConvertDescontoApplied] = useState(0);
   const [showWhatsappAfterConvert, setShowWhatsappAfterConvert] = useState(false);
   const [convertedOrcForWhatsapp, setConvertedOrcForWhatsapp] = useState<Orcamento | null>(null);
-  const [previewOrc, setPreviewOrc] = useState<Orcamento | null>(null);
+  
 
   useEffect(() => {
     const unsub = subscribeOrcamentos(() => setOrcamentos([...getOrcamentos()]));
@@ -584,8 +584,25 @@ const Orcamentos = () => {
               );
             })()}
 
-            <button onClick={() => setPreviewOrc(detailOrc)} className="w-full py-2.5 rounded-2xl text-sm font-semibold text-primary-foreground bg-primary hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-              <FileText className="h-4 w-4" /> Pré-visualizar PDF
+            <button
+              onClick={() => {
+                const totalFinal = Math.max(0, detailOrc.total - descontoAplicado);
+                const html = buildOrcamentoHtml({
+                  id: detailOrc.id,
+                  data: detailOrc.data,
+                  paciente: detailOrc.nome,
+                  convenio: detailOrc.convenio,
+                  solicitante: detailOrc.solicitante,
+                  exames: detailOrc.exames,
+                  subtotal: detailOrc.subtotal,
+                  desconto: detailOrc.desconto + descontoAplicado,
+                  total: totalFinal,
+                });
+                printHtmlInHiddenFrame({ html, documentTitle: `Orçamento ${detailOrc.id}` });
+              }}
+              className="w-full py-2.5 rounded-2xl text-sm font-semibold text-primary-foreground bg-primary hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            >
+              <Printer className="h-4 w-4" /> Imprimir orçamento
             </button>
 
             {!detailOrc.convertido && (
@@ -735,43 +752,6 @@ const Orcamentos = () => {
         }
       />
 
-      {previewOrc && (() => {
-        const totalFinal = Math.max(0, previewOrc.total - descontoAplicado);
-        const orcData = {
-          id: previewOrc.id,
-          data: previewOrc.data,
-          paciente: previewOrc.nome,
-          convenio: previewOrc.convenio,
-          solicitante: previewOrc.solicitante,
-          exames: previewOrc.exames,
-          subtotal: previewOrc.subtotal,
-          desconto: previewOrc.desconto + descontoAplicado,
-          total: totalFinal,
-        };
-        return (
-          <PdfPreviewDialog
-            open={!!previewOrc}
-            onClose={() => setPreviewOrc(null)}
-            html={buildOrcamentoHtml(orcData)}
-            filename={`orcamento-${orcData.id}`}
-            title={`Orçamento ${orcData.id}`}
-            subtitle={`${orcData.paciente} · ${orcData.data}`}
-            whatsappPhone={previewOrc.telefone}
-            notify={user?.tenantId ? {
-              tenantId: user.tenantId,
-              template: "orcamento",
-              tipo: "orcamento",
-              idempotencyParts: [orcData.id, previewOrc.telefone],
-              variaveis: (url: string) => ({
-                1: orcData.paciente,
-                2: orcData.id,
-                3: `R$ ${fmtBRLNumber(orcData.total)}`,
-                4: url,
-              }),
-            } : undefined}
-          />
-        );
-      })()}
 
 
 
