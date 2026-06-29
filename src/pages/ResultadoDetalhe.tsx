@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
 import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
 import { getValueRangeStatus } from "@/components/ResultadoValidationBar";
