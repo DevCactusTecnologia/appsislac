@@ -469,7 +469,7 @@ const Producao = () => {
                     <p className="text-[11px] text-muted-foreground">do total no período</p>
                   </div>
                   <Suspense fallback={<div className="h-40 flex items-center justify-center text-xs text-muted-foreground">…</div>}>
-                    <ProducaoChartsLazy daily={[]} pie={pie} colors={CHART_COLORS} pieTitle={tipoConfig[tipoSelecionado].label} />
+                    <ProducaoChartsLazy daily={[]} pie={pie} colors={CHART_COLORS} pieTitle={tipoConfig[tipoSelecionado].label} variant="pie" />
                   </Suspense>
                 </div>
               </div>
