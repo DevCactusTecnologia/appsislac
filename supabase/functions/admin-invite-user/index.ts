@@ -194,24 +194,28 @@ Deno.serve(async (req) => {
     return errorResponse(400, "Nenhuma unidade disponível para vincular ao usuário. Cadastre uma unidade antes.", requestId, log);
   }
 
+  // Upsert ao invés de update: o trigger handle_new_user pode não estar ativo
+  // em ambientes onde a permissão sobre auth.users foi restringida. Garantimos
+  // que o profile exista mesmo sem o trigger.
+  const profilePayload: Record<string, unknown> = {
+    user_id: newUserId,
+    email,
+    nome,
+    perfil,
+    unidade_ids: finalUnidadeIds,
+    unidade_ativa: finalUnidadeIds[0],
+    permissoes_extras: permissoesExtras,
+    permissoes_revogadas: permissoesRevogadas,
+    status: "Ativo",
+  };
+  if (callerTenantId) profilePayload.tenant_id = callerTenantId;
+
   const { error: profErr } = await admin
     .from("profiles")
-    .update({
-      nome,
-      perfil,
-      unidade_ids: finalUnidadeIds,
-      unidade_ativa: finalUnidadeIds[0],
-      permissoes_extras: permissoesExtras,
-      permissoes_revogadas: permissoesRevogadas,
-      status: "Ativo",
-      // Força o tenant do novo usuário ao tenant do caller — defesa em
-      // profundidade caso o trigger handle_new_user não preencha corretamente.
-      ...(callerTenantId ? { tenant_id: callerTenantId } : {}),
-    })
-    .eq("user_id", newUserId);
+    .upsert(profilePayload, { onConflict: "user_id" });
   if (profErr) {
-    log.warn("update profile falhou", { err: profErr.message });
-    return errorResponse(500, "Convite enviado, mas falha ao salvar perfil: " + profErr.message, requestId, log);
+    log.warn("upsert profile falhou", { err: profErr.message });
+    return errorResponse(500, "Usuário criado, mas falha ao salvar perfil: " + profErr.message, requestId, log);
   }
 
   log.info("admin_invite_user_authorized", {
