@@ -38,7 +38,7 @@ const prioridadeConfig: Record<PrioridadeClinica, { label: string; chip: string;
 export function PacienteFlagsChips({ jejum, prioridade, className }: Props) {
   const p = prioridadeConfig[prioridade ?? "normal"];
   return (
-    <div className={cn("flex flex-col items-center gap-1", className)}>
+    <div className={cn("flex flex-row items-center gap-1.5", className)}>
       <span
         title={p.title}
         className={cn(
