@@ -1889,7 +1889,10 @@ const ResultadoDetalhe = () => {
                         <span className="text-[11px] font-extrabold tracking-[0.08em] text-primary uppercase font-mono truncate">
                           {getMnemonico(exame.nome)}
                         </span>
-                        <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
+                        {!isTerc && (
+                          <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
+                        )}
+
                       </div>
                       {isTerc && (
                         <div className="mt-1.5 flex items-center gap-1.5">
