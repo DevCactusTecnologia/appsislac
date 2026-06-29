@@ -174,15 +174,12 @@ const FluxoRotinaTab = () => {
                 <h2 className="text-base font-bold text-foreground">
                   Recebimento de exames terceirizados
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Define o comportamento ao abrir a tela <strong>Inserir Resultado</strong> para
-                  exames enviados a laboratório de apoio sem integração:
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Comportamento ao abrir <strong>Inserir Resultado</strong> para exames sem integração:
                   <br />
-                  <strong>Manual</strong> — o usuário precisa clicar em
-                  “Marcar como recebido” em cada exame.
+                  <strong>Manual</strong> — clicar em “Marcar como recebido” em cada exame.
                   <br />
-                  <strong>Automático</strong> — todos os exames terceirizados
-                  pendentes são marcados como finalizados ao abrir a tela.
+                  <strong>Automático</strong> — marca todos como finalizados ao abrir a tela.
                 </p>
               </div>
               <Switch
@@ -192,12 +189,13 @@ const FluxoRotinaTab = () => {
                 aria-label="Ativar recebimento automático de exames terceirizados"
               />
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-2 text-[11px] text-muted-foreground">
               Modo atual:{" "}
               <strong className="text-foreground">
                 {autoTerc ? "Automático" : "Manual"}
               </strong>
             </p>
+
           </div>
         </div>
       </section>
