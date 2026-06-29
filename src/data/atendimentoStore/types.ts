@@ -88,6 +88,8 @@ export interface ExameOperacionalRow {
   paciente_sexo: string;       // não persistido; default "M" (não usado nas telas operacionais hoje)
   paciente_nascimento: string; // ISO yyyy-mm-dd
   unidade_id: string;
+  jejum: boolean;
+  prioridade_clinica: "normal" | "urgencia" | "emergencia";
   responsavel: string;         // analista (vazio se não definido)
   exames: Array<{
     id: number;
