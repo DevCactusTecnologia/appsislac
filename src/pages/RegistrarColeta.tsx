@@ -223,6 +223,13 @@ const RegistrarColeta = () => {
     setPacientes(list);
   };
 
+  // Real-time: quando o atendimento é editado (jejum / prioridade / etc.),
+  // o atendimentoStore notifica via realtime channel. Recarregamos a fila.
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { void reload(); });
+    return unsub;
+  }, []);
+
   // Pré-seleção via ?protocolo=ATD-... (vindo do SuccessOverlay de Novo Atendimento)
   useEffect(() => {
     const proto = searchParams.get("protocolo");
