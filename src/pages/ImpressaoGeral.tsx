@@ -16,11 +16,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { gerarLaudoLotePdf } from "@/lib/laudoBatchPdf";
 
 const ImpressaoGeral = () => {
+  const { user: authUser } = useAuth();
   const unidadesAtivas = useMemo(() => getUnidades().filter(u => u.ativo), []);
   const unidades = useMemo(() => unidadesAtivas.map(u => u.nome), [unidadesAtivas]);
   const [selectedUnidade, setSelectedUnidade] = useState<string>(unidades[0] || "");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [gerando, setGerando] = useState(false);
   const [, setTick] = useState(0);
 
   // ── Branch por flag ──────────────────────────────────────────────────
