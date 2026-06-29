@@ -62,8 +62,10 @@ function buildTickets(
     const cobranca = at.examesCobranca ?? [];
     for (const ex of cobranca) {
       const st = (ex.status ?? "pendente").toString().toLowerCase();
-      // Mapa de trabalho = exames ainda em fluxo (antes de liberação/finalização)
-      if (["analisado", "finalizado", "cancelado", "digitado", "impresso", "retificado"].includes(st)) continue;
+      // Mapa de trabalho = exames ainda em fluxo (enquanto não finalizados/liberados).
+      // Mantemos exames já analisados/digitados/retificados disponíveis para reimpressão
+      // do mapa até que o resultado seja efetivamente finalizado/liberado ou cancelado.
+      if (["finalizado", "liberado", "cancelado"].includes(st)) continue;
 
       const meta = catalogoBySigla.get(ex.nome) ?? catalogoBySigla.get(ex.nome.toLowerCase());
       const t: MapaExameTicket = {
