@@ -7930,6 +7930,10 @@ export type Database = {
       }
     }
     Functions: {
+      __test_update_atendimento_tx_state: {
+        Args: { _admin_uid?: string }
+        Returns: Json
+      }
       _calc_dv_amostra: { Args: { _digitos: string }; Returns: string }
       _get_audit_justificativa: { Args: never; Returns: string }
       _get_protocolo_hmac_key: { Args: { _tenant_id: string }; Returns: string }
