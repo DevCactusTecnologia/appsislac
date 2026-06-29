@@ -52,6 +52,13 @@ export interface LabConfig {
    * Default: `true` (comportamento original).
    */
   rotinaColetaAnaliseEnabled: boolean;
+  /**
+   * Quando `true`, exames terceirizados sem integração são marcados como
+   * recebidos/finalizados automaticamente ao abrir a tela "Inserir Resultado".
+   * Quando `false` (padrão), exige clique manual no botão "Marcar como
+   * recebido".
+   */
+  terceirizadoRecebimentoAutomatico: boolean;
 }
 
 const defaultConfig: LabConfig = {
