@@ -306,13 +306,14 @@ const RegistrarColeta = () => {
     // Persiste PRIMEIRO no banco. Só depois atualiza o estado local.
     // Evita celebração otimista (modal "Coleta concluída!") antes da
     // confirmação real, e impede inconsistência quando RLS/triggers falham.
-    const results = await Promise.all(updates.map(u =>
+    const { runWithConcurrency } = await import("@/lib/runWithConcurrency");
+    const results = await runWithConcurrency(updates, 4, (u) =>
       updateAtendimentoExame(u.exameId, {
         status: u.dbStatus,
         data_coleta: u.dbStatus === "coletado" ? new Date().toISOString() : null,
         motivo_cancelamento: u.motivo_cancelamento,
-      })
-    ));
+      }, undefined, { skipReload: true }),
+    );
 
     const failed = results.filter(r => !r.ok);
     if (failed.length > 0) {
@@ -341,22 +342,21 @@ const RegistrarColeta = () => {
       const coletados = updates.filter(u => u.dbStatus === "coletado");
       if (coletados.length > 0) {
         const pacienteAtual = pacientes.find(p => p.id === pacienteId);
-        await Promise.all(
-          coletados.map(u => {
-            const ex = pacienteAtual?.exames.find(e => e.id === u.exameId);
-            return criarAmostraParaExame({
-              atendimentoExameId: u.exameId,
-              atendimentoId: pacienteId,
-              exameId: ex?.exameId ?? null,
-              pacienteId: pacienteAtual?.pacienteId ?? null,
-              materialId: ex?.material_id ?? null,
-            });
-          }),
-        );
+        await runWithConcurrency(coletados, 4, (u) => {
+          const ex = pacienteAtual?.exames.find(e => e.id === u.exameId);
+          return criarAmostraParaExame({
+            atendimentoExameId: u.exameId,
+            atendimentoId: pacienteId,
+            exameId: ex?.exameId ?? null,
+            pacienteId: pacienteAtual?.pacienteId ?? null,
+            materialId: ex?.material_id ?? null,
+          });
+        });
       }
     } catch (e) {
       showError(e, { scope: "RegistrarColeta.criarAmostras", silent: true });
     }
+
 
     // Recarrega a lista do banco
     await reload();
