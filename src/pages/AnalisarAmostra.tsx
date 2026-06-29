@@ -26,8 +26,10 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import {
   getExamesOperacionaisByStatus,
   updateAtendimentoExame,
+  subscribe as subscribeAtendimentos,
   type ExameOperacionalRow,
 } from "@/data/atendimentoStore";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
