@@ -4,7 +4,7 @@ import {
   Search, Calendar, Printer, FileText, ChevronLeft, ChevronRight,
   LayoutList, LayoutGrid, ClipboardList, Inbox, Eye, CheckCircle2, Clock, XCircle,
 } from "lucide-react";
-import { getAtendimentos, subscribe } from "@/data/atendimentoStore";
+import { getAtendimentos, subscribe, isAtendimentosBooting, hasAtendimentosBooted } from "@/data/atendimentoStore";
 import type { MockAtendimento } from "@/data/types";
 import { formatIdadeDetalhada } from "@/lib/idade";
 import { fireSuccessConfetti } from "@/lib/confetti";
