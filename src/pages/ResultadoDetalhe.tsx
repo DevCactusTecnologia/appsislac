@@ -359,7 +359,7 @@ const ResultadoDetalhe = () => {
     const log = buildAuditLogFromDb(rows, exames, idMap, analistaAtual);
     setAuditLog(log);
     setIsHydrating(false);
-  }, [id]);
+  }, [id, analistaAtual]);
 
   useEffect(() => {
     reloadExames();
