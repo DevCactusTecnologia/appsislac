@@ -103,6 +103,7 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.formatoExibicao !== undefined && { formato_exibicao: p.formatoExibicao }),
   ...(p.sensivelJejum !== undefined && { sensivel_jejum: p.sensivelJejum }),
   ...(p.estratificadoRiscoCv !== undefined && { estratificado_risco_cv: p.estratificadoRiscoCv }),
+  ...(p.qtdResultadosAnteriores !== undefined && { qtd_resultados_anteriores: p.qtdResultadosAnteriores }),
 });
 
 /**
