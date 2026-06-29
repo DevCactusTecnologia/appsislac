@@ -392,7 +392,7 @@ async function persistUpdateAtendimentoTx(
 
     // Persistência direta de `jejum` e `prioridade_clinica` (não passam pelo edge function transacional).
     if (updates.jejum !== undefined || updates.prioridadeClinica !== undefined) {
-      const extra: Record<string, unknown> = {};
+      const extra: { jejum?: boolean; prioridade_clinica?: string } = {};
       if (updates.jejum !== undefined) extra.jejum = updates.jejum;
       if (updates.prioridadeClinica !== undefined) extra.prioridade_clinica = updates.prioridadeClinica;
       const { error: jErr } = await supabase
