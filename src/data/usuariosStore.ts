@@ -280,7 +280,18 @@ export function subscribeUsuarios(listener: () => void): () => void {
 }
 
 // === Mutações via edge functions admin-* =====================================
-export interface InviteInput {
+export interface DadosProfissionais {
+  telefone?: string;
+  tipoProfissional?: string;
+  cbo?: string;
+  cpf?: string;
+  cns?: string;
+  conselhoClasse?: string;
+  conselhoUf?: string;
+  conselhoNumero?: string;
+}
+
+export interface InviteInput extends DadosProfissionais {
   email: string;
   nome: string;
   perfil: Perfil;
