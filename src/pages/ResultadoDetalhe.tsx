@@ -1902,14 +1902,7 @@ const ResultadoDetalhe = () => {
 
 
                       </div>
-                      {isTerc && (
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          <StatusBadge label={exame.status} type={statusExameMap[exame.status].type} />
-                          <span className="text-[10px] font-medium text-muted-foreground truncate">
-                            {getLabNome(exame.id) || "Lab. de apoio"}
-                          </span>
-                        </div>
-                      )}
+
                       {isTerc && dbRow && dbRow.status_externo !== "NAO_APLICAVEL" && (
                         <div className="mt-1.5">
                           <IntegrationStatusBadge row={dbRow} compact />
