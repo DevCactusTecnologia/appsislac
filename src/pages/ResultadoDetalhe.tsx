@@ -820,7 +820,26 @@ const ResultadoDetalhe = () => {
       if (res.ok) {
         okCount++;
         // P0 #1 — auditoria individual por exame (não em bloco)
-        addAuditEntry(exame.id, "Resultado liberado (lote validado sem críticos)");
+        setAnaliseInfoMap((prev) => {
+          const info = prev[exame.id] || {};
+          const analisadoPor = info.analisadoPor ?? { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais };
+          const analisadoEm = info.analisadoEm ?? formatDataHora();
+          return {
+            ...prev,
+            [exame.id]: {
+              ...info,
+              analisadoPor,
+              analisadoEm,
+              liberadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+              liberadoEm: formatDataHora(),
+            },
+          };
+        });
+        const analista = analiseInfoMap[exame.id]?.analisadoPor?.nome ?? analistaAtual.nome;
+        const detalhe = analista !== analistaAtual.nome
+          ? `Analisado por: ${analista} · Liberado por: ${analistaAtual.nome}`
+          : `Analisado e liberado por: ${analistaAtual.nome}`;
+        addAuditEntry(exame.id, "Resultado liberado (lote validado sem críticos)", detalhe);
       } else {
         failCount++;
       }
