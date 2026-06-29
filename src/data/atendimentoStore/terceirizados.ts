@@ -27,6 +27,25 @@ export async function updateExameTerceirizado(
   }>,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
+    // Atendimento pode estar pós-finalização (laudo liberado). O trigger
+    // `require_justificativa_pos_finalizacao` exige justificativa de auditoria
+    // para qualquer UPDATE em `atendimento_exames` nesse estado. Setamos uma
+    // justificativa automática descrevendo a operação de fluxo terceirizado.
+    const acoes: string[] = [];
+    if (patch.status_externo) acoes.push(`status_externo=${patch.status_externo}`);
+    if (patch.data_retorno) acoes.push("retorno do laboratório de apoio");
+    if (patch.data_envio) acoes.push("envio ao laboratório de apoio");
+    if (patch.data_liberacao) acoes.push("liberação do resultado terceirizado");
+    if (patch.resultado_importado) acoes.push("importação de resultado");
+    if (patch.status) acoes.push(`status=${patch.status}`);
+    const motivo = acoes.length > 0
+      ? `Fluxo terceirizado: ${acoes.join("; ")}`
+      : "Atualização de fluxo terceirizado";
+    try {
+      await supabase.rpc("set_audit_justificativa" as never, { _text: motivo } as never);
+    } catch {
+      // segue — se a RPC falhar e o trigger bloquear, o erro será propagado abaixo
+    }
     await persistOrThrow<AtendimentoExameDbRow>(
       supabase.from("atendimento_exames").update(patch as TablesUpdate<"atendimento_exames">).eq("id", exameId),
       "atendimentos.updateExameTerceirizado",
