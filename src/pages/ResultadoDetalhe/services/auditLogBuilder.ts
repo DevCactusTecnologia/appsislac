@@ -52,7 +52,7 @@ export function buildAuditLogFromDb(
   exames.forEach((exame) => {
     const row = rowByUiId.get(exame.id);
     const dbStatus = row?.status;
-    const semColeta  = (row?.coletor  ?? "") === SEM_REGISTRO;
+    const semColeta  = (row?.analista ?? "") === SEM_REGISTRO;
     const semAnalise = (row?.analista ?? "") === SEM_REGISTRO;
     const dataPedido = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now);
     const dataColeta = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO, now);
