@@ -560,7 +560,14 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
         /* Padrão institucional: padding 0 em todas as tabelas/células do laudo. */
         #laudo-content table, #laudo-content table * { border-spacing: 0 !important; }
         #laudo-content td, #laudo-content th { padding: 0 !important; }
-        #laudo-content th, #laudo-content td { text-align: left !important; vertical-align: top !important; }
+        #laudo-content th, #laudo-content td { vertical-align: top !important; }
+        /* text-align padrão LEFT só para tabelas do cabeçalho/rodapé.
+           Tabelas do Layout Científico do exame mantêm o alinhamento
+           declarado pelo usuário em cada <td> (ex.: text-align:right). */
+        #laudo-content .laudo-cabecalho-wrap td,
+        #laudo-content .laudo-cabecalho-wrap th,
+        #laudo-content .laudo-rodape-wrap td,
+        #laudo-content .laudo-rodape-wrap th { text-align: left !important; }
         /* Espaçamento entre linhas DEFAULT (sem !important) — permite que
            o Layout Científico do exame sobrescreva com line-height próprio
            (ex.: Simples 1.0, 1.15, 1.5) definido inline no editor. */
