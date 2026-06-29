@@ -113,6 +113,8 @@ async function fetchPacientesAnalise(): Promise<Paciente[]> {
         analisado: false,
         analista: r.responsavel || "—",
         exames,
+        jejum: !!r.jejum,
+        prioridadeClinica: r.prioridade_clinica ?? "normal",
       } as Paciente;
     })
     .filter((p): p is Paciente => p !== null);
