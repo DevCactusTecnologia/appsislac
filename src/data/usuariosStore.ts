@@ -268,12 +268,24 @@ export interface InviteInput {
 
 export async function inviteUsuario(input: InviteInput): Promise<{ ok: boolean; error?: string }> {
   const { data, error } = await supabase.functions.invoke("admin-invite-user", { body: input });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // FunctionsHttpError não expõe o body por padrão — tentamos extrair a mensagem real.
+    let detail = error.message;
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === "function") {
+        const parsed = await ctx.json();
+        if (parsed?.error) detail = String(parsed.error);
+      }
+    } catch { /* ignore */ }
+    return { ok: false, error: detail };
+  }
   const result = data as { ok?: boolean; error?: string };
   if (!result?.ok) return { ok: false, error: result?.error || "Falha ao convidar usuário." };
   await _initUsuariosStore();
   return { ok: true };
 }
+
 
 export interface UpdateInput {
   userId: string;
