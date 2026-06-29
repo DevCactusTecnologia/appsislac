@@ -248,7 +248,7 @@ export async function _initUsuariosStore(): Promise<void> {
   // O painel /usuarios só está acessível a quem tem permissão `gestao_usuarios`,
   // e na prática hoje só admins. RLS já bloqueia o resto.
   const [{ data: profiles, error: pErr }, { data: roles }] = await Promise.all([
-    supabase.from("profiles").select("user_id,friendly_id,nome,email,perfil,status,permissoes_extras,permissoes_revogadas,unidade_ids,unidade_ativa,avatar,avatar_key,created_at,assinatura_tipo,assinatura_imagem_key,assinatura_conselho").order("created_at", { ascending: true }),
+    supabase.from("profiles").select("user_id,friendly_id,nome,email,perfil,status,permissoes_extras,permissoes_revogadas,unidade_ids,unidade_ativa,avatar,avatar_key,created_at,assinatura_tipo,assinatura_imagem_key,assinatura_conselho,telefone,tipo_profissional,cbo,cpf,cns,conselho_classe,conselho_uf,conselho_numero").order("created_at", { ascending: true }),
     supabase.from("user_roles").select("user_id,role"),
   ]);
   if (pErr) {
