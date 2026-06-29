@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AlterarResponsavelPopup from "@/components/AlterarResponsavelPopup";
 import PacienteHeaderCard from "@/components/operacional/PacienteHeaderCard";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 
 
 // Dialogs lazy-loaded — só baixam chunks quando abertos.
