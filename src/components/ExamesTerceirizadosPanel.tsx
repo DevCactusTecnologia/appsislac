@@ -18,6 +18,7 @@ import AuditoriaIntegracaoDrawer from "@/components/AuditoriaIntegracaoDrawer";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import { abrirLaudoResolvido } from "@/lib/laudoResolver";
 import { resolveIntegrationWarnings } from "@/lib/integration/integrationStatus";
+import { getLabConfig, subscribeLabConfig } from "@/data/labConfigStore";
 
 interface Props {
   rows: AtendimentoExameRow[];
