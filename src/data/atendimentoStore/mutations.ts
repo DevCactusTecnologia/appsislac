@@ -355,7 +355,8 @@ async function persistUpdateAtendimentoTx(
       && Object.keys(patch).length === 0
       && !hasPagamentoPayload
       && !cancelarTudo
-      && updates.jejum === undefined;
+      && updates.jejum === undefined
+      && updates.prioridadeClinica === undefined;
     if (somenteCobrancaSemEdge) {
       notify();
       return;
@@ -389,14 +390,17 @@ async function persistUpdateAtendimentoTx(
     }
     notify();
 
-    // Persistência direta de `jejum` (não passa pelo edge function transacional).
-    if (updates.jejum !== undefined) {
+    // Persistência direta de `jejum` e `prioridade_clinica` (não passam pelo edge function transacional).
+    if (updates.jejum !== undefined || updates.prioridadeClinica !== undefined) {
+      const extra: Record<string, unknown> = {};
+      if (updates.jejum !== undefined) extra.jejum = updates.jejum;
+      if (updates.prioridadeClinica !== undefined) extra.prioridade_clinica = updates.prioridadeClinica;
       const { error: jErr } = await supabase
         .from("atendimentos")
-        .update({ jejum: updates.jejum })
+        .update(extra)
         .eq("id", id);
       if (jErr) {
-        logger.warn("atendimentoStore", "falha ao persistir jejum", { id, error: jErr.message });
+        logger.warn("atendimentoStore", "falha ao persistir jejum/prioridade", { id, error: jErr.message });
       }
     }
   } catch (e) {
