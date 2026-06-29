@@ -178,6 +178,12 @@ const AnalisarAmostra = () => {
     setPacientes(list);
   };
 
+  // Real-time: refletir mudanças do atendimento (jejum, prioridade, etc.).
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { void reload(); });
+    return unsub;
+  }, []);
+
   const selectedPaciente = pacientes.find((p) => p.id === selectedId);
 
   const isPacienteCompleto = (p: Paciente) => {
