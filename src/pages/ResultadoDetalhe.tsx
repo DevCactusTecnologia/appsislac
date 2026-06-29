@@ -1393,15 +1393,17 @@ const ResultadoDetalhe = () => {
                   disabled: !podeImprimirTodos,
                 },
               ]) as PacienteHeaderAction[]}
+              belowAvatar={
+                <span
+                  title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
+                  Jejum: {pacienteJejum ? "Sim" : "Não"}
+                </span>
+              }
               actionsExtraLeft={
                 <>
-                  <span
-                    title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
-                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
-                    Jejum: {pacienteJejum ? "Sim" : "Não"}
-                  </span>
                   {!modoConsulta && todosLiberados && (
                     <WhatsappActionButton
                       onClick={handleEnviarResultadoWhatsapp}
@@ -1942,15 +1944,17 @@ const ResultadoDetalhe = () => {
                   { key: "imprimir", label: "Imprimir todos", icon: <Printer className="h-4 w-4" />, onClick: () => handleImprimir(paciente.exames), variant: "primary", title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined, disabled: !podeImprimirTodos },
                   
                 ]) as PacienteHeaderAction[]}
+                belowAvatar={
+                  <span
+                    title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
+                    Jejum: {pacienteJejum ? "Sim" : "Não"}
+                  </span>
+                }
                 actionsExtraLeft={
                   <>
-                    <span
-                      title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
-                      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
-                      Jejum: {pacienteJejum ? "Sim" : "Não"}
-                    </span>
                     {!modoConsulta && todosLiberados && (
                       <WhatsappActionButton
                         onClick={handleEnviarResultadoWhatsapp}
