@@ -215,6 +215,62 @@ const PagamentoDialog = ({
     onClose();
   };
 
+  /** Abre o overlay de QRCode PIX para o saldo restante (ou valor em digitação). */
+  const handleGerarPixQR = async () => {
+    const stagingNum = parse(stagingValor);
+    const valor = stagingNum > 0 ? stagingNum : Math.max(0, totalAjustado - valorPagoTotal);
+    if (valor <= 0) {
+      toast.error("Nenhum saldo a cobrar.");
+      return;
+    }
+    // BR Code payload simplificado (não certificado BCB — apto a leitura por apps de teste).
+    const payload = `00020126360014BR.GOV.BCB.PIX0114+55SISLAC-DEMO5204000053039865406${valor.toFixed(2)}5802BR5910LABORATORIO6009SAO PAULO62070503***6304`;
+    try {
+      const url = await QRCode.toDataURL(payload, { width: 280, margin: 1 });
+      setPixDataUrl(url);
+      setPixPayload(payload);
+      setPixValor(valor);
+      setPixStatus("aguardando");
+      setPixOpen(true);
+    } catch {
+      toast.error("Falha ao gerar QRCode.");
+    }
+  };
+
+  /** Aprova manualmente o pagamento PIX (operador confirma recebimento no caixa). */
+  const aprovarPix = () => {
+    setPixStatus("aprovado");
+    const novoPix: PagamentoRealizado = {
+      tipo: "PIX",
+      valor: pixValor,
+      data: format(new Date(), "dd/MM/yyyy"),
+    };
+    const novosPagamentos: PagamentoRealizado[] = [
+      ...pagamentos
+        .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
+        .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") })),
+      novoPix,
+    ];
+    const novoValorPago = valorPagoTotal + pixValor;
+    fireSuccessConfetti();
+    toast.success("Pagamento PIX aprovado!", { description: `${fmtBRL(pixValor)} recebido via PIX.` });
+    onConfirm?.({
+      valorPago: novoValorPago,
+      desconto: descontoTotal,
+      acrescimo: acrescimoTotal,
+      novosPagamentos,
+    });
+    setTimeout(() => {
+      setPixOpen(false);
+      setPagamentos([]);
+      setDescontoHistRemovido(false);
+      setAcrescimoHistRemovido(false);
+      setConfirmingRemove(null);
+      onClose();
+    }, 1200);
+  };
+
+
   const methodColor = (tipo: string) => {
     if (tipo === "Cortesia") return hsl("var(--status-warning, var(--accent))");
     const m = METHODS.find(x => x.label === tipo);
