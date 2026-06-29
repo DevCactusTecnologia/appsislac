@@ -522,7 +522,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
         icon={<Shield className="h-5 w-5 text-primary" />}
         title={editingId ? "Editar Usuário" : "Convidar Usuário"}
         subtitle={editingId ? "Atualize perfil, unidades, permissões e senha." : "Defina uma senha agora ou envie convite por e-mail."}
-        maxWidth="lg"
+        maxWidth="3xl"
         footer={
           <>
             <button
