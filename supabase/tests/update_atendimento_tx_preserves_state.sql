@@ -65,11 +65,11 @@ BEGIN
   INSERT INTO public.atendimento_exames(
     tenant_id, atendimento_id, nome_exame, status, valor, ordem,
     cobranca_destino, amostra_seq, grupo_exame_id, tipo_processo, solicitante,
-    coletor, data_coleta, amostra_id
+    coletor, data_coleta
   ) VALUES (
     v_tenant, v_at_id, 'GLICEMIA', 'coletado', 20, 2,
     'paciente', 1, gen_random_uuid(), 'INTERNO', 'DR ORIGINAL',
-    'COLETOR JOAO', now() - interval '2 hours', v_amostra_id
+    'COLETOR JOAO', now() - interval '2 hours'
   ) RETURNING id, grupo_exame_id, data_coleta INTO v_id_b, v_grupo_b, v_dt_coleta_b;
 
   -- Exame C: analisado, com resultados preenchidos
@@ -78,16 +78,13 @@ BEGIN
     cobranca_destino, amostra_seq, grupo_exame_id, tipo_processo, solicitante,
     coletor, data_coleta, analista, data_analise, resultados
   ) VALUES (
-    v_tenant, v_at_id, 'COLESTEROL', 25, 25, 3,
+    v_tenant, v_at_id, 'COLESTEROL', 'analisado', 25, 3,
     'paciente', 1, gen_random_uuid(), 'INTERNO', 'DR ORIGINAL',
     'COLETOR JOAO', now() - interval '2 hours',
     'ANALISTA MARIA', now() - interval '30 minutes',
     '{"COL":"180","HDL":"45"}'::jsonb
   ) RETURNING id, grupo_exame_id, data_analise, resultados
         INTO v_id_c, v_grupo_c, v_dt_analise_c, v_resultados_c;
-
-  -- Corrige status do C (constraint só aceita 'analisado')
-  UPDATE public.atendimento_exames SET status='analisado' WHERE id=v_id_c;
 
   RAISE NOTICE '── Cenário 1: editar APENAS solicitante (payload reenvia mesma lista)';
 
