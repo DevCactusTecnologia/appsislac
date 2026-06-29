@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { MenuLayoutProvider } from "@/contexts/MenuLayoutContext";
 
 import ChunkErrorBoundary from "@/components/ChunkErrorBoundary";
+import { RotinaColetaAnaliseGuard } from "@/components/RotinaColetaAnaliseGuard";
 
 
 // Lazy-loaded pages
