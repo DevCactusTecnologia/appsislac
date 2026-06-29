@@ -44,10 +44,11 @@ export async function updateExameTerceirizado(
     const payload = Object.fromEntries(
       Object.entries(patch).filter(([, value]) => value !== undefined),
     );
-    const { data, error } = await supabase.rpc(
-      "update_exame_terceirizado_tx" as never,
-      { _exame_id: exameId, _patch: payload, _justificativa: motivo } as never,
-    );
+    const { data, error } = await supabase.rpc("update_exame_terceirizado_tx", {
+      _exame_id: exameId,
+      _patch: payload,
+      _justificativa: motivo,
+    });
     if (error) throw new Error(`[persist:atendimentos.updateExameTerceirizado] ${error.message}`);
     if (!data) throw new Error("[persist:atendimentos.updateExameTerceirizado] exame não atualizado.");
   } catch (e) {
