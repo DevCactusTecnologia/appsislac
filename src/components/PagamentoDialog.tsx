@@ -861,8 +861,6 @@ const PagamentoDialog = ({
                   >
                     Trocar chave PIX ({(getPixConfig().chave || "não configurada").slice(0, 24)}{getPixConfig().chave.length > 24 ? "…" : ""})
                   </button>
-                    <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
-                  </button>
                 </>
               )}
             </div>
