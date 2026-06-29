@@ -209,6 +209,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
       formatoExibicao: tipoSelecionado === "Tempo" ? formatoTempo : undefined,
       sensivelJejum,
       estratificadoRiscoCv,
+      qtdResultadosAnteriores: exibirAnterior ? Math.max(1, Math.min(20, qtdAnteriores || 5)) : 5,
     };
     let ok = false;
     if (selectedId) ok = await updateParametro(selectedId, exameId, payload);
