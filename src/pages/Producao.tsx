@@ -416,25 +416,66 @@ const Producao = () => {
         open={chartDialogOpen}
         onClose={() => setChartDialogOpen(false)}
         icon={<BarChart3 className="h-5 w-5 text-primary" />}
-        title={`Gráfico — ${chartItem?.nome ?? ""}`}
-        subtitle={chartItem ? `${chartItem.totalExames.toLocaleString()} exames no período` : undefined}
-        maxWidth="3xl"
-      >
-        {chartItem && (
-          <div className="px-6 py-5 space-y-4">
-            <div className="flex items-center gap-2"><Button variant="outline" size="sm" className="gap-1.5 rounded-2xl text-xs" onClick={() => downloadCSV(`grafica_${chartItem.nome.replace(/\s+/g, "_")}`, ["Dia", "Exames"], getDailyData(chartItem).map(d => [d.dia, String(d.exames)]))}><Download className="h-3.5 w-3.5" />CSV</Button><Button variant="outline" size="sm" className="gap-1.5 rounded-2xl text-xs" onClick={() => exportPDF(`Gráfico - ${chartItem.nome}`, "chart-print-content")}><FileText className="h-3.5 w-3.5" />PDF</Button></div>
-            <div id="chart-print-content" className="space-y-6">
-              <Suspense fallback={<div className="h-72 flex items-center justify-center text-xs text-muted-foreground">Carregando gráficos…</div>}>
-                <ProducaoChartsLazy
-                  daily={getDailyData(chartItem)}
-                  pie={getPieData(chartItem)}
-                  colors={CHART_COLORS}
-                  pieTitle={tipoConfig[tipoSelecionado].label}
-                />
-              </Suspense>
-            </div>
+        title={`Gráfica — ${chartItem?.nome ?? ""}`}
+        subtitle={chartItem ? `${tipoConfig[tipoSelecionado].label} · ${format(dataInicial, "dd/MM/yy", { locale: ptBR })} – ${format(dataFinal, "dd/MM/yy", { locale: ptBR })}` : undefined}
+        maxWidth="5xl"
+        headerActions={chartItem ? (
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" size="sm" className="gap-1.5 rounded-full h-8 text-xs hover:bg-muted" onClick={() => downloadCSV(`grafica_${chartItem.nome.replace(/\s+/g, "_")}`, ["Dia", "Exames"], getDailyData(chartItem).map(d => [d.dia, String(d.exames)]))}><Download className="h-3.5 w-3.5" />CSV</Button>
+            <Button variant="ghost" size="sm" className="gap-1.5 rounded-full h-8 text-xs hover:bg-muted" onClick={() => exportPDF(`Gráfico - ${chartItem.nome}`, "chart-print-content")}><FileText className="h-3.5 w-3.5" />PDF</Button>
           </div>
-        )}
+        ) : undefined}
+      >
+        {chartItem && (() => {
+          const daily = getDailyData(chartItem);
+          const pie = getPieData(chartItem);
+          const pico = daily.reduce((max, d) => d.exames > max.exames ? d : max, daily[0] ?? { dia: "—", exames: 0 });
+          const mediaDia = daily.length ? Math.round(daily.reduce((s, d) => s + d.exames, 0) / daily.length) : 0;
+          const share = pie.find(p => p.isSelected)?.valor ?? 0;
+          const total = pie.reduce((s, p) => s + p.valor, 0) || 1;
+          const sharePct = Math.round((share / total) * 100);
+          return (
+            <div className="px-6 py-5 space-y-5 bg-gradient-to-b from-muted/20 to-transparent">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Total no período", value: chartItem.totalExames.toLocaleString(), hint: `${daily.length} dia(s)`, tone: "text-primary", icon: TrendingUp },
+                  { label: "Média / dia", value: mediaDia.toLocaleString(), hint: "exames", tone: "text-foreground", icon: BarChart3 },
+                  { label: "Pico do período", value: pico.exames.toLocaleString(), hint: pico.dia, tone: "text-foreground", icon: ClipboardList },
+                ].map((k) => (
+                  <div key={k.label} className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3 shadow-elevation-xs">
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0"><k.icon className="h-4 w-4 text-primary" /></div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{k.label}</p>
+                      <p className={cn("text-xl font-bold tabular-nums leading-tight mt-0.5", k.tone)}>{k.value}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{k.hint}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div id="chart-print-content" className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                <div className="lg:col-span-3 rounded-2xl border border-border/60 bg-card p-5 shadow-elevation-xs">
+                  <Suspense fallback={<div className="h-72 flex items-center justify-center text-xs text-muted-foreground">Carregando gráficos…</div>}>
+                    <ProducaoChartsLazy daily={daily} pie={[]} colors={CHART_COLORS} pieTitle="" variant="daily" />
+                  </Suspense>
+                </div>
+                <div className="lg:col-span-2 rounded-2xl border border-border/60 bg-card p-5 shadow-elevation-xs space-y-4">
+                  <div className="flex items-baseline justify-between">
+                    <h4 className="text-sm font-semibold text-foreground">Participação</h4>
+                    <span className="text-[11px] text-muted-foreground">{tipoConfig[tipoSelecionado].label}</span>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 border border-primary/15 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-primary font-semibold">{chartItem.nome}</p>
+                    <p className="text-2xl font-bold text-primary tabular-nums mt-0.5">{sharePct}%</p>
+                    <p className="text-[11px] text-muted-foreground">do total no período</p>
+                  </div>
+                  <Suspense fallback={<div className="h-40 flex items-center justify-center text-xs text-muted-foreground">…</div>}>
+                    <ProducaoChartsLazy daily={[]} pie={pie} colors={CHART_COLORS} pieTitle={tipoConfig[tipoSelecionado].label} variant="pie" />
+                  </Suspense>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </StandardDialog>
 
       {/* Quantitativa Dialog */}
@@ -443,59 +484,89 @@ const Producao = () => {
         onClose={() => setQuantDialogOpen(false)}
         icon={<ListOrdered className="h-5 w-5 text-primary" />}
         title={`Quantitativa — ${quantItem?.nome ?? ""}`}
-        subtitle={quantItem ? `${quantItem.totalExames.toLocaleString()} exames no período` : undefined}
-        maxWidth="3xl"
+        subtitle={quantItem ? `${tipoConfig[tipoSelecionado].label} · ${format(dataInicial, "dd/MM/yy", { locale: ptBR })} – ${format(dataFinal, "dd/MM/yy", { locale: ptBR })}` : undefined}
+        maxWidth="5xl"
+        headerActions={quantItem ? (
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" size="sm" className="gap-1.5 rounded-full h-8 text-xs hover:bg-muted" onClick={() => {
+              const b = getWeeklyBreakdown(quantItem);
+              downloadCSV(`quant_${quantItem.nome.replace(/\s+/g, "_")}`, ["Período", "Datas", "Rotina", "Urgentes", "Total", "Média/Dia"], b.map(w => [w.label, w.periodo, String(w.rotina), String(w.urgentes), String(w.exames), String(w.media)]));
+            }}><Download className="h-3.5 w-3.5" />CSV</Button>
+            <Button variant="ghost" size="sm" className="gap-1.5 rounded-full h-8 text-xs hover:bg-muted" onClick={() => exportPDF(`Quantitativa - ${quantItem.nome}`, "quant-print-content")}><FileText className="h-3.5 w-3.5" />PDF</Button>
+          </div>
+        ) : undefined}
       >
         {quantItem && (() => {
           const breakdown = getWeeklyBreakdown(quantItem);
           const totalRotina = breakdown.reduce((s, w) => s + w.rotina, 0);
           const totalUrgentes = breakdown.reduce((s, w) => s + w.urgentes, 0);
           const totalExames = breakdown.reduce((s, w) => s + w.exames, 0);
-          const mediaGeral = Math.round(totalExames / breakdown.length);
+          const mediaGeral = breakdown.length ? Math.round(totalExames / breakdown.length) : 0;
+          const picoSemana = breakdown.reduce((max, w) => w.exames > max.exames ? w : max, breakdown[0] ?? { label: "—", exames: 0 });
+          const urgPct = totalExames ? Math.round((totalUrgentes / totalExames) * 100) : 0;
           return (
-            <div className="px-6 py-5 space-y-4">
-              <div className="flex items-center gap-2"><Button variant="outline" size="sm" className="gap-1.5 rounded-2xl text-xs" onClick={() => downloadCSV(`quant_${quantItem.nome.replace(/\s+/g, "_")}`, ["Período", "Datas", "Rotina", "Urgentes", "Total", "Média/Dia"], breakdown.map(w => [w.label, w.periodo, String(w.rotina), String(w.urgentes), String(w.exames), String(w.media)]))}><Download className="h-3.5 w-3.5" />CSV</Button><Button variant="outline" size="sm" className="gap-1.5 rounded-2xl text-xs" onClick={() => exportPDF(`Quantitativa - ${quantItem.nome}`, "quant-print-content")}><FileText className="h-3.5 w-3.5" />PDF</Button></div>
-              <div id="quant-print-content" className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[{ label: "Total", value: totalExames, color: "text-primary" }, { label: "Rotina", value: totalRotina, color: "text-status-success" }, { label: "Urgentes", value: totalUrgentes, color: "text-status-warning" }, { label: "Média/Sem", value: mediaGeral, color: "text-blue-500" }].map(stat => (
-                    <div key={stat.label} className="rounded-2xl border border-border/60 p-4 text-center">
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
-                      <p className={cn("text-xl font-bold mt-1", stat.color)}>{stat.value.toLocaleString()}</p>
+            <div className="px-6 py-5 space-y-5 bg-gradient-to-b from-muted/20 to-transparent">
+              <div id="quant-print-content" className="space-y-5">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {[
+                    { label: "Total", value: totalExames, hint: `${breakdown.length} semana(s)`, tone: "text-primary", bg: "bg-primary/10", icon: TrendingUp },
+                    { label: "Rotina", value: totalRotina, hint: `${100 - urgPct}% do total`, tone: "text-status-success", bg: "bg-status-success-bg", icon: ClipboardList },
+                    { label: "Urgentes", value: totalUrgentes, hint: `${urgPct}% do total`, tone: "text-status-warning", bg: "bg-status-warning-bg", icon: TestTube },
+                    { label: "Pico semanal", value: picoSemana.exames, hint: picoSemana.label, tone: "text-foreground", bg: "bg-muted", icon: BarChart3 },
+                  ].map((stat) => (
+                    <div key={stat.label} className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3 shadow-elevation-xs">
+                      <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", stat.bg)}><stat.icon className={cn("h-4 w-4", stat.tone)} /></div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{stat.label}</p>
+                        <p className={cn("text-xl font-bold tabular-nums leading-tight mt-0.5", stat.tone)}>{stat.value.toLocaleString()}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{stat.hint}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-2xl border border-border/60 overflow-hidden">
+                <div className="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-elevation-xs">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
+                    <h4 className="text-sm font-semibold text-foreground">Distribuição semanal</h4>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">Média {mediaGeral.toLocaleString()} / semana</span>
+                  </div>
                   <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full">
-                      <thead><tr className="bg-muted/15 border-b border-border/30"><th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground">Período</th><th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground">Rotina</th><th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground">Urgentes</th><th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground">Total</th><th className="text-right px-5 py-3 text-xs font-semibold text-muted-foreground">Média/Dia</th></tr></thead>
+                      <thead><tr className="bg-muted/15 border-b border-border/30"><th className="text-left px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Período</th><th className="text-right px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Rotina</th><th className="text-right px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Urgentes</th><th className="text-right px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Total</th><th className="text-right px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Média/Dia</th><th className="px-5 py-2.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-32">Volume</th></tr></thead>
                       <tbody>
-                        {breakdown.map(week => (
-                          <tr key={week.label} className="border-b border-border/15 last:border-0">
-                            <td className="px-5 py-3"><p className="text-sm font-medium">{week.label}</p><p className="text-xs text-muted-foreground">{week.periodo}</p></td>
-                            <td className="px-5 py-3 text-right text-sm">{week.rotina.toLocaleString()}</td>
-                            <td className="px-5 py-3 text-right text-sm text-status-warning font-medium">{week.urgentes.toLocaleString()}</td>
-                            <td className="px-5 py-3 text-right text-sm font-bold">{week.exames.toLocaleString()}</td>
-                            <td className="px-5 py-3 text-right text-sm text-muted-foreground">{week.media}</td>
-                          </tr>
-                        ))}
-                        <tr className="bg-muted/15 font-semibold">
-                          <td className="px-5 py-3 text-sm font-bold">Total</td>
-                          <td className="px-5 py-3 text-right text-sm">{totalRotina.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-right text-sm text-status-warning">{totalUrgentes.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-right text-sm font-bold text-primary">{totalExames.toLocaleString()}</td>
-                          <td className="px-5 py-3 text-right text-sm text-muted-foreground">{mediaGeral}</td>
-                        </tr>
+                        {breakdown.map(week => {
+                          const pct = picoSemana.exames ? Math.round((week.exames / picoSemana.exames) * 100) : 0;
+                          return (
+                            <tr key={week.label} className="border-b border-border/15 last:border-0 hover:bg-muted/10 transition-colors">
+                              <td className="px-5 py-3"><p className="text-sm font-medium">{week.label}</p><p className="text-[11px] text-muted-foreground">{week.periodo}</p></td>
+                              <td className="px-5 py-3 text-right text-sm tabular-nums">{week.rotina.toLocaleString()}</td>
+                              <td className="px-5 py-3 text-right text-sm tabular-nums text-status-warning font-medium">{week.urgentes.toLocaleString()}</td>
+                              <td className="px-5 py-3 text-right text-sm tabular-nums font-bold">{week.exames.toLocaleString()}</td>
+                              <td className="px-5 py-3 text-right text-sm tabular-nums text-muted-foreground">{week.media}</td>
+                              <td className="px-5 py-3"><div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-primary/80" style={{ width: `${pct}%` }} /></div></td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
+                      <tfoot>
+                        <tr className="bg-muted/20 border-t border-border/40">
+                          <td className="px-5 py-3 text-sm font-bold">Total</td>
+                          <td className="px-5 py-3 text-right text-sm tabular-nums font-semibold">{totalRotina.toLocaleString()}</td>
+                          <td className="px-5 py-3 text-right text-sm tabular-nums text-status-warning font-semibold">{totalUrgentes.toLocaleString()}</td>
+                          <td className="px-5 py-3 text-right text-sm tabular-nums font-bold text-primary">{totalExames.toLocaleString()}</td>
+                          <td className="px-5 py-3 text-right text-sm tabular-nums text-muted-foreground">{mediaGeral}</td>
+                          <td className="px-5 py-3" />
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
                   <div className="sm:hidden divide-y divide-border/30">
                     {breakdown.map(week => (
                       <div key={week.label} className="p-4 space-y-2">
-                        <div className="flex items-center justify-between"><div><p className="text-sm font-semibold">{week.label}</p><p className="text-xs text-muted-foreground">{week.periodo}</p></div><span className="text-base font-bold">{week.exames.toLocaleString()}</span></div>
+                        <div className="flex items-center justify-between"><div><p className="text-sm font-semibold">{week.label}</p><p className="text-[11px] text-muted-foreground">{week.periodo}</p></div><span className="text-base font-bold tabular-nums">{week.exames.toLocaleString()}</span></div>
                         <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Rotina</p><p className="text-sm font-semibold">{week.rotina.toLocaleString()}</p></div>
-                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Urgentes</p><p className="text-sm font-semibold text-status-warning">{week.urgentes.toLocaleString()}</p></div>
-                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Média/Dia</p><p className="text-sm font-semibold">{week.media}</p></div>
+                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Rotina</p><p className="text-sm font-semibold tabular-nums">{week.rotina.toLocaleString()}</p></div>
+                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Urgentes</p><p className="text-sm font-semibold tabular-nums text-status-warning">{week.urgentes.toLocaleString()}</p></div>
+                          <div className="bg-muted/20 rounded-xl p-2"><p className="text-[9px] text-muted-foreground uppercase">Média/Dia</p><p className="text-sm font-semibold tabular-nums">{week.media}</p></div>
                         </div>
                       </div>
                     ))}
