@@ -38,6 +38,10 @@ export const cache = {
   listeners: [] as Array<() => void>,
   idByProtocolo: new Map<string, number>(),
   protocoloById: new Map<number, string>(),
+  /** True enquanto a hidratação inicial do cache (boot) está em andamento. */
+  booting: false,
+  /** True após a primeira hidratação concluir (com sucesso ou erro). */
+  booted: false,
 };
 
 export function notify(): void {

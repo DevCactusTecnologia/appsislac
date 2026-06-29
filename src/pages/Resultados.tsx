@@ -4,7 +4,7 @@ import {
   Search, Calendar, Printer, FileText, ChevronLeft, ChevronRight,
   LayoutList, LayoutGrid, ClipboardList, Inbox, Eye, CheckCircle2, Clock, XCircle,
 } from "lucide-react";
-import { getAtendimentos, subscribe } from "@/data/atendimentoStore";
+import { getAtendimentos, subscribe, isAtendimentosBooting, hasAtendimentosBooted } from "@/data/atendimentoStore";
 import type { MockAtendimento } from "@/data/types";
 import { formatIdadeDetalhada } from "@/lib/idade";
 import { fireSuccessConfetti } from "@/lib/confetti";
@@ -325,7 +325,20 @@ const Resultados = () => {
         </div>
 
         {/* ─── Conteúdo ─── */}
-        {paginated.length === 0 ? (
+        {paginated.length === 0 && !useRpc && (isAtendimentosBooting() || !hasAtendimentosBooted()) ? (
+          <div className="bg-card rounded-xl border border-border flex flex-col items-center py-16 text-center px-8">
+            <div className="h-10 w-10 rounded-full border-2 border-muted border-t-primary animate-spin mb-4" />
+            <h2 className="text-base font-semibold text-foreground mb-1">Carregando atendimentos…</h2>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Sincronizando dados do banco. Isso pode levar alguns segundos.
+            </p>
+          </div>
+        ) : paginated.length === 0 && useRpc && rpc.loading ? (
+          <div className="bg-card rounded-xl border border-border flex flex-col items-center py-16 text-center px-8">
+            <div className="h-10 w-10 rounded-full border-2 border-muted border-t-primary animate-spin mb-4" />
+            <h2 className="text-base font-semibold text-foreground mb-1">Carregando resultados…</h2>
+          </div>
+        ) : paginated.length === 0 ? (
           <div className="bg-card rounded-xl border border-border flex flex-col items-center py-16 text-center px-8">
             <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
               <Inbox className="h-8 w-8 text-muted-foreground/40" />
