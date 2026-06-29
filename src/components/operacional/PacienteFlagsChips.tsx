@@ -42,7 +42,7 @@ export function PacienteFlagsChips({ jejum, prioridade, className }: Props) {
       <span
         title={p.title}
         className={cn(
-          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+          "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold border border-border",
           p.chip,
         )}
       >
@@ -52,7 +52,7 @@ export function PacienteFlagsChips({ jejum, prioridade, className }: Props) {
       <span
         title={jejum ? "Paciente em jejum" : "Jejum não informado"}
         className={cn(
-          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+          "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold border border-border",
           jejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning",
         )}
       >
