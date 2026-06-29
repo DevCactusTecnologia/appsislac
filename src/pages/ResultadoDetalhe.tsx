@@ -1410,13 +1410,7 @@ const ResultadoDetalhe = () => {
                 },
               ]) as PacienteHeaderAction[]}
               belowAvatar={
-                <span
-                  title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
-                  Jejum: {pacienteJejum ? "Sim" : "Não"}
-                </span>
+                <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
               }
               actionsExtraLeft={
                 <>
