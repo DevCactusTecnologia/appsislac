@@ -228,8 +228,27 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
       return;
     }
 
+    // Validações específicas para perfil Analista (não admin)
+    if (form.perfil === "analista" && !form.isAdmin) {
+      if (!form.tipoProfissional) { toast.error("Selecione o tipo de profissional."); return; }
+      if (!form.conselhoClasse.trim()) { toast.error("Informe o conselho de classe."); return; }
+      if (!form.conselhoUf) { toast.error("Selecione a UF emissora do conselho."); return; }
+      if (!form.conselhoNumero.trim()) { toast.error("Informe o número do registro."); return; }
+    }
+
     setSaving(true);
     const { extras, revogadas } = diffPermissoes(form.perfil, form.permissoesEfetivas, form.isAdmin);
+
+    const dadosProf = {
+      telefone: form.telefone.trim(),
+      tipoProfissional: form.tipoProfissional.trim(),
+      cbo: form.cbo.trim(),
+      cpf: form.cpf.trim(),
+      cns: form.cns.trim(),
+      conselhoClasse: form.conselhoClasse.trim(),
+      conselhoUf: form.conselhoUf.trim(),
+      conselhoNumero: form.conselhoNumero.trim(),
+    };
 
     if (editingId) {
       const result = await updateUsuario({
@@ -243,6 +262,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
         password: form.password ? form.password : undefined,
         assinaturaTipo: form.assinaturaTipo,
         assinaturaConselho: form.assinaturaConselho,
+        ...dadosProf,
       });
       setSaving(false);
       if (!result.ok) { toast.error(result.error || "Falha ao atualizar."); return; }
@@ -257,6 +277,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
         permissoesRevogadas: revogadas,
         isAdmin: form.isAdmin,
         password: form.password ? form.password : undefined,
+        ...dadosProf,
       });
       setSaving(false);
       if (!result.ok) { toast.error(result.error || "Falha ao convidar."); return; }
