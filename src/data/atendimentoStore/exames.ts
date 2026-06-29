@@ -220,6 +220,8 @@ export async function getExamesOperacionaisByStatus(
       paciente_sexo: sexoResolvido,
       paciente_nascimento: at.paciente_nascimento ?? "",
       unidade_id: at.unidade_id,
+      jejum: !!(at as { jejum?: boolean }).jejum,
+      prioridade_clinica: (((at as { prioridade_clinica?: string }).prioridade_clinica ?? "normal") as "normal" | "urgencia" | "emergencia"),
       responsavel,
       exames: exs.map((e) => ({
         id: e.id,
