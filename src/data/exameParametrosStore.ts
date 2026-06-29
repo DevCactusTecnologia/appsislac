@@ -44,6 +44,8 @@ export interface ExameParametro {
   sensivelJejum?: boolean;
   /** Quando true, o VR varia conforme o risco cardiovascular (ex.: LDL, Não-HDL). */
   estratificadoRiscoCv?: boolean;
+  /** Quantos resultados anteriores exibir no laudo (gráfico ##GRAFICOHIST## ou linha inline). 0 = padrão (5). */
+  qtdResultadosAnteriores?: number;
 }
 
 const cache = new Map<string, ExameParametro[]>();
