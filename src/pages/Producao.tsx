@@ -455,7 +455,7 @@ const Producao = () => {
               <div id="chart-print-content" className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                 <div className="lg:col-span-3 rounded-2xl border border-border/60 bg-card p-5 shadow-elevation-xs">
                   <Suspense fallback={<div className="h-72 flex items-center justify-center text-xs text-muted-foreground">Carregando gráficos…</div>}>
-                    <ProducaoChartsLazy daily={daily} pie={[]} colors={CHART_COLORS} pieTitle="" />
+                    <ProducaoChartsLazy daily={daily} pie={[]} colors={CHART_COLORS} pieTitle="" variant="daily" />
                   </Suspense>
                 </div>
                 <div className="lg:col-span-2 rounded-2xl border border-border/60 bg-card p-5 shadow-elevation-xs space-y-4">
