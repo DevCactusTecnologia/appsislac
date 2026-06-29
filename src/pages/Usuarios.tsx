@@ -28,7 +28,23 @@ import {
   type UsuarioIntegridade,
 } from "@/data/usuariosStore";
 import { useAuth } from "@/contexts/AuthContext";
-// AssinaturaSection movido para /perfil em Equipe 2.1 Fase 2.7
+import AssinaturaSection from "@/components/usuarios/AssinaturaSection";
+import { maskPhoneBR } from "@/lib/masks";
+
+const TIPOS_PROFISSIONAL = [
+  "Biomédico",
+  "Biomédica",
+  "Farmacêutico",
+  "Farmacêutica",
+  "Bioquímico",
+  "Bioquímico Citologista",
+] as const;
+
+const CONSELHOS_CLASSE = ["CRBM", "CRF", "CRBio", "CRM", "Outro"] as const;
+
+const UFS = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+] as const;
 
 const perfilLabels: Record<Perfil, string> = {
   admin: "Administrador",
@@ -46,14 +62,20 @@ interface FormData {
   email: string;
   perfil: Perfil;
   unidadeIds: string[];
-  /** Permissões EFETIVAS marcadas no toggle (defaults + extras − revogadas) */
   permissoesEfetivas: Set<string>;
   isAdmin: boolean;
-  /** Senha definida pelo admin no convite OU nova senha no editar. */
   password: string;
   assinaturaTipo: "carimbo" | "imagem";
   assinaturaConselho: string;
   assinaturaImagemKey: string | null;
+  telefone: string;
+  tipoProfissional: string;
+  cbo: string;
+  cpf: string;
+  cns: string;
+  conselhoClasse: string;
+  conselhoUf: string;
+  conselhoNumero: string;
 }
 
 const emptyForm = (): FormData => {
@@ -69,6 +91,14 @@ const emptyForm = (): FormData => {
     assinaturaTipo: "carimbo",
     assinaturaConselho: "",
     assinaturaImagemKey: null,
+    telefone: "",
+    tipoProfissional: "",
+    cbo: "",
+    cpf: "",
+    cns: "",
+    conselhoClasse: "",
+    conselhoUf: "",
+    conselhoNumero: "",
   };
 };
 
@@ -148,6 +178,14 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
       assinaturaTipo: u.assinaturaTipo,
       assinaturaConselho: u.assinaturaConselho ?? "",
       assinaturaImagemKey: u.assinaturaImagemKey,
+      telefone: u.telefone ?? "",
+      tipoProfissional: u.tipoProfissional ?? "",
+      cbo: u.cbo ?? "",
+      cpf: u.cpf ?? "",
+      cns: u.cns ?? "",
+      conselhoClasse: u.conselhoClasse ?? "",
+      conselhoUf: u.conselhoUf ?? "",
+      conselhoNumero: u.conselhoNumero ?? "",
     });
     setDialogOpen(true);
   };
@@ -190,8 +228,27 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
       return;
     }
 
+    // Validações específicas para perfil Analista (não admin)
+    if (form.perfil === "analista" && !form.isAdmin) {
+      if (!form.tipoProfissional) { toast.error("Selecione o tipo de profissional."); return; }
+      if (!form.conselhoClasse.trim()) { toast.error("Informe o conselho de classe."); return; }
+      if (!form.conselhoUf) { toast.error("Selecione a UF emissora do conselho."); return; }
+      if (!form.conselhoNumero.trim()) { toast.error("Informe o número do registro."); return; }
+    }
+
     setSaving(true);
     const { extras, revogadas } = diffPermissoes(form.perfil, form.permissoesEfetivas, form.isAdmin);
+
+    const dadosProf = {
+      telefone: form.telefone.trim(),
+      tipoProfissional: form.tipoProfissional.trim(),
+      cbo: form.cbo.trim(),
+      cpf: form.cpf.trim(),
+      cns: form.cns.trim(),
+      conselhoClasse: form.conselhoClasse.trim(),
+      conselhoUf: form.conselhoUf.trim(),
+      conselhoNumero: form.conselhoNumero.trim(),
+    };
 
     if (editingId) {
       const result = await updateUsuario({
@@ -205,6 +262,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
         password: form.password ? form.password : undefined,
         assinaturaTipo: form.assinaturaTipo,
         assinaturaConselho: form.assinaturaConselho,
+        ...dadosProf,
       });
       setSaving(false);
       if (!result.ok) { toast.error(result.error || "Falha ao atualizar."); return; }
@@ -219,6 +277,7 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
         permissoesRevogadas: revogadas,
         isAdmin: form.isAdmin,
         password: form.password ? form.password : undefined,
+        ...dadosProf,
       });
       setSaving(false);
       if (!result.ok) { toast.error(result.error || "Falha ao convidar."); return; }
@@ -591,8 +650,127 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
             </details>
           )}
 
-          {/* Assinatura — movida para /perfil (Equipe 2.1 Fase 2.7).
-              Admin não edita assinatura alheia. */}
+          {/* Dados profissionais — somente para perfil Analista */}
+          {form.perfil === "analista" && !form.isAdmin && (
+            <div className="rounded-2xl border border-border/60 overflow-hidden">
+              <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Dados profissionais do analista</span>
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Tipo de profissional *</Label>
+                  <Select
+                    value={form.tipoProfissional}
+                    onValueChange={(v) => setForm((f) => ({ ...f, tipoProfissional: v }))}
+                  >
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      {TIPOS_PROFISSIONAL.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>CBO</Label>
+                  <Input
+                    value={form.cbo}
+                    onChange={(e) => setForm((f) => ({ ...f, cbo: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
+                    placeholder="Ex.: 223505"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>CPF</Label>
+                  <Input
+                    value={form.cpf}
+                    onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
+                    placeholder="000.000.000-00"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>CNS</Label>
+                  <Input
+                    value={form.cns}
+                    onChange={(e) => setForm((f) => ({ ...f, cns: e.target.value.replace(/\D/g, "").slice(0, 15) }))}
+                    placeholder="Cartão Nacional de Saúde"
+                    className="rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefone</Label>
+                  <Input
+                    value={form.telefone}
+                    onChange={(e) => setForm((f) => ({ ...f, telefone: maskPhoneBR(e.target.value) }))}
+                    placeholder="(00) 00000-0000"
+                    className="rounded-xl"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Conselho de Classe *</Label>
+                  <Select
+                    value={form.conselhoClasse}
+                    onValueChange={(v) => setForm((f) => ({ ...f, conselhoClasse: v }))}
+                  >
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="CRBM, CRF..." /></SelectTrigger>
+                    <SelectContent>
+                      {CONSELHOS_CLASSE.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>UF emissora *</Label>
+                  <Select
+                    value={form.conselhoUf}
+                    onValueChange={(v) => setForm((f) => ({ ...f, conselhoUf: v }))}
+                  >
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>
+                      {UFS.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Número do registro *</Label>
+                  <Input
+                    value={form.conselhoNumero}
+                    onChange={(e) => setForm((f) => ({ ...f, conselhoNumero: e.target.value }))}
+                    placeholder="Ex.: 12345"
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Assinatura scaneada — só após criar (precisa de userId) */}
+              {editingId ? (
+                <div className="border-t border-border/60 p-4">
+                  <AssinaturaSection
+                    userId={editingId}
+                    tipo={form.assinaturaTipo}
+                    conselho={
+                      form.conselhoClasse && form.conselhoUf && form.conselhoNumero
+                        ? `${form.conselhoClasse}/${form.conselhoUf} ${form.conselhoNumero}`
+                        : form.assinaturaConselho
+                    }
+                    imagemKey={form.assinaturaImagemKey}
+                    nome={form.nome}
+                    onChangeTipo={(t) => setForm((f) => ({ ...f, assinaturaTipo: t }))}
+                    onChangeConselho={(v) => setForm((f) => ({ ...f, assinaturaConselho: v }))}
+                    onImagemChange={(k) => setForm((f) => ({ ...f, assinaturaImagemKey: k }))}
+                  />
+                </div>
+              ) : (
+                <div className="border-t border-border/60 px-4 py-3 text-[11px] text-muted-foreground">
+                  A assinatura scaneada pode ser enviada após criar o usuário (reabra o cadastro em "Editar").
+                </div>
+              )}
+            </div>
+          )}
+
 
           {/* Unidades */}
           <div className="space-y-3">

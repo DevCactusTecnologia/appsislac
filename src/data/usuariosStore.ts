@@ -37,6 +37,16 @@ export interface Usuario {
   assinaturaImagemKey: string | null;
   /** Conselho profissional exibido junto à assinatura (texto livre). */
   assinaturaConselho: string | null;
+  /** Telefone do profissional. */
+  telefone: string | null;
+  /** Dados profissionais (especialmente para analistas). */
+  tipoProfissional: string | null;
+  cbo: string | null;
+  cpf: string | null;
+  cns: string | null;
+  conselhoClasse: string | null;
+  conselhoUf: string | null;
+  conselhoNumero: string | null;
 }
 
 // === Catálogo de permissões reais (alinhado a public.has_permission) =========
@@ -188,6 +198,14 @@ interface DbProfile {
   assinatura_tipo?: string | null;
   assinatura_imagem_key?: string | null;
   assinatura_conselho?: string | null;
+  telefone?: string | null;
+  tipo_profissional?: string | null;
+  cbo?: string | null;
+  cpf?: string | null;
+  cns?: string | null;
+  conselho_classe?: string | null;
+  conselho_uf?: string | null;
+  conselho_numero?: string | null;
 }
 
 interface DbRole { user_id: string; role: string }
@@ -212,6 +230,14 @@ function mapToUsuario(p: DbProfile, roles: DbRole[]): Usuario {
     assinaturaTipo: p.assinatura_tipo === "imagem" ? "imagem" : "carimbo",
     assinaturaImagemKey: p.assinatura_imagem_key ?? null,
     assinaturaConselho: p.assinatura_conselho ?? null,
+    telefone: p.telefone ?? null,
+    tipoProfissional: p.tipo_profissional ?? null,
+    cbo: p.cbo ?? null,
+    cpf: p.cpf ?? null,
+    cns: p.cns ?? null,
+    conselhoClasse: p.conselho_classe ?? null,
+    conselhoUf: p.conselho_uf ?? null,
+    conselhoNumero: p.conselho_numero ?? null,
   };
 }
 
@@ -222,7 +248,7 @@ export async function _initUsuariosStore(): Promise<void> {
   // O painel /usuarios só está acessível a quem tem permissão `gestao_usuarios`,
   // e na prática hoje só admins. RLS já bloqueia o resto.
   const [{ data: profiles, error: pErr }, { data: roles }] = await Promise.all([
-    supabase.from("profiles").select("user_id,friendly_id,nome,email,perfil,status,permissoes_extras,permissoes_revogadas,unidade_ids,unidade_ativa,avatar,avatar_key,created_at,assinatura_tipo,assinatura_imagem_key,assinatura_conselho").order("created_at", { ascending: true }),
+    supabase.from("profiles").select("user_id,friendly_id,nome,email,perfil,status,permissoes_extras,permissoes_revogadas,unidade_ids,unidade_ativa,avatar,avatar_key,created_at,assinatura_tipo,assinatura_imagem_key,assinatura_conselho,telefone,tipo_profissional,cbo,cpf,cns,conselho_classe,conselho_uf,conselho_numero").order("created_at", { ascending: true }),
     supabase.from("user_roles").select("user_id,role"),
   ]);
   if (pErr) {
@@ -254,7 +280,18 @@ export function subscribeUsuarios(listener: () => void): () => void {
 }
 
 // === Mutações via edge functions admin-* =====================================
-export interface InviteInput {
+export interface DadosProfissionais {
+  telefone?: string;
+  tipoProfissional?: string;
+  cbo?: string;
+  cpf?: string;
+  cns?: string;
+  conselhoClasse?: string;
+  conselhoUf?: string;
+  conselhoNumero?: string;
+}
+
+export interface InviteInput extends DadosProfissionais {
   email: string;
   nome: string;
   perfil: Perfil;
@@ -287,7 +324,7 @@ export async function inviteUsuario(input: InviteInput): Promise<{ ok: boolean; 
 }
 
 
-export interface UpdateInput {
+export interface UpdateInput extends DadosProfissionais {
   userId: string;
   nome?: string;
   perfil?: Perfil;

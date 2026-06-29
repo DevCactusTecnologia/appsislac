@@ -36,6 +36,15 @@ interface InviteBody {
    * o fluxo padrão de convite por magic link.
    */
   password?: unknown;
+  // Dados profissionais (analistas)
+  telefone?: unknown;
+  tipoProfissional?: unknown;
+  cbo?: unknown;
+  cpf?: unknown;
+  cns?: unknown;
+  conselhoClasse?: unknown;
+  conselhoUf?: unknown;
+  conselhoNumero?: unknown;
 }
 
 function asStringArray(v: unknown): string[] {
@@ -197,6 +206,7 @@ Deno.serve(async (req) => {
   // Upsert ao invés de update: o trigger handle_new_user pode não estar ativo
   // em ambientes onde a permissão sobre auth.users foi restringida. Garantimos
   // que o profile exista mesmo sem o trigger.
+  const optStr = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
   const profilePayload: Record<string, unknown> = {
     user_id: newUserId,
     email,
@@ -207,6 +217,14 @@ Deno.serve(async (req) => {
     permissoes_extras: permissoesExtras,
     permissoes_revogadas: permissoesRevogadas,
     status: "Ativo",
+    telefone: optStr(body.telefone),
+    tipo_profissional: optStr(body.tipoProfissional),
+    cbo: optStr(body.cbo),
+    cpf: optStr(body.cpf),
+    cns: optStr(body.cns),
+    conselho_classe: optStr(body.conselhoClasse),
+    conselho_uf: optStr(body.conselhoUf),
+    conselho_numero: optStr(body.conselhoNumero),
   };
   if (callerTenantId) profilePayload.tenant_id = callerTenantId;
 

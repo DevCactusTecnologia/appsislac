@@ -4933,6 +4933,12 @@ export type Database = {
           assinatura_tipo: string
           avatar: string | null
           avatar_key: string | null
+          cbo: string | null
+          cns: string | null
+          conselho_classe: string | null
+          conselho_numero: string | null
+          conselho_uf: string | null
+          cpf: string | null
           created_at: string
           email: string
           friendly_id: string
@@ -4944,6 +4950,7 @@ export type Database = {
           status: string
           telefone: string | null
           tenant_id: string
+          tipo_profissional: string | null
           unidade_ativa: string
           unidade_ids: string[]
           updated_at: string
@@ -4955,6 +4962,12 @@ export type Database = {
           assinatura_tipo?: string
           avatar?: string | null
           avatar_key?: string | null
+          cbo?: string | null
+          cns?: string | null
+          conselho_classe?: string | null
+          conselho_numero?: string | null
+          conselho_uf?: string | null
+          cpf?: string | null
           created_at?: string
           email: string
           friendly_id?: string
@@ -4966,6 +4979,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           tenant_id: string
+          tipo_profissional?: string | null
           unidade_ativa?: string
           unidade_ids?: string[]
           updated_at?: string
@@ -4977,6 +4991,12 @@ export type Database = {
           assinatura_tipo?: string
           avatar?: string | null
           avatar_key?: string | null
+          cbo?: string | null
+          cns?: string | null
+          conselho_classe?: string | null
+          conselho_numero?: string | null
+          conselho_uf?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string
           friendly_id?: string
@@ -4988,6 +5008,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           tenant_id?: string
+          tipo_profissional?: string | null
           unidade_ativa?: string
           unidade_ids?: string[]
           updated_at?: string

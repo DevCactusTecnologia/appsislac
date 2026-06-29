@@ -30,6 +30,14 @@ interface UpdateBody {
   assinaturaTipo?: unknown;
   /** Texto livre do conselho profissional (ex.: "CRBM/MG 12345"). */
   assinaturaConselho?: unknown;
+  telefone?: unknown;
+  tipoProfissional?: unknown;
+  cbo?: unknown;
+  cpf?: unknown;
+  cns?: unknown;
+  conselhoClasse?: unknown;
+  conselhoUf?: unknown;
+  conselhoNumero?: unknown;
 }
 
 function asStringArray(v: unknown): string[] | undefined {
@@ -128,6 +136,17 @@ Deno.serve(async (req) => {
   if (typeof body.assinaturaConselho === "string") {
     patch.assinatura_conselho = body.assinaturaConselho.trim() || null;
   }
+  const optStr = (v: unknown, col: string) => {
+    if (typeof v === "string") patch[col] = v.trim() || null;
+  };
+  optStr(body.telefone, "telefone");
+  optStr(body.tipoProfissional, "tipo_profissional");
+  optStr(body.cbo, "cbo");
+  optStr(body.cpf, "cpf");
+  optStr(body.cns, "cns");
+  optStr(body.conselhoClasse, "conselho_classe");
+  optStr(body.conselhoUf, "conselho_uf");
+  optStr(body.conselhoNumero, "conselho_numero");
 
   // 4. Aplica update no profile
   if (Object.keys(patch).length > 0) {
