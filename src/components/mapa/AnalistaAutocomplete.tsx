@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, type ComponentType } from "react";
 import { Search, User, X } from "lucide-react";
 import { normalize } from "./MapaConstants";
 
@@ -10,9 +10,22 @@ interface Props {
   onClear: () => void;
   /** Lista real de analistas (do runtime). Sem fallback mock. */
   analistas?: string[];
+  placeholder?: string;
+  emptyText?: string;
+  ItemIcon?: ComponentType<{ className?: string }>;
 }
 
-const AnalistaAutocomplete = ({ value, query, onQueryChange, onSelect, onClear, analistas = [] }: Props) => {
+const AnalistaAutocomplete = ({
+  value,
+  query,
+  onQueryChange,
+  onSelect,
+  onClear,
+  analistas = [],
+  placeholder = "Digite o nome do analista...",
+  emptyText = "Nenhum analista encontrado",
+  ItemIcon = User,
+}: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +52,7 @@ const AnalistaAutocomplete = ({ value, query, onQueryChange, onSelect, onClear, 
           value={query || value}
           onChange={(e) => { onQueryChange(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Digite o nome do analista..."
+          placeholder={placeholder}
           className="pl-10 pr-9 py-2.5 w-full bg-muted/50 border-0 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
         />
         {(query || value) && (
@@ -52,7 +65,7 @@ const AnalistaAutocomplete = ({ value, query, onQueryChange, onSelect, onClear, 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border/60 rounded-2xl shadow-xl z-50 overflow-hidden">
           {filtrados.length === 0 ? (
-            <div className="px-4 py-4 text-center text-sm text-muted-foreground">Nenhum analista encontrado</div>
+            <div className="px-4 py-4 text-center text-sm text-muted-foreground">{emptyText}</div>
           ) : (
             <ul className="py-1.5 max-h-[200px] overflow-y-auto">
               {filtrados.map((a) => (
@@ -61,7 +74,7 @@ const AnalistaAutocomplete = ({ value, query, onQueryChange, onSelect, onClear, 
                     onClick={() => { onSelect(a); setIsOpen(false); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-primary/5 transition-colors"
                   >
-                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <ItemIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-medium">{a}</span>
                   </button>
                 </li>

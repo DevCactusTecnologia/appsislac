@@ -135,6 +135,7 @@ const Mapa = () => {
   const [currentPages, setCurrentPages] = useState<Record<TipoMapa, number>>({ paciente: 1, analista: 1, setor: 1, exame: 1 });
   const [rowsPerPage] = useState(10);
   const [analistaQuery, setAnalistaQuery] = useState("");
+  const [analistaTabQuery, setAnalistaTabQuery] = useState("");
   const [printing, setPrinting] = useState(false);
 
   // Aba Paciente: seleção (multi) de pacientes pendentes
@@ -1032,10 +1033,14 @@ const Mapa = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Analista</label>
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Pesquisar..." className="h-10 text-sm rounded-2xl pl-10 border-border/60" value={filters.nomeAnalista} onChange={e => updateFilter("nomeAnalista", e.target.value)} />
-                  </div>
+                  <AnalistaAutocomplete
+                    value={filters.nomeAnalista}
+                    query={analistaTabQuery}
+                    analistas={analistasReais}
+                    onQueryChange={(q) => { setAnalistaTabQuery(q); updateFilter("nomeAnalista", q); }}
+                    onSelect={(name) => { updateFilter("nomeAnalista", name); setAnalistaTabQuery(""); }}
+                    onClear={() => { setAnalistaTabQuery(""); updateFilter("nomeAnalista", ""); }}
+                  />
                 </div>
                 <MapaDatePicker label="Data de Atendimento" value={filters.dataAnalista} onChange={d => updateFilter("dataAnalista", d)} />
               </div>
@@ -1044,24 +1049,17 @@ const Mapa = () => {
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Buscar setor</label>
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Nome do setor..."
-                      className="h-10 text-sm rounded-2xl pl-10 pr-9 border-border/60"
-                      value={setorQuery}
-                      onChange={(e) => setSetorQuery(e.target.value)}
-                    />
-                    {setorQuery && (
-                      <button
-                        onClick={() => setSetorQuery("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Limpar busca"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
+                  <AnalistaAutocomplete
+                    value={setorQuery}
+                    query={setorQuery}
+                    analistas={setoresPendentes.map((g) => g.setor)}
+                    onQueryChange={(q) => setSetorQuery(q)}
+                    onSelect={(name) => setSetorQuery(name)}
+                    onClear={() => setSetorQuery("")}
+                    placeholder="Nome do setor..."
+                    emptyText="Nenhum setor encontrado"
+                    ItemIcon={Building2}
+                  />
                 </div>
                 <MapaDatePicker label="Data de atendimento (opcional)" value={filters.dataSetor} onChange={d => updateFilter("dataSetor", d)} />
                 <div className="rounded-2xl border border-border/40 bg-muted/15 px-3 py-2.5 text-xs text-muted-foreground flex items-start gap-2">
