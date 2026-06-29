@@ -100,6 +100,12 @@ const PagamentoDialog = ({
   const [acrescimoHistRemovido, setAcrescimoHistRemovido] = useState(false);
   // Confirmação de remoção: 'desc' / 'acre' para cards históricos, 'real-N' para realizado, 'staging-N' para staging
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
+  // PIX QR Code flow
+  const [pixOpen, setPixOpen] = useState(false);
+  const [pixDataUrl, setPixDataUrl] = useState<string>("");
+  const [pixPayload, setPixPayload] = useState<string>("");
+  const [pixValor, setPixValor] = useState<number>(0);
+  const [pixStatus, setPixStatus] = useState<"aguardando" | "aprovado">("aguardando");
   useBodyScrollLock(open);
 
   // Históricos efetivos (zeram quando o usuário remove o card).
