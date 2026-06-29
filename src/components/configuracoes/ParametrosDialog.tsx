@@ -109,6 +109,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     setFormatoTempo("min_seg");
     setSensivelJejum(false);
     setEstratificadoRiscoCv(false);
+    setQtdAnteriores(5);
     setTipoSelecionado("Texto");
   };
 
