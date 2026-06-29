@@ -2373,71 +2373,7 @@ const ResultadoDetalhe = () => {
               </div>
             )}
 
-            {/* Footer bar — analista + ações primárias.
-                Ações secundárias (Cancelar análise, Solicitar recoleta, Retificar)
-                vivem no menu "Mais ações" no topo, evitando duplicação cognitiva. */}
-            <div className="border-t border-border/60 bg-card/40 px-5 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <Avatar className="h-8 w-8 border border-status-info/40">
-                  <AvatarFallback className="bg-status-info-bg text-status-info text-xs font-semibold">
-                    {analistaAtual.iniciais}
-                  </AvatarFallback>
-                </Avatar>
-                {modoConsulta ? (
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analisado e Liberado por</span>
-                    <span className="text-sm font-medium text-foreground">{analistaAtual.nome}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Analista responsável</span>
-                      <span className="text-sm font-medium text-foreground">{analistaAtual.nome}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setAnalistaEmail("");
-                        setAnalistaSenha("");
-                        setAnalistaErro("");
-                        setShowAlterarAnalista(true);
-                      }}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-md px-2 py-1 transition-colors"
-                      title="Trocar analista responsável"
-                    >
-                      <Edit className="h-3 w-3" />
-                      Trocar
-                    </button>
-                  </>
-                )}
-              </div>
 
-              {!selectedIsTerceirizada && !modoConsulta && (canAnalisar || canLiberar) && (
-                <div className="flex items-center gap-2">
-                  {canAnalisar && (
-                    <button
-                      data-result-nav="true"
-                      onClick={handleSalvar}
-                      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium text-foreground border border-border bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
-                      title="Salvar parcialmente sem liberar"
-                    >
-                      <Save className="h-4 w-4" />
-                      Salvar
-                    </button>
-                  )}
-                  {canLiberar && (selectedExame?.status === "Resultado salvo" || selectedExame?.status === "Em retificação") && (
-                    <button
-                      onClick={() => setShowConfirmarLiberar(true)}
-                      className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary/90 transition-colors shadow-sm"
-                      title="Disponível somente após salvar o resultado"
-                    >
-                      <ShieldCheck className="h-4 w-4" />
-                      Assinar e Liberar
-                    </button>
-                  )}
-
-                </div>
-              )}
-            </div>
 
           </div>
         </div>
