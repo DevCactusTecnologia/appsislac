@@ -27,6 +27,7 @@ import { buildMapasHtml, prefetchParametrosForTickets, type MapaExameTicket } fr
 import MapaPreviewDialog, { type MapaOrientation } from "@/components/mapa/MapaPreviewDialog";
 import type { MockAtendimento } from "@/data/types";
 import { useEnsureStore } from "@/hooks/useEnsureStore";
+import { getUsuarios, subscribeUsuarios } from "@/data/usuariosStore";
 
 const tipoIcons: Record<TipoMapa, React.ReactNode> = {
   paciente: <Users className="h-4 w-4" />,
@@ -293,18 +294,17 @@ const Mapa = () => {
   }, [filters.setorExame, filters.analistaExame, filters.dataExame, atendimentos, catalogoBySigla]);
 
   // ── Aba Analista: lista de analistas reais e exames pendentes do analista ──
-  // Os analistas são extraídos dos exames já atribuídos (atendimento_exames.analista),
-  // garantindo que a aba só mostre nomes que de fato têm exames atribuídos.
+  // FONTE DE VERDADE: profiles com perfil = "analista" (usuariosStore).
+  // Nomes legados/divergentes em atendimento_exames.analista NÃO entram na lista.
+  const usuarios = useSyncExternalStore(subscribeUsuarios, getUsuarios, getUsuarios);
   const analistasReais = useMemo(() => {
-    const set = new Set<string>();
-    for (const at of atendimentos) {
-      for (const ex of at.examesCobranca ?? []) {
-        const nome = (ex.analista ?? "").trim();
-        if (nome) set.add(nome);
-      }
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [atendimentos]);
+    return usuarios
+      .filter((u) => u.perfil === "analista" && u.status !== "Inativo")
+      .map((u) => (u.nome ?? "").trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [usuarios]);
+
 
   const analistaResultado: MapaExameTicket[] = useMemo(() => {
     const nome = filters.nomeAnalista.trim();
