@@ -319,7 +319,7 @@ const ImpressaoGeral = () => {
                   className="w-full sm:w-auto px-4 py-2 rounded-2xl border border-border/60 text-xs font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {gerando
-                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando PDF…</>
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparando laudos…</>
                     : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
                 </button>
               </div>
