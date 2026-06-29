@@ -245,45 +245,31 @@ const ImpressaoGeral = () => {
 
 
   return (
-    <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
-      <div className="bg-card border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-        {/* Header chassis: título + métrica + ação */}
-        <div className="px-5 py-3 border-b border-border/50 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <FileText className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-bold text-foreground tracking-tight leading-tight">Impressão Geral</h1>
-              <p className="text-[11px] text-muted-foreground leading-tight">Resumo diário de atendimentos por unidade</p>
-            </div>
+    <div className="min-h-full w-full bg-muted/30 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-5xl mx-auto bg-card rounded-xl shadow-sm border border-border/60 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-border/40 flex items-center justify-between gap-4 flex-wrap bg-card">
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">Impressão Geral</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Gerenciamento e emissão de laudos em lote</p>
           </div>
-          <div className="flex items-center gap-2">
-            {summary.length > 0 && (
-              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/60 border border-border/50 text-[11px]">
-                <TrendingUp className="h-3 w-3 text-primary" />
-                <span className="font-bold text-foreground tabular-nums">{totals.exames.toLocaleString()}</span>
-                <span className="text-muted-foreground">exames</span>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleImprimirLote}
-              disabled={gerando || summary.length === 0}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {gerando
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparando…</>
-                : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleImprimirLote}
+            disabled={gerando || summary.length === 0}
+            className="inline-flex items-center justify-center px-4 h-9 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors shadow-sm gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {gerando
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Preparando…</>
+              : <><Printer className="h-4 w-4" /> Imprimir resultados</>}
+          </button>
         </div>
 
-        {/* Toolbar de filtros densa */}
-        <div className="px-5 py-2.5 bg-muted/30 border-b border-border/50 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Unidade</span>
-            <div className="flex bg-card border border-border/60 rounded-md p-0.5 overflow-x-auto no-scrollbar">
+        {/* Filter Bar */}
+        <div className="px-6 py-4 bg-muted/30 border-b border-border/40 flex flex-wrap items-end gap-6">
+          <div className="flex-1 min-w-[260px]">
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unidade de Atendimento</label>
+            <div className="flex flex-wrap gap-2">
               {unidades.map((u) => {
                 const active = selectedUnidade === u;
                 return (
@@ -291,8 +277,10 @@ const ImpressaoGeral = () => {
                     key={u}
                     onClick={() => setSelectedUnidade(u)}
                     className={cn(
-                      "px-2.5 h-7 rounded-[5px] text-xs font-semibold whitespace-nowrap transition-colors",
-                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                      "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-card text-muted-foreground border border-border/60 hover:border-border hover:text-foreground"
                     )}
                   >
                     {u}
@@ -301,14 +289,17 @@ const ImpressaoGeral = () => {
               })}
             </div>
           </div>
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Data</span>
+          <div className="w-52">
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Data de Referência</label>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="h-8 px-2.5 text-xs font-medium rounded-md gap-1.5 bg-card">
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-between px-3 h-9 bg-card border border-border/60 rounded-lg text-xs font-medium text-foreground hover:border-border focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                >
+                  <span>{date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar"}</span>
                   <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  {date ? format(date, "dd MMM, yyyy", { locale: ptBR }) : "Selecionar"}
-                </Button>
+                </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setCalendarOpen(false); }} locale={ptBR} initialFocus />
@@ -317,63 +308,103 @@ const ImpressaoGeral = () => {
           </div>
         </div>
 
-        {/* Área de conteúdo */}
+        {/* KPIs ou empty state */}
         {summary.length === 0 || (useServer && serverLoading) ? (
-          <div className="p-12 text-center">
-            <div className="h-12 w-12 rounded-lg bg-muted/60 flex items-center justify-center mx-auto mb-3">
+          <div className="p-16 text-center">
+            <div className="h-12 w-12 rounded-xl bg-muted/60 flex items-center justify-center mx-auto mb-3">
               {serverLoading
                 ? <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
                 : <FileText className="h-5 w-5 text-muted-foreground/60" />}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {serverLoading ? "Carregando resumo…" : "Selecione uma unidade e data para visualizar o resumo."}
             </p>
           </div>
         ) : (
           <>
-            {/* KPIs compactos */}
-            <div className="px-5 py-3 grid grid-cols-3 gap-2 border-b border-border/50">
-              {[
-                { label: "Pacientes", value: totals.pacientes, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-                { label: "Exames", value: totals.exames, icon: TestTube, color: "text-[hsl(var(--status-success))]", bg: "bg-[hsl(var(--status-success))]/10" },
-                { label: "Cancelados", value: totals.cancelados, icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
-              ].map((card) => (
-                <div key={card.label} className="flex items-center gap-2.5 px-3 py-2 rounded-md border border-border/50 bg-card">
-                  <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", card.bg)}>
-                    <card.icon className={cn("h-4 w-4", card.color)} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">{card.label}</p>
-                    <p className="text-lg font-bold text-foreground tabular-nums leading-tight">{card.value.toLocaleString()}</p>
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 py-6">
+              <div className="bg-card p-4 rounded-xl border border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground mb-1">Pacientes</span>
+                <div className="flex items-end justify-between">
+                  <span className="text-2xl font-bold text-foreground leading-none tabular-nums">{totals.pacientes.toLocaleString()}</span>
+                  <Users className="h-4 w-4 text-primary/60" />
                 </div>
-              ))}
+              </div>
+              <div className="bg-card p-4 rounded-xl border border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground mb-1">Exames Concluídos</span>
+                <div className="flex items-end justify-between">
+                  <span className="text-2xl font-bold text-foreground leading-none tabular-nums">{totals.exames.toLocaleString()}</span>
+                  <TestTube className="h-4 w-4 text-[hsl(var(--status-success))]/70" />
+                </div>
+              </div>
+              <div className="bg-card p-4 rounded-xl border border-border/50 shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
+                <span className="text-xs font-medium text-muted-foreground mb-1">Cancelados</span>
+                <div className="flex items-end justify-between">
+                  <span className={cn("text-2xl font-bold leading-none tabular-nums", totals.cancelados > 0 ? "text-destructive" : "text-foreground")}>
+                    {totals.cancelados.toLocaleString()}
+                  </span>
+                  <XCircle className="h-4 w-4 text-destructive/60" />
+                </div>
+              </div>
             </div>
 
-            {/* Lista densa por unidade */}
-            <div className="divide-y divide-border/40">
-              {summary.map((row) => (
-                <div key={row.unidade} className="px-5 py-3 flex items-center gap-4 hover:bg-muted/20 transition-colors">
-                  <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground truncate">{row.unidade}</p>
-                    <p className="text-[11px] text-muted-foreground tabular-nums">{row.data}</p>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-primary/10 text-primary font-bold tabular-nums">
-                      <Users className="h-3 w-3" /> {row.totalPacientes}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-[hsl(var(--status-success))]/10 text-[hsl(var(--status-success))] font-bold tabular-nums">
-                      <TestTube className="h-3 w-3" /> {row.totalExames}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-destructive/10 text-destructive font-bold tabular-nums">
-                      <XCircle className="h-3 w-3" /> {row.cancelados}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            {/* Tabela densa */}
+            <div className="px-6 pb-6 overflow-hidden">
+              <div className="border border-border/50 rounded-lg overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-muted/40 border-b border-border/50">
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Unidade</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Pacientes</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Exames</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Cancelados</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Status</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {summary.map((row) => {
+                      const ok = row.totalExames > 0;
+                      return (
+                        <tr key={row.unidade} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="text-sm font-semibold text-foreground">{row.unidade}</div>
+                            <div className="text-[11px] text-muted-foreground italic">Resumo do dia</div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-sm font-medium text-foreground tabular-nums">{row.totalPacientes}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-primary/10 text-primary tabular-nums">
+                              {row.totalExames}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold tabular-nums",
+                              row.cancelados > 0 ? "bg-destructive/10 text-destructive" : "text-muted-foreground"
+                            )}>
+                              {row.cancelados}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={cn(
+                                "inline-block w-2 h-2 rounded-full",
+                                ok ? "bg-[hsl(var(--status-success))] animate-pulse" : "bg-muted-foreground/40"
+                              )}
+                              title={ok ? "Pronto para impressão" : "Sem exames"}
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right text-[11px] text-muted-foreground tabular-nums">
+                            {row.data}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
