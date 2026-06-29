@@ -60,6 +60,7 @@ export async function updateAtendimentoExame(
   exameId: number,
   patch: AtendimentoExamePatch,
   justificativa?: string,
+  options?: { skipReload?: boolean },
 ): Promise<{ ok: boolean; error?: string }> {
   const payload = patch as TablesUpdate<"atendimento_exames">;
   try {
@@ -77,10 +78,26 @@ export async function updateAtendimentoExame(
         "atendimentos.atualizarExame",
       );
     }
+    // Verificação anti perda-silenciosa: relê o status persistido.
+    if (typeof (payload as { status?: string }).status === "string") {
+      const expected = (payload as { status?: string }).status;
+      const { data: row, error: verErr } = await supabase
+        .from("atendimento_exames")
+        .select("status")
+        .eq("id", exameId)
+        .maybeSingle();
+      if (verErr) throw verErr;
+      if (!row) throw new Error("exame não encontrado após update");
+      if ((row as { status?: string }).status !== expected) {
+        throw new Error(`status divergente após update (esperado=${expected}, atual=${(row as { status?: string }).status})`);
+      }
+    }
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
-  await _initAtendimentosStore();
+  if (!options?.skipReload) {
+    await _initAtendimentosStore();
+  }
   return { ok: true };
 }
 
