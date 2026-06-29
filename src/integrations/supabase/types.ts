@@ -8595,6 +8595,63 @@ export type Database = {
         }
         Returns: Json
       }
+      update_exame_terceirizado_tx: {
+        Args: { _exame_id: number; _justificativa?: string; _patch?: Json }
+        Returns: {
+          amostra_id: string | null
+          amostra_seq: number
+          analista: string
+          arquivo_resultado_path: string | null
+          atendimento_id: number
+          cobranca_destino: string
+          coletor: string
+          convenio_cobranca_id: number | null
+          created_at: string
+          data_analise: string | null
+          data_coleta: string | null
+          data_envio: string | null
+          data_liberacao: string | null
+          data_retorno: string | null
+          exame_id: string | null
+          grupo_exame_id: string
+          id: number
+          integracao_ativa: boolean
+          is_reutilizacao: boolean
+          lab_apoio_id: string | null
+          material_id: string | null
+          metodologia_snapshot: string | null
+          motivo_cancelamento: string | null
+          nome_exame: string
+          ordem: number
+          pdf_override_motivo: string | null
+          pdf_override_replaced_path: string | null
+          pdf_override_uploaded_at: string | null
+          pdf_override_uploaded_by: string | null
+          pdf_override_url: string | null
+          pop_id: number | null
+          pop_versao: string
+          protocolo_externo: string | null
+          resultado_importado: boolean
+          resultados: Json
+          retificado: boolean
+          retificado_at: string | null
+          solicitante: string
+          status: string
+          status_externo: string
+          tenant_id: string
+          tipo_processo: string
+          unidade_snapshot: string | null
+          updated_at: string
+          valor: number
+          valor_original: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "atendimento_exames"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_own_tenant_site_config: {
         Args: { p_dominio_custom: string; p_slug: string }
         Returns: undefined

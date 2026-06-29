@@ -1,11 +1,8 @@
 // Bloco 5a.5b/5a.7 — Exames TERCEIRIZADOS (Fase 4 split).
-// Persistência via persistOrThrow + reidratação do cache.
+// Persistência via RPC transacional + reidratação do cache.
 
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/lib/showError";
-import { persistOrThrow } from "@/lib/persist";
-import type { TablesUpdate } from "@/integrations/supabase/types";
-import type { AtendimentoExameDbRow } from "./_internal";
 import { _initAtendimentosStore } from "./queries";
 import type {
   StatusExterno, AtendimentoExameRow,
@@ -41,15 +38,19 @@ export async function updateExameTerceirizado(
     const motivo = acoes.length > 0
       ? `Fluxo terceirizado: ${acoes.join("; ")}`
       : "Atualização de fluxo terceirizado";
-    try {
-      await supabase.rpc("set_audit_justificativa" as never, { _text: motivo } as never);
-    } catch {
-      // segue — se a RPC falhar e o trigger bloquear, o erro será propagado abaixo
-    }
-    await persistOrThrow<AtendimentoExameDbRow>(
-      supabase.from("atendimento_exames").update(patch as TablesUpdate<"atendimento_exames">).eq("id", exameId),
-      "atendimentos.updateExameTerceirizado",
+    // A justificativa precisa ser aplicada na MESMA transação/conexão do UPDATE.
+    // Chamar `set_audit_justificativa` antes via cliente pode cair em outra
+    // conexão do pool, então usamos uma RPC transacional própria.
+    const payload = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
     );
+    const { data, error } = await supabase.rpc("update_exame_terceirizado_tx", {
+      _exame_id: exameId,
+      _patch: payload,
+      _justificativa: motivo,
+    });
+    if (error) throw new Error(`[persist:atendimentos.updateExameTerceirizado] ${error.message}`);
+    if (!data) throw new Error("[persist:atendimentos.updateExameTerceirizado] exame não atualizado.");
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
