@@ -142,7 +142,25 @@ const ResultadoDetalhe = () => {
   const [analistaSenha, setAnalistaSenha] = useState("");
   const [analistaErro, setAnalistaErro] = useState("");
   const [analistaValidando, setAnalistaValidando] = useState(false);
-  const [analistaAtual, setAnalistaAtual] = useState({ nome: "Felipe Andrade Melo", iniciais: "FA" });
+  const computeIniciais = (nome: string): string => {
+    const parts = (nome || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+  const [analistaAtual, setAnalistaAtual] = useState(() => {
+    const nome = authUser?.nome || "Analista";
+    return { nome, iniciais: computeIniciais(nome) };
+  });
+  // Mantém o analista atual sincronizado com o usuário logado enquanto o
+  // operador não confirmar credenciais de outro analista pelo diálogo.
+  const analistaTrocadoRef = useRef(false);
+  useEffect(() => {
+    if (analistaTrocadoRef.current) return;
+    const nome = authUser?.nome;
+    if (!nome) return;
+    setAnalistaAtual({ nome, iniciais: computeIniciais(nome) });
+  }, [authUser?.nome]);
   const [assinaturaLaudo, setAssinaturaLaudo] = useState<{ tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null }>({ tipo: "carimbo", conselho: null, url: null });
   useEffect(() => {
     const uid = authUser?.id;
