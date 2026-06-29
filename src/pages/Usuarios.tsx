@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Pencil, Trash2, UserCheck, UserX, Shield, KeyRound, MapPin, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, UserCheck, UserX, Shield, KeyRound, MapPin, Loader2, Mail, ShieldCheck, User, Microscope, Calculator, ClipboardList, Briefcase, IdCard, Phone, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StandardDialog from "@/components/ui/standard-dialog";
