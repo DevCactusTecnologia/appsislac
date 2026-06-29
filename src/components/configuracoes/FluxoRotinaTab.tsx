@@ -162,6 +162,45 @@ const FluxoRotinaTab = () => {
           </div>
         </div>
       </section>
+
+      <section className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 shrink-0">
+            <Building2 className="h-5 w-5 text-primary" strokeWidth={1.75} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-foreground">
+                  Recebimento de exames terceirizados
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Define o comportamento ao abrir a tela <strong>Inserir Resultado</strong> para
+                  exames enviados a laboratório de apoio sem integração:
+                  <br />
+                  <strong>Manual</strong> — o usuário precisa clicar em
+                  “Marcar como recebido” em cada exame.
+                  <br />
+                  <strong>Automático</strong> — todos os exames terceirizados
+                  pendentes são marcados como finalizados ao abrir a tela.
+                </p>
+              </div>
+              <Switch
+                checked={autoTerc}
+                disabled={savingTerc}
+                onCheckedChange={handleToggleAutoTerc}
+                aria-label="Ativar recebimento automático de exames terceirizados"
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Modo atual:{" "}
+              <strong className="text-foreground">
+                {autoTerc ? "Automático" : "Manual"}
+              </strong>
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
