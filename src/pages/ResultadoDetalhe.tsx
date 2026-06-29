@@ -708,7 +708,32 @@ const ResultadoDetalhe = () => {
     updatePacienteExames((exames) =>
       exames.map((e) => e.id === selectedExameId ? { ...e, status: retificados.has(e.id) ? "Retificado" : "Digitado" } : e)
     );
-    addAuditEntry(selectedExameId, "Resultado liberado");
+    // Marca o liberador. Pode ser usuário diferente do analista que salvou.
+    setAnaliseInfoMap((prev) => {
+      const info = prev[selectedExameId] || {};
+      const liberadoEm = formatDataHora();
+      // Se ninguém marcou análise (caso raro: liberou direto), assume mesmo usuário.
+      const analisadoPor = info.analisadoPor ?? { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais };
+      const analisadoEm = info.analisadoEm ?? liberadoEm;
+      return {
+        ...prev,
+        [selectedExameId]: {
+          ...info,
+          analisadoPor,
+          analisadoEm,
+          liberadoPor: { nome: analistaAtual.nome, iniciais: analistaAtual.iniciais },
+          liberadoEm,
+        },
+      };
+    });
+    {
+      const info = analiseInfoMap[selectedExameId];
+      const analista = info?.analisadoPor?.nome ?? analistaAtual.nome;
+      const detalhe = analista !== analistaAtual.nome
+        ? `Analisado por: ${analista} · Liberado por: ${analistaAtual.nome}`
+        : `Analisado e liberado por: ${analistaAtual.nome}`;
+      addAuditEntry(selectedExameId, "Resultado liberado", detalhe);
+    }
 
     // Verifica se este era o ÚLTIMO exame não-liberado/cancelado.
     // Se sim, dispara celebração com confettis. Caso contrário, popup simples.
