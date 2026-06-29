@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Printer, Search, Calendar as CalendarIcon, FileText, Users, TestTube, XCircle, TrendingUp } from "lucide-react";
+import { Printer, Search, Calendar as CalendarIcon, FileText, Users, TestTube, XCircle, TrendingUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { useFeatureFlag, isFeatureEnabled } from "@/lib/featureFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { gerarLaudoLotePdf } from "@/lib/laudoBatchPdf";
 
 const ImpressaoGeral = () => {
   const unidadesAtivas = useMemo(() => getUnidades().filter(u => u.ativo), []);
