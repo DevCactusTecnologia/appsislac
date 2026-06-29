@@ -165,5 +165,6 @@ export function buildAtendimento(
     updatedAt: atRow.updated_at ? formatDateTimeBR(atRow.updated_at) : undefined,
     origem: ((atRow as { origem_atendimento?: string }).origem_atendimento ?? "INTERNO") as MockAtendimento["origem"],
     jejum: !!(atRow as { jejum?: boolean }).jejum,
+    prioridadeClinica: (((atRow as { prioridade_clinica?: string }).prioridade_clinica ?? "normal") as MockAtendimento["prioridadeClinica"]),
   };
 }
