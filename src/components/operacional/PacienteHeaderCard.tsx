@@ -148,13 +148,14 @@ export function PacienteHeaderCard({
             <h1 className="text-[15px] sm:text-base font-semibold text-foreground leading-tight truncate">
               {nome}
             </h1>
-            {(statusLabel || (actionsInline && actions.length > 0)) && (
+            {(statusLabel || (actionsInline && (actions.length > 0 || actionsExtraRight))) && (
               <div className="shrink-0 mt-0.5 flex items-center gap-1.5 flex-wrap justify-end">
                 {statusLabel && statusType && (
                   <StatusBadge label={statusLabel} type={statusType} />
                 )}
                 {actionsInline && others.map((a) => <ActionButton key={a.key} action={a} />)}
                 {actionsInline && primary && <ActionButton action={primary} />}
+                {actionsInline && actionsExtraRight}
               </div>
             )}
           </div>
