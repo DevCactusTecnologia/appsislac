@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { preloadLazyStore, type LazyStoreKey } from "@/data/lazyStores";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRotinaColetaAnaliseEnabled } from "@/hooks/useRotinaConfig";
 
 // Tamanho e espessura padronizados — espelha SuperAdminLayout (Linear-style).
 const ICON_STROKE = 1.75;
