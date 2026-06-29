@@ -931,6 +931,7 @@ export type Database = {
           paciente_id: number | null
           paciente_nascimento: string | null
           paciente_nome: string
+          prioridade_clinica: string
           protocolo: string
           risco_cardiovascular: string | null
           solicitante: string
@@ -963,6 +964,7 @@ export type Database = {
           paciente_id?: number | null
           paciente_nascimento?: string | null
           paciente_nome: string
+          prioridade_clinica?: string
           protocolo: string
           risco_cardiovascular?: string | null
           solicitante?: string
@@ -995,6 +997,7 @@ export type Database = {
           paciente_id?: number | null
           paciente_nascimento?: string | null
           paciente_nome?: string
+          prioridade_clinica?: string
           protocolo?: string
           risco_cardiovascular?: string | null
           solicitante?: string
