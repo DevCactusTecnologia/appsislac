@@ -74,6 +74,7 @@ import {
   buildPacienteFromAtendimento,
 } from "./ResultadoDetalhe/helpers";
 import { buildLaudoHtml as buildLaudoHtmlPure } from "./ResultadoDetalhe/services/laudoHtmlBuilder";
+import { fetchHistoricoPorExame } from "./ResultadoDetalhe/services/historicoResultados";
 import {
   avaliarNivelCriticoPure,
   getParametrosCriticosDoExamePure,
@@ -907,6 +908,7 @@ const ResultadoDetalhe = () => {
       customByExame?: Record<number, string>,
       solicitanteLabel?: string,
       pageMargins?: { top: number; right: number; bottom: number; left: number },
+      historicoByExameId?: Record<number, { linhaHtml: string; graficoHtml: string }>,
     ) =>
       buildLaudoHtmlPure({
         paciente,
@@ -917,6 +919,7 @@ const ResultadoDetalhe = () => {
         customByExame,
         solicitanteLabel,
         pageMargins,
+        historicoByExameId,
       }),
     [paciente, analistaAtual, assinaturaLaudo, getResolvedRef],
   );
@@ -1042,7 +1045,21 @@ const ResultadoDetalhe = () => {
       await mod.ensureDocumentoTemplatesLoaded();
     } catch {}
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-    const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins);
+    // Histórico de resultados anteriores (apenas para parâmetros com
+    // "Exibir resultado anterior" ativo). Falhas são silenciosas — o laudo
+    // segue sem o bloco de histórico se a query não responder.
+    let historicoByExameId: Record<number, { linhaHtml: string; graficoHtml: string }> = {};
+    try {
+      historicoByExameId = await fetchHistoricoPorExame({
+        pacienteCpf: paciente.cpf,
+        excludeProtocolo: paciente.protocolo,
+        exames: printable,
+        customByExame,
+      });
+    } catch (e) {
+      console.warn("[historicoResultados] falha ao buscar histórico:", e);
+    }
+    const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins, historicoByExameId);
 
     const paginationHook = `
 <script>

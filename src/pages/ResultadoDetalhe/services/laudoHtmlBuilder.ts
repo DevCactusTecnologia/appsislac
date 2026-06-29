@@ -92,6 +92,8 @@ export interface BuildLaudoHtmlArgs {
   customByExame?: Record<number, string>;
   solicitanteLabel?: string;
   pageMargins?: { top: number; right: number; bottom: number; left: number };
+  /** Histórico por exame (UI id) — gerado por `historicoResultados.fetchHistoricoPorExame`. */
+  historicoByExameId?: Record<number, { linhaHtml: string; graficoHtml: string }>;
 }
 
 /**
@@ -103,6 +105,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   const {
     paciente, analistaAtual, assinaturaLaudo, getResolvedRef,
     printable, customByExame, solicitanteLabel, pageMargins,
+    historicoByExameId,
   } = args;
   // Cabeçalho padrão configurado em /configuracoes → Documentos.
   // Quando existe um template marcado como "padrão" para o tipo "cabeçalho",
@@ -200,9 +203,23 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
     const _dataColetaRightMm = 5;
     const exameHeaderBand = `<div class="exame-header-band" style="position:relative;width:100%;box-sizing:border-box;background-color:#f7f8f9 !important;margin:0 0 8px 0;font-family:Helvetica,Arial,sans-serif;page-break-after:avoid;break-after:avoid;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;padding:0 calc(${_dataColetaRightMm}mm + 62mm) 0 10px;text-align:left;font-size:11pt;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:0.2px;line-height:30px;height:30px;"><span style="display:inline-block;vertical-align:middle;line-height:1.2;">${exame.nome}</span><span style="position:absolute;right:${_dataColetaRightMm}mm;top:50%;transform:translateY(-50%);font-size:6pt;font-weight:700;color:#000;font-family:Helvetica,Arial,sans-serif;white-space:nowrap;text-transform:none;letter-spacing:0;line-height:1.4;">${dataColetaLabel || ""}</span></div>`;
 
+    // Histórico (resultados anteriores) — só presente quando algum
+    // parâmetro do exame tem `exibir_anterior = SIM` e há pontos.
+    const hist = historicoByExameId?.[exame.id];
+    const histChart = hist?.graficoHtml ?? "";
+    const histLinha = hist?.linhaHtml ?? "";
+
     // Se houver layout cadastrado para este exame, usa-o (sem prepender faixa).
     const custom = customByExame?.[exame.id];
-    if (custom) return { kind: "exame", html: `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${custom}${regFooter}</div>` };
+    if (custom) {
+      // Substitui o token ##GRAFICOHIST##. Quando o layout NÃO contém o token,
+      // anexa a linha "Resultados anteriores:" ao final do bloco.
+      const hasToken = /##GRAFICOHIST##/i.test(custom);
+      const customResolved = hasToken
+        ? custom.replace(/##GRAFICOHIST##/gi, histChart)
+        : custom + histLinha;
+      return { kind: "exame", html: `<div class="exame-bloco" style="page-break-inside:avoid;break-inside:avoid;margin-bottom:16px;">${customResolved}${regFooter}</div>` };
+    }
 
     // Fallback: tabela padrão de parâmetros.
     const resolvedParams = exame.parametros.map((p) => {
@@ -232,6 +249,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
                   `).join("")}
                 </tbody>
               </table>
+              ${histChart || histLinha}
               ${regFooter}
             </div>
           ` };

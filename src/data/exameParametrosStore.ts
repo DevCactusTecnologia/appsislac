@@ -44,6 +44,8 @@ export interface ExameParametro {
   sensivelJejum?: boolean;
   /** Quando true, o VR varia conforme o risco cardiovascular (ex.: LDL, Não-HDL). */
   estratificadoRiscoCv?: boolean;
+  /** Quantos resultados anteriores exibir no laudo (gráfico ##GRAFICOHIST## ou linha inline). 0 = padrão (5). */
+  qtdResultadosAnteriores?: number;
 }
 
 const cache = new Map<string, ExameParametro[]>();
@@ -74,6 +76,7 @@ const fromRow = (r: any): ExameParametro => ({
   formatoExibicao: ((["hh_mm_ss", "seg", "min", "min_seg"].includes(r.formato_exibicao) ? r.formato_exibicao : "min_seg")) as FormatoTempo,
   sensivelJejum: !!r.sensivel_jejum,
   estratificadoRiscoCv: !!r.estratificado_risco_cv,
+  qtdResultadosAnteriores: typeof r.qtd_resultados_anteriores === "number" ? r.qtd_resultados_anteriores : 5,
 });
 
 const toRow = (p: Partial<ExameParametro>): any => ({
@@ -100,6 +103,7 @@ const toRow = (p: Partial<ExameParametro>): any => ({
   ...(p.formatoExibicao !== undefined && { formato_exibicao: p.formatoExibicao }),
   ...(p.sensivelJejum !== undefined && { sensivel_jejum: p.sensivelJejum }),
   ...(p.estratificadoRiscoCv !== undefined && { estratificado_risco_cv: p.estratificadoRiscoCv }),
+  ...(p.qtdResultadosAnteriores !== undefined && { qtd_resultados_anteriores: p.qtdResultadosAnteriores }),
 });
 
 /**
