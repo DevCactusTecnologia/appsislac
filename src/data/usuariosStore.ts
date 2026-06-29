@@ -37,6 +37,16 @@ export interface Usuario {
   assinaturaImagemKey: string | null;
   /** Conselho profissional exibido junto à assinatura (texto livre). */
   assinaturaConselho: string | null;
+  /** Telefone do profissional. */
+  telefone: string | null;
+  /** Dados profissionais (especialmente para analistas). */
+  tipoProfissional: string | null;
+  cbo: string | null;
+  cpf: string | null;
+  cns: string | null;
+  conselhoClasse: string | null;
+  conselhoUf: string | null;
+  conselhoNumero: string | null;
 }
 
 // === Catálogo de permissões reais (alinhado a public.has_permission) =========
