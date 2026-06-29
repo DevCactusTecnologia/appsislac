@@ -162,11 +162,12 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
       notify();
     }
 
-    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO) e jejum.
+    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO), jejum e prioridade clínica.
     if (atendimentoId) {
-      const extraPatch: { origem_atendimento?: string; jejum?: boolean } = {};
+      const extraPatch: { origem_atendimento?: string; jejum?: boolean; prioridade_clinica?: string } = {};
       if (at.origem && at.origem !== "INTERNO") extraPatch.origem_atendimento = at.origem;
       if (typeof at.jejum === "boolean") extraPatch.jejum = at.jejum;
+      if (at.prioridadeClinica && at.prioridadeClinica !== "normal") extraPatch.prioridade_clinica = at.prioridadeClinica;
       if (Object.keys(extraPatch).length > 0) {
         const { error: extraErr } = await supabase
           .from("atendimentos")
@@ -178,7 +179,12 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
           });
         } else {
           cache.atendimentos = cache.atendimentos.map((a) =>
-            a.protocolo === at.protocolo ? { ...a, ...(at.origem ? { origem: at.origem } : {}), ...(typeof at.jejum === "boolean" ? { jejum: at.jejum } : {}) } : a,
+            a.protocolo === at.protocolo ? {
+              ...a,
+              ...(at.origem ? { origem: at.origem } : {}),
+              ...(typeof at.jejum === "boolean" ? { jejum: at.jejum } : {}),
+              ...(at.prioridadeClinica ? { prioridadeClinica: at.prioridadeClinica } : {}),
+            } : a,
           );
           notify();
         }
