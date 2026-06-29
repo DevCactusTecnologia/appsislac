@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { FlaskConical, Droplet, Microscope, ClipboardCheck, ShieldAlert } from "lucide-react";
+import { FlaskConical, Droplet, Microscope, ClipboardCheck, ShieldAlert, Building2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
+  getLabConfig,
+  saveLabConfig,
+  subscribeLabConfig,
+} from "@/data/labConfigStore";
   getLabConfig,
   saveLabConfig,
   subscribeLabConfig,
