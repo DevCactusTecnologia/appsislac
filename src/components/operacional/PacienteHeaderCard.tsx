@@ -57,6 +57,8 @@ interface Props {
   actionsInline?: boolean;
   /** Slot opcional renderizado na linha de ações, à esquerda dos botões. */
   actionsExtraLeft?: React.ReactNode;
+  /** Slot opcional renderizado logo abaixo do avatar (ex.: badge de jejum). */
+  belowAvatar?: React.ReactNode;
 }
 
 function iniciais(nome: string): string {
@@ -120,6 +122,7 @@ export function PacienteHeaderCard({
   actions = [],
   actionsInline = false,
   actionsExtraLeft,
+  belowAvatar,
 }: Props) {
   const primary = actions.find((a) => a.variant === "primary");
   const others = actions.filter((a) => a.variant !== "primary");
@@ -128,11 +131,14 @@ export function PacienteHeaderCard({
     <div className="bg-card border border-border rounded-xl px-4 py-3 sm:px-5 sm:py-4">
       {/* Linha 1: identidade + status */}
       <div className="flex items-start gap-3">
-        <Avatar className="h-11 w-11 shrink-0 ring-1 ring-primary/15">
-          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-            {iniciais(nome)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <Avatar className="h-11 w-11 ring-1 ring-primary/15">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+              {iniciais(nome)}
+            </AvatarFallback>
+          </Avatar>
+          {belowAvatar}
+        </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
