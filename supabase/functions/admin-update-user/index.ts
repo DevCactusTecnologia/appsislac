@@ -30,6 +30,14 @@ interface UpdateBody {
   assinaturaTipo?: unknown;
   /** Texto livre do conselho profissional (ex.: "CRBM/MG 12345"). */
   assinaturaConselho?: unknown;
+  telefone?: unknown;
+  tipoProfissional?: unknown;
+  cbo?: unknown;
+  cpf?: unknown;
+  cns?: unknown;
+  conselhoClasse?: unknown;
+  conselhoUf?: unknown;
+  conselhoNumero?: unknown;
 }
 
 function asStringArray(v: unknown): string[] | undefined {
