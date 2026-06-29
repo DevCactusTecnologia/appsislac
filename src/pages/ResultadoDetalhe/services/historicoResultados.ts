@@ -14,6 +14,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Exame } from "../types";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 
 export interface ExameHistOutput {
   linhaHtml: string;
