@@ -61,7 +61,10 @@ function buildTickets(
   for (const at of atendimentos) {
     const cobranca = at.examesCobranca ?? [];
     for (const ex of cobranca) {
-      if ((ex.status ?? "pendente") !== "pendente") continue;
+      const st = (ex.status ?? "pendente").toString().toLowerCase();
+      // Mapa de trabalho = exames ainda em fluxo (antes de liberação/finalização)
+      if (["analisado", "finalizado", "cancelado", "digitado", "impresso", "retificado"].includes(st)) continue;
+
       const meta = catalogoBySigla.get(ex.nome) ?? catalogoBySigla.get(ex.nome.toLowerCase());
       const t: MapaExameTicket = {
         protocolo: at.protocolo,
