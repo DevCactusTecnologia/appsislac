@@ -14,6 +14,25 @@ import {
 
 // ── Boot: hidrata cache do banco ──
 export async function _initAtendimentosStore(): Promise<void> {
+  cache.booting = true;
+  notify();
+  try {
+    await _initAtendimentosStoreImpl();
+  } finally {
+    cache.booting = false;
+    cache.booted = true;
+    notify();
+  }
+}
+
+export function isAtendimentosBooting(): boolean {
+  return cache.booting;
+}
+export function hasAtendimentosBooted(): boolean {
+  return cache.booted;
+}
+
+async function _initAtendimentosStoreImpl(): Promise<void> {
   // Fase D — selects explícitos (sem `*`) e LIMIT no boot.
   // C-1 — Boot adaptativo (legacy=1000 | paginado=100), via localStorage.
   let ATENDIMENTOS_BOOT_LIMIT = 1000;
