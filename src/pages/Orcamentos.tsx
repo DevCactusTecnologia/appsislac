@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, ArrowRightLeft, Receipt, Search, Phone, MessageCircle, Tag, Send, Printer, FileText, Flame, Clock, AlertTriangle, CheckCircle2, TrendingUp, DollarSign, Wallet, Activity, CalendarClock, Sparkles, Cake, ArrowLeft } from "lucide-react";
+import { Eye, ArrowRightLeft, Receipt, Search, Phone, MessageCircle, Tag, Send, Printer, Flame, Clock, AlertTriangle, CheckCircle2, TrendingUp, DollarSign, Wallet, Activity, CalendarClock, Sparkles, Cake, ArrowLeft } from "lucide-react";
 import { getOrcamentos, markAsConverted, subscribeOrcamentos, updateOrcamentoDesconto, type Orcamento } from "@/data/orcamentoStore";
 import { addAtendimento, getNextProtocolo } from "@/data/atendimentoStore";
 import { getPacienteByCPF } from "@/data/pacienteStore";
