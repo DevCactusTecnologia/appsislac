@@ -245,123 +245,137 @@ const ImpressaoGeral = () => {
 
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-primary/8 flex items-center justify-center"><FileText className="h-5 w-5 text-primary" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Impressão Geral</h1>
-            <p className="text-xs text-muted-foreground">Resumo de atendimentos por unidade</p>
-          </div>
-        </div>
-        {summary.length > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-muted/40 border border-border/30 text-sm">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="font-bold text-foreground">{totals.exames.toLocaleString()}</span>
-            <span className="text-muted-foreground text-xs">exames no total</span>
-          </div>
-        )}
-      </div>
-
-      {/* Summary Cards */}
-      {summary.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            { label: "Pacientes", value: totals.pacientes, icon: Users, color: "text-primary", bg: "bg-primary/8" },
-            { label: "Exames", value: totals.exames, icon: TestTube, color: "text-[hsl(var(--status-success))]", bg: "bg-[hsl(var(--status-success))]/10" },
-            { label: "Cancelados", value: totals.cancelados, icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
-          ].map((card) => (
-            <div key={card.label} className="p-4 rounded-3xl border border-border/60 bg-card flex items-center gap-3">
-              <div className={cn("h-10 w-10 rounded-2xl flex items-center justify-center shrink-0", card.bg)}>
-                <card.icon className={cn("h-5 w-5", card.color)} />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase font-medium">{card.label}</p>
-                <p className="text-xl font-bold text-foreground">{card.value.toLocaleString()}</p>
-              </div>
+    <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto">
+      <div className="bg-card border border-border/60 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        {/* Header chassis: título + métrica + ação */}
+        <div className="px-5 py-3 border-b border-border/50 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <FileText className="h-4 w-4" />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="p-5 rounded-3xl border border-border/60 bg-card">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] items-end gap-4">
-          <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-2 block">Unidade</label>
-            <div className="flex flex-wrap gap-2">
-              {unidades.map((u) => (
-                <button key={u} onClick={() => setSelectedUnidade(u)}
-                  className={cn("px-4 py-2.5 rounded-2xl text-sm font-medium border transition-all", selectedUnidade === u ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-card text-foreground border-border/60 hover:border-primary/40")}>
-                  {u}
-                </button>
-              ))}
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-foreground tracking-tight leading-tight">Impressão Geral</h1>
+              <p className="text-[11px] text-muted-foreground leading-tight">Resumo diário de atendimentos por unidade</p>
             </div>
           </div>
-          <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-2 block">Data</label>
+          <div className="flex items-center gap-2">
+            {summary.length > 0 && (
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md bg-muted/60 border border-border/50 text-[11px]">
+                <TrendingUp className="h-3 w-3 text-primary" />
+                <span className="font-bold text-foreground tabular-nums">{totals.exames.toLocaleString()}</span>
+                <span className="text-muted-foreground">exames</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleImprimirLote}
+              disabled={gerando || summary.length === 0}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {gerando
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparando…</>
+                : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
+            </button>
+          </div>
+        </div>
+
+        {/* Toolbar de filtros densa */}
+        <div className="px-5 py-2.5 bg-muted/30 border-b border-border/50 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Unidade</span>
+            <div className="flex bg-card border border-border/60 rounded-md p-0.5 overflow-x-auto no-scrollbar">
+              {unidades.map((u) => {
+                const active = selectedUnidade === u;
+                return (
+                  <button
+                    key={u}
+                    onClick={() => setSelectedUnidade(u)}
+                    className={cn(
+                      "px-2.5 h-7 rounded-[5px] text-xs font-semibold whitespace-nowrap transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {u}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Data</span>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal h-10 rounded-2xl">
-                  <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                <Button variant="outline" className="h-8 px-2.5 text-xs font-medium rounded-md gap-1.5 bg-card">
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
                   {date ? format(date, "dd MMM, yyyy", { locale: ptBR }) : "Selecionar"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0" align="end">
                 <Calendar mode="single" selected={date} onSelect={(d) => { setDate(d); setCalendarOpen(false); }} locale={ptBR} initialFocus />
               </PopoverContent>
             </Popover>
           </div>
-          <Button className="h-10 rounded-2xl px-6 gap-2"><Search className="h-4 w-4" /> Buscar</Button>
-        </div>
-      </div>
-
-      {/* Results */}
-      <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border/40 bg-muted/20 flex items-center justify-between">
-          <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="text-sm font-semibold text-foreground">Resultados</span></div>
-          <span className="text-xs text-muted-foreground">{summary.length} unidade</span>
         </div>
 
-        {summary.length === 0 ? (
-          <div className="p-16 text-center">
-            <div className="h-12 w-12 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-3"><FileText className="h-6 w-6 text-muted-foreground/50" /></div>
-            <p className="text-sm text-muted-foreground">Selecione uma unidade e data.</p>
+        {/* Área de conteúdo */}
+        {summary.length === 0 || (useServer && serverLoading) ? (
+          <div className="p-12 text-center">
+            <div className="h-12 w-12 rounded-lg bg-muted/60 flex items-center justify-center mx-auto mb-3">
+              {serverLoading
+                ? <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+                : <FileText className="h-5 w-5 text-muted-foreground/60" />}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {serverLoading ? "Carregando resumo…" : "Selecione uma unidade e data para visualizar o resumo."}
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-border/30">
-            {summary.map((row) => (
-              <div key={row.unidade} className="p-5 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-foreground">{row.unidade}</p>
-                  <span className="text-xs text-muted-foreground">{row.data}</span>
+          <>
+            {/* KPIs compactos */}
+            <div className="px-5 py-3 grid grid-cols-3 gap-2 border-b border-border/50">
+              {[
+                { label: "Pacientes", value: totals.pacientes, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+                { label: "Exames", value: totals.exames, icon: TestTube, color: "text-[hsl(var(--status-success))]", bg: "bg-[hsl(var(--status-success))]/10" },
+                { label: "Cancelados", value: totals.cancelados, icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
+              ].map((card) => (
+                <div key={card.label} className="flex items-center gap-2.5 px-3 py-2 rounded-md border border-border/50 bg-card">
+                  <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", card.bg)}>
+                    <card.icon className={cn("h-4 w-4", card.color)} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">{card.label}</p>
+                    <p className="text-lg font-bold text-foreground tabular-nums leading-tight">{card.value.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Pacientes", value: row.totalPacientes, cls: "text-primary bg-primary/8" },
-                    { label: "Exames", value: row.totalExames, cls: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success))]/10" },
-                    { label: "Cancelados", value: row.cancelados, cls: "text-destructive bg-destructive/10" },
-                  ].map((m) => (
-                    <div key={m.label} className="text-center p-3 rounded-2xl bg-muted/30">
-                      <p className="text-[10px] text-muted-foreground mb-1">{m.label}</p>
-                      <span className={cn("inline-flex items-center justify-center px-2 py-0.5 rounded-xl font-bold text-sm", m.cls)}>{m.value}</span>
-                    </div>
-                  ))}
+              ))}
+            </div>
+
+            {/* Lista densa por unidade */}
+            <div className="divide-y divide-border/40">
+              {summary.map((row) => (
+                <div key={row.unidade} className="px-5 py-3 flex items-center gap-4 hover:bg-muted/20 transition-colors">
+                  <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{row.unidade}</p>
+                    <p className="text-[11px] text-muted-foreground tabular-nums">{row.data}</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-primary/10 text-primary font-bold tabular-nums">
+                      <Users className="h-3 w-3" /> {row.totalPacientes}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-[hsl(var(--status-success))]/10 text-[hsl(var(--status-success))] font-bold tabular-nums">
+                      <TestTube className="h-3 w-3" /> {row.totalExames}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-destructive/10 text-destructive font-bold tabular-nums">
+                      <XCircle className="h-3 w-3" /> {row.cancelados}
+                    </span>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleImprimirLote}
-                  disabled={gerando}
-                  className="w-full sm:w-auto px-4 py-2 rounded-2xl border border-border/60 text-xs font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {gerando
-                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparando laudos…</>
-                    : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
