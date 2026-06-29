@@ -198,6 +198,14 @@ interface DbProfile {
   assinatura_tipo?: string | null;
   assinatura_imagem_key?: string | null;
   assinatura_conselho?: string | null;
+  telefone?: string | null;
+  tipo_profissional?: string | null;
+  cbo?: string | null;
+  cpf?: string | null;
+  cns?: string | null;
+  conselho_classe?: string | null;
+  conselho_uf?: string | null;
+  conselho_numero?: string | null;
 }
 
 interface DbRole { user_id: string; role: string }
@@ -222,6 +230,14 @@ function mapToUsuario(p: DbProfile, roles: DbRole[]): Usuario {
     assinaturaTipo: p.assinatura_tipo === "imagem" ? "imagem" : "carimbo",
     assinaturaImagemKey: p.assinatura_imagem_key ?? null,
     assinaturaConselho: p.assinatura_conselho ?? null,
+    telefone: p.telefone ?? null,
+    tipoProfissional: p.tipo_profissional ?? null,
+    cbo: p.cbo ?? null,
+    cpf: p.cpf ?? null,
+    cns: p.cns ?? null,
+    conselhoClasse: p.conselho_classe ?? null,
+    conselhoUf: p.conselho_uf ?? null,
+    conselhoNumero: p.conselho_numero ?? null,
   };
 }
 
