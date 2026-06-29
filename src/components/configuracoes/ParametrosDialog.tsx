@@ -805,19 +805,34 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
 
               <div className="rounded-2xl border border-border/60 bg-background divide-y divide-border/60 overflow-hidden">
                 {[
-                  { label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
-                  { label: "Exibir resultado anterior", desc: "Mostra o último valor registrado deste paciente", value: exibirAnterior, set: setExibirAnterior },
-                  { label: "Exibir no mapa de trabalho", desc: "Aparece na grade de análise da bancada", value: exibirMapa, set: setExibirMapa },
-                  // VR sensível a jejum / risco CV: dimensões são definidas direto na
-                  // aba "Valores de referência" (Template ou matriz em lote…) — não precisam
-                  // mais aparecer como toggle aqui.
+                  { key: "obrig", label: "Obrigatório", desc: "Não é possível liberar resultado sem preencher", value: obrigatorio, set: setObrigatorio },
+                  { key: "ant", label: "Exibir resultado anterior", desc: "Mostra resultados pretéritos deste paciente (gráfico ##GRAFICOHIST## ou linha no laudo)", value: exibirAnterior, set: setExibirAnterior },
+                  { key: "mapa", label: "Exibir no mapa de trabalho", desc: "Aparece na grade de análise da bancada", value: exibirMapa, set: setExibirMapa },
                 ].map((t) => (
-                  <div key={t.label} className="flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-muted/30 transition-colors">
-                    <div className="min-w-0">
-                      <p className="text-[12.5px] font-medium text-foreground">{t.label}</p>
-                      <p className="text-[10.5px] text-muted-foreground">{t.desc}</p>
+                  <div key={t.key}>
+                    <div className="flex items-center justify-between gap-3 px-3.5 py-3 hover:bg-muted/30 transition-colors">
+                      <div className="min-w-0">
+                        <p className="text-[12.5px] font-medium text-foreground">{t.label}</p>
+                        <p className="text-[10.5px] text-muted-foreground">{t.desc}</p>
+                      </div>
+                      <Switch checked={t.value} onCheckedChange={t.set} />
                     </div>
-                    <Switch checked={t.value} onCheckedChange={t.set} />
+                    {t.key === "ant" && exibirAnterior && (
+                      <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-muted/20">
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-medium text-foreground">Quantos resultados anteriores</p>
+                          <p className="text-[10.5px] text-muted-foreground">Limite usado pelo gráfico e pela linha "Resultados anteriores".</p>
+                        </div>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={qtdAnteriores}
+                          onChange={(e) => setQtdAnteriores(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                          className={`${inputClass} w-20 text-center`}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
