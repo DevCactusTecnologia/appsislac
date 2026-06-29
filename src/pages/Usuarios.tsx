@@ -28,7 +28,23 @@ import {
   type UsuarioIntegridade,
 } from "@/data/usuariosStore";
 import { useAuth } from "@/contexts/AuthContext";
-// AssinaturaSection movido para /perfil em Equipe 2.1 Fase 2.7
+import AssinaturaSection from "@/components/usuarios/AssinaturaSection";
+import { maskPhoneBR } from "@/lib/masks";
+
+const TIPOS_PROFISSIONAL = [
+  "Biomédico",
+  "Biomédica",
+  "Farmacêutico",
+  "Farmacêutica",
+  "Bioquímico",
+  "Bioquímico Citologista",
+] as const;
+
+const CONSELHOS_CLASSE = ["CRBM", "CRF", "CRBio", "CRM", "Outro"] as const;
+
+const UFS = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+] as const;
 
 const perfilLabels: Record<Perfil, string> = {
   admin: "Administrador",
