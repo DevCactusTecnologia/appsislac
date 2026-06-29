@@ -1,31 +1,40 @@
-// Geração de PDF em LOTE com os laudos finalizados (download direto).
+// Impressão em LOTE dos laudos finalizados.
 //
-// Reaproveita 100% da pipeline do laudo individual:
-//  - `hydrateAtendimentoForLaudo` (mesmo `reloadExames` do componente)
-//  - `buildLaudoHtml` (mesmo HTML/CSS travado por constraint)
+// IMPORTANTE: este módulo reaproveita 100% o pipeline do laudo individual
+// (`buildLaudoHtml` + `printHtmlInHiddenFrame`), garantindo MESMAS margens
+// (@page 4/11/4/11mm), mesmas fontes (Helvetica/Courier), mesmo cabeçalho
+// institucional e mesmo bloco de assinatura — conforme constraint
+// `mem://constraints/layout-impressao-travado.md`.
 //
-// O lote concatena o HTML de cada atendimento (separado por page-break),
-// renderiza em iframe oculto, fotografa CADA `.laudo-a4-page` via
-// html2canvas e monta um único PDF A4 via jsPDF. O usuário recebe o
-// arquivo direto pelo download nativo do navegador.
+// A versão anterior renderizava com html2canvas+jsPDF (raster), o que
+// quebrava margens, anti-aliasing e proporção. Foi removida.
+//
+// Fluxo:
+//  1. Para cada protocolo: hidrata + monta o fragmento HTML do laudo
+//     (mesma função `buildLaudoHtml` do individual).
+//  2. Concatena os fragmentos em UM único documento, separando atendimentos
+//     com page-break forçado.
+//  3. Injeta o mesmo hook de paginação do individual — adaptado para
+//     iterar sobre TODAS as `table.laudo-a4-page` (uma por atendimento).
+//  4. Dispara `printHtmlInHiddenFrame` — o usuário recebe o diálogo nativo
+//     de impressão e escolhe "Salvar como PDF" (mesma UX do individual).
 
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import { hydrateAtendimentoForLaudo } from "@/pages/ResultadoDetalhe/services/hydrateAtendimentoForLaudo";
 import { buildLaudoHtml } from "@/pages/ResultadoDetalhe/services/laudoHtmlBuilder";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { fetchHistoricoPorExame } from "@/pages/ResultadoDetalhe/services/historicoResultados";
+import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 
 export interface GerarLaudoLoteArgs {
-  /** Protocolos a incluir, JÁ na ordem desejada (asc por número de atendimento). */
+  /** Protocolos na ordem desejada (asc por número de atendimento). */
   protocolos: string[];
-  /** Analista responsável pela impressão em lote (usado no bloco de assinatura). */
+  /** Analista responsável pela impressão em lote (bloco de assinatura). */
   analistaAtual: { nome: string; iniciais: string };
-  /** Assinatura do analista (carimbo/imagem). */
+  /** Assinatura (carimbo/imagem). */
   assinaturaLaudo: { tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null };
-  /** Nome final do arquivo .pdf (sem extensão). */
+  /** Título sugerido para o arquivo "Salvar como PDF". */
   filename: string;
-  /** Callback opcional de progresso 0..1. */
+  /** Callback opcional de progresso (0..1). */
   onProgress?: (frac: number, msg?: string) => void;
 }
 
@@ -35,32 +44,130 @@ export interface GerarLaudoLoteResult {
   ms: number;
 }
 
-const WRAPPER_ID = "__sislac_batch_pdf_wrapper__";
+/**
+ * Hook de paginação multi-atendimento.
+ *
+ * Espelha o hook usado em `ResultadoDetalhe.doImprimirLaudo`, mas itera
+ * sobre TODAS as `table.laudo-a4-page` (uma por atendimento) — não apenas
+ * a primeira. Cada atendimento é paginado de forma independente e os
+ * page-breaks entre eles continuam garantidos pela classe
+ * `laudo-a4-page-break` aplicada na 2ª, 3ª, … tabelas.
+ */
+function buildMultiPaginationHook(margins: { top: number; right: number; bottom: number; left: number }): string {
+  return `
+<script>
+  (function(){
+    window.__lovableBeforePrint = async function(){
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+      await new Promise(function(resolve){ requestAnimationFrame(function(){ requestAnimationFrame(resolve); }); });
 
-function createOffscreenIframe(): HTMLIFrameElement {
-  const existing = document.getElementById(WRAPPER_ID) as HTMLIFrameElement | null;
-  if (existing) existing.remove();
-  const iframe = document.createElement("iframe");
-  iframe.id = WRAPPER_ID;
-  // Largura A4 ≈ 794px @96dpi. Mantemos width fixo para garantir
-  // que o layout horizontal feche dentro da página A4 do jsPDF.
-  iframe.style.cssText = [
-    "position:fixed",
-    "left:-99999px",
-    "top:0",
-    "width:794px",
-    "height:1123px",
-    "border:0",
-    "visibility:hidden",
-    "pointer-events:none",
-  ].join(";");
-  document.body.appendChild(iframe);
-  return iframe;
-}
+      var margins = ${JSON.stringify(margins)};
+      var pageWidthMm = 210 - Number(margins.left || 0) - Number(margins.right || 0);
+      document.documentElement.style.width = pageWidthMm + 'mm';
+      document.body.style.width = pageWidthMm + 'mm';
 
-async function waitForFontsAndPaint(doc: Document): Promise<void> {
-  try { if (doc.fonts && doc.fonts.ready) await doc.fonts.ready; } catch { /* noop */ }
-  await new Promise<void>((res) => requestAnimationFrame(() => requestAnimationFrame(() => res())));
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;left:-1000mm;top:0;width:100mm;height:0;overflow:hidden;';
+      document.body.appendChild(probe);
+      var pxPerMm = probe.getBoundingClientRect().width / 100;
+      probe.remove();
+      if (!pxPerMm || !isFinite(pxPerMm)) return;
+
+      var tables = Array.prototype.slice.call(document.querySelectorAll('table.laudo-a4-page'));
+      if (tables.length === 0) return;
+
+      var outerHeight = function(el) {
+        var rect = el.getBoundingClientRect();
+        var cs = window.getComputedStyle(el);
+        return rect.height + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+      };
+
+      tables.forEach(function(sourceTable, atendIdx){
+        var sourceContent = sourceTable.querySelector('#laudo-content');
+        var header = sourceTable.querySelector('thead');
+        if (!sourceContent) return;
+
+        var headerPx = header ? header.getBoundingClientRect().height : 0;
+        var footerReservePx = 32 * pxPerMm;
+        var safeGapPx = 3 * pxPerMm;
+        var availablePx = (297 - Number(margins.top || 0) - Number(margins.bottom || 0)) * pxPerMm - headerPx - footerReservePx - safeGapPx;
+        if (!availablePx || availablePx < 200) return;
+
+        var blocks = Array.prototype.slice.call(sourceContent.children).filter(function(el){
+          return el.classList && (el.classList.contains('exame-bloco') || el.classList.contains('assinatura-bloco'));
+        });
+
+        var pages = [];
+        var current = [];
+        var used = 0;
+        blocks.forEach(function(block){
+          var h = outerHeight(block);
+          if (current.length > 0 && used + h > availablePx) {
+            pages.push(current);
+            current = [];
+            used = 0;
+          }
+          current.push(block);
+          used += h;
+          if (h > availablePx && current.length === 1) {
+            pages.push(current);
+            current = [];
+            used = 0;
+          }
+        });
+        if (current.length) pages.push(current);
+        if (pages.length <= 1) return;
+
+        var isFirstAtendimento = atendIdx === 0;
+        var wrapper = document.createElement('div');
+        wrapper.className = 'laudo-pages-manual';
+
+        pages.forEach(function(pageBlocks, pageIndex){
+          var table = sourceTable.cloneNode(false);
+          // Preserva quebra entre atendimentos: a 1ª página de qualquer
+          // atendimento (exceto o primeiro) força nova folha.
+          if (!isFirstAtendimento && pageIndex === 0) {
+            table.classList.add('laudo-a4-page-break');
+          } else {
+            table.classList.remove('laudo-a4-page-break');
+          }
+          table.classList.add('laudo-page-manual');
+          table.style.breakInside = 'avoid';
+          table.style.pageBreakInside = 'avoid';
+          if (header) table.appendChild(header.cloneNode(true));
+
+          var tbody = document.createElement('tbody');
+          var tr = document.createElement('tr');
+          var td = document.createElement('td');
+          var corpo = document.createElement('div');
+          corpo.className = 'laudo-a4-corpo';
+          var content = document.createElement('div');
+          content.id = 'laudo-content';
+          content.setAttribute('style', sourceContent.getAttribute('style') || '');
+          corpo.appendChild(content);
+          td.appendChild(corpo);
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          table.appendChild(tbody);
+
+          var isLastPage = pageIndex >= pages.length - 1;
+          table.style.breakAfter = isLastPage ? 'auto' : 'page';
+          table.style.pageBreakAfter = isLastPage ? 'auto' : 'always';
+
+          pageBlocks.forEach(function(block){
+            block.style.breakBefore = '';
+            block.style.pageBreakBefore = '';
+            content.appendChild(block);
+          });
+          wrapper.appendChild(table);
+        });
+        sourceTable.replaceWith(wrapper);
+      });
+
+      document.documentElement.setAttribute('data-laudo-batch-paginated', String(tables.length));
+    };
+  })();
+</script>`;
 }
 
 export async function gerarLaudoLotePdf({
@@ -75,14 +182,16 @@ export async function gerarLaudoLotePdf({
     throw new Error("Nenhum atendimento elegível para impressão.");
   }
 
-  // ── 1. Hidrata + monta HTML por atendimento ───────────────────────
   const fragmentos: string[] = [];
   let totalExames = 0;
+  let sharedMargins = { top: 4, right: 11, bottom: 4, left: 11 };
+
   for (let i = 0; i < protocolos.length; i++) {
     const proto = protocolos[i];
-    onProgress?.(i / (protocolos.length * 2), `Carregando ${proto}…`);
+    onProgress?.(i / protocolos.length, `Preparando ${proto}…`);
     const hyd = await hydrateAtendimentoForLaudo(proto);
     if (!hyd || hyd.printable.length === 0) continue;
+
     let historicoByExameId: Record<number, { linhaHtml: string; graficoHtml: string }> = {};
     try {
       historicoByExameId = await fetchHistoricoPorExame({
@@ -92,6 +201,7 @@ export async function gerarLaudoLotePdf({
         customByExame: hyd.customByExame,
       });
     } catch { /* opcional */ }
+
     const html = buildLaudoHtml({
       paciente: hyd.paciente,
       analistaAtual,
@@ -102,72 +212,43 @@ export async function gerarLaudoLotePdf({
       pageMargins: hyd.margins,
       historicoByExameId,
     });
+
+    // Marca a PRIMEIRA tabela.laudo-a4-page do 2º atendimento em diante com
+    // a classe de page-break. buildLaudoHtml já entrega exatamente uma
+    // tabela por atendimento (pages.length === 1 no caller), então é seguro
+    // injetar a classe no primeiro match.
+    const isFirst = fragmentos.length === 0;
+    const adapted = isFirst
+      ? html
+      : html.replace(
+          /<table class="laudo-a4-page(?!\s+laudo-a4-page-break)"/,
+          '<table class="laudo-a4-page laudo-a4-page-break"',
+        );
+
+    fragmentos.push(adapted);
     totalExames += hyd.printable.length;
-    // Separador entre atendimentos: força nova folha A4 no PDF final.
-    fragmentos.push(`<div class="batch-atendimento" data-protocolo="${proto}">${sanitizeHtmlForPrint(html)}</div>`);
+    sharedMargins = hyd.margins;
   }
 
   if (fragmentos.length === 0) {
     throw new Error("Nenhum exame liberado encontrado para os atendimentos selecionados.");
   }
 
-  // ── 2. Renderiza tudo num iframe oculto ───────────────────────────
-  const iframe = createOffscreenIframe();
-  const docHtml = `<!doctype html><html><head><meta charset="utf-8"><style>
-    html,body{margin:0;padding:0;background:#fff;}
-    body{width:794px;}
-    .batch-atendimento{position:relative;width:794px;}
-    /* Esconde rodapé fixo no offscreen — html2canvas captura por página
-       individual e o rodapé fixo aparece em cima do conteúdo. */
-    .laudo-a4-rodape-fixed{position:static !important;display:block !important;margin-top:16px;}
-  </style></head><body>${fragmentos.join("")}</body></html>`;
-  const cdoc = iframe.contentDocument!;
-  cdoc.open();
-  cdoc.write(docHtml);
-  cdoc.close();
-  await waitForFontsAndPaint(cdoc);
-  // Aguarda um beat extra para imagens externas (logo/assinatura) carregarem.
-  await new Promise<void>((r) => setTimeout(r, 300));
+  onProgress?.(0.9, "Abrindo diálogo de impressão…");
 
-  // ── 3. Captura cada `.laudo-a4-page` e adiciona ao PDF ────────────
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-  const A4 = { w: 210, h: 297 };
-  const pages = Array.from(cdoc.querySelectorAll<HTMLElement>(".laudo-a4-page"));
-  if (pages.length === 0) {
-    iframe.remove();
-    throw new Error("Falha ao renderizar laudos para PDF.");
-  }
-  for (let i = 0; i < pages.length; i++) {
-    onProgress?.(0.5 + i / (pages.length * 2), `Gerando página ${i + 1}/${pages.length}…`);
-    const el = pages[i];
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      logging: false,
-      windowWidth: 794,
-    });
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
-    const imgHmm = (canvas.height * A4.w) / canvas.width;
-    if (i > 0) pdf.addPage("a4", "portrait");
-    if (imgHmm <= A4.h) {
-      pdf.addImage(imgData, "JPEG", 0, 0, A4.w, imgHmm, undefined, "FAST");
-    } else {
-      // Fatia em múltiplas folhas A4 quando o exame é longo.
-      const sliceMm = A4.h;
-      let offsetMm = 0;
-      let first = true;
-      while (offsetMm < imgHmm - 0.5) {
-        if (!first) pdf.addPage("a4", "portrait");
-        pdf.addImage(imgData, "JPEG", 0, -offsetMm, A4.w, imgHmm, undefined, "FAST");
-        offsetMm += sliceMm;
-        first = false;
-      }
-    }
-  }
+  // Mesma sanitização do individual; concatena fragmentos como UM documento.
+  const sanitized = sanitizeHtmlForPrint(fragmentos.join("\n"));
+  const hook = buildMultiPaginationHook(sharedMargins);
+  const injected = /<\/body>/i.test(sanitized)
+    ? sanitized.replace(/<\/body>/i, `${hook}</body>`)
+    : `${sanitized}${hook}`;
 
-  pdf.save(`${filename}.pdf`);
-  iframe.remove();
+  printHtmlInHiddenFrame({ html: injected, documentTitle: filename });
+
   onProgress?.(1, "Concluído");
-  return { totalAtendimentos: fragmentos.length, totalExames, ms: performance.now() - t0 };
+  return {
+    totalAtendimentos: fragmentos.length,
+    totalExames,
+    ms: performance.now() - t0,
+  };
 }

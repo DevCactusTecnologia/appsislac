@@ -176,7 +176,7 @@ const ImpressaoGeral = () => {
     const safeUnidade = selectedUnidade.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Unidade";
     const filename = `Resultados_${safeUnidade}_${isoDate}`;
     setGerando(true);
-    const toastId = toast.loading(`Gerando PDF (${elegiveis.length} atendimentos)…`);
+    const toastId = toast.loading(`Preparando laudos (${elegiveis.length} atendimentos)…`);
     try {
       const result = await gerarLaudoLotePdf({
         protocolos: elegiveis.map(a => a.protocolo),
@@ -184,13 +184,14 @@ const ImpressaoGeral = () => {
         assinaturaLaudo,
         filename,
         onProgress: (frac, msg) => {
-          toast.loading(`${msg ?? "Gerando…"} (${Math.round(frac * 100)}%)`, { id: toastId });
+          toast.loading(`${msg ?? "Preparando…"} (${Math.round(frac * 100)}%)`, { id: toastId });
         },
       });
       toast.success(
-        `PDF gerado: ${result.totalAtendimentos} atendimentos · ${result.totalExames} exames`,
-        { id: toastId },
+        `Laudo enviado para impressão · ${result.totalAtendimentos} atendimentos · ${result.totalExames} exames. No diálogo, escolha "Salvar como PDF".`,
+        { id: toastId, duration: 7000 },
       );
+
       logger.info("ImpressaoGeral", "lote gerado", {
         unidade: selectedUnidade, data: dateStr,
         totalAtendimentos: result.totalAtendimentos, totalExames: result.totalExames,
@@ -318,7 +319,7 @@ const ImpressaoGeral = () => {
                   className="w-full sm:w-auto px-4 py-2 rounded-2xl border border-border/60 text-xs font-medium text-foreground hover:bg-muted transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {gerando
-                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando PDF…</>
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Preparando laudos…</>
                     : <><Printer className="h-3.5 w-3.5" /> Imprimir resultados</>}
                 </button>
               </div>
