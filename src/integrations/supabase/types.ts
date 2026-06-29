@@ -6112,6 +6112,7 @@ export type Database = {
           responsavel_tecnico_conselho: string
           responsavel_tecnico_numero: string
           responsavel_tecnico_uf: string
+          rotina_coleta_analise_enabled: boolean
           telefone: string
           tenant_id: string
           updated_at: string
@@ -6135,6 +6136,7 @@ export type Database = {
           responsavel_tecnico_conselho?: string
           responsavel_tecnico_numero?: string
           responsavel_tecnico_uf?: string
+          rotina_coleta_analise_enabled?: boolean
           telefone?: string
           tenant_id: string
           updated_at?: string
@@ -6158,6 +6160,7 @@ export type Database = {
           responsavel_tecnico_conselho?: string
           responsavel_tecnico_numero?: string
           responsavel_tecnico_uf?: string
+          rotina_coleta_analise_enabled?: boolean
           telefone?: string
           tenant_id?: string
           updated_at?: string
