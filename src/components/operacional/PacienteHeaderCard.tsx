@@ -57,6 +57,8 @@ interface Props {
   actionsInline?: boolean;
   /** Slot opcional renderizado na linha de ações, à esquerda dos botões. */
   actionsExtraLeft?: React.ReactNode;
+  /** Slot opcional renderizado na linha de ações, à direita dos botões. */
+  actionsExtraRight?: React.ReactNode;
   /** Slot opcional renderizado logo abaixo do avatar (ex.: badge de jejum). */
   belowAvatar?: React.ReactNode;
 }
