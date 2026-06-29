@@ -1910,26 +1910,9 @@ const ResultadoDetalhe = () => {
                       {isTerc && dbRow && dbRow.status_externo !== "NAO_APLICAVEL" && (
                         <div className="mt-1.5">
                           <IntegrationStatusBadge row={dbRow} compact />
-                          <IntegrationWarningsList
-                            className="mt-1.5"
-                            maxVisible={2}
-                            warnings={resolveIntegrationWarnings(dbRow, {
-                              catalogo: (() => {
-                                const c = getExamesCatalogo().find((x) => x.nome === dbRow.nome_exame);
-                                return c ? {
-                                  tipoProcesso: c.tipoProcesso,
-                                  permiteEnvioApoio: c.permiteEnvioApoio,
-                                  providerIntegracao: c.providerIntegracao,
-                                  codigoExameApoio: c.codigoExameApoio,
-                                } : null;
-                              })(),
-                              awaitingMs: dbRow.data_envio && !dbRow.data_retorno
-                                ? Date.now() - new Date(dbRow.data_envio).getTime()
-                                : null,
-                            })}
-                          />
                         </div>
                       )}
+
                       {retificados.has(exame.id) && exame.status !== "Em retificação" && exame.status !== "Retificado" && (() => {
                         const dbRow = dbRows.find((r) => r.id === dbIdMap[exame.id]);
                         const emCurso = dbRow ? dbRow.status !== "finalizado" && dbRow.status !== "cancelado" : false;
