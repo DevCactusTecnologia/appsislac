@@ -139,6 +139,7 @@ const ParametrosDialog = ({ open, onClose, exameId, exameNome, defaultMaximized 
     );
     setSensivelJejum(!!p.sensivelJejum);
     setEstratificadoRiscoCv(!!p.estratificadoRiscoCv);
+    setQtdAnteriores(typeof p.qtdResultadosAnteriores === "number" && p.qtdResultadosAnteriores > 0 ? p.qtdResultadosAnteriores : 5);
   };
 
   const chaveJaUsada = useMemo(
