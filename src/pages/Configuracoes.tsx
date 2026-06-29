@@ -208,6 +208,8 @@ const Configuracoes = () => {
         return <UnidadesTab />;
       case "mapas-trabalho":
         return <MapasTrabalhoTab />;
+      case "fluxo-rotina":
+        return <FluxoRotinaTab />;
       case "documentos":
         return <DocumentosTab />;
       case "site":
