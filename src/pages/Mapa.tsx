@@ -299,7 +299,7 @@ const Mapa = () => {
   const usuarios = useSyncExternalStore(subscribeUsuarios, getUsuarios, getUsuarios);
   const analistasReais = useMemo(() => {
     return usuarios
-      .filter((u) => u.perfil === "analista" && (u.status ?? "ativo") !== "inativo")
+      .filter((u) => u.perfil === "analista" && u.status !== "Inativo")
       .map((u) => (u.nome ?? "").trim())
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, "pt-BR"));
