@@ -119,28 +119,44 @@ Deno.serve(async (req) => {
     return errorResponse(400, "Arquivo excede 2 MB", requestId, log);
   }
 
-  // Carrega config S3
+  // Tenta config S3 primeiro; se não houver, faz fallback para Supabase Storage
   const s3 = await loadS3Config(SUPABASE_URL, SERVICE_KEY);
-  if (!s3) return errorResponse(500, "Bucket de imagens não configurado", requestId, log);
 
-  // Carrega CNPJ do tenant para compor a chave
-  const { data: tenant } = await admin
-    .from("tenants").select("cnpj").eq("id", tenantId).maybeSingle();
-  const cnpj = (tenant as { cnpj?: string } | null)?.cnpj ?? "";
+  let objectKey: string;
+  let backend: "s3" | "storage" = "s3";
+  let bucketLabel = "";
 
-  const objectKey = buildObjectKey({
-    tenantId,
-    cnpj,
-    category: "assinaturas",
-    filename: `${userId}-${filename}`,
-  });
-
-  try {
-    await s3PutObject(s3, objectKey, bytes, contentType);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Falha no upload S3";
-    log.error("s3 put failed", { err: msg });
-    return errorResponse(502, "Falha no upload: " + msg, requestId, log);
+  if (s3) {
+    const { data: tenant } = await admin
+      .from("tenants").select("cnpj").eq("id", tenantId).maybeSingle();
+    const cnpj = (tenant as { cnpj?: string } | null)?.cnpj ?? "";
+    objectKey = buildObjectKey({
+      tenantId,
+      cnpj,
+      category: "assinaturas",
+      filename: `${userId}-${filename}`,
+    });
+    bucketLabel = s3.bucket;
+    try {
+      await s3PutObject(s3, objectKey, bytes, contentType);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Falha no upload S3";
+      log.error("s3 put failed", { err: msg });
+      return errorResponse(502, "Falha no upload: " + msg, requestId, log);
+    }
+  } else {
+    backend = "storage";
+    bucketLabel = "assinaturas";
+    const safeFile = filename.replace(/[^\w.\-]+/g, "_");
+    const storagePath = `${tenantId}/${userId}/${Date.now()}-${safeFile}`;
+    objectKey = `storage://assinaturas/${storagePath}`;
+    const { error: upErr } = await admin.storage
+      .from("assinaturas")
+      .upload(storagePath, bytes, { contentType, upsert: true });
+    if (upErr) {
+      log.error("storage put failed", { err: upErr.message });
+      return errorResponse(502, "Falha no upload: " + upErr.message, requestId, log);
+    }
   }
 
   const { error: upErr } = await admin
@@ -154,8 +170,8 @@ Deno.serve(async (req) => {
     tenant_id: tenantId,
     user_id: caller.id,
     category: "assinaturas",
-    backend: "s3",
-    bucket: s3.bucket,
+    backend,
+    bucket: bucketLabel,
     object_key: objectKey,
     action: "upload",
     size_bytes: bytes.byteLength,
@@ -164,6 +180,6 @@ Deno.serve(async (req) => {
     metadata: { target_user_id: userId },
   });
 
-  log.info("assinatura enviada", { userId, key: objectKey });
+  log.info("assinatura enviada", { userId, key: objectKey, backend });
   return jsonResponse(200, { ok: true, key: objectKey }, requestId);
 });
