@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import {
   X, Trash2, Banknote, CreditCard, QrCode, CalendarIcon,
   TrendingUp, CheckCircle2, AlertTriangle, Receipt, DollarSign,
-  Gift, Percent, Plus,
+  Gift, Percent, Plus, Loader2, Copy,
 } from "lucide-react";
 import { format } from "date-fns";
+import QRCode from "qrcode";
+import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -98,6 +100,12 @@ const PagamentoDialog = ({
   const [acrescimoHistRemovido, setAcrescimoHistRemovido] = useState(false);
   // Confirmação de remoção: 'desc' / 'acre' para cards históricos, 'real-N' para realizado, 'staging-N' para staging
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
+  // PIX QR Code flow
+  const [pixOpen, setPixOpen] = useState(false);
+  const [pixDataUrl, setPixDataUrl] = useState<string>("");
+  const [pixPayload, setPixPayload] = useState<string>("");
+  const [pixValor, setPixValor] = useState<number>(0);
+  const [pixStatus, setPixStatus] = useState<"aguardando" | "aprovado">("aguardando");
   useBodyScrollLock(open);
 
   // Históricos efetivos (zeram quando o usuário remove o card).
@@ -206,6 +214,62 @@ const PagamentoDialog = ({
     setConfirmingRemove(null);
     onClose();
   };
+
+  /** Abre o overlay de QRCode PIX para o saldo restante (ou valor em digitação). */
+  const handleGerarPixQR = async () => {
+    const stagingNum = parse(stagingValor);
+    const valor = stagingNum > 0 ? stagingNum : Math.max(0, totalAjustado - valorPagoTotal);
+    if (valor <= 0) {
+      toast.error("Nenhum saldo a cobrar.");
+      return;
+    }
+    // BR Code payload simplificado (não certificado BCB — apto a leitura por apps de teste).
+    const payload = `00020126360014BR.GOV.BCB.PIX0114+55SISLAC-DEMO5204000053039865406${valor.toFixed(2)}5802BR5910LABORATORIO6009SAO PAULO62070503***6304`;
+    try {
+      const url = await QRCode.toDataURL(payload, { width: 280, margin: 1 });
+      setPixDataUrl(url);
+      setPixPayload(payload);
+      setPixValor(valor);
+      setPixStatus("aguardando");
+      setPixOpen(true);
+    } catch {
+      toast.error("Falha ao gerar QRCode.");
+    }
+  };
+
+  /** Aprova manualmente o pagamento PIX (operador confirma recebimento no caixa). */
+  const aprovarPix = () => {
+    setPixStatus("aprovado");
+    const novoPix: PagamentoRealizado = {
+      tipo: "PIX",
+      valor: pixValor,
+      data: format(new Date(), "dd/MM/yyyy"),
+    };
+    const novosPagamentos: PagamentoRealizado[] = [
+      ...pagamentos
+        .filter(p => !isAdjustment(p.tipo) && p.tipo !== "Cortesia" && parse(p.valor) > 0)
+        .map(p => ({ tipo: p.tipo, valor: parse(p.valor), data: format(p.data, "dd/MM/yyyy") })),
+      novoPix,
+    ];
+    const novoValorPago = valorPagoTotal + pixValor;
+    fireSuccessConfetti();
+    toast.success("Pagamento PIX aprovado!", { description: `${fmtBRL(pixValor)} recebido via PIX.` });
+    onConfirm?.({
+      valorPago: novoValorPago,
+      desconto: descontoTotal,
+      acrescimo: acrescimoTotal,
+      novosPagamentos,
+    });
+    setTimeout(() => {
+      setPixOpen(false);
+      setPagamentos([]);
+      setDescontoHistRemovido(false);
+      setAcrescimoHistRemovido(false);
+      setConfirmingRemove(null);
+      onClose();
+    }, 1200);
+  };
+
 
   const methodColor = (tipo: string) => {
     if (tipo === "Cortesia") return hsl("var(--status-warning, var(--accent))");
@@ -676,8 +740,8 @@ const PagamentoDialog = ({
         {/* Footer */}
         <div className="sticky bottom-0 z-20 px-5 sm:px-6 py-4 flex items-center gap-3 bg-card border-t border-border/50">
           <button
-            onClick={onClose}
-            className="flex-1 h-11 rounded-2xl border border-border bg-card flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all duration-200"
+            onClick={handleGerarPixQR}
+            className="flex-1 h-11 rounded-2xl border border-border bg-card flex items-center justify-center gap-2 text-[13px] font-medium text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200"
           >
             <QrCode className="h-4 w-4 text-primary" />
             Gerar QRCode
@@ -690,6 +754,76 @@ const PagamentoDialog = ({
             {pagamentosRealizados.length > 0 ? "Atualizar" : "Confirmar"}
           </button>
         </div>
+
+        {/* PIX QR Code overlay */}
+        {pixOpen && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-card/95 backdrop-blur-sm p-5 sm:p-6">
+            <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-9 w-9 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <QrCode className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-foreground leading-tight">Pagamento PIX</h3>
+                    <p className="text-[11px] text-muted-foreground">{fmtBRL(pixValor)}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPixOpen(false)}
+                  className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all"
+                  aria-label="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="px-5 py-5 flex flex-col items-center gap-4">
+                {pixStatus === "aprovado" ? (
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${hsl("var(--status-success)")}15` }}>
+                      <CheckCircle2 className="h-8 w-8" style={{ color: hsl("var(--status-success)") }} />
+                    </div>
+                    <p className="text-sm font-semibold" style={{ color: hsl("var(--status-success)") }}>
+                      Pagamento aprovado!
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Registrando como PIX no atendimento…
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-3 rounded-2xl bg-white border border-border">
+                      {pixDataUrl
+                        ? <img src={pixDataUrl} alt="QRCode PIX" className="w-[240px] h-[240px] block" />
+                        : <div className="w-[240px] h-[240px] flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      Aponte a câmera do app do banco para o QRCode<br />ou copie o código abaixo.
+                    </p>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(pixPayload); toast.success("Código PIX copiado"); }}
+                      className="w-full h-9 rounded-xl border border-border bg-card flex items-center justify-center gap-2 text-[11px] font-medium text-foreground hover:border-primary/40 transition"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copiar Pix Copia e Cola
+                    </button>
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Aguardando pagamento…
+                    </div>
+                    <button
+                      onClick={aprovarPix}
+                      className="w-full h-11 rounded-2xl text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition shadow-sm"
+                      style={{ backgroundColor: hsl("var(--status-success)") }}
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
