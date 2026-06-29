@@ -65,24 +65,44 @@ Deno.serve(async (req) => {
     if (!isSuper) return errorResponse(403, "Sem permissão", requestId, log);
   }
 
-  const s3 = await loadS3Config(SUPABASE_URL, SERVICE_KEY);
-  if (!s3) return errorResponse(500, "Bucket não configurado", requestId, log);
-
   let url: string;
-  try {
-    url = await s3PresignGet(s3, t.assinatura_imagem_key, 3600);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Falha ao assinar URL";
-    log.error("presign failed", { err: msg });
-    return errorResponse(502, msg, requestId, log);
+  let backend: "s3" | "storage" = "s3";
+  let bucketLabel = "";
+
+  if (t.assinatura_imagem_key.startsWith("storage://")) {
+    // Formato: storage://<bucket>/<path>
+    const rest = t.assinatura_imagem_key.slice("storage://".length);
+    const slash = rest.indexOf("/");
+    const bucket = slash >= 0 ? rest.slice(0, slash) : rest;
+    const path = slash >= 0 ? rest.slice(slash + 1) : "";
+    backend = "storage";
+    bucketLabel = bucket;
+    const { data: signed, error: sErr } = await admin.storage
+      .from(bucket).createSignedUrl(path, 3600);
+    if (sErr || !signed?.signedUrl) {
+      log.error("storage sign failed", { err: sErr?.message });
+      return errorResponse(502, sErr?.message || "Falha ao assinar URL", requestId, log);
+    }
+    url = signed.signedUrl;
+  } else {
+    const s3 = await loadS3Config(SUPABASE_URL, SERVICE_KEY);
+    if (!s3) return errorResponse(500, "Bucket não configurado", requestId, log);
+    bucketLabel = s3.bucket;
+    try {
+      url = await s3PresignGet(s3, t.assinatura_imagem_key, 3600);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Falha ao assinar URL";
+      log.error("presign failed", { err: msg });
+      return errorResponse(502, msg, requestId, log);
+    }
   }
 
   await recordStorageAudit(SUPABASE_URL, SERVICE_KEY, {
     tenant_id: t.tenant_id,
     user_id: caller.id,
     category: "assinaturas",
-    backend: "s3",
-    bucket: s3.bucket,
+    backend,
+    bucket: bucketLabel,
     object_key: t.assinatura_imagem_key,
     action: "sign_read",
     request_id: requestId,
