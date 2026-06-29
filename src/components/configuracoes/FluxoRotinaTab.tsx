@@ -7,10 +7,6 @@ import {
   saveLabConfig,
   subscribeLabConfig,
 } from "@/data/labConfigStore";
-  getLabConfig,
-  saveLabConfig,
-  subscribeLabConfig,
-} from "@/data/labConfigStore";
 
 /**
  * Aba "Fluxo da Rotina" — permite ao admin do laboratório desativar as etapas
