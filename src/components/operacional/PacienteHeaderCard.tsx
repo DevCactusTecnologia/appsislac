@@ -124,6 +124,7 @@ export function PacienteHeaderCard({
   actions = [],
   actionsInline = false,
   actionsExtraLeft,
+  actionsExtraRight,
   belowAvatar,
 }: Props) {
   const primary = actions.find((a) => a.variant === "primary");
