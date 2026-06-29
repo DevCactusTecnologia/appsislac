@@ -154,8 +154,8 @@ export function PacienteHeaderCard({
                   <StatusBadge label={statusLabel} type={statusType} />
                 )}
                 {actionsInline && others.map((a) => <ActionButton key={a.key} action={a} />)}
-                {actionsInline && primary && <ActionButton action={primary} />}
                 {actionsInline && actionsExtraRight}
+                {actionsInline && primary && <ActionButton action={primary} />}
               </div>
             )}
           </div>
