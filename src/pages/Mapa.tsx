@@ -135,6 +135,7 @@ const Mapa = () => {
   const [currentPages, setCurrentPages] = useState<Record<TipoMapa, number>>({ paciente: 1, analista: 1, setor: 1, exame: 1 });
   const [rowsPerPage] = useState(10);
   const [analistaQuery, setAnalistaQuery] = useState("");
+  const [analistaTabQuery, setAnalistaTabQuery] = useState("");
   const [printing, setPrinting] = useState(false);
 
   // Aba Paciente: seleção (multi) de pacientes pendentes
