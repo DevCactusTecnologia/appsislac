@@ -56,18 +56,21 @@ interface FormData {
   assinaturaImagemKey: string | null;
 }
 
-const emptyForm = (): FormData => ({
-  nome: "",
-  email: "",
-  perfil: "analista",
-  unidadeIds: ["und-001"],
-  permissoesEfetivas: new Set(DEFAULTS_POR_PERFIL.analista),
-  isAdmin: false,
-  password: "",
-  assinaturaTipo: "carimbo",
-  assinaturaConselho: "",
-  assinaturaImagemKey: null,
-});
+const emptyForm = (): FormData => {
+  const primeiraUnidade = getUnidadesAtivas()[0]?.id;
+  return {
+    nome: "",
+    email: "",
+    perfil: "analista",
+    unidadeIds: primeiraUnidade ? [primeiraUnidade] : [],
+    permissoesEfetivas: new Set(DEFAULTS_POR_PERFIL.analista),
+    isAdmin: false,
+    password: "",
+    assinaturaTipo: "carimbo",
+    assinaturaConselho: "",
+    assinaturaImagemKey: null,
+  };
+};
 
 /**
  * Converte permissões efetivas (toggles marcados) em (extras, revogadas)
