@@ -246,14 +246,15 @@ const AnalisarAmostra = () => {
     }));
 
     const nowIso = new Date().toISOString();
-    const results = await Promise.all(updates.map(u =>
+    const { runWithConcurrency } = await import("@/lib/runWithConcurrency");
+    const results = await runWithConcurrency(updates, 4, (u) =>
       updateAtendimentoExame(u.exameId, {
         status: u.dbStatus,
         data_analise: (u.dbStatus === "em_bancada" || u.dbStatus === "analisado") ? nowIso : null,
         data_liberacao: null,
         motivo_cancelamento: u.motivo_cancelamento,
-      })
-    ));
+      }, undefined, { skipReload: true }),
+    );
     const failed = results.filter(r => !r.ok);
     if (failed.length > 0) {
       toast.error(`Falha ao salvar ${failed.length} alteração(ões). Recarregando…`);
