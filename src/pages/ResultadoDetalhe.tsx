@@ -1696,7 +1696,6 @@ const ResultadoDetalhe = () => {
                                   title="Para alterar o analista é necessário retificar o resultado."
                                 >
                                   <Lock className="h-3 w-3" />
-                                  Bloqueado
                                 </span>
                               </>
                             ) : modoConsulta ? (
@@ -2474,7 +2473,6 @@ const ResultadoDetalhe = () => {
                                 title="Para alterar o analista é necessário retificar o resultado."
                               >
                                 <Lock className="h-3 w-3" />
-                                Bloqueado
                               </span>
                             </>
                           ) : modoConsulta ? (
