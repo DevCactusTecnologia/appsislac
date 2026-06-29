@@ -2977,6 +2977,7 @@ const ResultadoDetalhe = () => {
                 const res = await validarCredenciaisAnalista(analistaEmail, analistaSenha);
                 setAnalistaValidando(false);
                 if (res.ok) {
+                  analistaTrocadoRef.current = true;
                   setAnalistaAtual({ nome: res.nome, iniciais: res.iniciais });
                   setShowAlterarAnalista(false);
                   toast.success(`Analista alterado para ${res.nome}`);
