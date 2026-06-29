@@ -107,14 +107,10 @@ export async function fetchHistoricoPorExame(args: {
   const cpf = (args.pacienteCpf || "").replace(/\D/g, "");
   if (cpf.length !== 11 || args.exames.length === 0) return {};
 
-  // 1) Resolve UUID por nome (1 query).
-  const nomes = Array.from(new Set(args.exames.map((e) => (e.nome || "").trim()).filter(Boolean)));
-  const { data: exRows } = await supabase
-    .from("exames")
-    .select("id,nome")
-    .in("nome", nomes);
+  // 1) Resolve UUID por nome usando o cache local do catálogo (já carregado).
+  const catalogo = getExamesCatalogo();
   const uuidByNome: Record<string, string> = {};
-  (exRows ?? []).forEach((r) => { uuidByNome[(r.nome || "").trim()] = r.id; });
+  catalogo.forEach((c) => { if (c?.nome) uuidByNome[c.nome.trim()] = c.id; });
 
   // 2) Parâmetros ativos para esses exames (1 query).
   const uuids = Object.values(uuidByNome);
