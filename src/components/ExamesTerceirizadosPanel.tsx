@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Building2, Zap, Upload, RefreshCw, Download, Check, FileText, ExternalLink, Loader2, AlertCircle, History, FileUp, FileCheck2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import AuditoriaIntegracaoDrawer from "@/components/AuditoriaIntegracaoDrawer";
 import ResultadoPopup from "@/components/ResultadoPopup";
 import { abrirLaudoResolvido } from "@/lib/laudoResolver";
 import { resolveIntegrationWarnings } from "@/lib/integration/integrationStatus";
+import { getLabConfig, subscribeLabConfig } from "@/data/labConfigStore";
 
 interface Props {
   rows: AtendimentoExameRow[];
@@ -41,6 +42,52 @@ const ExamesTerceirizadosPanel = ({ rows, onChanged }: Props) => {
   const [overrideMotivo, setOverrideMotivo] = useState("");
 
   const terceirizados = rows.filter(r => r.tipo_processo === "TERCEIRIZADO");
+
+  // Auto-receber: quando a configuração "Recebimento automático" estiver ativa,
+  // marca todos os exames terceirizados SEM integração que ainda não foram
+  // recebidos como finalizados na abertura da tela.
+  const [autoTerc, setAutoTerc] = useState<boolean>(
+    () => getLabConfig().terceirizadoRecebimentoAutomatico === true,
+  );
+  useEffect(() => {
+    const unsub = subscribeLabConfig(() =>
+      setAutoTerc(getLabConfig().terceirizadoRecebimentoAutomatico === true),
+    );
+    return unsub;
+  }, []);
+  const autoMarkedRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (!autoTerc) return;
+    const pendentes = terceirizados.filter(
+      r => !r.integracao_ativa
+        && r.status_externo !== "IMPORTADO"
+        && r.status_externo !== "FINALIZADO"
+        && !autoMarkedRef.current.has(r.id),
+    );
+    if (pendentes.length === 0) return;
+    pendentes.forEach(r => autoMarkedRef.current.add(r.id));
+    (async () => {
+      const now = new Date().toISOString();
+      let changed = false;
+      for (const r of pendentes) {
+        const res = await updateExameTerceirizado(r.id, {
+          status_externo: "FINALIZADO",
+          status: "finalizado",
+          resultado_importado: true,
+          data_retorno: now,
+          data_liberacao: now,
+        });
+        if (res.ok) changed = true;
+      }
+      if (changed) {
+        toast.success(
+          `${pendentes.length} exame${pendentes.length === 1 ? "" : "s"} terceirizado${pendentes.length === 1 ? "" : "s"} recebido${pendentes.length === 1 ? "" : "s"} automaticamente.`,
+        );
+        onChanged();
+      }
+    })();
+  }, [autoTerc, terceirizados, onChanged]);
+
   if (terceirizados.length === 0) return null;
 
   const setBusy = (id: number, v: boolean) => setLoading(prev => ({ ...prev, [id]: v }));

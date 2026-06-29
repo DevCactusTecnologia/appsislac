@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FlaskConical, Droplet, Microscope, ClipboardCheck, ShieldAlert } from "lucide-react";
+import { FlaskConical, Droplet, Microscope, ClipboardCheck, ShieldAlert, Building2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -23,11 +23,17 @@ const FluxoRotinaTab = () => {
   const [enabled, setEnabled] = useState<boolean>(
     () => getLabConfig().rotinaColetaAnaliseEnabled !== false,
   );
+  const [autoTerc, setAutoTerc] = useState<boolean>(
+    () => getLabConfig().terceirizadoRecebimentoAutomatico === true,
+  );
   const [saving, setSaving] = useState(false);
+  const [savingTerc, setSavingTerc] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeLabConfig(() => {
-      setEnabled(getLabConfig().rotinaColetaAnaliseEnabled !== false);
+      const cfg = getLabConfig();
+      setEnabled(cfg.rotinaColetaAnaliseEnabled !== false);
+      setAutoTerc(cfg.terceirizadoRecebimentoAutomatico === true);
     });
     return unsub;
   }, []);
@@ -54,6 +60,31 @@ const FluxoRotinaTab = () => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleAutoTerc = async (next: boolean) => {
+    setSavingTerc(true);
+    const previous = autoTerc;
+    setAutoTerc(next);
+    try {
+      const current = getLabConfig();
+      await saveLabConfig({ ...current, terceirizadoRecebimentoAutomatico: next });
+      toast({
+        title: next ? "Recebimento automático ativado" : "Recebimento manual ativado",
+        description: next
+          ? "Exames terceirizados serão marcados como finalizados automaticamente ao abrir Inserir Resultado."
+          : "O usuário precisará clicar em 'Marcar como recebido' para cada exame terceirizado.",
+      });
+    } catch (err) {
+      setAutoTerc(previous);
+      toast({
+        title: "Não foi possível salvar",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingTerc(false);
     }
   };
 
@@ -128,6 +159,45 @@ const FluxoRotinaTab = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-primary/10 shrink-0">
+            <Building2 className="h-5 w-5 text-primary" strokeWidth={1.75} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-foreground">
+                  Recebimento de exames terceirizados
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Define o comportamento ao abrir a tela <strong>Inserir Resultado</strong> para
+                  exames enviados a laboratório de apoio sem integração:
+                  <br />
+                  <strong>Manual</strong> — o usuário precisa clicar em
+                  “Marcar como recebido” em cada exame.
+                  <br />
+                  <strong>Automático</strong> — todos os exames terceirizados
+                  pendentes são marcados como finalizados ao abrir a tela.
+                </p>
+              </div>
+              <Switch
+                checked={autoTerc}
+                disabled={savingTerc}
+                onCheckedChange={handleToggleAutoTerc}
+                aria-label="Ativar recebimento automático de exames terceirizados"
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Modo atual:{" "}
+              <strong className="text-foreground">
+                {autoTerc ? "Automático" : "Manual"}
+              </strong>
+            </p>
           </div>
         </div>
       </section>

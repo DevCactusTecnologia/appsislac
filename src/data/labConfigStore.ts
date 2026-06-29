@@ -52,6 +52,13 @@ export interface LabConfig {
    * Default: `true` (comportamento original).
    */
   rotinaColetaAnaliseEnabled: boolean;
+  /**
+   * Quando `true`, exames terceirizados sem integração são marcados como
+   * recebidos/finalizados automaticamente ao abrir a tela "Inserir Resultado".
+   * Quando `false` (padrão), exige clique manual no botão "Marcar como
+   * recebido".
+   */
+  terceirizadoRecebimentoAutomatico: boolean;
 }
 
 const defaultConfig: LabConfig = {
@@ -73,6 +80,7 @@ const defaultConfig: LabConfig = {
   responsavelTecnicoUf: "",
   watermark: { ...DEFAULT_WATERMARK },
   rotinaColetaAnaliseEnabled: true,
+  terceirizadoRecebimentoAutomatico: false,
 };
 
 let _listeners: Array<() => void> = [];
@@ -122,6 +130,7 @@ function rowToConfig(row: Record<string, unknown>): LabConfig {
     responsavelTecnicoUf: (row.responsavel_tecnico_uf as string) ?? "",
     watermark: normalizeWatermark(row.watermark),
     rotinaColetaAnaliseEnabled: (row.rotina_coleta_analise_enabled as boolean | null) ?? true,
+    terceirizadoRecebimentoAutomatico: (row.terceirizado_recebimento_automatico as boolean | null) ?? false,
   };
 }
 
@@ -146,6 +155,7 @@ function configToRow(config: LabConfig, tenantId: string) {
     responsavel_tecnico_uf: config.responsavelTecnicoUf ?? "",
     watermark: normalizeWatermark(config.watermark),
     rotina_coleta_analise_enabled: config.rotinaColetaAnaliseEnabled ?? true,
+    terceirizado_recebimento_automatico: config.terceirizadoRecebimentoAutomatico ?? false,
   };
 }
 
