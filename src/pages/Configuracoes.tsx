@@ -35,6 +35,7 @@ import IntegracoesApoioTab from "@/components/configuracoes/IntegracoesApoioTab"
 import FornecedoresTab from "@/components/configuracoes/FornecedoresTab";
 import FormasPagamentoTab from "@/components/configuracoes/FormasPagamentoTab";
 import NotificacoesTab from "@/components/configuracoes/NotificacoesTab";
+import FluxoRotinaTab from "@/components/configuracoes/FluxoRotinaTab";
 // OnboardingChecklist removido por solicitação do usuário
 
 /**
