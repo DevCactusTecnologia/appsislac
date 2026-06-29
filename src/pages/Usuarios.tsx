@@ -62,14 +62,20 @@ interface FormData {
   email: string;
   perfil: Perfil;
   unidadeIds: string[];
-  /** Permissões EFETIVAS marcadas no toggle (defaults + extras − revogadas) */
   permissoesEfetivas: Set<string>;
   isAdmin: boolean;
-  /** Senha definida pelo admin no convite OU nova senha no editar. */
   password: string;
   assinaturaTipo: "carimbo" | "imagem";
   assinaturaConselho: string;
   assinaturaImagemKey: string | null;
+  telefone: string;
+  tipoProfissional: string;
+  cbo: string;
+  cpf: string;
+  cns: string;
+  conselhoClasse: string;
+  conselhoUf: string;
+  conselhoNumero: string;
 }
 
 const emptyForm = (): FormData => {
@@ -85,6 +91,14 @@ const emptyForm = (): FormData => {
     assinaturaTipo: "carimbo",
     assinaturaConselho: "",
     assinaturaImagemKey: null,
+    telefone: "",
+    tipoProfissional: "",
+    cbo: "",
+    cpf: "",
+    cns: "",
+    conselhoClasse: "",
+    conselhoUf: "",
+    conselhoNumero: "",
   };
 };
 
