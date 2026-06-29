@@ -47,17 +47,30 @@ export function buildAuditLogFromDb(
     if (row) rowByUiId.set(Number(uiIdStr), row);
   });
   const u = { usuario: defaultUser.nome, iniciais: defaultUser.iniciais };
+  const SEM_REGISTRO = "__SEM_REGISTRO__";
+  const semRegistroUser = { usuario: "Sistema", iniciais: "SI" };
   exames.forEach((exame) => {
     const row = rowByUiId.get(exame.id);
     const dbStatus = row?.status;
+    const semColeta  = (row?.coletor  ?? "") === SEM_REGISTRO;
+    const semAnalise = (row?.analista ?? "") === SEM_REGISTRO;
     const dataPedido = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO ?? exame.dataLiberacaoISO, now);
     const dataColeta = fmtIso(exame.dataColetaISO ?? exame.dataAnaliseISO, now);
     const dataAnal = fmtIso(exame.dataAnaliseISO, now);
     const dataLib = fmtIso(exame.dataLiberacaoISO, now);
     const entries: AuditLogEntry[] = [
       { acao: "Pedido realizado", dataHora: dataPedido, ...u },
-      { acao: "Amostra coletada", dataHora: dataColeta, ...u },
     ];
+    if (semColeta) {
+      entries.push({
+        acao: "Não houve registro de coleta",
+        dataHora: dataColeta,
+        ...semRegistroUser,
+        dados: "Etapa de coleta desativada nas Configurações → Fluxo / Rotina.",
+      });
+    } else {
+      entries.push({ acao: "Amostra coletada", dataHora: dataColeta, ...u });
+    }
     if (dbStatus === "em_bancada" || dbStatus === "analisado" ||
         dbStatus === "em_analise" || dbStatus === "finalizado") {
       entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, ...u });
