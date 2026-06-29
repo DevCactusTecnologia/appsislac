@@ -183,6 +183,14 @@ const ResultadoDetalhe = () => {
   }, []);
   const [statusAnterior, setStatusAnterior] = useState<Record<number, ExameStatus>>({});
   const [auditLog, setAuditLog] = useState<Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]>>({});
+  // Rastreia QUEM analisou (salvou) e QUEM liberou cada exame — podem ser
+  // usuários diferentes. Usado pela UI do card de cada exame e pela auditoria.
+  type AnaliseInfo = { analisadoPor?: { nome: string; iniciais: string }; analisadoEm?: string; liberadoPor?: { nome: string; iniciais: string }; liberadoEm?: string };
+  const [analiseInfoMap, setAnaliseInfoMap] = useState<Record<number, AnaliseInfo>>({});
+  const formatDataHora = (d: Date = new Date()) => {
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    return `${String(d.getDate()).padStart(2, "0")} de ${meses[d.getMonth()]} de ${d.getFullYear()} - ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+  };
   const [statusFilter, setStatusFilter] = useState<"todos" | "pendentes" | "salvos" | "liberados" | "cancelados">("todos");
   const [showCelebracao, setShowCelebracao] = useState(false);
   const [liberandoTodos, setLiberandoTodos] = useState(false);
