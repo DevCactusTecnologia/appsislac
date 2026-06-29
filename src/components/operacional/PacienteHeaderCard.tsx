@@ -57,6 +57,8 @@ interface Props {
   actionsInline?: boolean;
   /** Slot opcional renderizado na linha de ações, à esquerda dos botões. */
   actionsExtraLeft?: React.ReactNode;
+  /** Slot opcional renderizado na linha de ações, à direita dos botões. */
+  actionsExtraRight?: React.ReactNode;
   /** Slot opcional renderizado logo abaixo do avatar (ex.: badge de jejum). */
   belowAvatar?: React.ReactNode;
 }
@@ -122,6 +124,7 @@ export function PacienteHeaderCard({
   actions = [],
   actionsInline = false,
   actionsExtraLeft,
+  actionsExtraRight,
   belowAvatar,
 }: Props) {
   const primary = actions.find((a) => a.variant === "primary");
@@ -145,13 +148,14 @@ export function PacienteHeaderCard({
             <h1 className="text-[15px] sm:text-base font-semibold text-foreground leading-tight truncate">
               {nome}
             </h1>
-            {(statusLabel || (actionsInline && actions.length > 0)) && (
+            {(statusLabel || (actionsInline && (actions.length > 0 || actionsExtraRight))) && (
               <div className="shrink-0 mt-0.5 flex items-center gap-1.5 flex-wrap justify-end">
                 {statusLabel && statusType && (
                   <StatusBadge label={statusLabel} type={statusType} />
                 )}
                 {actionsInline && others.map((a) => <ActionButton key={a.key} action={a} />)}
                 {actionsInline && primary && <ActionButton action={primary} />}
+                {actionsInline && actionsExtraRight}
               </div>
             )}
           </div>
@@ -182,11 +186,12 @@ export function PacienteHeaderCard({
       </div>
 
       {/* Linha 3: ações (se houver) */}
-      {!actionsInline && (actions.length > 0 || actionsExtraLeft) && (
+      {!actionsInline && (actions.length > 0 || actionsExtraLeft || actionsExtraRight) && (
         <div className="mt-3 pt-3 border-t border-border flex items-center gap-1.5 flex-wrap">
           {actionsExtraLeft && <div className="flex items-center gap-1.5 mr-auto">{actionsExtraLeft}</div>}
           {others.map((a) => <ActionButton key={a.key} action={a} />)}
           {primary && <ActionButton action={primary} />}
+          {actionsExtraRight}
         </div>
       )}
     </div>

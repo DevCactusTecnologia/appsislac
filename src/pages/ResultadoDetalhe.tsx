@@ -1419,14 +1419,16 @@ const ResultadoDetalhe = () => {
                       title="Enviar mensagem pelo WhatsApp"
                     />
                   )}
-                  <MaisAcoesMenu
-                    modoConsulta={modoConsulta}
-                    semExameSelecionado={!selectedExame}
-                    onAuditoria={() => setShowAuditoria(true)}
-                    onCritico={() => setShowCriticoDialog(true)}
-                    onEntrega={() => setShowEntregaDialog(true)}
-                  />
                 </>
+              }
+              actionsExtraRight={
+                <MaisAcoesMenu
+                  modoConsulta={modoConsulta}
+                  semExameSelecionado={!selectedExame}
+                  onAuditoria={() => setShowAuditoria(true)}
+                  onCritico={() => setShowCriticoDialog(true)}
+                  onEntrega={() => setShowEntregaDialog(true)}
+                />
               }
 
             />
@@ -1962,14 +1964,16 @@ const ResultadoDetalhe = () => {
                         title="Enviar mensagem pelo WhatsApp"
                       />
                     )}
-                    <MaisAcoesMenu
-                      modoConsulta={modoConsulta}
-                      semExameSelecionado={!selectedExame}
-                      onAuditoria={() => setShowAuditoria(true)}
-                      onCritico={() => setShowCriticoDialog(true)}
-                      onEntrega={() => setShowEntregaDialog(true)}
-                    />
                   </>
+                }
+                actionsExtraRight={
+                  <MaisAcoesMenu
+                    modoConsulta={modoConsulta}
+                    semExameSelecionado={!selectedExame}
+                    onAuditoria={() => setShowAuditoria(true)}
+                    onCritico={() => setShowCriticoDialog(true)}
+                    onEntrega={() => setShowEntregaDialog(true)}
+                  />
                 }
 
               />
