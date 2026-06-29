@@ -44,6 +44,14 @@ export interface LabConfig {
   responsavelTecnicoUf: string;
   /** Marca d'água global (laudos, comprovantes, orçamentos…). */
   watermark: WatermarkConfig;
+  /**
+   * Quando `false`, o fluxo de Rotina pula "Registrar coleta" e
+   * "Analisar amostras". Novos exames já entram com status "analisado"
+   * (data de coleta/análise = momento da criação) e a auditoria registra
+   * "Não houve registro de coleta" e "Não houve registro da análise".
+   * Default: `true` (comportamento original).
+   */
+  rotinaColetaAnaliseEnabled: boolean;
 }
 
 const defaultConfig: LabConfig = {
