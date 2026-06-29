@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import PacienteHeaderCard, { type PacienteHeaderAction } from "@/components/operacional/PacienteHeaderCard";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 import MaisAcoesMenu from "@/components/resultado/MaisAcoesMenu";
 import ExameAcoesMenu from "@/components/resultado/ExameAcoesMenu";
 import { getValueRangeStatus } from "@/components/ResultadoValidationBar";
@@ -23,7 +24,7 @@ import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getLabConfig } from "@/data/labConfigStore";
 import { getLabsApoio } from "@/data/labApoioStore";
-import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, subscribe as subscribeAtendimentos, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
 import type { MockAtendimento } from "@/data/types";
 import { loadParametros, getParametros, type ExameParametro } from "@/data/exameParametrosStore";
@@ -113,6 +114,7 @@ const ResultadoDetalhe = () => {
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
   const [pacienteJejum, setPacienteJejum] = useState<boolean>(false);
+  const [pacientePrioridade, setPacientePrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
   // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
   // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
   // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
@@ -311,6 +313,7 @@ const ResultadoDetalhe = () => {
     }
     setPaciente(pac);
     setPacienteJejum(!!atFromDb?.jejum);
+    setPacientePrioridade((atFromDb?.prioridadeClinica ?? "normal") as "normal" | "urgencia" | "emergencia");
     setDbIdMap(idMap);
     setSelectedExameId(prev => prev || (exames[0]?.id ?? 0));
 
@@ -343,6 +346,20 @@ const ResultadoDetalhe = () => {
   useEffect(() => {
     reloadExames();
   }, [reloadExames]);
+
+  // Sincroniza jejum/prioridade clínica em tempo real com o store de atendimentos.
+  // Quando o atendimento é editado em outra aba/dispositivo, o realtime do
+  // atendimentoStore atualiza o cache; refletimos aqui imediatamente.
+  useEffect(() => {
+    if (!id) return;
+    const unsub = subscribeAtendimentos(() => {
+      const at = getAtendimentos().find((a) => a.protocolo === id);
+      if (!at) return;
+      setPacienteJejum(!!at.jejum);
+      setPacientePrioridade((at.prioridadeClinica ?? "normal") as "normal" | "urgencia" | "emergencia");
+    });
+    return unsub;
+  }, [id]);
 
   // Hidrata motivos de cancelamento via dicionário unificado (`select_options`).
   const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
@@ -1394,13 +1411,7 @@ const ResultadoDetalhe = () => {
                 },
               ]) as PacienteHeaderAction[]}
               belowAvatar={
-                <span
-                  title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
-                  Jejum: {pacienteJejum ? "Sim" : "Não"}
-                </span>
+                <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
               }
               actionsExtraLeft={
                 <>
@@ -1945,13 +1956,7 @@ const ResultadoDetalhe = () => {
                   
                 ]) as PacienteHeaderAction[]}
                 belowAvatar={
-                  <span
-                    title={pacienteJejum ? "Paciente em jejum" : "Jejum não informado"}
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${pacienteJejum ? "bg-status-success/15 text-status-success" : "bg-status-warning/15 text-status-warning"}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${pacienteJejum ? "bg-status-success" : "bg-status-warning"}`} />
-                    Jejum: {pacienteJejum ? "Sim" : "Não"}
-                  </span>
+                  <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
                 }
                 actionsExtraLeft={
                   <>

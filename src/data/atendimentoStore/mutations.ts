@@ -162,11 +162,12 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
       notify();
     }
 
-    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO) e jejum.
+    // Persiste origem operacional (WEB_APROVADO, WEB_AUTO, AGENDAMENTO), jejum e prioridade clínica.
     if (atendimentoId) {
-      const extraPatch: { origem_atendimento?: string; jejum?: boolean } = {};
+      const extraPatch: { origem_atendimento?: string; jejum?: boolean; prioridade_clinica?: string } = {};
       if (at.origem && at.origem !== "INTERNO") extraPatch.origem_atendimento = at.origem;
       if (typeof at.jejum === "boolean") extraPatch.jejum = at.jejum;
+      if (at.prioridadeClinica && at.prioridadeClinica !== "normal") extraPatch.prioridade_clinica = at.prioridadeClinica;
       if (Object.keys(extraPatch).length > 0) {
         const { error: extraErr } = await supabase
           .from("atendimentos")
@@ -178,7 +179,12 @@ export async function addAtendimento(at: MockAtendimento): Promise<void> {
           });
         } else {
           cache.atendimentos = cache.atendimentos.map((a) =>
-            a.protocolo === at.protocolo ? { ...a, ...(at.origem ? { origem: at.origem } : {}), ...(typeof at.jejum === "boolean" ? { jejum: at.jejum } : {}) } : a,
+            a.protocolo === at.protocolo ? {
+              ...a,
+              ...(at.origem ? { origem: at.origem } : {}),
+              ...(typeof at.jejum === "boolean" ? { jejum: at.jejum } : {}),
+              ...(at.prioridadeClinica ? { prioridadeClinica: at.prioridadeClinica } : {}),
+            } : a,
           );
           notify();
         }
@@ -349,7 +355,8 @@ async function persistUpdateAtendimentoTx(
       && Object.keys(patch).length === 0
       && !hasPagamentoPayload
       && !cancelarTudo
-      && updates.jejum === undefined;
+      && updates.jejum === undefined
+      && updates.prioridadeClinica === undefined;
     if (somenteCobrancaSemEdge) {
       notify();
       return;
@@ -383,14 +390,17 @@ async function persistUpdateAtendimentoTx(
     }
     notify();
 
-    // Persistência direta de `jejum` (não passa pelo edge function transacional).
-    if (updates.jejum !== undefined) {
+    // Persistência direta de `jejum` e `prioridade_clinica` (não passam pelo edge function transacional).
+    if (updates.jejum !== undefined || updates.prioridadeClinica !== undefined) {
+      const extra: { jejum?: boolean; prioridade_clinica?: string } = {};
+      if (updates.jejum !== undefined) extra.jejum = updates.jejum;
+      if (updates.prioridadeClinica !== undefined) extra.prioridade_clinica = updates.prioridadeClinica;
       const { error: jErr } = await supabase
         .from("atendimentos")
-        .update({ jejum: updates.jejum })
+        .update(extra)
         .eq("id", id);
       if (jErr) {
-        logger.warn("atendimentoStore", "falha ao persistir jejum", { id, error: jErr.message });
+        logger.warn("atendimentoStore", "falha ao persistir jejum/prioridade", { id, error: jErr.message });
       }
     }
   } catch (e) {

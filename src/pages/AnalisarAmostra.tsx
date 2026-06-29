@@ -26,8 +26,10 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import {
   getExamesOperacionaisByStatus,
   updateAtendimentoExame,
+  subscribe as subscribeAtendimentos,
   type ExameOperacionalRow,
 } from "@/data/atendimentoStore";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 import { useDicionario } from "@/hooks/useDicionario";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +44,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 type ExameStatus = "analisado" | "pendente" | "cancelado" | "finalizada";
 
 interface Exame { id: number; nome: string; material: string; status: ExameStatus; dataAnalise: string | null; amostraId?: string | null; tipoProcesso?: "INTERNO" | "TERCEIRIZADO"; labApoioId?: string | null; }
-interface Paciente { id: number; protocolo: string; nome: string; cpf: string; sexo: string; nascimento: string; idade: string; analisado: boolean; analista: string; exames: Exame[]; }
+interface Paciente { id: number; protocolo: string; nome: string; cpf: string; sexo: string; nascimento: string; idade: string; analisado: boolean; analista: string; exames: Exame[]; jejum: boolean; prioridadeClinica: "normal" | "urgencia" | "emergencia"; }
 
 const isoToBR = (iso: string): string => {
   if (!iso) return "";
@@ -111,6 +113,8 @@ async function fetchPacientesAnalise(): Promise<Paciente[]> {
         analisado: false,
         analista: r.responsavel || "—",
         exames,
+        jejum: !!r.jejum,
+        prioridadeClinica: r.prioridade_clinica ?? "normal",
       } as Paciente;
     })
     .filter((p): p is Paciente => p !== null);
@@ -173,6 +177,12 @@ const AnalisarAmostra = () => {
     const list = await fetchPacientesAnalise();
     setPacientes(list);
   };
+
+  // Real-time: refletir mudanças do atendimento (jejum, prioridade, etc.).
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { void reload(); });
+    return unsub;
+  }, []);
 
   const selectedPaciente = pacientes.find((p) => p.id === selectedId);
 
@@ -548,6 +558,7 @@ const AnalisarAmostra = () => {
                     protocolo={selectedPaciente.protocolo}
                     statusLabel={pacienteStatusBadge?.label}
                     statusType={pacienteStatusBadge?.type}
+                    belowAvatar={<PacienteFlagsChips jejum={selectedPaciente.jejum} prioridade={selectedPaciente.prioridadeClinica} />}
                     actions={[
                       {
                         key: "alterar",

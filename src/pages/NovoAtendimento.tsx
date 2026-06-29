@@ -513,6 +513,7 @@ const NovoAtendimento = () => {
       setOriginalSolicitantes(sols);
       setEditAtendimentoData({ cpf: atendimento.cpf, nascimento: atendimento.nascimento, idade: atendimento.idade });
       setJejum(atendimento.jejum ? "sim" : "nao");
+      setPrioridade(atendimento.prioridadeClinica ?? "normal");
       setShowPacienteSearch(false);
       setPagamentosRealizados(atendimento.pagamentosRealizados ?? []);
       const [dataBR, horaBR = "00:00"] = (atendimento.data || "").split(" ");
@@ -674,6 +675,7 @@ const NovoAtendimento = () => {
         ...(pagamentosTouchedRef.current ? { pagamentosRealizados } : {}),
         unidadeId: selectedUnidadeId || user?.unidadeAtiva,
         jejum: jejum === "sim",
+        prioridadeClinica: prioridade,
       });
       } else {
       const protocolo = getNextProtocolo();
@@ -700,6 +702,7 @@ const NovoAtendimento = () => {
         pagamentosRealizados: pagamentosRealizados.length > 0 ? pagamentosRealizados : undefined,
         origem: origemRef.current ?? "INTERNO",
         jejum: jejum === "sim",
+        prioridadeClinica: prioridade,
         idempotencyKey: idempotencyKeyRef.current || undefined,
       };
       await addAtendimento(novoAt);

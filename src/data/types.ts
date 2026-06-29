@@ -99,6 +99,8 @@ export interface MockAtendimento {
   origem?: "INTERNO" | "WEB_AUTO" | "WEB_APROVADO" | "AGENDAMENTO";
   /** Paciente compareceu em jejum (informado na recepção). */
   jejum?: boolean;
+  /** Prioridade clínica definida na recepção. */
+  prioridadeClinica?: "normal" | "urgencia" | "emergencia";
   /**
    * Chave de idempotência (UUID) para prevenir duplicação no servidor.
    * Gerada no cliente por sessão de formulário e persistida em sessionStorage

@@ -136,7 +136,7 @@ export async function getExamesOperacionaisByStatus(
 
   const { data: atRows, error: atErr } = await supabase
     .from("atendimentos")
-    .select("id, protocolo, paciente_id, paciente_nome, paciente_cpf, paciente_nascimento, unidade_id")
+    .select("id, protocolo, paciente_id, paciente_nome, paciente_cpf, paciente_nascimento, unidade_id, jejum, prioridade_clinica")
     .in("id", atIds);
   if (atErr) {
     showError(atErr, { scope: "atendimentoStore.getExamesOperacionais.atendimentos", silent: true });
@@ -220,6 +220,8 @@ export async function getExamesOperacionaisByStatus(
       paciente_sexo: sexoResolvido,
       paciente_nascimento: at.paciente_nascimento ?? "",
       unidade_id: at.unidade_id,
+      jejum: !!(at as { jejum?: boolean }).jejum,
+      prioridade_clinica: (((at as { prioridade_clinica?: string }).prioridade_clinica ?? "normal") as "normal" | "urgencia" | "emergencia"),
       responsavel,
       exames: exs.map((e) => ({
         id: e.id,

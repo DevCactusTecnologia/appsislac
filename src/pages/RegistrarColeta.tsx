@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import AlterarResponsavelPopup from "@/components/AlterarResponsavelPopup";
 import PacienteHeaderCard from "@/components/operacional/PacienteHeaderCard";
+import { PacienteFlagsChips } from "@/components/operacional/PacienteFlagsChips";
 
 
 // Dialogs lazy-loaded — só baixam chunks quando abertos.
@@ -31,6 +32,7 @@ import { fireSuccessConfetti } from "@/lib/confetti";
 import {
   getExamesOperacionaisByStatus,
   updateAtendimentoExame,
+  subscribe as subscribeAtendimentos,
   type ExameOperacionalRow,
 } from "@/data/atendimentoStore";
 import { criarAmostraParaExame } from "@/data/sorotecaStore";
@@ -75,6 +77,8 @@ interface Paciente {
   coletador: string;
   exames: Exame[];
   pacienteId?: number | null;
+  jejum: boolean;
+  prioridadeClinica: "normal" | "urgencia" | "emergencia";
 }
 
 const isoToBR = (iso: string): string => {
@@ -142,6 +146,8 @@ async function fetchPacientesColeta(): Promise<Paciente[]> {
         coletador: r.responsavel || "—",
         exames,
         pacienteId: r.paciente_id ?? null,
+        jejum: !!r.jejum,
+        prioridadeClinica: r.prioridade_clinica ?? "normal",
       } as Paciente;
     })
     .filter((p): p is Paciente => p !== null);
@@ -216,6 +222,13 @@ const RegistrarColeta = () => {
     const list = await fetchPacientesColeta();
     setPacientes(list);
   };
+
+  // Real-time: quando o atendimento é editado (jejum / prioridade / etc.),
+  // o atendimentoStore notifica via realtime channel. Recarregamos a fila.
+  useEffect(() => {
+    const unsub = subscribeAtendimentos(() => { void reload(); });
+    return unsub;
+  }, []);
 
   // Pré-seleção via ?protocolo=ATD-... (vindo do SuccessOverlay de Novo Atendimento)
   useEffect(() => {
@@ -668,6 +681,7 @@ const RegistrarColeta = () => {
                     protocolo={selectedPaciente.protocolo}
                     statusLabel={pacienteStatusBadge?.label}
                     statusType={pacienteStatusBadge?.type}
+                    belowAvatar={<PacienteFlagsChips jejum={selectedPaciente.jejum} prioridade={selectedPaciente.prioridadeClinica} />}
                     actions={[
                       {
                         key: "identidade",
