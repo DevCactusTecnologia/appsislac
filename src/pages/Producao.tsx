@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/shared/PageHeader";
+// PageHeader removido — header próprio inline para estética Soft Dashboard.
 import { useState, useMemo, lazy, Suspense } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
