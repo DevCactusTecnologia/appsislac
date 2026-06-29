@@ -52,7 +52,7 @@ const AnalistaAutocomplete = ({
           value={query || value}
           onChange={(e) => { onQueryChange(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Digite o nome do analista..."
+          placeholder={placeholder}
           className="pl-10 pr-9 py-2.5 w-full bg-muted/50 border-0 rounded-2xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
         />
         {(query || value) && (
