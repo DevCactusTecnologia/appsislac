@@ -175,13 +175,32 @@ Deno.serve(async (req) => {
   // 5. Atualiza profile (já criado pelo trigger handle_new_user) com os
   //    valores escolhidos pelo admin. Usar update ao invés de insert evita
   //    conflito com o trigger.
+  //    Fallback de unidade: se nenhuma foi enviada, usa a primeira unidade
+  //    ativa do tenant do caller (NUNCA um id fictício hardcoded).
+  let finalUnidadeIds = unidadeIds;
+  if (finalUnidadeIds.length === 0 && callerTenantId) {
+    const { data: fallbackUnidades } = await admin
+      .from("unidades")
+      .select("id")
+      .eq("tenant_id", callerTenantId)
+      .eq("ativo", true)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (fallbackUnidades && fallbackUnidades.length > 0) {
+      finalUnidadeIds = [fallbackUnidades[0].id as string];
+    }
+  }
+  if (finalUnidadeIds.length === 0) {
+    return errorResponse(400, "Nenhuma unidade disponível para vincular ao usuário. Cadastre uma unidade antes.", requestId, log);
+  }
+
   const { error: profErr } = await admin
     .from("profiles")
     .update({
       nome,
       perfil,
-      unidade_ids: unidadeIds.length ? unidadeIds : ["und-001"],
-      unidade_ativa: unidadeIds[0] ?? "und-001",
+      unidade_ids: finalUnidadeIds,
+      unidade_ativa: finalUnidadeIds[0],
       permissoes_extras: permissoesExtras,
       permissoes_revogadas: permissoesRevogadas,
       status: "Ativo",
