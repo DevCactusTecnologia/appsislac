@@ -104,27 +104,46 @@ const Mapa = () => {
   // Subscribe a stores reativos
   const atendimentos = useSyncExternalStore(subscribeAtendimentos, getAtendimentos, getAtendimentos);
   const exames = useSyncExternalStore(subscribeExamesCatalogo, getExamesCatalogo, getExamesCatalogo);
+  const setoresCustom = useSyncExternalStore(subscribeSetoresCustomizados, getSetoresCustomizados, getSetoresCustomizados);
+
+  // Garante o carregamento da lista de setores laboratoriais ao montar a página.
+  useEffect(() => {
+    if (!isSetoresLoaded()) {
+      void loadSetoresCustomizados();
+    }
+  }, []);
+
+  // Mapa setor_id → nome (resolução do setor real do exame).
+  const setorNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of setoresCustom) m.set(s.id, s.nome);
+    return m;
+  }, [setoresCustom]);
 
   // Mapeia nome_exame → metadata catálogo (categoria/setor, código, material)
   const catalogoBySigla = useMemo(() => {
     const m = new Map<string, { id: string; categoria: string; codigo: string; material: string }>();
     for (const e of exames) {
-      const meta = { id: e.id, categoria: e.categoria || "", codigo: e.codigo || "", material: e.material || "" };
+      const setorNome = (e.setorId ? setorNameById.get(e.setorId) : "") || e.categoria || "";
+      const meta = { id: e.id, categoria: setorNome, codigo: e.codigo || "", material: e.material || "" };
       // Indexa por nome exato e por nome em caixa baixa para tolerar variações
       // como "Hemograma Completo" vs "HEMOGRAMA COMPLETO".
       m.set(e.nome, meta);
       m.set(e.nome.toLowerCase(), meta);
     }
     return m;
-  }, [exames]);
+  }, [exames, setorNameById]);
 
   // Setores reais derivados do catálogo (categoria não vazia)
   const setoresReais = useMemo(() => {
     const set = new Set<string>();
-    for (const e of exames) if (e.categoria?.trim()) set.add(e.categoria.trim());
+    for (const e of exames) {
+      const nome = (e.setorId ? setorNameById.get(e.setorId) : "") || e.categoria;
+      if (nome?.trim()) set.add(nome.trim());
+    }
     const arr = Array.from(set).sort();
     return arr.length > 0 ? arr : setoresFiltro;
-  }, [exames]);
+  }, [exames, setorNameById]);
 
   const [filters, setFilters] = useState<MapaFilters>({
     tipo: "paciente",
