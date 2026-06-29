@@ -1,4 +1,4 @@
-import { PageHeader } from "@/components/shared/PageHeader";
+// PageHeader removido — header próprio inline para estética Soft Dashboard.
 import { useState, useMemo, lazy, Suspense } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -183,145 +183,233 @@ const Producao = () => {
     printHtmlInHiddenFrame({ html, frameId: `producao-${contentId}-print-frame` });
   };
 
+  const periodoLabel = `${format(dataInicial, "dd MMM", { locale: ptBR })} — ${format(dataFinal, "dd MMM, yyyy", { locale: ptBR })}`;
+
   return (
-    <div className="p-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto space-y-6">
-      <PageHeader
-        eyebrow="Relatórios"
-        title="Produção"
-        description="Relatório de produção por tipo e período."
-        actions={
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-xl px-4 py-2 border border-border/40">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <span className="font-bold text-foreground">{totalGeral.toLocaleString()}</span>
-            <span>exames</span>
+    <div className="min-h-screen bg-gradient-to-b from-muted/20 via-background to-background">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto space-y-7">
+        {/* ── Header ─────────────────────────────────────────── */}
+        <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold text-primary/80 uppercase tracking-[0.22em] mb-2">Relatórios</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">Produção</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground/80">Indicadores por analista, unidade, setor e exame · {periodoLabel}</p>
           </div>
-        }
-      />
-
-      {/* Tipo cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {(Object.keys(tipoConfig) as TipoProducao[]).map(key => {
-          const config = tipoConfig[key]; const Icon = config.icon; const isActive = tipoSelecionado === key;
-          const count = producaoData[key].reduce((s, i) => s + i.totalExames, 0);
-          return (
-            <button key={key} onClick={() => setTipoSelecionado(key)} className={cn("flex flex-col items-start gap-2 rounded-3xl p-4 transition-all text-left border", isActive ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-card text-card-foreground border-border/60 hover:border-primary/40 hover:shadow-md")}>
-              <div className={cn("h-9 w-9 rounded-2xl flex items-center justify-center", isActive ? "bg-primary-foreground/20" : "bg-primary/8")}>
-                <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-primary")} />
-              </div>
-              <div>
-                <p className={cn("text-[10px] font-semibold uppercase tracking-wider", isActive ? "text-primary-foreground/70" : "text-muted-foreground")}>{config.label}</p>
-                <p className={cn("text-lg font-bold", isActive ? "text-primary-foreground" : "text-foreground")}>{count.toLocaleString()}</p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Filters */}
-      <div className="rounded-3xl border border-border/60 bg-card p-5 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[1fr_1fr_auto_auto] items-end gap-3">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Data inicial</label>
-            <Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal h-10 text-sm rounded-2xl"><CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />{format(dataInicial, "dd MMM, yyyy", { locale: ptBR })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={dataInicial} onSelect={d => d && setDataInicial(d)} initialFocus className="p-3 pointer-events-auto" /></PopoverContent></Popover>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Data final</label>
-            <Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal h-10 text-sm rounded-2xl"><CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />{format(dataFinal, "dd MMM, yyyy", { locale: ptBR })}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={dataFinal} onSelect={d => d && setDataFinal(d)} initialFocus className="p-3 pointer-events-auto" /></PopoverContent></Popover>
-          </div>
-          <Button className="h-10 gap-2 rounded-2xl px-6"><Search className="h-3.5 w-3.5" />Buscar</Button>
-          <Button variant={showFiltros ? "default" : "outline"} className="h-10 gap-2 rounded-2xl px-4" onClick={() => setShowFiltros(!showFiltros)}>
-            <Filter className="h-3.5 w-3.5" />Filtros
-            {hasActiveFilters && <span className="ml-1 h-5 w-5 rounded-full bg-primary-foreground/20 text-[10px] flex items-center justify-center font-bold">{(filtroConvenio !== "todos" ? 1 : 0) + (filtroMaterial !== "todos" ? 1 : 0)}</span>}
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-medium text-muted-foreground mr-1">Período:</span>
-          {PERIODOS_RAPIDOS.map(p => <Button key={p.label} variant="ghost" size="sm" className="h-7 text-[11px] px-2.5 rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => applyQuickPeriod(p.days)}>{p.label}</Button>)}
-        </div>
-        {showFiltros && (
-          <div className="border-t border-border/30 pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Convênio</label>
-              <Select value={filtroConvenio} onValueChange={setFiltroConvenio}><SelectTrigger className="h-10 text-sm rounded-2xl"><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{conveniosNomes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-card/80 backdrop-blur px-4 py-2.5 border border-border/50 shadow-sm">
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Material</label>
-              <Select value={filtroMaterial} onValueChange={setFiltroMaterial}><SelectTrigger className="h-10 text-sm rounded-2xl"><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{MATERIAIS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+            <div className="leading-tight">
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Total no período</p>
+              <p className="text-base font-bold text-foreground tabular-nums">{totalGeral.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">exames</span></p>
             </div>
-            {hasActiveFilters && <div className="flex items-end"><Button variant="ghost" size="sm" className="h-10 text-sm gap-1.5 rounded-2xl text-destructive hover:bg-destructive/10" onClick={clearFilters}><X className="h-3.5 w-3.5" />Limpar</Button></div>}
           </div>
-        )}
-      </div>
+        </header>
 
-      {/* Results */}
-      <div className="rounded-3xl border border-border/60 bg-card overflow-hidden">
-        <div className="p-4 bg-muted/15 border-b border-border/30 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Produção por {tipoConfig[tipoSelecionado].label}</span>
-          </div>
-          <span className="text-xs text-muted-foreground">{dados.length} registros</span>
-        </div>
-
-        {/* Desktop */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border/30 bg-muted/10">
-                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-14">Nº</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{tipoConfig[tipoSelecionado].label}</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-48">Proporção</th>
-                <th className="text-right px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-28">Total</th>
-                <th className="text-left px-5 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-48">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dados.map((item, idx) => {
-                const pct = Math.round((item.totalExames / maiorProducao) * 100);
-                return (
-                  <tr key={item.id} className="border-b border-border/15 last:border-0 hover:bg-muted/10 transition-colors group">
-                    <td className="px-5 py-4 text-sm font-medium text-muted-foreground">{String(idx + 1).padStart(2, "0")}</td>
-                    <td className="px-5 py-4"><p className="text-sm font-medium text-foreground">{item.nome}</p><p className="text-xs text-muted-foreground">{item.descricao}</p></td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2"><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} /></div><span className="text-[11px] text-muted-foreground w-8 text-right">{pct}%</span></div>
-                    </td>
-                    <td className="px-5 py-4 text-right"><span className="text-sm font-bold text-foreground">{item.totalExames.toLocaleString()}</span></td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Button variant="outline" size="sm" className="gap-1.5 rounded-2xl h-8 text-xs" onClick={() => { setChartItem(item); setChartDialogOpen(true); }}><BarChart3 className="h-3 w-3" />Gráfica</Button>
-                        <Button variant="outline" size="sm" className="gap-1.5 rounded-2xl h-8 text-xs" onClick={() => { setQuantItem(item); setQuantDialogOpen(true); }}><ListOrdered className="h-3 w-3" />Quantitativa</Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile */}
-        <div className="lg:hidden divide-y divide-border/30">
-          {dados.map((item, idx) => {
-            const pct = Math.round((item.totalExames / maiorProducao) * 100);
+        {/* ── Tipo cards (preservados) ───────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {(Object.keys(tipoConfig) as TipoProducao[]).map(key => {
+            const config = tipoConfig[key]; const Icon = config.icon; const isActive = tipoSelecionado === key;
+            const count = producaoData[key].reduce((s, i) => s + i.totalExames, 0);
             return (
-              <div key={item.id} className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="text-[11px] font-bold text-primary bg-primary/8 rounded-xl px-2 py-1 shrink-0">{String(idx + 1).padStart(2, "0")}</span>
-                    <div className="min-w-0"><p className="text-sm font-semibold text-foreground truncate">{item.nome}</p><p className="text-xs text-muted-foreground">{item.descricao}</p></div>
-                  </div>
-                  <span className="text-base font-bold text-foreground shrink-0">{item.totalExames.toLocaleString()}</span>
+              <button key={key} onClick={() => setTipoSelecionado(key)} className={cn("flex flex-col items-start gap-2 rounded-3xl p-4 transition-all text-left border", isActive ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-card text-card-foreground border-border/60 hover:border-primary/40 hover:shadow-md")}>
+                <div className={cn("h-9 w-9 rounded-2xl flex items-center justify-center", isActive ? "bg-primary-foreground/20" : "bg-primary/8")}>
+                  <Icon className={cn("h-4 w-4", isActive ? "text-primary-foreground" : "text-primary")} />
                 </div>
-                <div className="flex items-center gap-2"><div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} /></div><span className="text-[10px] text-muted-foreground">{pct}%</span></div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-2xl h-8 text-xs" onClick={() => { setChartItem(item); setChartDialogOpen(true); }}><BarChart3 className="h-3 w-3" />Gráfica</Button>
-                  <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-2xl h-8 text-xs" onClick={() => { setQuantItem(item); setQuantDialogOpen(true); }}><ListOrdered className="h-3 w-3" />Quantitativa</Button>
+                <div>
+                  <p className={cn("text-[10px] font-semibold uppercase tracking-wider", isActive ? "text-primary-foreground/70" : "text-muted-foreground")}>{config.label}</p>
+                  <p className={cn("text-lg font-bold tabular-nums", isActive ? "text-primary-foreground" : "text-foreground")}>{count.toLocaleString()}</p>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
-      </div>
+
+        {/* ── Filtros (chassi suave) ─────────────────────────── */}
+        <section className="rounded-3xl border border-border/50 bg-card/70 backdrop-blur shadow-sm">
+          <div className="p-5 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              {/* Datas em pill duplo */}
+              <div className="flex items-center gap-2 flex-1">
+                <div className="inline-flex items-center rounded-2xl border border-border/60 bg-background/80 divide-x divide-border/60 overflow-hidden">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="flex items-center gap-2 px-4 h-11 text-sm font-medium text-foreground hover:bg-muted/40 transition-colors">
+                        <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mr-1">De</span>
+                        {format(dataInicial, "dd MMM yyyy", { locale: ptBR })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={dataInicial} onSelect={d => d && setDataInicial(d)} initialFocus className="p-3 pointer-events-auto" /></PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="flex items-center gap-2 px-4 h-11 text-sm font-medium text-foreground hover:bg-muted/40 transition-colors">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mr-1">Até</span>
+                        {format(dataFinal, "dd MMM yyyy", { locale: ptBR })}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={dataFinal} onSelect={d => d && setDataFinal(d)} initialFocus className="p-3 pointer-events-auto" /></PopoverContent>
+                  </Popover>
+                </div>
+                {/* Atalhos de período */}
+                <div className="hidden md:flex items-center gap-1 ml-1">
+                  {PERIODOS_RAPIDOS.map(p => (
+                    <button key={p.label} onClick={() => applyQuickPeriod(p.days)} className="h-8 px-3 rounded-xl text-[11px] font-medium text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button variant={showFiltros ? "default" : "outline"} className="h-11 gap-2 rounded-2xl px-4" onClick={() => setShowFiltros(!showFiltros)}>
+                  <Filter className="h-3.5 w-3.5" />Filtros
+                  {hasActiveFilters && <span className="ml-1 h-5 min-w-5 px-1 rounded-full bg-primary-foreground/20 text-[10px] flex items-center justify-center font-bold">{(filtroConvenio !== "todos" ? 1 : 0) + (filtroMaterial !== "todos" ? 1 : 0)}</span>}
+                </Button>
+                <Button className="h-11 gap-2 rounded-2xl px-5 shadow-sm">
+                  <Search className="h-3.5 w-3.5" />Atualizar
+                </Button>
+              </div>
+            </div>
+
+            {/* Atalhos mobile */}
+            <div className="md:hidden flex flex-wrap items-center gap-1">
+              {PERIODOS_RAPIDOS.map(p => (
+                <button key={p.label} onClick={() => applyQuickPeriod(p.days)} className="h-8 px-3 rounded-xl text-[11px] font-medium bg-muted/40 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {showFiltros && (
+              <div className="border-t border-border/40 pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 animate-fade-in">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">Convênio</label>
+                  <Select value={filtroConvenio} onValueChange={setFiltroConvenio}><SelectTrigger className="h-10 text-sm rounded-2xl"><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{conveniosNomes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">Material</label>
+                  <Select value={filtroMaterial} onValueChange={setFiltroMaterial}><SelectTrigger className="h-10 text-sm rounded-2xl"><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{MATERIAIS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                </div>
+                {hasActiveFilters && <div className="flex items-end"><Button variant="ghost" size="sm" className="h-10 text-sm gap-1.5 rounded-2xl text-destructive hover:bg-destructive/10" onClick={clearFilters}><X className="h-3.5 w-3.5" />Limpar filtros</Button></div>}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── Ranking de produção ────────────────────────────── */}
+        <section className="rounded-3xl border border-border/50 bg-card/70 backdrop-blur shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/40 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ClipboardList className="h-4 w-4 text-primary" />
+              </div>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold text-foreground">Ranking por {tipoConfig[tipoSelecionado].label}</p>
+                <p className="text-[11px] text-muted-foreground">{dados.length} {dados.length === 1 ? "registro" : "registros"} · ordenado por volume</p>
+              </div>
+            </div>
+            {isLoading && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />}
+          </div>
+
+          {dados.length === 0 ? (
+            <div className="py-20 text-center">
+              <div className="inline-flex p-3 rounded-2xl bg-muted/40 mb-3">
+                <ClipboardList className="h-6 w-6 text-muted-foreground/60" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Nenhum dado no período</p>
+              <p className="text-xs text-muted-foreground mt-1">Ajuste o intervalo ou os filtros para visualizar a produção.</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop */}
+              <div className="hidden lg:block">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/20 border-b border-border/40">
+                      <th className="text-left pl-5 pr-2 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-14">#</th>
+                      <th className="text-left px-3 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{tipoConfig[tipoSelecionado].label}</th>
+                      <th className="text-left px-3 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-[34%]">Participação</th>
+                      <th className="text-right px-3 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-28">Exames</th>
+                      <th className="text-right pr-5 pl-3 py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-52">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dados.map((item, idx) => {
+                      const pct = Math.round((item.totalExames / maiorProducao) * 100);
+                      const isTop = idx === 0;
+                      return (
+                        <tr key={item.id} className="border-b border-border/20 last:border-0 hover:bg-muted/15 transition-colors group">
+                          <td className="pl-5 pr-2 py-3.5">
+                            <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-xl text-[11px] font-bold tabular-nums", isTop ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground")}>
+                              {idx + 1}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3.5">
+                            <p className="text-sm font-semibold text-foreground leading-tight">{item.nome}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{item.descricao}</p>
+                          </td>
+                          <td className="px-3 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex-1 h-1.5 bg-muted/60 rounded-full overflow-hidden">
+                                <div className={cn("h-full rounded-full transition-all duration-700", isTop ? "bg-primary" : "bg-primary/55")} style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-[11px] font-medium text-muted-foreground w-9 text-right tabular-nums">{pct}%</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3.5 text-right">
+                            <span className="text-sm font-bold text-foreground tabular-nums">{item.totalExames.toLocaleString()}</span>
+                          </td>
+                          <td className="pr-5 pl-3 py-3.5">
+                            <div className="flex items-center justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl h-8 text-xs hover:bg-primary/10 hover:text-primary" onClick={() => { setChartItem(item); setChartDialogOpen(true); }}><BarChart3 className="h-3 w-3" />Gráfica</Button>
+                              <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl h-8 text-xs hover:bg-primary/10 hover:text-primary" onClick={() => { setQuantItem(item); setQuantDialogOpen(true); }}><ListOrdered className="h-3 w-3" />Quantitativa</Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile */}
+              <div className="lg:hidden divide-y divide-border/30">
+                {dados.map((item, idx) => {
+                  const pct = Math.round((item.totalExames / maiorProducao) * 100);
+                  const isTop = idx === 0;
+                  return (
+                    <div key={item.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-xl text-[11px] font-bold tabular-nums shrink-0", isTop ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground")}>
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">{item.nome}</p>
+                            <p className="text-[11px] text-muted-foreground">{item.descricao}</p>
+                          </div>
+                        </div>
+                        <span className="text-base font-bold text-foreground shrink-0 tabular-nums">{item.totalExames.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex-1 h-1.5 bg-muted/60 rounded-full overflow-hidden">
+                          <div className={cn("h-full rounded-full", isTop ? "bg-primary" : "bg-primary/55")} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{pct}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-2xl h-9 text-xs" onClick={() => { setChartItem(item); setChartDialogOpen(true); }}><BarChart3 className="h-3 w-3" />Gráfica</Button>
+                        <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-2xl h-9 text-xs" onClick={() => { setQuantItem(item); setQuantDialogOpen(true); }}><ListOrdered className="h-3 w-3" />Quantitativa</Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </section>
 
       {/* Chart Dialog */}
       <StandardDialog
@@ -418,6 +506,7 @@ const Producao = () => {
           );
         })()}
       </StandardDialog>
+      </div>
     </div>
   );
 };
