@@ -178,6 +178,14 @@ const Usuarios = ({ embedded }: { embedded?: boolean }) => {
       assinaturaTipo: u.assinaturaTipo,
       assinaturaConselho: u.assinaturaConselho ?? "",
       assinaturaImagemKey: u.assinaturaImagemKey,
+      telefone: u.telefone ?? "",
+      tipoProfissional: u.tipoProfissional ?? "",
+      cbo: u.cbo ?? "",
+      cpf: u.cpf ?? "",
+      cns: u.cns ?? "",
+      conselhoClasse: u.conselhoClasse ?? "",
+      conselhoUf: u.conselhoUf ?? "",
+      conselhoNumero: u.conselhoNumero ?? "",
     });
     setDialogOpen(true);
   };
