@@ -36,6 +36,15 @@ interface InviteBody {
    * o fluxo padrão de convite por magic link.
    */
   password?: unknown;
+  // Dados profissionais (analistas)
+  telefone?: unknown;
+  tipoProfissional?: unknown;
+  cbo?: unknown;
+  cpf?: unknown;
+  cns?: unknown;
+  conselhoClasse?: unknown;
+  conselhoUf?: unknown;
+  conselhoNumero?: unknown;
 }
 
 function asStringArray(v: unknown): string[] {
