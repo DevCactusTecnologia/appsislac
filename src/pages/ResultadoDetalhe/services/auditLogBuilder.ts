@@ -71,12 +71,21 @@ export function buildAuditLogFromDb(
     } else {
       entries.push({ acao: "Amostra coletada", dataHora: dataColeta, ...u });
     }
-    if (dbStatus === "em_bancada" || dbStatus === "analisado" ||
-        dbStatus === "em_analise" || dbStatus === "finalizado") {
-      entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, ...u });
-    }
-    if (dbStatus === "analisado" || dbStatus === "em_analise" || dbStatus === "finalizado") {
-      entries.push({ acao: "Análise concluída", dataHora: dataAnal, ...u });
+    if (semAnalise) {
+      entries.push({
+        acao: "Não houve registro da análise",
+        dataHora: dataAnal,
+        ...semRegistroUser,
+        dados: "Etapa de análise desativada nas Configurações → Fluxo / Rotina.",
+      });
+    } else {
+      if (dbStatus === "em_bancada" || dbStatus === "analisado" ||
+          dbStatus === "em_analise" || dbStatus === "finalizado") {
+        entries.push({ acao: "Bancada iniciada", dataHora: dataAnal, ...u });
+      }
+      if (dbStatus === "analisado" || dbStatus === "em_analise" || dbStatus === "finalizado") {
+        entries.push({ acao: "Análise concluída", dataHora: dataAnal, ...u });
+      }
     }
     if (exame.status === "Resultado salvo" || exame.status === "Em retificação" || isLiberado(exame.status)) {
       const dadosAtuais = exame.parametros.map((p) => `${p.nome}: ${p.valor || "—"}`).join("\n");
