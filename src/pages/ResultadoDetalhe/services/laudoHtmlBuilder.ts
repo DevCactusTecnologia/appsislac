@@ -105,6 +105,7 @@ export function buildLaudoHtml(args: BuildLaudoHtmlArgs): string {
   const {
     paciente, analistaAtual, assinaturaLaudo, getResolvedRef,
     printable, customByExame, solicitanteLabel, pageMargins,
+    historicoByExameId,
   } = args;
   // Cabeçalho padrão configurado em /configuracoes → Documentos.
   // Quando existe um template marcado como "padrão" para o tipo "cabeçalho",
