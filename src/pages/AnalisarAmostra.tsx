@@ -558,6 +558,7 @@ const AnalisarAmostra = () => {
                     protocolo={selectedPaciente.protocolo}
                     statusLabel={pacienteStatusBadge?.label}
                     statusType={pacienteStatusBadge?.type}
+                    belowAvatar={<PacienteFlagsChips jejum={selectedPaciente.jejum} prioridade={selectedPaciente.prioridadeClinica} />}
                     actions={[
                       {
                         key: "alterar",
