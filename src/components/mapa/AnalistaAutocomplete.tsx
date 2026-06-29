@@ -74,7 +74,7 @@ const AnalistaAutocomplete = ({
                     onClick={() => { onSelect(a); setIsOpen(false); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-primary/5 transition-colors"
                   >
-                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <ItemIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="font-medium">{a}</span>
                   </button>
                 </li>
