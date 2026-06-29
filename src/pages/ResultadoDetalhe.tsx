@@ -1410,11 +1410,9 @@ const ResultadoDetalhe = () => {
                   disabled: !podeImprimirTodos,
                 },
               ]) as PacienteHeaderAction[]}
-              belowAvatar={
-                <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
-              }
               actionsExtraLeft={
                 <>
+                  <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
                   {!modoConsulta && todosLiberados && (
                     <WhatsappActionButton
                       onClick={handleEnviarResultadoWhatsapp}
