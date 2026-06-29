@@ -324,7 +324,7 @@ export async function inviteUsuario(input: InviteInput): Promise<{ ok: boolean; 
 }
 
 
-export interface UpdateInput {
+export interface UpdateInput extends DadosProfissionais {
   userId: string;
   nome?: string;
   perfil?: Perfil;
