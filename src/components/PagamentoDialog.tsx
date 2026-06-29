@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X, Trash2, Banknote, CreditCard, QrCode, CalendarIcon,
   TrendingUp, CheckCircle2, AlertTriangle, Receipt, DollarSign,
-  Gift, Percent, Plus,
+  Gift, Percent, Plus, Loader2, Copy,
 } from "lucide-react";
 import { format } from "date-fns";
+import QRCode from "qrcode";
+import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
