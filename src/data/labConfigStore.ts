@@ -44,6 +44,14 @@ export interface LabConfig {
   responsavelTecnicoUf: string;
   /** Marca d'água global (laudos, comprovantes, orçamentos…). */
   watermark: WatermarkConfig;
+  /**
+   * Quando `false`, o fluxo de Rotina pula "Registrar coleta" e
+   * "Analisar amostras". Novos exames já entram com status "analisado"
+   * (data de coleta/análise = momento da criação) e a auditoria registra
+   * "Não houve registro de coleta" e "Não houve registro da análise".
+   * Default: `true` (comportamento original).
+   */
+  rotinaColetaAnaliseEnabled: boolean;
 }
 
 const defaultConfig: LabConfig = {
@@ -64,6 +72,7 @@ const defaultConfig: LabConfig = {
   responsavelTecnicoNumero: "",
   responsavelTecnicoUf: "",
   watermark: { ...DEFAULT_WATERMARK },
+  rotinaColetaAnaliseEnabled: true,
 };
 
 let _listeners: Array<() => void> = [];
@@ -112,6 +121,7 @@ function rowToConfig(row: Record<string, unknown>): LabConfig {
     responsavelTecnicoNumero: (row.responsavel_tecnico_numero as string) ?? "",
     responsavelTecnicoUf: (row.responsavel_tecnico_uf as string) ?? "",
     watermark: normalizeWatermark(row.watermark),
+    rotinaColetaAnaliseEnabled: (row.rotina_coleta_analise_enabled as boolean | null) ?? true,
   };
 }
 
@@ -135,6 +145,7 @@ function configToRow(config: LabConfig, tenantId: string) {
     responsavel_tecnico_numero: config.responsavelTecnicoNumero ?? "",
     responsavel_tecnico_uf: config.responsavelTecnicoUf ?? "",
     watermark: normalizeWatermark(config.watermark),
+    rotina_coleta_analise_enabled: config.rotinaColetaAnaliseEnabled ?? true,
   };
 }
 

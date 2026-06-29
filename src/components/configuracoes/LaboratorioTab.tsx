@@ -260,7 +260,7 @@ const LaboratorioTab = () => {
     try {
       // Logo já foi persistido via edge function; aqui só salvamos campos textuais.
       // Mantemos logoPreview como fallback inline para clientes legados.
-      await saveLabConfig({ ...form, logo: logoKey ? null : logoPreview, logoKey, watermark });
+      await saveLabConfig({ ...getLabConfig(), ...form, logo: logoKey ? null : logoPreview, logoKey, watermark });
       toast({ title: "Configurações salvas", description: "Dados persistidos no banco." });
     } catch (err) {
       toast({

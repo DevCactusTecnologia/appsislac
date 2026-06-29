@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { MenuLayoutProvider } from "@/contexts/MenuLayoutContext";
 
 import ChunkErrorBoundary from "@/components/ChunkErrorBoundary";
+import { RotinaColetaAnaliseGuard } from "@/components/RotinaColetaAnaliseGuard";
 
 
 // Lazy-loaded pages
@@ -365,8 +366,8 @@ function AppRoutes() {
               {/* Redirects legados (Fase A — compatibilidade total) */}
               <Route path="/novo-atendimento" element={<Navigate to="/atendimentos/novo" replace />} />
               <Route path="/editar-atendimento/:protocolo" element={<LegacyEditarAtendimentoRedirect />} />
-              <Route path="/registrar-coleta" element={<ProtectedRoute permissao="registrar_coleta"><RegistrarColeta /></ProtectedRoute>} />
-              <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><AnalisarAmostra /></ProtectedRoute>} />
+              <Route path="/registrar-coleta" element={<ProtectedRoute permissao="registrar_coleta"><RotinaColetaAnaliseGuard><RegistrarColeta /></RotinaColetaAnaliseGuard></ProtectedRoute>} />
+              <Route path="/analisar-amostra" element={<ProtectedRoute permissao="analisar_amostra" bloqueadoPontoColeta><RotinaColetaAnaliseGuard><AnalisarAmostra /></RotinaColetaAnaliseGuard></ProtectedRoute>} />
               <Route path="/resultados" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><Resultados /></ProtectedRoute>} />
               <Route path="/resultado/:id" element={<ProtectedRoute permissao="liberar_resultado" bloqueadoPontoColeta><ResultadoDetalhe /></ProtectedRoute>} />
               {/* Domain Driven Routes — Fase A (canônicas) */}

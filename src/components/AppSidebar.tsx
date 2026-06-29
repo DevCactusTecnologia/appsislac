@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { preloadLazyStore, type LazyStoreKey } from "@/data/lazyStores";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRotinaColetaAnaliseEnabled } from "@/hooks/useRotinaConfig";
 
 // Tamanho e espessura padronizados — espelha SuperAdminLayout (Linear-style).
 const ICON_STROKE = 1.75;
@@ -208,7 +209,16 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
   const toggleGroup = (label: string) => setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
   const isGroupActive = (children: NavChild[]) => children.some(c => isActive(c.path));
 
-  const visibleNav = filterNavByPermissions(navItems, hasPermission);
+  const rotinaColetaAnalise = useRotinaColetaAnaliseEnabled();
+  const visibleNav = filterNavByPermissions(navItems, hasPermission).map((item) => {
+    // Quando o admin desativa Coleta + Análise, o grupo "Rotina" passa a
+    // exibir apenas "Resultados".
+    if (!rotinaColetaAnalise && item.label === "Rotina" && item.children) {
+      const kids = item.children.filter((c) => c.path === "/resultados");
+      return { ...item, children: kids };
+    }
+    return item;
+  });
 
   const renderItem = (item: NavItem) => {
     if (item.children) {
