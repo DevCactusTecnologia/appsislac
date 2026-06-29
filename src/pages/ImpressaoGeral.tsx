@@ -174,7 +174,7 @@ const ImpressaoGeral = () => {
         .filter(a => a.data.startsWith(dateStr))
         .filter(a => !unidade || a.unidadeId === unidade.id)
         .filter(a => a.statusAtendimento.label !== "Cancelado" && a.statusAtendimento.label !== "Pedido cancelado")
-        .filter(a => a.exames?.some((e) => ["Digitado", "Impresso", "Retificado"].includes(e.status)))
+        .filter(a => a.examesCobranca?.some((e) => ["Digitado", "Impresso", "Retificado"].includes(e.status ?? "")))
         .map(a => a.protocolo)
         .sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
     }
