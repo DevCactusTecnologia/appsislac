@@ -855,6 +855,14 @@ const PagamentoDialog = ({
                   >
                     <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
                   </button>
+                  <button
+                    onClick={editarChavePix}
+                    className="text-[10.5px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition"
+                  >
+                    Trocar chave PIX ({(getPixConfig().chave || "não configurada").slice(0, 24)}{getPixConfig().chave.length > 24 ? "…" : ""})
+                  </button>
+                    <CheckCircle2 className="h-4 w-4" /> Confirmar pagamento recebido
+                  </button>
                 </>
               )}
             </div>
