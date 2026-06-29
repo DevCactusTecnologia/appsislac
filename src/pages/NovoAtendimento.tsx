@@ -2640,34 +2640,58 @@ const NovoAtendimento = () => {
           ) : undefined
         }
         footer={
-          <div className="flex gap-3 w-full">
-            {lastHadTerceirizados && lastProtocolo && (
-              <button
-                onClick={() => {
-                  setSuccessOpen(false);
-                  navigate(`/registrar-coleta?protocolo=${encodeURIComponent(lastProtocolo)}`);
-                }}
-                className="flex-1 py-2.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
-                title="Imprimir etiquetas com destino do laboratório de apoio"
-              >
-                <Printer className="h-4 w-4" />
-                Ir para coleta
-              </button>
-            )}
+          <div className="flex flex-col gap-3 w-full">
             {!isEditing && (
-              <button
-                onClick={() => { setSuccessOpen(false); navigate("/atendimentos/novo", { replace: true }); window.location.reload(); }}
-                className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${lastHadTerceirizados && lastProtocolo ? "border border-border/60 text-foreground hover:bg-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
-              >
-                Novo atendimento
-              </button>
+              <div className="flex gap-2 w-full">
+                {valorPago > 0 && (
+                  <button
+                    onClick={() => imprimirComprovante("pagamento")}
+                    className="flex-1 py-2.5 rounded-2xl text-sm font-medium border border-border/60 text-foreground hover:bg-accent transition-colors inline-flex items-center justify-center gap-2"
+                    title="Imprimir comprovante de pagamento"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Comprovante de pagamento
+                  </button>
+                )}
+                <button
+                  onClick={() => imprimirComprovante("atendimento")}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-medium border border-border/60 text-foreground hover:bg-accent transition-colors inline-flex items-center justify-center gap-2"
+                  title="Imprimir comprovante de atendimento"
+                >
+                  <Printer className="h-4 w-4" />
+                  Comprovante de atendimento
+                </button>
+              </div>
             )}
-            <button
-              onClick={() => { setSuccessOpen(false); navigate("/atendimentos"); }}
-              className="flex-1 py-2.5 rounded-2xl text-sm font-medium border border-border/60 text-foreground hover:bg-accent transition-colors"
-            >
-              Ver atendimentos
-            </button>
+            <div className="flex gap-3 w-full">
+              {lastHadTerceirizados && lastProtocolo && (
+                <button
+                  onClick={() => {
+                    setSuccessOpen(false);
+                    navigate(`/registrar-coleta?protocolo=${encodeURIComponent(lastProtocolo)}`);
+                  }}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2"
+                  title="Imprimir etiquetas com destino do laboratório de apoio"
+                >
+                  <Printer className="h-4 w-4" />
+                  Ir para coleta
+                </button>
+              )}
+              {!isEditing && (
+                <button
+                  onClick={() => { setSuccessOpen(false); navigate("/atendimentos/novo", { replace: true }); window.location.reload(); }}
+                  className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${lastHadTerceirizados && lastProtocolo ? "border border-border/60 text-foreground hover:bg-accent" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
+                >
+                  Novo atendimento
+                </button>
+              )}
+              <button
+                onClick={() => { setSuccessOpen(false); navigate("/atendimentos"); }}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-medium border border-border/60 text-foreground hover:bg-accent transition-colors"
+              >
+                Ver atendimentos
+              </button>
+            </div>
           </div>
         }
       />
