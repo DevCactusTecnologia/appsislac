@@ -74,6 +74,7 @@ import {
   buildPacienteFromAtendimento,
 } from "./ResultadoDetalhe/helpers";
 import { buildLaudoHtml as buildLaudoHtmlPure } from "./ResultadoDetalhe/services/laudoHtmlBuilder";
+import { fetchHistoricoPorExame } from "./ResultadoDetalhe/services/historicoResultados";
 import {
   avaliarNivelCriticoPure,
   getParametrosCriticosDoExamePure,
