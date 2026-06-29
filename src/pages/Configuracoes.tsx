@@ -67,6 +67,7 @@ const menuItems: Array<{
   { group: "Catálogo & Comercial", id: "fornecedores", label: "Fornecedores", icon: Building2, desc: "Cadastro de fornecedores de insumos e materiais", keywords: ["fornecedor", "supplier", "estoque", "insumo", "cnpj", "compra"] },
   // OPERACIONAL
   { group: "Operacional", id: "unidades", label: "Unidades / Filiais", icon: MapPin, desc: "Sedes, filiais e postos", keywords: ["filial", "sede", "posto", "coleta", "endereço"] },
+  { group: "Operacional", id: "fluxo-rotina", label: "Fluxo / Rotina", icon: FlaskConical, desc: "Ativar ou desativar Registro de coleta e Análise de amostras", keywords: ["rotina", "fluxo", "coleta", "análise", "analise", "amostra", "etapa", "simplificado", "desativar"] },
   { group: "Operacional", id: "mapas-trabalho", label: "Mapas de Trabalho", icon: FileText, desc: "Workflow operacional de bancada (não controla VR, metodologia ou cálculo)", keywords: ["mapa", "trabalho", "impressão", "operacional", "bancada", "workflow", "fila"] },
   // GOVERNANÇA
   { group: "Governança", id: "admin", label: "Meu acesso", icon: UserCog, desc: "Perfil, email e senha", keywords: ["admin", "perfil", "senha", "password", "email", "conta"] },
