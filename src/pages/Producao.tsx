@@ -506,6 +506,7 @@ const Producao = () => {
           );
         })()}
       </StandardDialog>
+      </div>
     </div>
   );
 };
