@@ -136,7 +136,7 @@ export async function getExamesOperacionaisByStatus(
 
   const { data: atRows, error: atErr } = await supabase
     .from("atendimentos")
-    .select("id, protocolo, paciente_id, paciente_nome, paciente_cpf, paciente_nascimento, unidade_id")
+    .select("id, protocolo, paciente_id, paciente_nome, paciente_cpf, paciente_nascimento, unidade_id, jejum, prioridade_clinica")
     .in("id", atIds);
   if (atErr) {
     showError(atErr, { scope: "atendimentoStore.getExamesOperacionais.atendimentos", silent: true });
