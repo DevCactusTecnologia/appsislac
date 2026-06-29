@@ -356,7 +356,7 @@ const ResultadoDetalhe = () => {
     }
 
     // Reconstrói o log a partir do estado vindo do banco, preservando hora/minuto/segundo.
-    const log = buildAuditLogFromDb(rows, exames, idMap);
+    const log = buildAuditLogFromDb(rows, exames, idMap, analistaAtual);
     setAuditLog(log);
     setIsHydrating(false);
   }, [id]);
