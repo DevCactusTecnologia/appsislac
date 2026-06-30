@@ -349,22 +349,22 @@ export default function Estoque() {
               );
             })}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
                 value={categoria}
                 onChange={(e) => setCategoria(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+                className="h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 min-w-0 flex-1 sm:flex-none"
               >
                 <option value="TODAS">Todas categorias</option>
                 {CATEGORIAS_INSUMO.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar..."
-                className="pl-9 h-9 w-56 rounded-xl"
+                className="pl-9 h-9 w-full sm:w-56 rounded-xl"
               />
             </div>
           </div>
