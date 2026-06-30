@@ -152,7 +152,7 @@ const Landing = () => {
 
             <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
               Do atendimento ao resultado, tudo em um único sistema seguro e escalável.
-              <span className="font-semibold text-foreground"> Grátis para começar</span> — sem mensalidade inicial, sem cartão de crédito.
+              <span className="font-semibold text-foreground"> Grátis</span> — sem mensalidade inicial, sem cartão de crédito.
             </p>
 
             <div className="mt-2 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
@@ -478,7 +478,7 @@ const Landing = () => {
               seu laboratório?
             </h2>
             <p className="mx-auto mb-10 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis para começar</span>, sem cartão de crédito.
+              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis</span>, sem cartão de crédito.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
