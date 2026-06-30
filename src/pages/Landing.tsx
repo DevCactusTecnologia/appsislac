@@ -469,7 +469,7 @@ const Landing = () => {
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-6 text-center sm:p-12 lg:p-20">
             <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-1.5 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Pronto para começar
+              100% gratuito · sem cartão de crédito
             </div>
 
             <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
@@ -478,14 +478,15 @@ const Landing = () => {
               seu laboratório?
             </h2>
             <p className="mx-auto mb-10 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-              Crie sua conta em minutos. Comece pelo essencial e expanda conforme seu fluxo amadurece.
+              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis para sempre</span>, sem mensalidade e sem limite de usuários.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/inscricao" className="group inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
-                Criar conta
+                Criar conta grátis
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
+
               <a href="mailto:contato@sislac.app" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-8 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
                 Falar com especialista
               </a>
