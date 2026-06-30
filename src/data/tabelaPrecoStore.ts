@@ -1,7 +1,7 @@
 // Store centralizado de tabelas de preço — backed by Supabase com cache síncrono.
 // Modelo novo: exame_id é a fonte de verdade. nome_exame/codigoExame ficam como cache derivado.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { getExameCatalogoById, getExamesCatalogo } from "./exameCatalogoStore";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";

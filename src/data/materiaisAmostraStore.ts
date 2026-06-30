@@ -4,7 +4,7 @@
 // (`exames_catalogo.material_id`, `atendimento_exames.material_id`,
 // `amostras.material_id`). Não há mais coluna `material` (text) nem
 // `amostras.tipo_material`. Nomes para UI são resolvidos via cache local.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 // ─── Sync cache (hidratado no boot via _initMateriaisAmostraStore) ─────

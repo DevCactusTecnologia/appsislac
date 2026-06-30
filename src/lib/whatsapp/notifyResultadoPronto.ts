@@ -16,7 +16,7 @@
 // `enqueueNotification`. Este arquivo apenas resolve dados do paciente
 // e enfileira — não toca regra clínica, PDF, assinatura ou impressão.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getLabConfig } from "@/data/labConfigStore";
 import {
   buildIdempotencyKey,

@@ -9,7 +9,7 @@
 // funcionando sem precisar await. O cache é hidratado no boot
 // (`loadLabConfigFromDb`) e atualizado em cada `saveLabConfig`.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { DEFAULT_WATERMARK, normalizeWatermark, type WatermarkConfig } from "@/lib/watermark";
 

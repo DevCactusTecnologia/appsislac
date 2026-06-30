@@ -11,7 +11,7 @@
 //   - A janela de edição (default: 24h) é configurável por tenant em
 //     `app_settings.edit_window_hours`.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export type StatusInput = string | { label?: string } | null | undefined;

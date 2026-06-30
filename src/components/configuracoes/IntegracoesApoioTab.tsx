@@ -11,7 +11,7 @@ import {
   Plug, RefreshCw, PlugZap, FileText, AlertTriangle, Clock,
   Search, Download, RotateCcw, X, Loader2, Zap, ChevronDown,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { INTEGRATION_PROVIDERS, type IntegrationProvider } from "@/integrations/contracts/providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

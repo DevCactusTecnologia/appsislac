@@ -7,7 +7,7 @@
 //   - Glosa total:   valor_glosado = valor_original (item ou fatura inteira).
 //   - Reapresentação cria NOVA fatura vinculada (`fatura_origem_id`) com `tentativa+1`.
 //   - Toda mutação passa por RPC SECURITY DEFINER e gera trilha em `financeiro_audit`.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 import type { Tables } from "@/integrations/supabase/types";
 

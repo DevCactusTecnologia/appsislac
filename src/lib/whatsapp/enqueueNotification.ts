@@ -13,7 +13,7 @@
 // Faz: RPC `enqueue_whatsapp` (valida opt-out + rate limit + idempotência)
 // e dispara `whatsapp-dispatcher` em fire-and-forget para entrega imediata.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 export type EnqueueParams = {
   tenantId: string;

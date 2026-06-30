@@ -7,7 +7,7 @@
  *  - Compatível com múltiplas amostras (amostra_seq) já existente.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { resolveAmostrasPorLab, type RoteavelExame } from "@/lib/labApoio";
 import { persistOrThrow, persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";

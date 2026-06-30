@@ -6,7 +6,7 @@
 //  - Agrupar exames que compartilham o mesmo tubo (amostra_id),
 //    listando os demais exames na observação da etiqueta.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { imprimirEtiquetaAmostra } from "@/lib/etiquetaAmostra";
 import { formatIdadeDetalhada } from "@/lib/idade";
 import { getCurrentTenantNome, getCachedTenantNome } from "@/lib/db/tenantResolver";

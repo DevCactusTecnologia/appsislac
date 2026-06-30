@@ -4,7 +4,7 @@
 // `audit_logs`, `atendimento_audit`, `storage_audit` etc.). A leitura via
 // `operationalAuditReader` desempacota `contexto` JSONB para reconstruir o
 // shape `AuditLogTech` (antes/depois/user_email) sem mudar consumidores.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import {
   fetchOperationalAuditLogs,
   fetchOperationalAuditTabelas,

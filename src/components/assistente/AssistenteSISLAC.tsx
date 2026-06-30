@@ -9,7 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Loader2, MessageCircle, Mic, Send, Sparkles, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 

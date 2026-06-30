@@ -1,7 +1,7 @@
 // Store de Estados (UFs) e Cidades (IBGE) com cache em memória.
 // - Estados: carga única na primeira chamada.
 // - Cidades: lazy por uf_id (cache permanente após primeira carga).
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export interface Estado {

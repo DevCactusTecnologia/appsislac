@@ -12,7 +12,7 @@
 // Permissões: RLS de `select_options` exige `has_permission('gestao_financeira')`
 // para estas categorias (ver migration 20260613_select_options_per_category_rls).
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

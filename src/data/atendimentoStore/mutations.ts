@@ -3,7 +3,7 @@
 // `create-atendimento` e `update-atendimento`. Rollback otimista do cache
 // preservado literalmente.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 import type { ExameCobrancaInfo, MockAtendimento } from "../types";
 import {

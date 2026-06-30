@@ -5,7 +5,7 @@
  * evitando divergências entre páginas e mocks. Uso típico antes de chamadas
  * de auditoria (ex: `registrarLiberacaoCritica`).
  */
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export interface ProtocoloIds {

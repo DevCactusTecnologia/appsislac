@@ -9,7 +9,7 @@ import { getAtendimentos, subscribe as subscribeAtendimentos } from "@/data/aten
 import { getUnidades } from "@/data/unidadeStore";
 import { cn } from "@/lib/utils";
 import { useFeatureFlag, isFeatureEnabled } from "@/lib/featureFlags";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";

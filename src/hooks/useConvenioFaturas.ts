@@ -1,6 +1,6 @@
 // Hook: useConvenioFaturas — Faturas de convênio do tenant.
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { logger } from "@/lib/logger";
 

@@ -51,7 +51,7 @@ import {
   listarGalerias,
   listarPosicoes,
 } from "@/data/sorotecaEstruturaStore";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import {
   Select,
   SelectContent,

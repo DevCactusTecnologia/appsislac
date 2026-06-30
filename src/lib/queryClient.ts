@@ -13,7 +13,7 @@
 // - força refetch das queries ativas montadas no momento.
 
 import { QueryClient, keepPreviousData } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { clearTenantContextCache as clearTenantCache } from "@/lib/db/tenantResolver";
 
 export const queryClient = new QueryClient({

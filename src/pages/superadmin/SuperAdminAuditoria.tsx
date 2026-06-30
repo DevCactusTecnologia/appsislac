@@ -1,7 +1,7 @@
 // Auditoria global do SaaS — agrega o atendimento_audit de todos os tenants.
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

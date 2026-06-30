@@ -3,7 +3,7 @@ import { UserCog, Upload, User, Mail, Check, X, Loader2, Lock, ShieldCheck, File
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import SectionShell from "./_shared/SectionShell";
 import { gerarRelatorioLGPD } from "@/lib/lgpdReport";
 

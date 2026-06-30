@@ -12,7 +12,7 @@
 // Quando o usuário clica em "Enviar WhatsApp", o mesmo
 // `enqueueNotification` é usado.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 export type NotificationType =
   | "resultado_pronto"

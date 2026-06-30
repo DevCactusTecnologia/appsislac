@@ -1,7 +1,7 @@
 // Estorno formal — Fase 9.
 // Wrapper sobre a RPC `financeiro_estornar(p_id, p_motivo, p_tipo)`.
 // p_tipo ∈ "pagamento" | "fatura" | "saida".
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export type EstornoTipo = "pagamento" | "fatura" | "saida";

@@ -1,6 +1,6 @@
 // Store de Templates de Documentos (comprovantes, declarações, cabeçalho, rodapé)
 // armazenados na tabela `documento_templates` no Supabase.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { extractPlaceholders } from "@/lib/mapaPlaceholders";
 import { removerLinhasHorizontaisDocumento } from "@/lib/documentoTemplatesPadrao";

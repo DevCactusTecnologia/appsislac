@@ -7,7 +7,6 @@
  * ÚNICO arquivo do projeto autorizado a importá-lo.
  */
 
-// eslint-disable-next-line no-restricted-imports
 import { __getSharedTransport } from "../resolver";
 import type { RuntimeClient, RuntimeStrategyAdapter, TenantRuntimeContext } from "../types";
 

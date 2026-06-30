@@ -11,7 +11,7 @@
 // Implementação enxuta: resolve UUID por nome do exame, agrupa parâmetros
 // ativos e dispara uma query por exame. Exclui o atendimento corrente.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import type { Exame } from "../types";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";

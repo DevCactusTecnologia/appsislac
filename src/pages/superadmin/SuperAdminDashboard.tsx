@@ -1,7 +1,7 @@
 // Control Plane Dashboard — Visão executiva simplificada.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import {
   Building2, Activity, AlertTriangle, Plus, Database, Server, Clock, CheckCircle2, XCircle, ArrowRight
 } from "lucide-react";

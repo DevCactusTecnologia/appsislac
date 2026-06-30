@@ -7,7 +7,7 @@
  * DEPOIS: Rodamos novamente para validar que não quebrou
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 export interface RLSTestResult {
   testName: string;

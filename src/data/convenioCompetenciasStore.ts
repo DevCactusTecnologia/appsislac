@@ -6,7 +6,7 @@
 //   - Competência fechada NUNCA permite alteração estrutural de fatura/itens/glosas.
 //   - Apenas admin/super_admin podem reabrir, e o motivo é obrigatório.
 //   - Toda mutação passa por RPC SECURITY DEFINER e gera trilha em `financeiro_audit`.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export interface CompetenciaResumo {

@@ -6,7 +6,7 @@
  *
  * Falhas aqui NÃO devem bloquear a liberação do exame — apenas logam no console.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { resolveAtendimentoIdByProtocolo } from "./protocoloLookup";
 import { showError } from "@/lib/showError";
 import { persistOneOrThrow } from "@/lib/persist";

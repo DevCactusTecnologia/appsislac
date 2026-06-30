@@ -8,7 +8,7 @@
  * Este adapter é o único usado em runtime hoje (estratégia "shared").
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { persistOrThrow } from "@/lib/persist";
 import type {
   DBAdapter,

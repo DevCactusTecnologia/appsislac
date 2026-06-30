@@ -2,7 +2,7 @@
 // Consolida toda a linha do tempo de um atendimento: orientações, identidade,
 // coleta, análise, valores críticos comunicados, liberação e entrega.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { fetchAuditLogsByProtocolo } from "@/data/auditoriaStore";
 import {
   listarCriticosPorAtendimento,
