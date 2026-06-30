@@ -99,7 +99,7 @@ export default function SuperAdminNovoLab() {
       { label: "Slug válido", ok: /^[a-z0-9-]{2,50}$/.test(effectiveSlug), hint: effectiveSlug },
       { label: "E-mail do admin", ok: !!form.adminEmail.includes("@") },
       { label: "Nome do admin", ok: !!form.adminNome.trim() },
-      { label: "Senha inicial (≥ 6 caracteres)", ok: form.adminSenha.length >= 6 },
+      { label: "Senha inicial (≥ 12 caracteres)", ok: form.adminSenha.length >= 12 },
       {
         label: form.runtime === "isolated_db"
           ? "Runtime isolated_db: configurar banco após criação"
