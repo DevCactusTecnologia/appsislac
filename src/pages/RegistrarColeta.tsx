@@ -533,7 +533,7 @@ const RegistrarColeta = () => {
           description={`${filteredPacientes.length} ${filteredPacientes.length === 1 ? "paciente na fila" : "pacientes na fila"}`}
           actions={
             hasPendentes ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
                 <SummaryChip icon={Clock}        label="Pendentes" value={globalCounts.pendente} tone="warning" />
                 <SummaryChip icon={CheckCircle2} label="Coletadas" value={globalCounts.coletado} tone="success" />
               </div>
