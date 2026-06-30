@@ -329,7 +329,7 @@ export default function Estoque() {
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-1 rounded-2xl bg-muted/50 p-1">
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-muted/50 p-1 w-full sm:w-auto sm:inline-flex">
             {TABS.map((t) => {
               const ativo = tab === t.id;
               return (
@@ -337,14 +337,14 @@ export default function Estoque() {
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={cn(
-                    "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[12.5px] font-medium transition-colors",
+                    "inline-flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-[12.5px] font-medium transition-colors min-w-0",
                     ativo
                       ? "bg-card text-foreground shadow-[0_1px_3px_-1px_hsl(var(--foreground)/0.15)]"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <t.icon className="w-4 h-4" />
-                  {t.label}
+                  <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span className="truncate">{t.label}</span>
                 </button>
               );
             })}
