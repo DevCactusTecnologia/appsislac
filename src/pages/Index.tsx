@@ -31,6 +31,7 @@ import { normalizeAtendimento } from "@/data/atendimentoNormalize";
 import { logger } from "@/lib/logger";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { useAuth } from "@/contexts/AuthContext";
+import { imprimirComprovante as imprimirComprovantePure } from "@/pages/NovoAtendimento/services/imprimirComprovante";
 
 /* ── Helpers ── */
 const normalize = (v: string) =>
