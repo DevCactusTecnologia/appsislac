@@ -1,71 +1,108 @@
-## Objetivo
 
-Na página `/impressao-geral`, ao clicar em **Imprimir resultados** dentro do card de resumo, baixar um único arquivo `.pdf` contendo o laudo de cada atendimento com exames liberados/impressos da unidade + data filtradas, ordenado por número do atendimento (ATD-YYYY-XXXXXXX).
+# SISLAC Database Runtime 2.0 — Plano de Execução
 
-## Escopo confirmado
+## Contexto
 
-- Filtro: unidade + data exibidas no resumo.
-- Inclusão: atendimentos que tenham ≥ 1 exame com `status ∈ {Liberado, Impresso, Digitado}` (resultado pronto, mesmo que o atendimento ainda não esteja marcado como Finalizado).
-- Ordenação: pelo número/protocolo do atendimento, crescente.
-- Entrega: download forçado de `.pdf` (sem abrir diálogo de impressão).
+A auditoria anterior (`docs/database-per-tenant-audit/`) comprovou que **121 arquivos do front + ~70 edge functions** importam `@/integrations/supabase/client` diretamente. O objetivo do Runtime 2.0 é **desacoplar 100% desse import**, sem alterar UI, fluxos ou regras de negócio.
 
-## Observação importante (fidelidade do layout)
+**Princípio Zero (não-negociável):** o restante do SISLAC deixa de saber qual banco está sendo usado. Toda conexão passa pela `ConnectionFactory`.
 
-O laudo impresso atual é **vetorial nativo** (HTML+CSS via `printHtmlInHiddenFrame` → diálogo do navegador), com layout congelado por constraint (`mem://constraints/layout-impressao-travado.md`).
+## Escopo
 
-Forçar download `.pdf` direto exige rasterizar via `html2canvas` + `jsPDF`. Isso muda o motor de impressão — fontes e quebras de página podem sofrer pequenas variações vs. o laudo individual. Não vou alterar o CSS travado do laudo individual; o lote terá o mesmo HTML, apenas renderizado por outro caminho.
+| Inclui | NÃO inclui |
+|---|---|
+| Refator de imports em 121 arquivos do front | Mudanças de UI, fluxos, regras de negócio |
+| Refator de ~70 edge functions para Runtime Resolver server-side | Implementação real do driver Postgres (Dedicated) |
+| Auth/Storage roteados via Factory | Migration Runner (só contrato + interface) |
+| Cache de clientes por (tenant, project, runtime) | Quebra de compatibilidade do client API |
+| 10 relatórios em `docs/database-runtime/` | Reescrita de RLS sem ganho real |
 
-Se preferir preservar 100% da fidelidade vetorial, a alternativa é abrir o diálogo do navegador (usuário clica "Salvar como PDF"). Sigo com download direto conforme escolhido, mas registro o trade-off.
-
-## Implementação
-
-### 1. Dependência
-- `bun add jspdf html2canvas`
-
-### 2. Novo módulo `src/lib/laudoBatchPdf.ts`
-Função `gerarLaudoLotePdf({ atendimentos, filename })`:
-- Para cada atendimento (já ordenado), reaproveita as primitivas existentes:
-  - `resolveCustomLayouts(printable)` (mover de `ResultadoDetalhe.tsx` para `src/pages/ResultadoDetalhe/services/resolveCustomLayouts.ts` se ainda inline).
-  - `fetchHistoricoPorExame(...)`.
-  - `buildLaudoHtml({ paciente, analistaAtual, assinaturaLaudo, getResolvedRef, printable, customByExame, margins, historicoByExameId })`.
-- `getResolvedRef`: usa `valoresReferenciaStore` + `resolveReferenciaPorPaciente` (já existe).
-- `analistaAtual` / `assinaturaLaudo`: do último analista que liberou cada exame (do `exame.auditoria`).
-- Concatena os HTMLs com `<div style="break-after:page;page-break-after:always"></div>` entre atendimentos.
-
-### 3. Render + conversão
-- Cria iframe oculto com o HTML batch, espera `fonts.ready` + 2 RAFs.
-- Para cada `.laudo-a4-page` (ou `.laudo-page-manual` gerada pelo hook de paginação), chama `html2canvas` (scale 2, backgroundColor `#fff`).
-- Adiciona a imagem em página A4 do `jsPDF` (`unit: 'mm', format: 'a4'`).
-- `pdf.save(filename)` → download direto. Filename: `Resultados_<Unidade>_<YYYY-MM-DD>.pdf`.
-
-### 4. Filtro dos atendimentos (no `ImpressaoGeral.tsx`)
-- Reaproveita o filtro `atendimentosForDate` já calculado no `legacySummary`.
-- Aplica `exames.some(e => ['Liberado','Impresso','Digitado'].includes(e.status))` e ordena por `protocolo` asc.
-- Caminho server (`useServer`): busca via `getAtendimentos()` mesmo assim para hidratar paciente/exames; se faltar dado local, fallback de loading.
-
-### 5. Ligação do botão
-- Em `src/pages/ImpressaoGeral.tsx`, transformar o botão **Imprimir resultados** em handler `onClick={handleImprimirLote}`:
-  - estado `gerando: boolean` desabilita botão e troca ícone por spinner.
-  - try/catch com toast de erro.
-  - se zero atendimentos elegíveis: toast `"Nenhum resultado pronto para impressão"`.
-
-### 6. Telemetria
-- `logger.info("ImpressaoGeral", "lote gerado", { unidade, data, totalAtendimentos, totalExames, ms })`.
-
-## Arquivos afetados
+## Arquitetura alvo
 
 ```text
-src/pages/ImpressaoGeral.tsx        (handler + estado de loading)
-src/lib/laudoBatchPdf.ts            (novo — orquestrador batch)
-src/pages/ResultadoDetalhe/services/
-  resolveCustomLayouts.ts           (extrair de ResultadoDetalhe.tsx se necessário)
-package.json                        (jspdf, html2canvas)
+        ┌─────────────────────────────────────────┐
+        │   UI / Hooks / Stores / Services        │
+        │   import { db } from "@/runtime/db"     │  ← única entrada
+        └────────────────────┬────────────────────┘
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │   ConnectionFactory (singleton)         │
+        │   getClient(tenantCtx) → SupabaseClient │
+        └────────────────────┬────────────────────┘
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │   RuntimeResolver                       │
+        │   tenant_id → {strategy, project, key}  │
+        └────────────────────┬────────────────────┘
+              ┌──────────────┴──────────────┐
+              ▼                             ▼
+      SharedStrategy                 DedicatedStrategy
+      (client compartilhado)         (client por tenant)
 ```
 
-Nenhuma alteração em `laudoHtmlBuilder.ts`, CSS de impressão ou `ResultadoDetalhe.tsx` (além de exportar helper se preciso).
+Cache: `Map<cacheKey, SupabaseClient>` indexado por `(tenant_id, project_ref, runtime_mode)`. Invalidação em logout / troca de tenant via `auth.onAuthStateChange`.
 
-## Riscos / fora de escopo
+## Fases
 
-- Rasterização pode aumentar tamanho do PDF (≈300–600 KB por página A4 a scale 2).
-- Sem marcação `Impresso` automática em lote para evitar efeitos colaterais — o status só muda pelo fluxo individual atual. Posso adicionar opcionalmente depois.
-- Sem auditoria por exame de "impressão em lote" nesta primeira entrega.
+### Fase A — Núcleo Runtime (Front)
+1. Criar `src/runtime/db/` com:
+   - `types.ts` (interfaces: `TenantRuntimeContext`, `Strategy`, `RuntimeClient`)
+   - `resolver.ts` (encapsula `tenantResolver.ts` atual)
+   - `strategies/shared.ts` e `strategies/dedicated.ts` (stub)
+   - `factory.ts` (cache + escolha de strategy)
+   - `index.ts` (export `db()` → retorna client pronto; `auth()`, `storage()`, `functions()`, `realtime()` proxies)
+2. **Não apagar** `src/integrations/supabase/client.ts` (gerado). A `SharedStrategy` continua usando-o como transport — mas só ela.
+3. Adicionar **ESLint rule** `no-restricted-imports` proibindo `@/integrations/supabase/client` fora de `src/runtime/db/strategies/shared.ts`.
+
+### Fase B — Codemod no Front (121 arquivos)
+- Script `scripts/runtime-codemod.ts` (ts-morph) reescreve:
+  - `import { supabase } from "@/integrations/supabase/client"` → `import { db } from "@/runtime/db"`
+  - Usos `supabase.from(...)` → `db().from(...)`, `supabase.auth` → `db().auth`, etc.
+- Rodar em lotes (stores → hooks → pages → components), commits intermediários, build/typecheck após cada lote.
+
+### Fase C — Edge Functions Runtime
+- Criar `supabase/functions/_shared/runtime/factory.ts` (versão server). Reusa `tenantConnection.ts` como `SharedStrategy`.
+- Codemod equivalente para ~70 funções. SERVICE_ROLE permanece só nas funções `super-admin-*` (justificativa documentada).
+
+### Fase D — Storage & Auth Roteados
+- `db().storage.from(bucket)` → `BucketResolver` (futuro per-tenant); hoje devolve bucket atual. Remove strings hardcoded de `tenant-assets` / `integration-assets` para constantes em `src/runtime/storage/buckets.ts`.
+- `db().auth` continua Shared; estrutura preparada para Auth dedicado (interface `AuthStrategy`).
+
+### Fase E — Observabilidade & Métricas
+- `src/runtime/db/telemetry.ts` emite eventos: `runtime.resolve.start/end`, `runtime.client.created`, `runtime.client.cache_hit`, `runtime.failure`. Plug em console em dev, no-op em prod (até decidir sink).
+
+### Fase F — Smoke Test
+- `e2e/runtime-smoke.spec.ts`: simula 4 tenants (2 shared / 2 dedicated-stub) e valida factory devolve clientes distintos, sem cross-cache, e que dedicated lança erro controlado (`NotImplementedYet`) — não silencioso.
+
+### Fase G — Relatórios
+Criar `docs/database-runtime/01..10-*.md` conforme spec, incluindo métricas antes/depois (n° de `createClient`, n° de imports diretos, etc.).
+
+## Critérios de aprovação (auto-check final)
+
+- `rg "@/integrations/supabase/client" src | wc -l` = **1** (apenas `strategies/shared.ts`).
+- `rg "createClient\(" src | wc -l` = **1**.
+- ESLint passa com a nova regra ativa.
+- Build + typecheck verdes.
+- `docs/database-runtime/10-executive-report.md` com tabela antes/depois.
+
+## Riscos e mitigação
+
+| Risco | Mitigação |
+|---|---|
+| Codemod quebra usos exóticos (destructuring, re-exports) | Lotes pequenos + typecheck por lote + revisão manual de falhas |
+| `db()` async vs `supabase` síncrono | `db()` retorna client síncrono já cacheado; bootstrap inicial em `main.tsx` aguarda primeiro resolve |
+| Realtime channels já abertos no client antigo | Migrados via mesma estratégia; canais reaplicados após troca |
+| Edge functions com 70 arquivos | Codemod server separado, deploy em ondas |
+
+## Tamanho estimado
+
+- ~125 arquivos do front editados (codemod).
+- ~70 edge functions editadas (codemod).
+- ~8 arquivos novos em `src/runtime/db/` + `_shared/runtime/`.
+- 10 documentos em `docs/database-runtime/`.
+
+## Confirmação necessária
+
+Esta é uma refatoração estrutural de larga escala que **toca praticamente todos os arquivos do projeto**. Conforme regra de memória (`confirmacao-mudancas-estruturais`), preciso confirmação explícita antes de iniciar.
+
+**Você aprova executar as Fases A–G em sequência, com commits intermediários por lote?** Se sim, começo pela Fase A (núcleo Runtime + ESLint rule) e paro para validação antes do codemod massivo.
