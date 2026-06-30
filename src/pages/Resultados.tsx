@@ -261,7 +261,7 @@ const Resultados = () => {
           title="Inserir Resultados"
           description={`${filtered.length} ${filtered.length === 1 ? "resultado encontrado" : "resultados encontrados"}`}
           actions={
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
               <SummaryChip icon={CheckCircle2} label="Finalizados" value={finalizadosCount} tone="success" />
               <SummaryChip icon={Clock}        label="Pendentes"   value={pendentesCount}   tone="warning" />
               <SummaryChip icon={XCircle}      label="Cancelados"  value={canceladosCount}  tone="danger" />
