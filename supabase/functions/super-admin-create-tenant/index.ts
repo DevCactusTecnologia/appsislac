@@ -303,6 +303,26 @@ Deno.serve(async (req) => {
     );
   }
 
+  // 9.1 Garante row em profiles (snapshot/admin panel dependem)
+  const { error: profErr } = await admin.from("profiles").upsert(
+    {
+      user_id: adminUserId,
+      tenant_id: tenant.id,
+      email: adminEmail,
+      nome: adminNome,
+      perfil: "admin",
+      status: "Ativo",
+      unidade_ids: [],
+      unidade_ativa: "",
+      permissoes_extras: [],
+      permissoes_revogadas: [],
+    },
+    { onConflict: "user_id" },
+  );
+  if (profErr) {
+    log.warn("profiles upsert falhou (não crítico)", { err: profErr.message, userId: adminUserId, tenantId: tenant.id });
+  }
+
   log.info("tenant criado com sucesso", { 
     tenantId: tenant.id, 
     adminEmail, 
