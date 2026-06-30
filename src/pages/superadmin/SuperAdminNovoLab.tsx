@@ -122,7 +122,7 @@ export default function SuperAdminNovoLab() {
       setStep(5);
       return;
     }
-    if (form.adminSenha.length < 6) { toast.error("Senha inicial precisa ter ao menos 6 caracteres (etapa 5)."); setStep(5); return; }
+    if (form.adminSenha.length < 12) { toast.error("Senha inicial precisa ter ao menos 12 caracteres (etapa 5)."); setStep(5); return; }
 
     setSubmitting(true);
     const { data, error } = await supabase.functions.invoke("super-admin-create-tenant", {
