@@ -640,7 +640,21 @@ const Index = () => {
 
   /* ── Pagamento logic ── */
   const openPagamentoDialog = async (item: MockAtendimento) => {
-    const full = await ensureHydrated(item);
+    // Sempre força reload: a heurística de `ensureHydrated` pode considerar
+    // o atendimento hidratado por ter `exames` populados (ex.: abriu Detalhes
+    // antes), mas `pagamentosRealizados` pode estar desatualizado, fazendo o
+    // modal mostrar saldo cheio mesmo com status "Pago".
+    let full = item;
+    if (paginatedEnabled) {
+      const id = idByProtocolo.get(item.protocolo);
+      if (id) {
+        try {
+          await reloadAtendimentoById(id);
+          const fresh = getAtendimentos().find(a => a.protocolo === item.protocolo);
+          if (fresh) full = normalizeAtendimento(fresh);
+        } catch { /* fallback ao item original */ }
+      }
+    }
     setSelectedAtendimento(full);
     setLocalPagamentos([...(full.pagamentosRealizados ?? [])]);
     setPagamentoDialogOpen(true);
