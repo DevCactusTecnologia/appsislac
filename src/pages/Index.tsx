@@ -1244,6 +1244,35 @@ const Index = () => {
         descontoData={selectedAtendimento?.data}
         acrescimoData={selectedAtendimento?.data}
         isEditing={true}
+        onPrintReceipt={() => {
+          if (!selectedAtendimento) return;
+          const u = selectedAtendimento.unidadeId ? getUnidadeById(selectedAtendimento.unidadeId) : undefined;
+          imprimirComprovantePure({
+            tipo: "pagamento",
+            pacienteQuery: selectedAtendimento.nome,
+            editAtendimentoData: {
+              cpf: selectedAtendimento.cpf,
+              nascimento: selectedAtendimento.nascimento,
+              idade: selectedAtendimento.idade,
+            },
+            editProtocolo: selectedAtendimento.protocolo,
+            convenios: [selectedAtendimento.convenio || "Particular"],
+            solicitantes: [selectedAtendimento.solicitante || ""],
+            unidadeAtiva: u ? { nome: u.nome, endereco: u.endereco, cidade: u.cidade, estado: u.estado } : undefined,
+            exames: pagamentoData.exames.map((e, i) => ({
+              id: i, nome: e.nome, convenio: selectedAtendimento.convenio || "Particular",
+              material: "", valor: e.valor, cobrancaDestino: "paciente" as const,
+            })),
+            pagamentosRealizados: pagamentoData.pagamentosRealizados ?? [],
+            totais: {
+              subtotal: pagamentoData.subtotal,
+              desconto: pagamentoData.desconto,
+              valorPago: pagamentoData.valorPago,
+              total: pagamentoData.total,
+              saldoDevedor: pagamentoData.saldoDevedor,
+            },
+          });
+        }}
       />
       <AtendimentoDetalheDialog
         open={detalheDialogOpen}
