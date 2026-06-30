@@ -2396,6 +2396,7 @@ const NovoAtendimento = () => {
         descontoData={descontoDataExibicao}
         acrescimoData={acrescimoDataExibicao}
         pagamentosRealizados={pagamentosRealizados} isEditing={isEditing}
+        onPrintReceipt={() => imprimirComprovante("pagamento")}
         onConfirm={res => {
           setValorPago(res.valorPago);
           if (isEditing) {

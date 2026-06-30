@@ -58,6 +58,8 @@ interface PagamentoDialogProps {
   descontoData?: string;
   /** Data do acréscimo histórico (formato BR). */
   acrescimoData?: string;
+  /** Callback opcional: imprime o comprovante de pagamento (visível quando quitado). */
+  onPrintReceipt?: () => void;
 }
 
 /* ── Constants ── */
@@ -89,7 +91,7 @@ const PagamentoDialog = ({
   acrescimo: acrescimoProp = 0,
   valorPago: valorPagoProp = 0, exames = [], onConfirm,
   pagamentosRealizados = [], onRemovePagamentoRealizado, isEditing = false,
-  descontoData, acrescimoData,
+  descontoData, acrescimoData, onPrintReceipt,
 }: PagamentoDialogProps) => {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -773,20 +775,43 @@ const PagamentoDialog = ({
 
         {/* Footer */}
         <div className="sticky bottom-0 z-20 px-5 sm:px-6 py-4 flex items-center gap-3 bg-card border-t border-border/50">
-          <button
-            onClick={handleGerarPixQR}
-            className="flex-1 h-11 rounded-2xl border border-border bg-card flex items-center justify-center gap-2 text-[13px] font-medium text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200"
-          >
-            <QrCode className="h-4 w-4 text-primary" />
-            Gerar QRCode
-          </button>
-          <button
-            onClick={confirm}
-            className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition-all duration-200 shadow-sm"
-          >
-            <Receipt className="h-4 w-4" />
-            {pagamentosRealizados.length > 0 ? "Atualizar" : "Confirmar"}
-          </button>
+          {quitado ? (
+            <>
+              {onPrintReceipt && (
+                <button
+                  onClick={onPrintReceipt}
+                  className="flex-1 h-11 rounded-2xl border border-border bg-card flex items-center justify-center gap-2 text-[13px] font-medium text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200"
+                >
+                  <Receipt className="h-4 w-4 text-primary" />
+                  Imprimir comprovante de pagamento
+                </button>
+              )}
+              <button
+                onClick={confirm}
+                className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition-all duration-200 shadow-sm"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Concluir
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleGerarPixQR}
+                className="flex-1 h-11 rounded-2xl border border-border bg-card flex items-center justify-center gap-2 text-[13px] font-medium text-foreground hover:border-primary/40 hover:bg-muted/40 transition-all duration-200"
+              >
+                <QrCode className="h-4 w-4 text-primary" />
+                Gerar QRCode
+              </button>
+              <button
+                onClick={confirm}
+                className="flex-1 h-11 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center gap-2 text-[13px] font-semibold hover:opacity-90 transition-all duration-200 shadow-sm"
+              >
+                <Receipt className="h-4 w-4" />
+                {pagamentosRealizados.length > 0 ? "Atualizar" : "Confirmar"}
+              </button>
+            </>
+          )}
         </div>
 
       </div>
