@@ -231,26 +231,26 @@ export default function Estoque() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 min-w-0">
       <PageHeader
         eyebrow="Operacional"
         title="Estoque"
         description="Gestão estratégica de insumos, lotes e validades."
         actions={
-          <>
-            <Button variant="outline" size="sm" onClick={() => setHistoricoOpen(true)}>
-              <History className="w-4 h-4 mr-2" /> Histórico
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={() => setHistoricoOpen(true)} className="flex-1 sm:flex-none min-w-0">
+              <History className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Histórico</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setMovDialog({ open: true })}>
-              <ArrowDownUp className="w-4 h-4 mr-2" /> Movimentar
+            <Button variant="outline" size="sm" onClick={() => setMovDialog({ open: true })} className="flex-1 sm:flex-none min-w-0">
+              <ArrowDownUp className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Movimentar</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setLoteDialog({ open: true, lote: null })}>
-              <Layers className="w-4 h-4 mr-2" /> Novo lote
+            <Button variant="outline" size="sm" onClick={() => setLoteDialog({ open: true, lote: null })} className="flex-1 sm:flex-none min-w-0">
+              <Layers className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Novo lote</span>
             </Button>
-            <Button size="sm" onClick={() => setInsumoDialog({ open: true, insumo: null })}>
-              <Plus className="w-4 h-4 mr-2" /> Novo insumo
+            <Button size="sm" onClick={() => setInsumoDialog({ open: true, insumo: null })} className="flex-1 sm:flex-none min-w-0">
+              <Plus className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Novo insumo</span>
             </Button>
-          </>
+          </div>
         }
       />
 
