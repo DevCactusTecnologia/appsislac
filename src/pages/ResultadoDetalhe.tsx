@@ -1132,29 +1132,49 @@ const ResultadoDetalhe = () => {
     const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
     const t0 = performance.now();
-    // Garante que o template de cabeçalho/rodapé está carregado antes
-    // de montar o HTML — sem isso, uma falha transitória de rede no
-    // boot deixa o laudo cair no fallback institucional sem dados do
-    // paciente. Import dinâmico para não criar ciclo de módulo.
+    // Feedback imediato — sem isso o usuário acha que o botão não funcionou
+    // enquanto o pipeline (templates + layouts + histórico) está rodando.
+    const toastId = toast.loading(
+      `Preparando laudo (${printable.length} exame${printable.length > 1 ? "s" : ""})…`,
+    );
+    // Helper: timeout que NUNCA pode bloquear a impressão. Se uma etapa de
+    // I/O travar (rede lenta, Supabase indisponível), seguimos com o que
+    // temos em cache em vez de deixar o usuário esperando minutos.
+    const withTimeout = async <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> => {
+      try {
+        return await Promise.race([
+          p,
+          new Promise<T>((resolve) => window.setTimeout(() => resolve(fallback), ms)),
+        ]);
+      } catch {
+        return fallback;
+      }
+    };
+
+    // Garante que o template de cabeçalho/rodapé está carregado — mas com
+    // teto de 1.5s para não travar a impressão se a rede engasgar.
     try {
       const mod = await import("@/data/documentoTemplatesStore");
-      await mod.ensureDocumentoTemplatesLoaded();
+      await withTimeout(mod.ensureDocumentoTemplatesLoaded(), 1500, undefined as unknown as void);
     } catch {}
     const { map: customByExame, margins } = await resolveCustomLayouts(printable);
-    // Histórico de resultados anteriores (apenas para parâmetros com
-    // "Exibir resultado anterior" ativo). Falhas são silenciosas — o laudo
-    // segue sem o bloco de histórico se a query não responder.
-    let historicoByExameId: Record<number, { linhaHtml: string; graficoHtml: string }> = {};
-    try {
-      historicoByExameId = await fetchHistoricoPorExame({
+    // Histórico de resultados anteriores — agora com timeout curto (2s) para
+    // garantir que jamais bloqueie a impressão. Se não chegar a tempo, o
+    // laudo sai sem o bloco "Resultados anteriores" / gráfico histórico.
+    const historicoByExameId = await withTimeout(
+      fetchHistoricoPorExame({
         pacienteCpf: paciente.cpf,
         excludeProtocolo: paciente.protocolo,
         exames: printable,
         customByExame,
-      });
-    } catch (e) {
-      console.warn("[historicoResultados] falha ao buscar histórico:", e);
-    }
+      }).catch((e) => {
+        console.warn("[historicoResultados] falha ao buscar histórico:", e);
+        return {} as Record<number, { linhaHtml: string; graficoHtml: string }>;
+      }),
+      2000,
+      {} as Record<number, { linhaHtml: string; graficoHtml: string }>,
+    );
+    toast.dismiss(toastId);
     const html = buildLaudoHtml(printable, customByExame, solicitanteLabel, margins, historicoByExameId);
 
     const paginationHook = `

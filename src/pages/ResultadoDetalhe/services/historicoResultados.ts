@@ -128,29 +128,43 @@ export async function fetchHistoricoPorExame(args: {
 
   const out: Record<number, ExameHistOutput> = {};
 
-  // 3) Para cada exame do laudo, busca atendimentos anteriores do paciente.
-  await Promise.all(args.exames.map(async (exame) => {
-    const uuid = uuidByNome[(exame.nome || "").trim()];
-    if (!uuid) return;
-    const ativos = paramsByExameUuid[uuid] ?? [];
-    if (ativos.length === 0) return;
-    const limGlobal = Math.min(20, Math.max(...ativos.map((p) => p.qtd_resultados_anteriores || 5)));
+  // 3) UMA ÚNICA query para TODOS os exames do laudo (era N queries em
+  // paralelo — saturava o pool de conexões e travava a impressão por
+  // minutos quando o paciente tinha histórico grande).
+  const uuidsUsados = Array.from(new Set(
+    args.exames.map((e) => uuidByNome[(e.nome || "").trim()]).filter(Boolean),
+  )) as string[];
+  if (uuidsUsados.length === 0) return {};
 
-    const { data, error } = await supabase
-      .from("atendimento_exames")
-      .select("data_coleta,data_analise,resultados,atendimentos!inner(protocolo,paciente_cpf)")
-      .eq("exame_id", uuid)
-      .eq("atendimentos.paciente_cpf", cpf)
-      .neq("atendimentos.protocolo", args.excludeProtocolo)
-      .not("resultados", "is", null)
-      .order("data_coleta", { ascending: false, nullsFirst: false })
-      .limit(limGlobal);
-    if (error || !data) return;
+  const limGlobal = 20; // teto absoluto (filtrado por exame logo abaixo)
+  const { data: histRows, error: histErr } = await supabase
+    .from("atendimento_exames")
+    .select("exame_id,data_coleta,data_analise,resultados,atendimentos!inner(protocolo,paciente_cpf)")
+    .in("exame_id", uuidsUsados)
+    .eq("atendimentos.paciente_cpf", cpf)
+    .neq("atendimentos.protocolo", args.excludeProtocolo)
+    .not("resultados", "is", null)
+    .order("data_coleta", { ascending: false, nullsFirst: false })
+    .limit(limGlobal * uuidsUsados.length);
+  if (histErr || !histRows) return {};
+
+  const rowsPorExameUuid: Record<string, PrevRow[]> = {};
+  (histRows as unknown as Array<PrevRow & { exame_id: string }>).forEach((r) => {
+    (rowsPorExameUuid[r.exame_id] ||= []).push(r);
+  });
+
+  for (const exame of args.exames) {
+    const uuid = uuidByNome[(exame.nome || "").trim()];
+    if (!uuid) continue;
+    const ativos = paramsByExameUuid[uuid] ?? [];
+    if (ativos.length === 0) continue;
+    const data = rowsPorExameUuid[uuid] ?? [];
+    if (data.length === 0) continue;
 
     const params: ParamHist[] = ativos.map((p) => {
       const lim = Math.max(1, p.qtd_resultados_anteriores || 5);
       const pontos: ParamHist["pontos"] = [];
-      for (const row of data as unknown as PrevRow[]) {
+      for (const row of data) {
         if (pontos.length >= lim) break;
         const v = row.resultados?.[p.chave];
         if (v == null || String(v).trim() === "") continue;
@@ -166,14 +180,14 @@ export async function fetchHistoricoPorExame(args: {
       };
     }).filter((p) => p.pontos.length > 0);
 
-    if (params.length === 0) return;
+    if (params.length === 0) continue;
     const layout = args.customByExame?.[exame.id] ?? "";
     const hasToken = /##GRAFICOHIST##/i.test(layout);
     out[exame.id] = {
       linhaHtml: hasToken ? "" : renderLinha(params),
       graficoHtml: hasToken ? params.map(renderChart).join("") : "",
     };
-  }));
+  }
 
   return out;
 }
