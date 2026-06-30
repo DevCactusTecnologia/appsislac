@@ -113,18 +113,29 @@ export default function SuperAdminNovoLab() {
   };
 
   const submit = async () => {
+    const adminEmail = form.adminEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!form.nome.trim()) { toast.error("Informe o nome do laboratório (etapa 1)."); setStep(1); return; }
+    if (!form.adminNome.trim()) { toast.error("Informe o nome do admin (etapa 5)."); setStep(5); return; }
+    if (!adminEmail || !emailRegex.test(adminEmail)) {
+      toast.error("E-mail do admin inválido. Use o formato usuario@empresa.com.br (etapa 5).");
+      setStep(5);
+      return;
+    }
+    if (form.adminSenha.length < 6) { toast.error("Senha inicial precisa ter ao menos 6 caracteres (etapa 5)."); setStep(5); return; }
+
     setSubmitting(true);
     const { data, error } = await supabase.functions.invoke("super-admin-create-tenant", {
       body: {
-        nome: form.nome,
+        nome: form.nome.trim(),
         slug: form.slug,
         labCode: form.labCode.trim().toUpperCase() || undefined,
         cnpj: form.cnpj,
         emailContato: form.emailContato,
         telefone: form.telefone,
         plano: form.plano,
-        adminEmail: form.adminEmail,
-        adminNome: form.adminNome,
+        adminEmail,
+        adminNome: form.adminNome.trim(),
         adminSenha: form.adminSenha,
       },
     });
