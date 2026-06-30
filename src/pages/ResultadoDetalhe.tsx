@@ -1125,9 +1125,17 @@ const ResultadoDetalhe = () => {
    * funcionou — Paged.js / rota `/resultado/:id/print` foram REMOVIDOS.
    */
   const doImprimirLaudo = async (
-    printable: Exame[],
+    printableInput: Exame[],
     solicitanteLabel?: string,
   ) => {
+    // Exames TERCEIRIZADOS nunca saem na impressão — o laudo é emitido
+    // pelo laboratório de apoio (PDF externo), e o sistema não tem os
+    // parâmetros internos para compor o laudo científico.
+    const printable = printableInput.filter((e) => !isExameTerceirizadaById(e.id));
+    if (printable.length === 0) {
+      toast.warning("Nenhum exame imprimível — exames terceirizados são emitidos pelo laboratório de apoio.");
+      return;
+    }
     const safeNome = (paciente.nome || "Paciente").replace(/[\\/:*?"<>|]+/g, " ").trim();
     const title = `${safeNome} - ${paciente.protocolo}${solicitanteLabel ? ` - ${solicitanteLabel}` : ""}`;
 
