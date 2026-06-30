@@ -349,9 +349,10 @@ export default function Inscricao() {
                     </>
                   ) : (
                     <>
-                      Entrar
+                      Criar conta
                       <ArrowRight className="w-5 h-5" />
                     </>
+
                   )}
                 </Button>
 
