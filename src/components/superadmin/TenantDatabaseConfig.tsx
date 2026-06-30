@@ -31,21 +31,39 @@ const PROVIDERS = [
   { value: "external_postgres", label: "Postgres externo" },
 ];
 
-const SUPABASE_REGIONS = [
-  "us-east-1", "us-east-2", "us-west-1", "us-west-2",
-  "ca-central-1", "sa-east-1",
-  "eu-west-1", "eu-west-2", "eu-west-3", "eu-central-1", "eu-central-2", "eu-north-1",
-  "ap-south-1", "ap-southeast-1", "ap-southeast-2", "ap-northeast-1", "ap-northeast-2",
+const SUPABASE_REGIONS: { value: string; label: string }[] = [
+  { value: "us-east-1", label: "us-east-1 — Norte da Virgínia (EUA)" },
+  { value: "us-east-2", label: "us-east-2 — Ohio (EUA)" },
+  { value: "us-west-1", label: "us-west-1 — Norte da Califórnia (EUA)" },
+  { value: "us-west-2", label: "us-west-2 — Oregon (EUA)" },
+  { value: "ca-central-1", label: "ca-central-1 — Montreal (Canadá)" },
+  { value: "sa-east-1", label: "sa-east-1 — São Paulo (Brasil)" },
+  { value: "eu-west-1", label: "eu-west-1 — Dublin (Irlanda)" },
+  { value: "eu-west-2", label: "eu-west-2 — Londres (Reino Unido)" },
+  { value: "eu-west-3", label: "eu-west-3 — Paris (França)" },
+  { value: "eu-central-1", label: "eu-central-1 — Frankfurt (Alemanha)" },
+  { value: "eu-central-2", label: "eu-central-2 — Zurique (Suíça)" },
+  { value: "eu-north-1", label: "eu-north-1 — Estocolmo (Suécia)" },
+  { value: "ap-south-1", label: "ap-south-1 — Mumbai (Índia)" },
+  { value: "ap-southeast-1", label: "ap-southeast-1 — Singapura" },
+  { value: "ap-southeast-2", label: "ap-southeast-2 — Sydney (Austrália)" },
+  { value: "ap-northeast-1", label: "ap-northeast-1 — Tóquio (Japão)" },
+  { value: "ap-northeast-2", label: "ap-northeast-2 — Seul (Coreia do Sul)" },
 ];
 
-const NEON_REGIONS = [
-  "aws-us-east-1", "aws-us-east-2", "aws-us-west-2",
-  "aws-eu-central-1", "aws-eu-west-2",
-  "aws-ap-southeast-1", "aws-ap-southeast-2", "aws-sa-east-1",
-  "azure-eastus2",
+const NEON_REGIONS: { value: string; label: string }[] = [
+  { value: "aws-us-east-1", label: "aws-us-east-1 — Norte da Virgínia (EUA)" },
+  { value: "aws-us-east-2", label: "aws-us-east-2 — Ohio (EUA)" },
+  { value: "aws-us-west-2", label: "aws-us-west-2 — Oregon (EUA)" },
+  { value: "aws-eu-central-1", label: "aws-eu-central-1 — Frankfurt (Alemanha)" },
+  { value: "aws-eu-west-2", label: "aws-eu-west-2 — Londres (Reino Unido)" },
+  { value: "aws-ap-southeast-1", label: "aws-ap-southeast-1 — Singapura" },
+  { value: "aws-ap-southeast-2", label: "aws-ap-southeast-2 — Sydney (Austrália)" },
+  { value: "aws-sa-east-1", label: "aws-sa-east-1 — São Paulo (Brasil)" },
+  { value: "azure-eastus2", label: "azure-eastus2 — Virgínia (EUA)" },
 ];
 
-const PROVIDER_REGIONS: Record<string, string[]> = {
+const PROVIDER_REGIONS: Record<string, { value: string; label: string }[]> = {
   shared_supabase: SUPABASE_REGIONS,
   supabase_project: SUPABASE_REGIONS,
   neon: NEON_REGIONS,
@@ -233,7 +251,7 @@ export function TenantDatabaseConfig({
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="">Selecione…</option>
-                    {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+                    {regions.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
                 );
               })()}
