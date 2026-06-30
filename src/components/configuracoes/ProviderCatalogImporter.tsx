@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Upload, Loader2, CheckCircle2, XCircle, FileSpreadsheet } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import type { IntegrationProvider } from "@/integrations/contracts/providers";

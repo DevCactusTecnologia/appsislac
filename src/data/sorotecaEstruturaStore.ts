@@ -10,7 +10,7 @@
  *    consumidas pela Fase 3 (Triagem).
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { persistOneOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

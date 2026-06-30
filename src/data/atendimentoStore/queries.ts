@@ -1,7 +1,7 @@
 // Read-paths do atendimentoStore (Fase 4 split).
 // Comportamento preservado literalmente do arquivo monolítico anterior.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 import { showError } from "@/lib/showError";
 import type { MockAtendimento } from "../types";

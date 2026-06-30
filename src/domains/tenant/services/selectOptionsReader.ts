@@ -9,7 +9,7 @@
 //
 // Tenant: a RLS de `select_options` já filtra por `tenant_id = current_tenant_id()`
 // e expõe linhas globais (`tenant_id IS NULL`) como dicionário compartilhado.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export type DicionarioCategoria =

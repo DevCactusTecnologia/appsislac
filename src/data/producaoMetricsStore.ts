@@ -1,7 +1,7 @@
 // Métricas de produção e séries agregadas consumidas pelas telas operacionais.
 // C2 — Agregação server-side via RPCs `dashboard_metrics` / `dashboard_daily_series`.
 // Não fazemos mais fetch massivo de atendimentos/exames no cliente.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 
 /* ─────────────── Types ─────────────── */

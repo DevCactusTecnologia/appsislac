@@ -7,7 +7,7 @@ import {
   Settings, Sparkles, Mail, Info, Save, Loader2, Eye, EyeOff,
   Plug, Lock, Brain, Cloud, MessageCircle, PlugZap, CheckCircle2, XCircle,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

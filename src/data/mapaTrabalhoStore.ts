@@ -24,7 +24,7 @@
 // Ver: .lovable/memory/architecture/layout-vs-mapa.md
 //      .lovable/memory/architecture/mapa-trabalho-runtime.md
 // ============================================================================
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { extractPlaceholders } from "@/lib/mapaPlaceholders";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";

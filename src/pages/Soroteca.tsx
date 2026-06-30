@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import AmostraDetalheDialog from "@/components/soroteca/AmostraDetalheDialog";
 import BarcodeScannerDialog from "@/components/soroteca/BarcodeScannerDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 interface AmostraInfo {
   paciente?: string;

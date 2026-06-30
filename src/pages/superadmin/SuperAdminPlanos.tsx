@@ -1,7 +1,7 @@
 // /super-admin/planos — Catálogo de planos de assinatura (Stripe-like).
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

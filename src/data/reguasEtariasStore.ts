@@ -13,7 +13,7 @@
  * a resolução nome ↔ id é feita via `exameCatalogoStore`.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { getExamesCatalogo, getExameCatalogoById } from "@/data/exameCatalogoStore";
 import { FaixaEtaria, MAX_DIAS, toDias } from "@/lib/idadeFaixas";

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { getLabConfig, loadLabConfigFromDb, saveLabConfig, ensureLabLogoLoaded, clearLabLogoCache } from "@/data/labConfigStore";
 import { DEFAULT_WATERMARK, type WatermarkConfig } from "@/lib/watermark";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import EstadoCidadeFields from "@/components/EstadoCidadeFields";
 import { Droplets } from "lucide-react";
 

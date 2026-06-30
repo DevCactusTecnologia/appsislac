@@ -33,7 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useAReceberTotais } from "@/hooks/useAReceberPacientes";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import RecepcionistaDashboard from "@/components/dashboard/RecepcionistaDashboard";
 import AnalistaDashboard from "@/components/dashboard/AnalistaDashboard";
 

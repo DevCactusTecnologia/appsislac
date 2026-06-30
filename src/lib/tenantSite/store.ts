@@ -1,5 +1,5 @@
 // Acesso a tenant_pages e ao lookup público de tenants.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { sanitizeContent, type TPageContent } from "./blocks";
 
 export interface TenantLookup {

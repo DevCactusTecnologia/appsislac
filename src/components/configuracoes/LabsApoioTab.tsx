@@ -34,7 +34,7 @@ import SectionShell from "./_shared/SectionShell";
 import Toolbar from "./_shared/Toolbar";
 import EmptyState from "./_shared/EmptyState";
 import MapeamentoExamesDialog from "./MapeamentoExamesDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { useNavigate } from "react-router-dom";
 
 const formatCNPJ = (value: string) => {

@@ -1,6 +1,6 @@
 // Acesso à vitrine pública e captação de leads. Tudo aqui é seguro para
 // chamada anônima — RLS no banco é a fonte da verdade.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 export interface VitrineSettings {
   tenant_id: string;

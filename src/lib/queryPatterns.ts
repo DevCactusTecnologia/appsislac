@@ -5,7 +5,7 @@
  * Nunca chamar essas queries em loop!
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 /**
  * Cache keys para React Query / SWR

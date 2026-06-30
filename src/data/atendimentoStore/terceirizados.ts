@@ -1,7 +1,7 @@
 // Bloco 5a.5b/5a.7 — Exames TERCEIRIZADOS (Fase 4 split).
 // Persistência via RPC transacional + reidratação do cache.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 import { _initAtendimentosStore } from "./queries";
 import type {

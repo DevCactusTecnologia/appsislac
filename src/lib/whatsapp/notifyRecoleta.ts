@@ -13,7 +13,7 @@
 // Segurança / opt-out / rate limit / idempotência / isolamento por
 // tenant: 100% garantidos server-side pela RPC `enqueue_whatsapp`.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getLabConfig } from "@/data/labConfigStore";
 import {
   buildIdempotencyKey,

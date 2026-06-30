@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Sparkles, Loader2, Plus, Check, X, AlertCircle, EyeOff, ShieldCheck, FileText } from "lucide-react";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { toast } from "@/hooks/use-toast";
 
 export type ConfiancaIA = "alta" | "media" | "baixa";

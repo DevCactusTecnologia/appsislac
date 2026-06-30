@@ -1,7 +1,7 @@
 // Audit log access — reads from public.operational_audit (fonte unificada).
 // `app_settings_audit` continua sendo lido diretamente porque o forwarder
 // destino é `platform_audit` (super_admin only).
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export type AuditTipo =

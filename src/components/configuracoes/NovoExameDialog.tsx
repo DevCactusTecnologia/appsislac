@@ -47,7 +47,7 @@ import { getMateriaisAmostraAtivosSync, resolveMaterialIdBySigla, resolveMateria
 
 import { Switch } from "@/components/ui/switch";
 import ComboboxField from "@/components/configuracoes/_shared/ComboboxField";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 type ExameFormData = Omit<ExameCatalogo, "id" | "ativo" | "usadoEmAtendimento" | "codigo" | "analise"> & { id?: string };
 

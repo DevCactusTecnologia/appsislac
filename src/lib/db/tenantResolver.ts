@@ -9,7 +9,7 @@
  * Fonte Única de Verdade (Governance): `tenant_registry` decide estratégia e roteamento.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import type { TenantContext, DBStrategy } from "./types";
 
 let _cachedContext: TenantContext | null = null;

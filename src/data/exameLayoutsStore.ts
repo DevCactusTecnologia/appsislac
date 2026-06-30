@@ -12,7 +12,7 @@
 //
 // Ver: .lovable/memory/architecture/layout-vs-mapa.md
 // ============================================================================
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";

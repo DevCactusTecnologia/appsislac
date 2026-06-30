@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShieldAlert, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 const FLAG_KEY = "sislac_impersonation";
 const NAME_KEY = "sislac_impersonation_tenant";

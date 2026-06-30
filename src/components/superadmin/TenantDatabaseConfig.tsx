@@ -3,7 +3,7 @@
 // no Lovable Cloud; aqui o super admin informa apenas o NOME do secret.
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

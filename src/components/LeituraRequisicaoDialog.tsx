@@ -2,7 +2,7 @@ import { useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { FileScan, Loader2, Plus, Check, X, AlertCircle, Upload, FileText, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { toast } from "@/hooks/use-toast";
 
 export interface ExameDetectado {

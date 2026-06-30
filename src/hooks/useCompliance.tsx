@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { toast } from "sonner";
 
 export function useCompliance() {

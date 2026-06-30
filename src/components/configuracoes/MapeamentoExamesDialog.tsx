@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Pencil, Check, X, Search, Link2, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import StandardDialog from "@/components/ui/standard-dialog";

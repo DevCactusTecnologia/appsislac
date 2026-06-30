@@ -1,7 +1,7 @@
 // AuthContext
 // Fonte única de autenticação operacional: 100% Supabase Auth real.
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import type { Session } from "@supabase/supabase-js";
 import { showError } from "@/lib/showError";
 import { withTtlCache } from "@/lib/ttlCache";

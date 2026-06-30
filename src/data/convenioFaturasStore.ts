@@ -9,7 +9,7 @@
 //   - Ao marcar como paga, a view financeiro_entradas exibe a fatura como
 //     UMA linha agregada na aba "Entradas" do Financeiro.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";

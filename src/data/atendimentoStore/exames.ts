@@ -1,7 +1,7 @@
 // Bloco 5a.5 — helpers de RESULTADOS / exames operacionais (Fase 4 split).
 // Mantém o contrato síncrono via re-hidratação do cache após mutações.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { resolveMaterialNome } from "../materiaisAmostraStore";
 
 import { showError } from "@/lib/showError";

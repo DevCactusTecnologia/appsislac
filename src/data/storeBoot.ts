@@ -22,7 +22,7 @@ import { preloadEditWindow } from "@/lib/atendimentoPolicy";
 import { getCurrentTenantNome, getCurrentTenantId, installTenantAuthInvalidation } from "@/lib/db/tenantResolver";
 import { showError } from "@/lib/showError";
 import { resetLazyStore } from "./lazyStores";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { loadLabConfigFromDb } from "./labConfigStore";
 
 let bootPromise: Promise<void> | null = null;

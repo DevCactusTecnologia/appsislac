@@ -18,7 +18,7 @@ import {
 } from "@/data/auditoriaStore";
 import AuditoriaTecnicaTab from "@/components/auditoria/AuditoriaTecnicaTab";
 import { fetchAtendimentoRelatedIds } from "@/data/auditLogsStore";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 const tipoConfig: Record<AuditTipo, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }> = {
   atendimento: { label: "Atendimento", icon: User, color: "text-primary", bg: "bg-primary/8" },

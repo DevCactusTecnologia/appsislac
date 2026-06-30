@@ -10,7 +10,7 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 
 export type FeatureFlagKey =

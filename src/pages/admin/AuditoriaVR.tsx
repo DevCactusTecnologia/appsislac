@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { updateValorReferencia, type ValorReferencia } from "@/data/valoresReferenciaStore";
 import { formatFaixaIdade } from "@/lib/idadeFormat";
 

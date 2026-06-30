@@ -2,7 +2,7 @@
 //
 // Modelo aprovado: 1 caixa aberto por unidade. Sem operador. Sem múltiplos turnos.
 // Apenas Dinheiro e PIX presencial entram via vinculação automática (trigger DB).
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export interface CaixaSessao {

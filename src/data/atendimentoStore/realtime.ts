@@ -1,7 +1,7 @@
 // Realtime do atendimentoStore (Fase 4 split).
 // Filtro server-side por tenant_id + dedupe local + coalescing de reloads.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 import { getCurrentTenantId } from "@/lib/db/tenantResolver";
 import { reloadAtendimentoById } from "./queries";

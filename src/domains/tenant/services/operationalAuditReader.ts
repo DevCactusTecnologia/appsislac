@@ -8,7 +8,7 @@
 // Mantém o contrato de `fetchAuditLogs` para que os consumidores
 // existentes (Auditoria.tsx, AuditoriaTecnicaTab.tsx) possam ser
 // migrados sem mudar a UI.
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 import type {
   AuditLogTech,

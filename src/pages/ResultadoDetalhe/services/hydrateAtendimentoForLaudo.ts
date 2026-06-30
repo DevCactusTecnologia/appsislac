@@ -5,7 +5,7 @@
 // sem hooks/estado React. Mantém o MESMO pipeline (mesmas funções) para
 // preservar fidelidade do laudo gerado em lote vs. impressão individual.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import {
   fetchAtendimentoByProtocolo,
   getAtendimentoExamesDB,

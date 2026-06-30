@@ -8,7 +8,7 @@
 // fazem queries em tabelas multi-tenant (pacientes, atendimentos, etc)
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useAuth } from "@/contexts/AuthContext";  // ← ADICIONE ISTO

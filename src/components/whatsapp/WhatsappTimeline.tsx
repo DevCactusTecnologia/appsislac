@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { MessageCircle, Check, Clock, AlertTriangle, Ban } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 
 interface OutboxRow {
   id: string;

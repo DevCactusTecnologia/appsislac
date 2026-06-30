@@ -5,7 +5,7 @@
 // perfil/permissões/status, gerenciar role admin, reset de senha) acontecem
 // via edge functions admin-* que validam que o caller é admin.
 
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 
 export type Perfil = "admin" | "analista" | "recepcionista" | "financeiro";

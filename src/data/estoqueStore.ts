@@ -2,7 +2,7 @@
  * Estoque Store — gestão de insumos, lotes e movimentações.
  * Multi-tenant via RLS (current_tenant_id() + has_role admin para mutações).
  */
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 

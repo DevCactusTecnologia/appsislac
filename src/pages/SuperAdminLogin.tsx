@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, Eye, EyeOff, ArrowRight, Mail, Lock, Loader2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import { toast } from "sonner";
 
 const LAST_EMAIL_KEY = "sislac:last-superadmin-email";

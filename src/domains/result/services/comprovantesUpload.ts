@@ -5,7 +5,7 @@
 //   via `comprovante-shortlink`. Extraído de `src/lib/comprovantes.ts`
 //   (Domain Slicing — Fase Render/Upload/WhatsApp).
 // ----------------------------------------------------------------------------
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/runtime/db";
 import type { ComprovanteTipo } from "@/lib/comprovantes";
 
 function blobToBase64(blob: Blob): Promise<string> {
