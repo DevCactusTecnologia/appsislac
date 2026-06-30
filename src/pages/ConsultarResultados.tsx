@@ -254,12 +254,12 @@ const ConsultarResultados = () => {
         {/* ─── Toolbar ─── */}
         <div className="bg-card rounded-xl border border-border p-3 mb-5">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar bg-muted/50 rounded-lg p-1 shrink-0">
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1 w-full lg:w-auto lg:shrink-0">
               {tabs.map((tab, index) => (
                 <button
                   key={tab.label}
                   onClick={() => { setActiveTab(index); setCurrentPage(1); }}
-                  className={`h-8 px-3.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  className={`h-8 flex-1 lg:flex-none px-2 lg:px-3.5 rounded-md text-[11px] sm:text-xs font-medium transition-all whitespace-nowrap ${
                     activeTab === index
                       ? "bg-card text-foreground shadow-elevation-xs"
                       : "text-muted-foreground hover:text-foreground"
