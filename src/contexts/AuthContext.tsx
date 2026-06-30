@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback,
 import { supabase } from "@/integrations/supabase/client";
 import type { Session } from "@supabase/supabase-js";
 import { showError } from "@/lib/showError";
+import { withTtlCache } from "@/lib/ttlCache";
 
 export type Perfil = "admin" | "analista" | "recepcionista" | "financeiro";
 
