@@ -15,40 +15,65 @@ import {
   ChevronRight,
   CircleDot,
   BadgeCheck,
+  Bot,
+  QrCode,
+  MessageCircle,
+  Globe,
+  Map,
+  Package,
+  Stethoscope,
+  ClipboardList,
+  Printer,
+  FileSignature,
+  Building2,
 } from "lucide-react";
 
 const pillars = [
-  { icon: Activity, title: "Operação contínua", desc: "Da recepção ao laudo, sem ruptura de fluxo entre setores." },
-  { icon: BadgeCheck, title: "Qualidade & rastreabilidade", desc: "Cadeia de custódia da amostra, validação de críticos e conformidade com a RDC ANVISA 786/2023." },
-  { icon: Wallet, title: "Controle financeiro", desc: "Entradas, saídas, convênios e conciliação em tempo real." },
-  { icon: Network, title: "Integrações nativas", desc: "Labs de apoio e equipamentos analíticos sem retrabalho." },
+  { icon: Activity, title: "Operação contínua", desc: "Recepção, coleta, bancada e liberação no mesmo protocolo — sem planilhas, sem retrabalho." },
+  { icon: BadgeCheck, title: "Qualidade clínica", desc: "Valores de referência por sexo/idade, alerta de críticos e auditoria dupla (analisado/liberado)." },
+  { icon: Wallet, title: "Financeiro integrado", desc: "Caixa, PIX no balcão, convênios TISS/TUSS, glosas e fechamento por competência." },
+  { icon: Network, title: "Integrações nativas", desc: "Labs de apoio (DB, Hermes-Pardini, Álvaro), site público do laboratório e WhatsApp centralizado." },
 ];
 
 const modules = [
-  { icon: Users, title: "Atendimento", desc: "Triagem, recepção e protocolo único." },
-  { icon: Activity, title: "Pacientes", desc: "Histórico, débitos e alertas automáticos." },
-  { icon: FlaskConical, title: "Exames", desc: "Catálogo, parâmetros e validação clínica." },
-  { icon: Beaker, title: "Soroteca", desc: "Rastreabilidade, validade e reutilização." },
-  { icon: Wallet, title: "Financeiro", desc: "Caixa, faturas e fechamento por período." },
-  { icon: FileBarChart, title: "Convênios", desc: "Tabelas TUSS/CBHPM e lotes TISS." },
-  { icon: Network, title: "Labs de apoio", desc: "DB, Hermes, Álvaro e adaptadores." },
-  { icon: LayoutDashboard, title: "Administração", desc: "Multi-unidade, papéis e auditoria." },
+  { icon: Users, title: "Atendimento", desc: "Recepção, orçamento, protocolo único e cobrança por convênio ou particular." },
+  { icon: Stethoscope, title: "Pacientes", desc: "Cadastro único, histórico clínico, débitos e alertas de jejum e prioridade." },
+  { icon: ClipboardList, title: "Coleta & Bancada", desc: "Etiquetas, registro de coleta, análise por setor e digitação inteligente de resultados." },
+  { icon: FlaskConical, title: "Catálogo de exames", desc: "Parâmetros, fórmulas, réguas etárias e variações por jejum/risco cardiovascular." },
+  { icon: Map, title: "Mapa de trabalho", desc: "Filtragem por paciente, setor ou analista; impressão por bancada e reimpressão garantida." },
+  { icon: FileSignature, title: "Laudos & Impressão", desc: "Layout científico travado, assinatura digital, marca d'água e impressão em lote." },
+  { icon: Beaker, title: "Soroteca", desc: "Estrutura física, triagem, materiais e expurgo com rastreabilidade total da amostra." },
+  { icon: Network, title: "Labs de apoio", desc: "Terceirização com recebimento manual ou automático e PDF do apoio anexado ao laudo." },
+  { icon: Wallet, title: "Financeiro", desc: "Caixa, A receber, despesas, conciliação e fechamento de convênios por competência." },
+  { icon: FileBarChart, title: "Convênios & TISS", desc: "Tabelas TUSS/CBHPM, lotes TISS, glosas e faturamento por competência." },
+  { icon: Package, title: "Estoque", desc: "Insumos, reagentes, validade e consumo por setor." },
+  { icon: LayoutDashboard, title: "Administração", desc: "Multi-unidade, papéis granulares, auditoria de cada ação e gestão de equipe." },
 ];
 
 const flow = [
-  { step: "01", title: "Cadastro", desc: "Paciente identificado e protocolo emitido." },
-  { step: "02", title: "Atendimento", desc: "Exames selecionados, convênio e cobrança." },
-  { step: "03", title: "Coleta", desc: "Etiquetas, amostras e rastreabilidade ativa." },
-  { step: "04", title: "Análise", desc: "Resultados validados e críticos sinalizados." },
-  { step: "05", title: "Liberação", desc: "Laudo assinado, faturamento e entrega." },
+  { step: "01", title: "Cadastro", desc: "Paciente identificado, jejum e prioridade clínica registrados." },
+  { step: "02", title: "Atendimento", desc: "Exames, convênio, orçamento e cobrança em um clique." },
+  { step: "03", title: "Coleta", desc: "Etiquetas impressas, amostras rastreadas e armazenadas na soroteca." },
+  { step: "04", title: "Análise", desc: "Resultados digitados, fórmulas calculadas e críticos sinalizados." },
+  { step: "05", title: "Liberação", desc: "Validação dupla, laudo assinado, faturamento e entrega ao paciente." },
+];
+
+const extras = [
+  { icon: Bot, title: "SISLAC Assistant", desc: "Assistente com IA por Ctrl+J: navega, busca pacientes e explica regras do sistema por voz ou texto." },
+  { icon: QrCode, title: "PIX no balcão", desc: "QR Code dinâmico gerado na recepção; pagamento confirmado e baixa automática no caixa." },
+  { icon: MessageCircle, title: "WhatsApp centralizado", desc: "Orçamentos, comprovantes e laudos enviados pelo número oficial do laboratório." },
+  { icon: Globe, title: "Site público do laboratório", desc: "Vitrine de exames, pedidos online e domínio próprio — sem dependência de webdesigner." },
+  { icon: Printer, title: "Impressão geral", desc: "PDF em lote dos laudos finalizados do dia, na ordem do atendimento." },
+  { icon: Building2, title: "Multi-unidade", desc: "Sede, filiais e pontos de coleta com escopo de dados, papéis e fluxos próprios." },
 ];
 
 const differentials = [
-  "Validação clínica com checagem de valores críticos e de referência",
-  "Auditoria completa de cada ação operacional",
-  "Integração direta com laboratórios de apoio",
-  "Controle de soroteca com rastreabilidade da amostra",
-  "Conformidade com a RDC ANVISA 786/2023",
+  "Validação clínica com valores críticos e referência por sexo/idade",
+  "Auditoria dupla: quem analisou e quem liberou cada exame",
+  "Integração direta com Hermes-Pardini, DB e Álvaro",
+  "Soroteca com cadeia de custódia da amostra ponta a ponta",
+  "PIX presencial, TISS, convênios e particular no mesmo caixa",
+  "Conformidade com RDC ANVISA 786/2023 e LGPD",
 ];
 
 const Landing = () => {
@@ -344,8 +369,41 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* Inteligência & automação */}
+        <section id="extras" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 flex flex-col gap-8 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Inteligência & automação</p>
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+                  Recursos que cabem na rotina do balcão.
+                </h2>
+              </div>
+              <p className="max-w-md text-pretty text-base leading-relaxed text-muted-foreground">
+                Pequenas decisões automatizadas que economizam horas por dia — IA, PIX, WhatsApp e site próprio do laboratório.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {extras.map((e) => {
+                const Icon = e.icon;
+                return (
+                  <div key={e.title} className="group relative overflow-hidden rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40">
+                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mb-1 text-sm font-semibold">{e.title}</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{e.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* Fluxo */}
         <section id="fluxo" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+
           <div className="mx-auto max-w-6xl">
             <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Como funciona</p>
