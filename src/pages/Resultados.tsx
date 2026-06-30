@@ -244,10 +244,10 @@ const Resultados = () => {
       danger:  "text-[hsl(var(--status-danger))] bg-[hsl(var(--status-danger-bg))]",
     } as const;
     return (
-      <div className={`flex items-center gap-2 px-3 h-9 rounded-lg ${map[tone]}`}>
-        <Icon className="h-3.5 w-3.5" />
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-sm font-semibold tabular-nums">{value}</span>
+      <div className={`flex min-w-0 items-center justify-center gap-1 px-2 sm:gap-2 sm:px-3 h-8 sm:h-9 rounded-lg ${map[tone]}`}>
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+        <span className="truncate text-[11px] sm:text-xs font-medium">{label}</span>
+        <span className="text-[11px] sm:text-sm font-semibold tabular-nums shrink-0">{value}</span>
       </div>
     );
   };
