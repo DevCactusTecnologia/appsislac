@@ -140,7 +140,25 @@ async function isTenantActive(tenantId: string | null | undefined): Promise<bool
 }
 
 async function hydrateFromSupabase(session: Session): Promise<UserProfile | null> {
-  const userId = session.user.id;
+  return _hydrateDedup(session);
+}
+
+// Dedup: se duas chamadas chegarem em <250ms para o mesmo usuário, reusa a
+// promise em voo. Evita N execuções paralelas em rajadas de realtime/auth.
+const _hydrateInflight = new Map<string, Promise<UserProfile | null>>();
+function _hydrateDedup(session: Session): Promise<UserProfile | null> {
+  const uid = session.user.id;
+  const existing = _hydrateInflight.get(uid);
+  if (existing) return existing;
+  const p = _hydrateImpl(session).finally(() => {
+    // Mantém na janela curta para coalescer eventos próximos.
+    setTimeout(() => { _hydrateInflight.delete(uid); }, 250);
+  });
+  _hydrateInflight.set(uid, p);
+  return p;
+}
+
+async function _hydrateImpl(session: Session): Promise<UserProfile | null> {
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase.from("profiles" as never).select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("user_roles" as never).select("role").eq("user_id", userId),
