@@ -139,7 +139,7 @@ const Landing = () => {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              Mais laudos liberados, menos retrabalho
+              100% gratuito · sem cartão de crédito
             </div>
 
             <h1 className="text-balance text-3xl font-semibold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
@@ -152,7 +152,7 @@ const Landing = () => {
 
             <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
               Do atendimento ao resultado, tudo em um único sistema seguro e escalável.
-              Coleta rastreada, análises validadas, financeiro integrado.
+              <span className="font-semibold text-foreground"> Grátis para sempre</span> — sem mensalidade, sem limite de usuários, sem pegadinha.
             </p>
 
             <div className="mt-2 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
@@ -160,16 +160,17 @@ const Landing = () => {
                 to="/inscricao"
                 className="group inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.7)] transition-all hover:scale-[1.02] hover:shadow-[0_14px_48px_-10px_hsl(var(--primary)/0.7)] sm:px-7 sm:py-3.5"
               >
-                Ver demonstração
+                Criar conta grátis
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground sm:gap-x-6 sm:text-xs">
-              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Reduz retrabalho e recoletas</span>
+              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Gratuito, sem mensalidade</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Laudos liberados em minutos</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-secondary" />Rastreabilidade ponta a ponta</span>
             </div>
+
           </div>
 
           {/* Hero preview */}
@@ -468,7 +469,7 @@ const Landing = () => {
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-lg border border-border bg-card p-6 text-center sm:p-12 lg:p-20">
             <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-1.5 text-xs font-medium text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Pronto para começar
+              100% gratuito · sem cartão de crédito
             </div>
 
             <h2 className="mb-5 text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
@@ -477,14 +478,15 @@ const Landing = () => {
               seu laboratório?
             </h2>
             <p className="mx-auto mb-10 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-              Crie sua conta em minutos. Comece pelo essencial e expanda conforme seu fluxo amadurece.
+              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis para sempre</span>, sem mensalidade e sem limite de usuários.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/inscricao" className="group inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
-                Criar conta
+                Criar conta grátis
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
+
               <a href="mailto:contato@sislac.app" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-8 py-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
                 Falar com especialista
               </a>
