@@ -31,6 +31,27 @@ const PROVIDERS = [
   { value: "external_postgres", label: "Postgres externo" },
 ];
 
+const SUPABASE_REGIONS = [
+  "us-east-1", "us-east-2", "us-west-1", "us-west-2",
+  "ca-central-1", "sa-east-1",
+  "eu-west-1", "eu-west-2", "eu-west-3", "eu-central-1", "eu-central-2", "eu-north-1",
+  "ap-south-1", "ap-southeast-1", "ap-southeast-2", "ap-northeast-1", "ap-northeast-2",
+];
+
+const NEON_REGIONS = [
+  "aws-us-east-1", "aws-us-east-2", "aws-us-west-2",
+  "aws-eu-central-1", "aws-eu-west-2",
+  "aws-ap-southeast-1", "aws-ap-southeast-2", "aws-sa-east-1",
+  "azure-eastus2",
+];
+
+const PROVIDER_REGIONS: Record<string, string[]> = {
+  shared_supabase: SUPABASE_REGIONS,
+  supabase_project: SUPABASE_REGIONS,
+  neon: NEON_REGIONS,
+  external_postgres: [],
+};
+
 const MODES: { value: RuntimeMode; label: string; hint: string }[] = [
   { value: "shared_db", label: "Compartilhado", hint: "Instância multi-tenant" },
   { value: "isolated_db", label: "Dedicado", hint: "Database-per-tenant" },
@@ -193,12 +214,29 @@ export function TenantDatabaseConfig({
               </select>
             </DbField>
 
-            <DbField label="Região" icon={MapPin} hint="Ex.: us-east-1, sa-east-1">
-              <Input
-                value={cfg.db_region ?? ""}
-                onChange={(e) => set("db_region", e.target.value || null)}
-                placeholder="sa-east-1"
-              />
+            <DbField label="Região" icon={MapPin} hint={cfg.db_provider ? "Selecione a região do provedor" : "Selecione um provedor para listar as regiões"}>
+              {(() => {
+                const regions = cfg.db_provider ? (PROVIDER_REGIONS[cfg.db_provider] ?? []) : [];
+                if (regions.length === 0) {
+                  return (
+                    <Input
+                      value={cfg.db_region ?? ""}
+                      onChange={(e) => set("db_region", e.target.value || null)}
+                      placeholder="sa-east-1"
+                    />
+                  );
+                }
+                return (
+                  <select
+                    value={cfg.db_region ?? ""}
+                    onChange={(e) => set("db_region", e.target.value || null)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Selecione…</option>
+                    {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                );
+              })()}
             </DbField>
 
             <DbField label="Host" icon={Server}>
