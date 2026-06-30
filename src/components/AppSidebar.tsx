@@ -379,7 +379,7 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
       </button>
 
         </TooltipTrigger>
-        <TooltipContent side="right" className="text-xs">{item.label}</TooltipContent>
+        {collapsed && <TooltipContent side="right" className="text-xs">{item.label}</TooltipContent>}
       </Tooltip>
     );
   };
