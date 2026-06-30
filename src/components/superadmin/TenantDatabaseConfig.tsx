@@ -159,7 +159,34 @@ export function TenantDatabaseConfig({
     toast.success("Configuração de banco salva");
   };
 
-  const reset = () => setCfg(baseline);
+  const reset = () => { setCfg(baseline); setTestResult(null); };
+
+  const testConnection = async () => {
+    const err = validate();
+    if (err) { toast.error(err); return; }
+    setTesting(true);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-test-tenant-db", {
+      body: {
+        tenantId,
+        dbHost: cfg.db_host,
+        dbPort: cfg.db_port,
+        dbName: cfg.db_name,
+        dbUser: cfg.db_user,
+        dbSecretRef: cfg.db_secret_ref,
+      },
+    });
+    setTesting(false);
+    if (error) { setTestResult({ ok: false, error: error.message }); toast.error(error.message); return; }
+    const r = data as any;
+    if (r?.ok) {
+      setTestResult({ ok: true, latencyMs: r.latencyMs, serverVersion: r.serverVersion, database: r.database, user: r.user });
+      toast.success(`Conexão OK em ${r.latencyMs}ms`);
+    } else {
+      setTestResult({ ok: false, error: r?.error ?? "Falha desconhecida", stage: r?.stage });
+      toast.error(r?.error ?? "Falha na conexão");
+    }
+  };
 
   return (
     <section className="rounded-xl border border-border bg-card p-6">
