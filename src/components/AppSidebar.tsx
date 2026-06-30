@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { preloadLazyStore, type LazyStoreKey } from "@/data/lazyStores";
+import { preloadRoute } from "@/lib/routePreload";
 import { useSolicitacoesNaoLidas } from "@/hooks/useSolicitacoesNaoLidas";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRotinaColetaAnaliseEnabled } from "@/hooks/useRotinaConfig";
@@ -33,6 +34,9 @@ const PRELOAD_BY_PATH: Record<string, LazyStoreKey> = {
 
 function preloadForPath(path?: string) {
   if (!path) return;
+  // 1) Pré-aquece o chunk JS da rota (React.lazy) — abre página em ms.
+  preloadRoute(path);
+  // 2) Pré-aquece o store lazy correspondente, se houver.
   const key = PRELOAD_BY_PATH[path];
   if (key) preloadLazyStore(key);
 }
