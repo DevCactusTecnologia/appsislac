@@ -177,7 +177,12 @@ export default function SuperAdminNovoLab() {
           {step === 2 && <StepRuntime runtime={form.runtime} onChange={(r) => set("runtime", r)} />}
           {step === 3 && <StepBanco runtime={form.runtime} />}
           {step === 4 && <StepIntegracoes />}
-          {step === 5 && <StepAtivacao form={form} effectiveSlug={effectiveSlug} />}
+          {step === 5 && (
+            <div className="space-y-6">
+              <StepBranding form={form} set={set} showPassword={showPassword} onTogglePassword={() => setShowPassword(p => !p)} />
+              <StepAtivacao form={form} effectiveSlug={effectiveSlug} />
+            </div>
+          )}
         </div>
 
         {/* Sidebar resumo */}
