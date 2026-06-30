@@ -214,12 +214,29 @@ export function TenantDatabaseConfig({
               </select>
             </DbField>
 
-            <DbField label="Região" icon={MapPin} hint="Ex.: us-east-1, sa-east-1">
-              <Input
-                value={cfg.db_region ?? ""}
-                onChange={(e) => set("db_region", e.target.value || null)}
-                placeholder="sa-east-1"
-              />
+            <DbField label="Região" icon={MapPin} hint={cfg.db_provider ? "Selecione a região do provedor" : "Selecione um provedor para listar as regiões"}>
+              {(() => {
+                const regions = cfg.db_provider ? (PROVIDER_REGIONS[cfg.db_provider] ?? []) : [];
+                if (regions.length === 0) {
+                  return (
+                    <Input
+                      value={cfg.db_region ?? ""}
+                      onChange={(e) => set("db_region", e.target.value || null)}
+                      placeholder="sa-east-1"
+                    />
+                  );
+                }
+                return (
+                  <select
+                    value={cfg.db_region ?? ""}
+                    onChange={(e) => set("db_region", e.target.value || null)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">Selecione…</option>
+                    {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                );
+              })()}
             </DbField>
 
             <DbField label="Host" icon={Server}>
