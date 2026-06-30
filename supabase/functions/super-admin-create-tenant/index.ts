@@ -120,37 +120,9 @@ Deno.serve(async (req) => {
   // ✅ VALIDAÇÃO 3: Nome do admin
   if (!adminNome) return errorResponse(400, "Nome do admin obrigatório", requestId, log);
   
-  // ✅ VALIDAÇÃO 4: Senha FORTE (se fornecida)
-  // Senha deve ter:
-  // - Mínimo 12 caracteres
-  // - Pelo menos 1 maiúscula
-  // - Pelo menos 1 minúscula
-  // - Pelo menos 1 número
-  // - Pelo menos 1 símbolo especial
-  if (adminSenha) {
-    const MIN_LENGTH = 12;
-    const hasUpper = /[A-Z]/.test(adminSenha);
-    const hasLower = /[a-z]/.test(adminSenha);
-    const hasNumber = /[0-9]/.test(adminSenha);
-    const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(adminSenha);
+  // ✅ VALIDAÇÃO 4: Senha — sem regras de complexidade (aceita qualquer valor não-vazio).
+  //    O Supabase Auth ainda aplica o mínimo configurado no projeto.
 
-    if (adminSenha.length < MIN_LENGTH) {
-      return errorResponse(
-        400,
-        `Senha deve ter no mínimo ${MIN_LENGTH} caracteres (atual: ${adminSenha.length})`,
-        requestId,
-        log
-      );
-    }
-    if (!hasUpper || !hasLower || !hasNumber || !hasSymbol) {
-      return errorResponse(
-        400,
-        "Senha deve conter: maiúscula, minúscula, número e símbolo especial (ex: P@ssw0rd123)",
-        requestId,
-        log
-      );
-    }
-  }
 
   const slug = slugify(slugInput || nome);
   
