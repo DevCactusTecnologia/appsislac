@@ -58,6 +58,8 @@ interface PagamentoDialogProps {
   descontoData?: string;
   /** Data do acréscimo histórico (formato BR). */
   acrescimoData?: string;
+  /** Callback opcional: imprime o comprovante de pagamento (visível quando quitado). */
+  onPrintReceipt?: () => void;
 }
 
 /* ── Constants ── */
