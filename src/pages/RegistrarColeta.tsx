@@ -504,10 +504,10 @@ const RegistrarColeta = () => {
       success: "text-[hsl(var(--status-success))] bg-[hsl(var(--status-success-bg))] ring-[hsl(var(--status-success))]/15",
     } as const;
     return (
-      <div className={`flex items-center gap-2 px-3.5 h-9 rounded-full ring-1 ${map[tone]}`}>
-        <Icon className="h-3.5 w-3.5" />
-        <span className="text-[11px] font-medium uppercase tracking-wider">{label}</span>
-        <span className="text-sm font-bold tabular-nums">{value}</span>
+      <div className={`flex min-w-0 items-center justify-center gap-1 px-2 sm:gap-2 sm:px-3.5 h-8 sm:h-9 rounded-full ring-1 ${map[tone]}`}>
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+        <span className="truncate text-[10px] sm:text-[11px] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-xs sm:text-sm font-bold tabular-nums shrink-0">{value}</span>
       </div>
     );
   };
@@ -533,7 +533,7 @@ const RegistrarColeta = () => {
           description={`${filteredPacientes.length} ${filteredPacientes.length === 1 ? "paciente na fila" : "pacientes na fila"}`}
           actions={
             hasPendentes ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
                 <SummaryChip icon={Clock}        label="Pendentes" value={globalCounts.pendente} tone="warning" />
                 <SummaryChip icon={CheckCircle2} label="Coletadas" value={globalCounts.coletado} tone="success" />
               </div>
