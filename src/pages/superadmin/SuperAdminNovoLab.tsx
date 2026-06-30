@@ -99,7 +99,7 @@ export default function SuperAdminNovoLab() {
       { label: "Slug válido", ok: /^[a-z0-9-]{2,50}$/.test(effectiveSlug), hint: effectiveSlug },
       { label: "E-mail do admin", ok: !!form.adminEmail.includes("@") },
       { label: "Nome do admin", ok: !!form.adminNome.trim() },
-      { label: "Senha inicial (≥ 12 caracteres)", ok: form.adminSenha.length >= 12 },
+      { label: "Senha inicial preenchida", ok: form.adminSenha.length > 0 },
       {
         label: form.runtime === "isolated_db"
           ? "Runtime isolated_db: configurar banco após criação"
@@ -122,7 +122,7 @@ export default function SuperAdminNovoLab() {
       setStep(5);
       return;
     }
-    if (form.adminSenha.length < 12) { toast.error("Senha inicial precisa ter ao menos 12 caracteres (etapa 5)."); setStep(5); return; }
+    if (!form.adminSenha) { toast.error("Informe a senha inicial do admin (etapa 5)."); setStep(5); return; }
 
     setSubmitting(true);
     const { data, error } = await supabase.functions.invoke("super-admin-create-tenant", {
@@ -427,7 +427,7 @@ function StepBranding({ form, set, showPassword, onTogglePassword }: {
           <Field label="E-mail do admin" required icon={Mail}>
             <Input type="email" value={form.adminEmail} onChange={e => set("adminEmail", e.target.value)} placeholder="admin@laboratorio.com" />
           </Field>
-          <Field label="Senha inicial" required icon={KeyRound} hint="Mínimo de 12 caracteres. Compartilhe com segurança.">
+          <Field label="Senha inicial" required icon={KeyRound} hint="Qualquer senha. Compartilhe com segurança.">
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
