@@ -159,6 +159,7 @@ function _hydrateDedup(session: Session): Promise<UserProfile | null> {
 }
 
 async function _hydrateImpl(session: Session): Promise<UserProfile | null> {
+  const userId = session.user.id;
   const [{ data: profile }, { data: roles }] = await Promise.all([
     supabase.from("profiles" as never).select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("user_roles" as never).select("role").eq("user_id", userId),
