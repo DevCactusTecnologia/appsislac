@@ -427,7 +427,7 @@ function StepBranding({ form, set, showPassword, onTogglePassword }: {
           <Field label="E-mail do admin" required icon={Mail}>
             <Input type="email" value={form.adminEmail} onChange={e => set("adminEmail", e.target.value)} placeholder="admin@laboratorio.com" />
           </Field>
-          <Field label="Senha inicial" required icon={KeyRound} hint="Mínimo de 6 caracteres. Compartilhe com segurança.">
+          <Field label="Senha inicial" required icon={KeyRound} hint="Mínimo de 12 caracteres. Compartilhe com segurança.">
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
