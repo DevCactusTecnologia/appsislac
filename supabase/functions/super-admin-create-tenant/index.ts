@@ -126,24 +126,12 @@ Deno.serve(async (req) => {
 
   const slug = slugify(slugInput || nome);
   
-  // ✅ VALIDAÇÃO 5: CNPJ válido (se fornecido)
+  // ✅ VALIDAÇÃO 5: CNPJ — apenas normaliza para dígitos; sem checagem de DV.
   let cnpj = typeof body.cnpj === "string" ? body.cnpj.trim() : "";
   if (cnpj) {
-    // Remover caracteres especiais
-    const cnpjDigits = cnpj.replace(/[^\d]/g, "");
-    
-    // Validar tamanho
-    if (cnpjDigits.length !== 14) {
-      return errorResponse(400, "CNPJ deve ter 14 dígitos", requestId, log);
-    }
-    
-    // Validar dígito verificador (simples - poderia ser mais rigoroso)
-    if (!isValidCNPJ(cnpjDigits)) {
-      return errorResponse(400, "CNPJ inválido (dígito verificador incorreto)", requestId, log);
-    }
-    
-    cnpj = cnpjDigits; // Armazenar apenas dígitos
+    cnpj = cnpj.replace(/[^\d]/g, "");
   }
+
   
   const emailContato = typeof body.emailContato === "string" ? body.emailContato.trim() : adminEmail;
   const telefone = typeof body.telefone === "string" ? body.telefone.trim() : "";
