@@ -274,12 +274,12 @@ const Resultados = () => {
         <div className="bg-card rounded-xl border border-border p-3 mb-5">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3">
             {/* Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar bg-muted/50 rounded-lg p-1 shrink-0">
+            <div className="grid grid-cols-4 gap-0.5 bg-muted/50 rounded-lg p-1 w-full min-w-0 lg:flex lg:items-center lg:gap-1 lg:w-auto lg:shrink-0">
               {tabs.map((tab, index) => (
                 <button
                   key={tab.label}
                   onClick={() => { setActiveTab(index); setCurrentPage(1); }}
-                  className={`h-8 px-3.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  className={`h-8 min-w-0 px-1 sm:px-2 lg:px-3.5 rounded-md text-[10px] min-[380px]:text-[11px] sm:text-xs font-medium transition-all whitespace-nowrap overflow-hidden text-ellipsis ${
                     activeTab === index
                       ? "bg-card text-foreground shadow-elevation-xs"
                       : "text-muted-foreground hover:text-foreground"
