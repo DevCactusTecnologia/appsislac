@@ -478,7 +478,7 @@ const Landing = () => {
               seu laboratório?
             </h2>
             <p className="mx-auto mb-10 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis para começar</span>, sem cartão de crédito.
+              Crie sua conta em minutos. <span className="font-semibold text-foreground">Grátis</span>, sem cartão de crédito.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
