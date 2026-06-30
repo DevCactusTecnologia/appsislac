@@ -342,8 +342,42 @@ export function TenantDatabaseConfig({
         </>
       )}
 
+      {isolated && testResult && (
+        <div className={cn(
+          "mt-5 rounded-md border p-3 text-[12px] flex items-start gap-2",
+          testResult.ok
+            ? "border-status-success/30 bg-status-success-bg/40 text-foreground"
+            : "border-status-danger/30 bg-status-danger-bg/40 text-foreground"
+        )}>
+          {testResult.ok
+            ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+            : <XCircle className="h-4 w-4 text-status-danger shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            {testResult.ok ? (
+              <>
+                <div className="font-semibold">Conexão estabelecida em {testResult.latencyMs}ms</div>
+                <div className="text-muted-foreground mt-0.5 font-mono text-[11px] truncate">
+                  {testResult.user}@{testResult.database} · {testResult.serverVersion ?? "Postgres"}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-semibold">Falha {testResult.stage ? `(${testResult.stage})` : ""}</div>
+                <div className="text-muted-foreground mt-0.5 break-words">{testResult.error}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
+        {isolated && (
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving}>
+            {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
+            {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
         <Button onClick={save} disabled={!isDirty || saving}>
           <Save className="h-4 w-4 mr-2" />
           {saving ? "Salvando…" : "Salvar configuração"}
