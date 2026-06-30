@@ -369,8 +369,41 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* Inteligência & automação */}
+        <section id="extras" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 flex flex-col gap-8 sm:mb-14 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-2xl">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Inteligência & automação</p>
+                <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+                  Recursos que cabem na rotina do balcão.
+                </h2>
+              </div>
+              <p className="max-w-md text-pretty text-base leading-relaxed text-muted-foreground">
+                Pequenas decisões automatizadas que economizam horas por dia — IA, PIX, WhatsApp e site próprio do laboratório.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {extras.map((e) => {
+                const Icon = e.icon;
+                return (
+                  <div key={e.title} className="group relative overflow-hidden rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40">
+                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mb-1 text-sm font-semibold">{e.title}</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{e.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* Fluxo */}
         <section id="fluxo" className="px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
+
           <div className="mx-auto max-w-6xl">
             <div className="mb-10 max-w-2xl sm:mb-14">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Como funciona</p>
