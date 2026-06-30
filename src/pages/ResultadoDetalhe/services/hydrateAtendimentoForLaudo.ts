@@ -44,8 +44,12 @@ export async function hydrateAtendimentoForLaudo(
   protocolo: string,
 ): Promise<HydratedAtendimentoLaudo | null> {
   const atFromDb = await fetchAtendimentoByProtocolo(protocolo);
-  const rows = await getAtendimentoExamesDB(protocolo);
-  if (!rows || rows.length === 0) return null;
+  const rowsAll = await getAtendimentoExamesDB(protocolo);
+  // Exames terceirizados NUNCA entram na impressão em lote ("Imprimir todos").
+  // O laudo é emitido pelo laboratório de apoio; o sistema só recebe o PDF
+  // externo, sem parâmetros internos para compor o laudo científico.
+  const rows = (rowsAll ?? []).filter((r) => r.tipo_processo !== "TERCEIRIZADO");
+  if (rows.length === 0) return null;
 
   const segmentosPorRowId: Record<number, Awaited<ReturnType<typeof hidratarSegmentosParaDigitacao>>> = {};
   await Promise.all(
