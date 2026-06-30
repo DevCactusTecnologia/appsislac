@@ -329,7 +329,7 @@ export default function Estoque() {
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-1 rounded-2xl bg-muted/50 p-1">
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-muted/50 p-1 w-full sm:w-auto sm:inline-flex">
             {TABS.map((t) => {
               const ativo = tab === t.id;
               return (
@@ -337,14 +337,14 @@ export default function Estoque() {
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={cn(
-                    "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[12.5px] font-medium transition-colors",
+                    "inline-flex items-center justify-center gap-1.5 px-2 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-[12.5px] font-medium transition-colors min-w-0",
                     ativo
                       ? "bg-card text-foreground shadow-[0_1px_3px_-1px_hsl(var(--foreground)/0.15)]"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <t.icon className="w-4 h-4" />
-                  {t.label}
+                  <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span className="truncate">{t.label}</span>
                 </button>
               );
             })}
@@ -480,18 +480,18 @@ function KpiCard({ icon: Icon, label, value, tone, hint, active, onClick }: { ic
     <Wrapper
       onClick={onClick}
       className={cn(
-        "text-left rounded-2xl border border-border/60 bg-card p-4 flex items-center gap-3 transition-all w-full",
+        "text-left rounded-2xl border border-border/60 bg-card p-2.5 sm:p-4 flex items-center gap-2 sm:gap-3 transition-all w-full min-w-0",
         onClick && "hover:border-border hover:shadow-sm cursor-pointer",
         ringCls,
       )}
     >
-      <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", toneCls)}>
-        <Icon className="w-5 h-5" />
+      <div className={cn("w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0", toneCls)}>
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-semibold">{label}</p>
-        <p className="text-2xl font-bold text-foreground tabular-nums leading-tight mt-0.5">{value}</p>
-        {hint && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{hint}</p>}
+        <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.1em] sm:tracking-[0.12em] text-muted-foreground font-semibold truncate">{label}</p>
+        <p className="text-base sm:text-2xl font-bold text-foreground tabular-nums leading-tight mt-0.5">{value}</p>
+        {hint && <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate hidden sm:block">{hint}</p>}
       </div>
     </Wrapper>
   );
