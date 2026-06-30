@@ -100,8 +100,14 @@ export function TenantDatabaseConfig({
   const baseline = useMemo<DbConfig>(() => ({ ...empty, ...(initial ?? {}) }), [initial]);
   const [cfg, setCfg] = useState<DbConfig>(baseline);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<
+    | { ok: true; latencyMs: number; serverVersion: string | null; database: string; user: string }
+    | { ok: false; error: string; stage?: string }
+    | null
+  >(null);
 
-  useEffect(() => { setCfg(baseline); }, [baseline]);
+  useEffect(() => { setCfg(baseline); setTestResult(null); }, [baseline]);
 
   const isDirty = useMemo(
     () => (Object.keys(empty) as (keyof DbConfig)[]).some((k) => cfg[k] !== baseline[k]),
