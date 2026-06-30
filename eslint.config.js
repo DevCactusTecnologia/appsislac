@@ -23,4 +23,27 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  // Runtime 2.0 — guard: apenas a SharedStrategy pode tocar o singleton legado.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/runtime/db/strategies/shared.ts",
+      "src/runtime/db/resolver.ts",
+      "src/integrations/supabase/**",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/integrations/supabase/client",
+              message:
+                "Runtime 2.0: use `import { db } from '@/runtime/db'` em vez do client direto.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
