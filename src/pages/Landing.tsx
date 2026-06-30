@@ -152,7 +152,7 @@ const Landing = () => {
 
             <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
               Do atendimento ao resultado, tudo em um único sistema seguro e escalável.
-              <span className="font-semibold text-foreground"> Grátis para sempre</span> — sem mensalidade, sem limite de usuários, sem pegadinha.
+              <span className="font-semibold text-foreground"> Grátis para começar</span> — sem mensalidade inicial, sem cartão de crédito.
             </p>
 
             <div className="mt-2 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
