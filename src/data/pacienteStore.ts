@@ -176,22 +176,39 @@ export async function _initPacientesStore(): Promise<void> {
     "id,friendly_id,nome,cpf,data_nascimento,sexo,telefone,email,status," +
     "celular,cep,estado,cidade,bairro,endereco,numero,complemento," +
     "guardian_name,guardian_cpf,consentimento_lgpd,consentimento_em,nome_social";
+  // Cursor pagination por (nome, id) — evita o custo de OFFSET em páginas
+  // profundas (com OFFSET, o Postgres precisa varrer+descartar N linhas a
+  // cada range). O cursor composto usa `id` como tie-breaker estável para
+  // empates de `nome`. Mantém ORDER BY (nome, id) para casar com índice.
   const PAGE = 1000;
   const all: PacienteRow[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const to = from + PAGE - 1;
-    const { data, error } = await supabase
+  let lastNome: string | null = null;
+  let lastId: number | null = null;
+  for (;;) {
+    let q = supabase
       .from("pacientes")
       .select(cols)
-      .order("nome")
-      .range(from, to);
+      .order("nome", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(PAGE);
+    if (lastNome !== null && lastId !== null) {
+      // (nome > lastNome) OR (nome = lastNome AND id > lastId)
+      // Escape de vírgula/parêntese no nome para o parser do PostgREST.
+      const safeNome = lastNome.replace(/[,()"]/g, "");
+      q = q.or(`nome.gt.${safeNome},and(nome.eq.${safeNome},id.gt.${lastId})`);
+    }
+    const { data, error } = await q;
     if (error) {
       showError(error, { scope: "pacienteStore.init", silent: true });
       return;
     }
     const batch = (data ?? []) as unknown as PacienteRow[];
+    if (batch.length === 0) break;
     all.push(...batch);
     if (batch.length < PAGE) break;
+    const last = batch[batch.length - 1] as unknown as { nome: string; id: number };
+    lastNome = last.nome;
+    lastId = Number(last.id);
   }
   _pacientes = all.map((r) => fromRow(r));
   _saveCachedSnapshot(tenantId, _pacientes);
