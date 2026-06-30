@@ -215,11 +215,10 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
 
   const rotinaColetaAnalise = useRotinaColetaAnaliseEnabled();
   const visibleNav = filterNavByPermissions(navItems, hasPermission).map((item) => {
-    // Quando o admin desativa Coleta + Análise, o grupo "Rotina" passa a
-    // exibir apenas "Resultados".
+    // Quando o admin desativa Coleta + Análise, o grupo "Rotina" vira um
+    // atalho direto para "Inserir Resultado" — sem submenu.
     if (!rotinaColetaAnalise && item.label === "Rotina" && item.children) {
-      const kids = item.children.filter((c) => c.path === "/resultados");
-      return { ...item, children: kids };
+      return { label: item.label, icon: item.icon, path: "/resultados" } as NavItem;
     }
     return item;
   });
