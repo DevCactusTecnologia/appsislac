@@ -93,13 +93,7 @@ if (typeof window !== "undefined") {
  * FALHA SEGURA: Se não conseguir validar, NEGA acesso (não permite)
  * NUNCA: Deixar passar por erro de rede ou falta de validação
  */
-async function isTenantActive(tenantId: string | null | undefined): Promise<boolean> {
-  // ❌ FALHA SEGURA: Sem tenant_id = negar acesso
-  if (!tenantId) {
-    console.error("❌ [Auth] Tenant ID ausente - acesso bloqueado");
-    return false;
-  }
-
+async function _isTenantActiveImpl(tenantId: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from("tenants" as never)
@@ -107,35 +101,42 @@ async function isTenantActive(tenantId: string | null | undefined): Promise<bool
       .eq("id", tenantId)
       .maybeSingle();
 
-    // ❌ Erro na query = negar acesso
     if (error) {
       console.error("❌ [Auth] Erro ao validar tenant", { tenantId, error });
       return false;
     }
 
     const status = (data as { status?: string } | null)?.status;
-
-    // ✅ Sem registro = NEGAR acesso (falha segura)
     if (!status) {
       console.warn("⚠️  [Auth] Tenant não encontrado no banco", tenantId);
-      return false; // ✅ Falha segura: nega em vez de permitir
+      return false;
     }
 
     const isActive = status === "ativo";
-
     if (!isActive) {
       console.warn("⚠️  [Auth] Tenant inativo", { tenantId, status });
     }
-
     return isActive;
   } catch (error) {
-    // ❌ Erro não tratado = negar acesso (falha segura)
-    console.error("❌ [Auth] Erro inesperado ao validar tenant", {
-      tenantId,
-      error,
-    });
+    console.error("❌ [Auth] Erro inesperado ao validar tenant", { tenantId, error });
     return false;
   }
+}
+
+// TTL de 60s: status do tenant raramente muda. Realtime de profiles/user_roles
+// dispara `isTenantActive` repetidas vezes — sem cache, eram dezenas de hits/min.
+const _isTenantActiveCached = withTtlCache(
+  _isTenantActiveImpl,
+  (tid: string) => tid,
+  { ttlMs: 60_000 },
+);
+
+async function isTenantActive(tenantId: string | null | undefined): Promise<boolean> {
+  if (!tenantId) {
+    console.error("❌ [Auth] Tenant ID ausente - acesso bloqueado");
+    return false;
+  }
+  return _isTenantActiveCached(tenantId);
 }
 
 async function hydrateFromSupabase(session: Session): Promise<UserProfile | null> {
