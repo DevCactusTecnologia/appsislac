@@ -133,7 +133,42 @@ function toRow(p: Partial<Paciente>): PacienteUpdate {
 
 function notify() { _listeners.forEach(fn => fn()); }
 
+// TTL curto em sessionStorage: evita refetch a cada F5/abertura de aba.
+// Chave por tenant; só salva snapshot abaixo do hard-cap (proteção LGPD/quota).
+const PACIENTES_CACHE_TTL_MS = 90_000;
+const PACIENTES_CACHE_MAX_ROWS = 4000;
+function _cacheKey(tid: string | null): string {
+  return `pacientes:snap:${tid ?? "anon"}`;
+}
+function _loadCachedSnapshot(tid: string | null): Paciente[] | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.sessionStorage.getItem(_cacheKey(tid));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; rows: Paciente[] };
+    if (!parsed?.ts || Date.now() - parsed.ts > PACIENTES_CACHE_TTL_MS) return null;
+    return Array.isArray(parsed.rows) ? parsed.rows : null;
+  } catch { return null; }
+}
+function _saveCachedSnapshot(tid: string | null, rows: Paciente[]): void {
+  try {
+    if (typeof window === "undefined") return;
+    if (rows.length > PACIENTES_CACHE_MAX_ROWS) return;
+    window.sessionStorage.setItem(_cacheKey(tid), JSON.stringify({ ts: Date.now(), rows }));
+  } catch { /* quota / serialize falhou: silencioso */ }
+}
+
 export async function _initPacientesStore(): Promise<void> {
+  // Tenta hidratar do cache sessionStorage antes de bater no banco.
+  let tenantId: string | null = null;
+  try { tenantId = await getCurrentTenantId(); } catch { /* segue sem cache */ }
+  const cached = _loadCachedSnapshot(tenantId);
+  if (cached) {
+    _pacientes = cached;
+    notify();
+    return;
+  }
+
   // Slim select (P2-E): apenas colunas mapeadas por fromRow.
   // Paginação por range para contornar o limite default de 1000 linhas
   // do PostgREST e suportar tenants com grande volume de pacientes.
@@ -159,6 +194,7 @@ export async function _initPacientesStore(): Promise<void> {
     if (batch.length < PAGE) break;
   }
   _pacientes = all.map((r) => fromRow(r));
+  _saveCachedSnapshot(tenantId, _pacientes);
   notify();
 }
 
