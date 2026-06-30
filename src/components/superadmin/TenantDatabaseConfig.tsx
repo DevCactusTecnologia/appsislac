@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash } from "lucide-react";
+import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -100,8 +100,14 @@ export function TenantDatabaseConfig({
   const baseline = useMemo<DbConfig>(() => ({ ...empty, ...(initial ?? {}) }), [initial]);
   const [cfg, setCfg] = useState<DbConfig>(baseline);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<
+    | { ok: true; latencyMs: number; serverVersion: string | null; database: string; user: string }
+    | { ok: false; error: string; stage?: string }
+    | null
+  >(null);
 
-  useEffect(() => { setCfg(baseline); }, [baseline]);
+  useEffect(() => { setCfg(baseline); setTestResult(null); }, [baseline]);
 
   const isDirty = useMemo(
     () => (Object.keys(empty) as (keyof DbConfig)[]).some((k) => cfg[k] !== baseline[k]),
@@ -153,7 +159,34 @@ export function TenantDatabaseConfig({
     toast.success("Configuração de banco salva");
   };
 
-  const reset = () => setCfg(baseline);
+  const reset = () => { setCfg(baseline); setTestResult(null); };
+
+  const testConnection = async () => {
+    const err = validate();
+    if (err) { toast.error(err); return; }
+    setTesting(true);
+    setTestResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-test-tenant-db", {
+      body: {
+        tenantId,
+        dbHost: cfg.db_host,
+        dbPort: cfg.db_port,
+        dbName: cfg.db_name,
+        dbUser: cfg.db_user,
+        dbSecretRef: cfg.db_secret_ref,
+      },
+    });
+    setTesting(false);
+    if (error) { setTestResult({ ok: false, error: error.message }); toast.error(error.message); return; }
+    const r = data as any;
+    if (r?.ok) {
+      setTestResult({ ok: true, latencyMs: r.latencyMs, serverVersion: r.serverVersion, database: r.database, user: r.user });
+      toast.success(`Conexão OK em ${r.latencyMs}ms`);
+    } else {
+      setTestResult({ ok: false, error: r?.error ?? "Falha desconhecida", stage: r?.stage });
+      toast.error(r?.error ?? "Falha na conexão");
+    }
+  };
 
   return (
     <section className="rounded-xl border border-border bg-card p-6">
@@ -309,8 +342,42 @@ export function TenantDatabaseConfig({
         </>
       )}
 
+      {isolated && testResult && (
+        <div className={cn(
+          "mt-5 rounded-md border p-3 text-[12px] flex items-start gap-2",
+          testResult.ok
+            ? "border-status-success/30 bg-status-success-bg/40 text-foreground"
+            : "border-status-danger/30 bg-status-danger-bg/40 text-foreground"
+        )}>
+          {testResult.ok
+            ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+            : <XCircle className="h-4 w-4 text-status-danger shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            {testResult.ok ? (
+              <>
+                <div className="font-semibold">Conexão estabelecida em {testResult.latencyMs}ms</div>
+                <div className="text-muted-foreground mt-0.5 font-mono text-[11px] truncate">
+                  {testResult.user}@{testResult.database} · {testResult.serverVersion ?? "Postgres"}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-semibold">Falha {testResult.stage ? `(${testResult.stage})` : ""}</div>
+                <div className="text-muted-foreground mt-0.5 break-words">{testResult.error}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
+        {isolated && (
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving}>
+            {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
+            {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
         <Button onClick={save} disabled={!isDirty || saving}>
           <Save className="h-4 w-4 mr-2" />
           {saving ? "Salvando…" : "Salvar configuração"}
