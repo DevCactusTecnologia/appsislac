@@ -1313,15 +1313,20 @@ const ResultadoDetalhe = () => {
     modo: "unica" | "porSolicitante",
   ) => {
     if (modo === "unica") {
+      // Conta só os exames realmente imprimíveis (terceirizados são emitidos
+      // pelo lab de apoio e ficam fora do laudo).
+      const imprimiveis = printable.filter((e) => !isExameTerceirizadaById(e.id));
       try {
         // Impressão via iframe oculto (sem abrir nova aba, sem travar o navegador).
         await doImprimirLaudo(printable, undefined);
-        markAsImpresso(printable);
-        toast.success(
-          action === "imprimir"
-            ? `Laudo enviado para impressão (${printable.length} exame(s)).`
-            : `Laudo aberto — use "Salvar como PDF" no diálogo de impressão (${printable.length} exame(s)).`,
-        );
+        markAsImpresso(imprimiveis);
+        if (imprimiveis.length > 0) {
+          toast.success(
+            action === "imprimir"
+              ? `Laudo enviado para impressão (${imprimiveis.length} exame(s)).`
+              : `Laudo aberto — use "Salvar como PDF" no diálogo de impressão (${imprimiveis.length} exame(s)).`,
+          );
+        }
       } catch {
         toast.error("Erro ao gerar laudo.");
       }
