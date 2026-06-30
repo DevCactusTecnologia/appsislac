@@ -94,7 +94,12 @@ const Pacientes = () => {
   };
 
   useEffect(() => {
-    const unsub = subscribePacientes(() => setPacientes([...getPacientes()]));
+    // Em modo paginado, o cache global de pacientes não é hidratado no boot
+    // (vide storeBoot). Assinar `subscribePacientes` aqui só consumiria
+    // listeners sem dados; mantemos só a sincronia de atendimentos.
+    const unsub = paginationEnabled
+      ? () => { /* noop */ }
+      : subscribePacientes(() => setPacientes([...getPacientes()]));
     const unsubAt = subscribeAtendimentos(() => {
       setAtdTick((t) => t + 1);
       // Se o detalhe estiver aberto em modo legado, refleti mudanças locais.

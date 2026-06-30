@@ -83,13 +83,19 @@ export function bootDataStores(): Promise<void> {
     }
   } catch { /* fail-safe: mantém boot ligado */ }
 
+  // Em modo paginado, Pacientes/Atendimentos usam queries server-side por
+  // cursor. O boot global era o maior ofensor de pg_stat_statements
+  // (`_initPacientesStore` = 6.5k calls / 869s totais). Mesmo gate de
+  // `SHOULD_BOOT_ATENDIMENTOS` se aplica aqui.
+  const SHOULD_BOOT_PACIENTES = SHOULD_BOOT_ATENDIMENTOS;
+
   const essencial = Promise.all([
     _initUnidadesStore(),
     _initConveniosStore(),
     _initLabsApoioStore(),
     _initExamesCatalogoStore(),
     _initMateriaisAmostraStore(),
-    _initPacientesStore(),
+    SHOULD_BOOT_PACIENTES ? _initPacientesStore() : Promise.resolve(),
 
     SHOULD_BOOT_ATENDIMENTOS ? _initAtendimentosStore() : Promise.resolve(),
     _initUsuariosStore(),
