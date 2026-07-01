@@ -179,6 +179,7 @@ export function TenantDatabaseConfig({
         dbSecretRef: cfg.db_secret_ref,
         dbProjectUrl: cfg.db_project_url,
         dbAnonKeySecretRef: cfg.db_anon_key_secret_ref,
+        runtimeDedicatedEnabled: cfg.runtime_dedicated_enabled,
       },
     });
     setSaving(false);
