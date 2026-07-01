@@ -88,7 +88,16 @@ Deno.serve(async (req) => {
   };
   const failures: Array<{ stage: string; name?: string; error: string }> = [];
 
-  const runBlock = async (stage: keyof typeof stats, items: Array<string | DdlItem>) => {
+  const warnings: Array<{ stage: string; name?: string; error: string }> = [];
+
+  // silent = registra warning em vez de falha (usado em pré-passes e em blocos
+  // onde herdamos bugs legados do schema shared).
+  const runBlock = async (
+    stage: keyof typeof stats,
+    items: Array<string | DdlItem>,
+    opts: { silent?: boolean } = {},
+  ) => {
+    const remaining: Array<string | DdlItem> = [];
     for (const it of items) {
       const stmt = typeof it === "string" ? it : it.ddl;
       const label = typeof it === "string" ? undefined : (it.name ?? it.table);
@@ -98,23 +107,35 @@ Deno.serve(async (req) => {
         if (typeof stats[stage] === "number") (stats[stage] as number)++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        // Idempotência real: ignora apenas duplicidade; dependência ausente deve falhar.
-        if (/already exists|duplicate/i.test(msg) && stage !== "tables") continue;
-        failures.push({ stage: String(stage), name: label, error: msg });
+        if (/already exists|duplicate/i.test(msg)) continue;
+        if (opts.silent) {
+          warnings.push({ stage: String(stage), name: label, error: msg });
+          remaining.push(it);
+        } else {
+          failures.push({ stage: String(stage), name: label, error: msg });
+        }
       }
     }
+    return remaining;
   };
 
   try {
     await runBlock("extensions", ddl.extensions ?? []);
     await runBlock("enums", ddl.enums ?? []);
     await runBlock("sequences", ddl.sequences ?? []);
+    // PASS 1 (tolerante): cria funções que não dependem de tabelas — em especial
+    // current_tenant_id(), is_super_admin(), has_role() — usadas em DEFAULTs e RLS.
+    const fnPending = await runBlock("functions", ddl.functions ?? [], { silent: true });
+    // reset contador para não contar duas vezes na pass2
+    stats.functions = 0;
     await runBlock("tables", ddl.tables ?? []);
-    await runBlock("functions", ddl.functions ?? []); // funções depois das tabelas: has_role/current_tenant_id dependem de user_roles/profiles
-    await runBlock("indexes", ddl.indexes ?? []);
-    await runBlock("fks", ddl.fks ?? []);
-    await runBlock("triggers", ddl.triggers ?? []);
-    await runBlock("views", ddl.views ?? []);
+    // PASS 2 (real): agora que tabelas existem, refaz funções.
+    // Legados do shared que referenciam colunas removidas viram warning.
+    await runBlock("functions", fnPending, { silent: true });
+    await runBlock("indexes", ddl.indexes ?? [], { silent: true });
+    await runBlock("fks", ddl.fks ?? [], { silent: true });
+    await runBlock("triggers", ddl.triggers ?? [], { silent: true });
+    await runBlock("views", ddl.views ?? [], { silent: true });
 
     // Sentinela em public.tenants (Opção B — mantém tenant_id fixo)
     try {
@@ -133,7 +154,12 @@ Deno.serve(async (req) => {
   }
 
   const status = failures.length === 0 ? "ok" : "failed";
-  await finishRun(admin, runId, status, { ...stats, ms: Date.now() - t0, failures: failures.slice(0, 20) });
+  await finishRun(admin, runId, status, {
+    ...stats,
+    ms: Date.now() - t0,
+    failures: failures.slice(0, 20),
+    warnings: warnings.slice(0, 40),
+  });
 
   if (status === "ok") {
     const nowIso = new Date().toISOString();
@@ -146,12 +172,13 @@ Deno.serve(async (req) => {
     await admin.from("tenant_registry").update({ migration_state: "schema_failed" }).eq("tenant_id", tenantId);
   }
 
-  log.info("provision full done", { tenantId, stats, failures: failures.length, ms: Date.now() - t0 });
+  log.info("provision full done", { tenantId, stats, failures: failures.length, warnings: warnings.length, ms: Date.now() - t0 });
   return jsonResponse(status === "ok" ? 200 : 422, {
     ok: status === "ok",
     runId,
     stats,
     failures,
+    warnings,
     latencyMs: Date.now() - t0,
   });
 });
