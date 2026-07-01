@@ -27,9 +27,14 @@ import {
   FlaskConical,
   Sparkles,
   Activity,
+  AlertTriangle,
+  ServerCrash,
+  Settings2,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type LoginErrorDetail } from "@/contexts/AuthContext";
 import { db as supabase } from "@/runtime/db";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
