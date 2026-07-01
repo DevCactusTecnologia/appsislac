@@ -260,13 +260,17 @@ Deno.serve(async (req) => {
 
   // 1) Conecta ao dedicado e permite caminho curto antes do dump DDL.
   let client;
-  try { client = await connectDedicated(reg); }
+  try {
+    await markRunProgress(admin, runId, "connect");
+    client = await connectDedicated(reg);
+  }
   catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await finishRun(admin, runId, "failed", { stage: "connect" }, msg);
     return jsonResponse(200, { ok: false, runId, stage: "connect", error: msg });
   }
 
+  await markRunProgress(admin, runId, "schema_health_probe");
   const currentSchemaVersion = await getDedicatedSchemaVersion(client);
   if (!requestedReset && currentSchemaVersion === SCHEMA_VERSION) {
     try { await client.end(); } catch { /* noop */ }
@@ -282,6 +286,7 @@ Deno.serve(async (req) => {
   // então usamos client com o JWT do usuário, não o service-role. Só fazemos isso
   // quando o dedicado ainda não está na versão atual.
   const userClient = createUserClientFromRequest(req);
+  await markRunProgress(admin, runId, "dump_ddl");
   const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_ddl");
   if (dumpErr || !dump) {
     const msg = dumpErr?.message ?? "dump vazio";
