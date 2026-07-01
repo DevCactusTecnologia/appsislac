@@ -33,6 +33,20 @@ const STEPS: StepDef[] = [
 
 interface RunResult { ok: boolean; error?: string; data?: unknown }
 
+interface MigrationRunRow {
+  status?: string | null;
+  error?: string | null;
+  stats?: {
+    failures?: Array<{ stage?: string; name?: string; error?: string }>;
+    warnings?: unknown[];
+    ms?: number;
+  } | null;
+  created_at?: string | null;
+  finished_at?: string | null;
+}
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function readInvokeFailure(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
   const payload = data as { ok?: boolean; error?: unknown; errors?: unknown; failures?: unknown };
@@ -99,6 +113,26 @@ export default function SuperAdminMigration() {
     return null;
   }, [id]);
 
+  const waitPhaseCompletion = useCallback(async (phase: StepKey, startedAt?: string): Promise<MigrationRunRow | null> => {
+    if (!id) return null;
+    const since = startedAt ?? new Date(Date.now() - 5_000).toISOString();
+    for (let attempt = 0; attempt < 90; attempt++) {
+      const { data } = await supabase
+        .from("tenant_migration_runs")
+        .select("status, stats, error, created_at, finished_at")
+        .eq("tenant_id", id)
+        .eq("phase", phase)
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const row = data as MigrationRunRow | null;
+      if (row && row.status && row.status !== "running") return row;
+      await delay(attempt < 10 ? 1_000 : 2_000);
+    }
+    return null;
+  }, [id]);
+
   const invoke = useCallback(async (fn: string, body: Record<string, unknown>, key: StepKey): Promise<RunResult> => {
     setState(key, "running");
     appendLog(key, `→ ${fn} ${JSON.stringify(body).slice(0, 120)}`);
@@ -117,10 +151,35 @@ export default function SuperAdminMigration() {
       setState(key, "failed");
       return { ok: false, error: logicalFailure, data };
     }
+
+    const asyncPayload = data as { async?: boolean; status?: string; startedAt?: string } | null;
+    if (asyncPayload?.async && asyncPayload.status === "running") {
+      appendLog(key, "↻ Execução iniciada em segundo plano; acompanhando conclusão...");
+      const run = await waitPhaseCompletion(key, asyncPayload.startedAt);
+      if (!run) {
+        const msg = "Tempo limite aguardando conclusão da etapa. Atualize a página e consulte o último run.";
+        appendLog(key, `✗ ${msg}`);
+        setState(key, "failed");
+        return { ok: false, error: msg, data };
+      }
+      if (run.status !== "ok") {
+        const firstFailure = run.stats?.failures?.[0];
+        const msg = firstFailure?.error ? `${firstFailure.stage ?? "etapa"}: ${firstFailure.error}` : run.error ?? `Etapa finalizou como ${run.status}`;
+        appendLog(key, `✗ ${msg}`);
+        appendLog(key, JSON.stringify(run).slice(0, 800));
+        setState(key, "failed");
+        return { ok: false, error: msg, data: run };
+      }
+      appendLog(key, `✓ ${JSON.stringify(run).slice(0, 400)}`);
+      setState(key, "ok");
+      void loadTenant();
+      return { ok: true, data: run };
+    }
+
     appendLog(key, `✓ ${JSON.stringify(data).slice(0, 400)}`);
     setState(key, "ok");
     return { ok: true, data };
-  }, [loadLastRunError]);
+  }, [loadLastRunError, loadTenant, waitPhaseCompletion]);
 
   const runPrep = () => invoke("super-admin-test-tenant-anon-key", { tenantId: id }, "prep");
   const runSchema = () => invoke("super-admin-provision-tenant-schema-full", { tenantId: id }, "schema");
