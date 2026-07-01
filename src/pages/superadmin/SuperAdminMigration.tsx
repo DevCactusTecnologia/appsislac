@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, CheckCircle2, Circle, Loader2, XCircle, AlertTriangle,
   Cable, Database, Users, Boxes, HardDrive, ShieldCheck, Zap, History,
