@@ -12,6 +12,7 @@ import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 const SECRET_REF_RE = /^[A-Z][A-Z0-9_]{2,63}$/;
+const PROJECT_URL_RE = /^https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)$/i;
 
 function okShared(reason: string) {
   return { ok: true, mode: "shared" as const, reason };
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
 
   const { data: reg, error: regErr } = await admin
     .from("tenant_registry")
-    .select("runtime_mode, database_strategy, runtime_dedicated_enabled, schema_provisioned_at, db_host, db_port, db_name, db_user, db_secret_ref")
+    .select("runtime_mode, database_strategy, runtime_dedicated_enabled, schema_provisioned_at, db_host, db_port, db_name, db_user, db_secret_ref, db_project_url, db_anon_key_secret_ref")
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (regErr) return errorResponse(500, "Falha ao validar configuração do laboratório", requestId, log, regErr);
@@ -69,6 +70,27 @@ Deno.serve(async (req) => {
     return jsonResponse(200, block(
       "Banco dedicado ativo, mas o schema dedicado ainda não foi provisionado/importado. Login bloqueado para evitar uso do banco compartilhado.",
       "dedicated_not_provisioned",
+    ), requestId);
+  }
+
+  const projectUrl = (reg.db_project_url ?? "").trim();
+  const anonSecretRef = (reg.db_anon_key_secret_ref ?? "").trim();
+  if (!projectUrl || !PROJECT_URL_RE.test(projectUrl)) {
+    return jsonResponse(200, block(
+      "Banco dedicado ativo, mas a URL do projeto Supabase dedicado está ausente ou inválida. Login bloqueado para evitar fallback no compartilhado.",
+      "dedicated_project_url_invalid",
+    ), requestId);
+  }
+  if (!anonSecretRef || !SECRET_REF_RE.test(anonSecretRef)) {
+    return jsonResponse(200, block(
+      "Banco dedicado ativo, mas o secret da anon key dedicada está ausente ou inválido. Login bloqueado para evitar fallback no compartilhado.",
+      "dedicated_anon_secret_invalid",
+    ), requestId);
+  }
+  if (!Deno.env.get(anonSecretRef)) {
+    return jsonResponse(200, block(
+      `Banco dedicado ativo, mas o secret "${anonSecretRef}" da anon key dedicada não está cadastrado no Lovable Cloud.`,
+      "dedicated_anon_secret_missing",
     ), requestId);
   }
 
