@@ -206,6 +206,30 @@ export function TenantDatabaseConfig({
     }
   };
 
+  const provisionSchema = async () => {
+    if (cfg.schema_provisioned_at) {
+      const confirmReprovision = window.confirm(
+        "O schema já foi provisionado neste banco. Reprovisionar pode falhar se objetos já existirem. Continuar?"
+      );
+      if (!confirmReprovision) return;
+    }
+    setProvisioning(true);
+    const { data, error } = await supabase.functions.invoke("super-admin-provision-tenant-schema", {
+      body: { tenantId },
+    });
+    setProvisioning(false);
+    if (error) { toast.error(error.message); return; }
+    const r = data as { ok?: boolean; error?: string; schema_provisioned_at?: string; statements?: number };
+    if (r?.ok && r.schema_provisioned_at) {
+      setCfg((p) => ({ ...p, schema_provisioned_at: r.schema_provisioned_at! }));
+      toast.success(`Schema provisionado (${r.statements ?? 0} statements)`);
+      onSaved?.({ ...cfg, schema_provisioned_at: r.schema_provisioned_at! });
+    } else {
+      toast.error(r?.error ?? "Falha ao provisionar schema");
+    }
+  };
+
+
   return (
     <section className="rounded-xl border border-border bg-card p-6">
       <header className="flex items-start gap-4 mb-6">
