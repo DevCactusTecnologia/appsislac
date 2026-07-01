@@ -27,6 +27,11 @@ import "@fontsource/dm-sans/700.css";
 import { setMapaWarningsConsole } from "@/lib/mapaSharedStyles";
 import { installFavicon } from "@/lib/favicon";
 import { logger } from "@/lib/logger";
+// Identity Layer — registra o issuer default (Supabase Shared) no bootstrap.
+// Todo o app consome via getIdentityIssuer(); trocar de provedor é uma linha.
+import { registerIdentityIssuer } from "@/runtime/identity";
+import { supabaseSharedIssuer } from "@/runtime/identity/supabaseIssuer";
+registerIdentityIssuer(supabaseSharedIssuer);
 
 const SW_CLEANUP_RELOAD_FLAG = "sislac-sw-cleanup-reload";
 

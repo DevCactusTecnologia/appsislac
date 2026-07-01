@@ -5,7 +5,7 @@
 // - Em caso de erro em QUALQUER etapa (delete/insert/update), todo o efeito é
 //   revertido pelo PostgreSQL automaticamente.
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import { getUserClient, getUserTenantClient, resolveUserTenantId, MigrationBlockedError } from "../_shared/runtime/db.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,21 +98,33 @@ Deno.serve(async (req) => {
     );
   }
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  // Verifica usuário autenticado
-  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  const auth = getUserClient(authHeader);
+  const { data: userData, error: userErr } = await auth.auth.getUser();
   if (userErr || !userData?.user) {
     return new Response(
       JSON.stringify({ ok: false, error: "Sessão inválida" }),
       { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+  }
+
+  let supabase;
+  try {
+    const tenantId = await resolveUserTenantId(userData.user.id);
+    if (!tenantId) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Tenant do usuário não encontrado" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    supabase = await getUserTenantClient(authHeader, tenantId);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Runtime dedicado indisponível", code: e.code }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    throw e;
   }
 
   // 2) Payload

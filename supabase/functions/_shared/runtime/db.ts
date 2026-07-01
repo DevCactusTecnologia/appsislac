@@ -61,6 +61,67 @@ export function getUserClient(authHeader: string | null): SupabaseClient {
   });
 }
 
+/**
+ * Resolve tenant_id do usuário autenticado via `profiles`.
+ * Usa o platform client (service-role) para bypassar RLS na lookup.
+ */
+export async function resolveUserTenantId(userId: string): Promise<string | null> {
+  const platform = getPlatformClient();
+  const { data, error } = await platform
+    .from("profiles")
+    .select("tenant_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) return null;
+  return (data as { tenant_id?: string } | null)?.tenant_id ?? null;
+}
+
+/**
+ * Client user-scoped tenant-aware: preserva o JWT do chamador (para que
+ * `current_tenant_id()` e RLS funcionem) e aponta para o projeto correto
+ * (shared OU dedicated). Este é o primitivo canônico para edge functions
+ * de data-plane que executam RPCs autenticadas.
+ *
+ * Dedicated sem anon key resolvida → `MigrationBlockedError`. Nunca cai
+ * silenciosamente para shared (Fase 8).
+ */
+export async function getUserTenantClient(
+  authHeader: string | null,
+  tenant_id: string,
+): Promise<SupabaseClient> {
+  const provider = getTenantContextProvider();
+  const ctx = await provider.resolve(tenant_id);
+
+  if (ctx.strategy !== "dedicated") {
+    return getUserClient(authHeader);
+  }
+
+  // Dedicated: precisa de URL + anon key do projeto dedicado.
+  const platform = getPlatformClient();
+  const { data: reg, error } = await platform
+    .from("tenant_registry")
+    .select("db_project_url, db_anon_key_ref")
+    .eq("tenant_id", tenant_id)
+    .maybeSingle();
+  if (error) {
+    throw new MigrationBlockedError(tenant_id, `registry lookup: ${error.message}`, "DEDICATED_CLIENT_FAILED");
+  }
+  const url = (reg as { db_project_url?: string } | null)?.db_project_url;
+  const anonRef = (reg as { db_anon_key_ref?: string } | null)?.db_anon_key_ref;
+  if (!url) throw new MigrationBlockedError(tenant_id, "db_project_url ausente", "DEDICATED_URL_MISSING");
+  if (!anonRef) {
+    throw new MigrationBlockedError(tenant_id, "db_anon_key_ref ausente", "DEDICATED_SERVICE_KEY_MISSING");
+  }
+  const anonKey = Deno.env.get(anonRef);
+  if (!anonKey) {
+    throw new MigrationBlockedError(tenant_id, `secret ${anonRef} não cadastrado`, "DEDICATED_SERVICE_KEY_MISSING");
+  }
+  return createClient(url, anonKey, {
+    global: { headers: { Authorization: authHeader ?? "", "x-runtime-strategy": "dedicated" } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 // ── Dedicated cache ─────────────────────────────────────────────────
 interface DedicatedEntry {
   client: SupabaseClient;
