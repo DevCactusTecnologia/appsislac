@@ -1,22 +1,13 @@
 // Edge function: upload-image
-// ----------------------------------------------------------------------------
-// Faz upload genérico de uma imagem (PNG/JPEG/WEBP, ≤2MB) para o S3 do tenant
-// e grava a chave na coluna apropriada:
-//   - category=logo    -> tenant_lab_config.logo_key  (requer admin/manager)
-//   - category=avatar  -> profiles.avatar_key         (próprio user ou admin)
-//
-// Body JSON (upload):
-//   { category: "logo" | "avatar",
-//     contentType: "image/png" | "image/jpeg" | "image/webp",
-//     dataBase64: string,
-//     filename?: string,
-//     targetUserId?: string  // só para category=avatar (admin atualizando outro)
-//   }
-//
-// Body JSON (remover):
-//   { category: "logo" | "avatar", remove: true, targetUserId?: string }
+// Slice 3: `tenant_lab_config` é tenant-scoped → `getTenantClient`.
+// `profiles`/`tenants`/RPC/Storage permanecem no control-plane.
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import {
+  getPlatformClient,
+  getTenantClient,
+  getUserClient,
+  MigrationBlockedError,
+} from "../_shared/runtime/db.ts";
 import {
   jsonResponse,
   errorResponse,
@@ -51,15 +42,12 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
     return errorResponse(500, "Server misconfiguration", requestId, log);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const userClient = getUserClient(authHeader);
   const { data: { user: caller }, error: callerErr } = await userClient.auth.getUser();
   if (callerErr || !caller) return errorResponse(401, "Não autenticado", requestId, log);
 
@@ -71,10 +59,9 @@ Deno.serve(async (req) => {
     : null;
   if (!category) return errorResponse(400, "category inválido (logo|avatar)", requestId, log);
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const platform = getPlatformClient();
 
-  // Resolve tenant do caller
-  const { data: callerProfile, error: cpErr } = await admin
+  const { data: callerProfile, error: cpErr } = await platform
     .from("profiles")
     .select("tenant_id")
     .eq("user_id", caller.id)
@@ -82,46 +69,51 @@ Deno.serve(async (req) => {
   if (cpErr || !callerProfile) return errorResponse(404, "Perfil não encontrado", requestId, log);
   const tenantId = (callerProfile as { tenant_id: string }).tenant_id;
 
-  // Resolve alvo para avatar
+  let tenantDb;
+  try {
+    tenantDb = await getTenantClient(tenantId);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return errorResponse(503, `Runtime dedicado indisponível (${e.code})`, requestId, log);
+    }
+    throw e;
+  }
+
   let targetUserId = caller.id;
   if (category === "avatar" && typeof body.targetUserId === "string" && body.targetUserId) {
     targetUserId = body.targetUserId;
     if (targetUserId !== caller.id) {
-      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: caller.id, _role: "admin" });
-      const { data: isManager } = await admin.rpc("has_role", { _user_id: caller.id, _role: "manager" });
+      const { data: isAdmin } = await platform.rpc("has_role", { _user_id: caller.id, _role: "admin" });
+      const { data: isManager } = await platform.rpc("has_role", { _user_id: caller.id, _role: "manager" });
       if (!isAdmin && !isManager) {
         return errorResponse(403, "Sem permissão para alterar este usuário", requestId, log);
       }
-      // Valida tenant do alvo
-      const { data: targetP } = await admin.from("profiles").select("tenant_id").eq("user_id", targetUserId).maybeSingle();
+      const { data: targetP } = await platform.from("profiles").select("tenant_id").eq("user_id", targetUserId).maybeSingle();
       const tTenant = (targetP as { tenant_id?: string } | null)?.tenant_id;
       if (tTenant !== tenantId) return errorResponse(403, "Usuário fora do tenant", requestId, log);
     }
   }
 
-  // Permissão para logo: admin/manager
   if (category === "logo") {
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: caller.id, _role: "admin" });
-    const { data: isManager } = await admin.rpc("has_role", { _user_id: caller.id, _role: "manager" });
-    const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: caller.id });
+    const { data: isAdmin } = await platform.rpc("has_role", { _user_id: caller.id, _role: "admin" });
+    const { data: isManager } = await platform.rpc("has_role", { _user_id: caller.id, _role: "manager" });
+    const { data: isSuper } = await platform.rpc("is_super_admin", { _user_id: caller.id });
     if (!isAdmin && !isManager && !isSuper) return errorResponse(403, "Sem permissão para alterar logo", requestId, log);
   }
 
-  // Carrega CNPJ do tenant
-  const { data: tenantRow } = await admin
+  const { data: tenantRow } = await platform
     .from("tenants").select("cnpj").eq("id", tenantId).maybeSingle();
   const cnpj = (tenantRow as { cnpj?: string } | null)?.cnpj ?? "";
 
-  // REMOÇÃO
   if (body.remove === true) {
     if (category === "logo") {
-      const { error } = await admin
+      const { error } = await tenantDb
         .from("tenant_lab_config")
         .update({ logo_key: null, logo: null })
         .eq("tenant_id", tenantId);
       if (error) return errorResponse(500, "Falha ao remover logo: " + error.message, requestId, log);
     } else {
-      const { error } = await admin
+      const { error } = await platform
         .from("profiles")
         .update({ avatar_key: null, avatar: null })
         .eq("user_id", targetUserId);
@@ -131,7 +123,6 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: true, removed: true }, requestId);
   }
 
-  // UPLOAD
   const filename = typeof body.filename === "string" ? body.filename : `${category}.png`;
   const contentType = typeof body.contentType === "string" ? body.contentType : "";
   const dataB64 = typeof body.dataBase64 === "string" ? body.dataBase64 : "";
@@ -152,7 +143,6 @@ Deno.serve(async (req) => {
   const storageCategory: StorageCategory = category === "logo" ? "logo" : "avatares";
   const namedFile = category === "logo" ? filename : `${targetUserId}-${filename}`;
 
-  // ---------------- Fallback: Supabase Storage quando S3 não configurado ----------------
   if (!s3) {
     const extFromType = (contentType.split("/")[1] || "png").toLowerCase().replace("jpeg", "jpg");
     const bucket = "tenant-assets";
@@ -176,13 +166,13 @@ Deno.serve(async (req) => {
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
 
     if (category === "logo") {
-      const { error } = await admin
+      const { error } = await tenantDb
         .from("tenant_lab_config")
         .update({ logo: publicUrl, logo_key: null })
         .eq("tenant_id", tenantId);
       if (error) return errorResponse(500, "Falha ao gravar logo: " + error.message, requestId, log);
     } else {
-      const { error } = await admin
+      const { error } = await platform
         .from("profiles")
         .update({ avatar: publicUrl, avatar_key: null })
         .eq("user_id", targetUserId);
@@ -193,7 +183,6 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: true, key: null, logo: publicUrl, url: publicUrl, backend: "storage" }, requestId);
   }
 
-  // ---------------- Padrão: S3 ----------------
   const objectKey = buildObjectKey({
     tenantId,
     cnpj,
@@ -210,13 +199,13 @@ Deno.serve(async (req) => {
   }
 
   if (category === "logo") {
-    const { error } = await admin
+    const { error } = await tenantDb
       .from("tenant_lab_config")
       .update({ logo_key: objectKey, logo: null })
       .eq("tenant_id", tenantId);
     if (error) return errorResponse(500, "Falha ao gravar logo: " + error.message, requestId, log);
   } else {
-    const { error } = await admin
+    const { error } = await platform
       .from("profiles")
       .update({ avatar_key: objectKey, avatar: null })
       .eq("user_id", targetUserId);

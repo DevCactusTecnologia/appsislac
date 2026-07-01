@@ -1,12 +1,15 @@
 // Edge function: image-url
 // ----------------------------------------------------------------------------
 // Retorna URL pré-assinada (1h) para uma imagem do tenant armazenada no S3.
-// Aceita resolução por chave (logo/avatar/assinatura genérica) validando que
-// a chave começa com o prefixo do tenant do caller.
-//
-// Body JSON: { key: string }
+// Slice 3: apenas control-plane (profiles/tenants/rpc/S3). Probe do tenant
+// via `getTenantClient` valida acessibilidade em modo dedicated.
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import {
+  getPlatformClient,
+  getTenantClient,
+  getUserClient,
+  MigrationBlockedError,
+} from "../_shared/runtime/db.ts";
 import {
   jsonResponse,
   errorResponse,
@@ -24,15 +27,12 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
     return errorResponse(500, "Server misconfiguration", requestId, log);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const userClient = getUserClient(authHeader);
   const { data: { user: caller }, error: callerErr } = await userClient.auth.getUser();
   if (callerErr || !caller) return errorResponse(401, "Não autenticado", requestId, log);
 
@@ -41,25 +41,33 @@ Deno.serve(async (req) => {
   const key = typeof body.key === "string" ? body.key.trim() : "";
   if (!key) return errorResponse(400, "key obrigatório", requestId, log);
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const platform = getPlatformClient();
 
-  const { data: callerProfile } = await admin
+  const { data: callerProfile } = await platform
     .from("profiles").select("tenant_id").eq("user_id", caller.id).maybeSingle();
   const callerTenant = (callerProfile as { tenant_id?: string } | null)?.tenant_id;
   if (!callerTenant) return errorResponse(403, "Sem tenant", requestId, log);
 
-  const { data: tenantRow } = await admin
+  try {
+    await getTenantClient(callerTenant);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return errorResponse(503, `Runtime dedicado indisponível (${e.code})`, requestId, log);
+    }
+    throw e;
+  }
+
+  const { data: tenantRow } = await platform
     .from("tenants").select("cnpj").eq("id", callerTenant).maybeSingle();
   const cnpj = ((tenantRow as { cnpj?: string } | null)?.cnpj ?? "").replace(/\D+/g, "");
 
-  // Valida prefixo: deve ser {cnpj}/... ou {tenantId}/... (fallback)
   const validPrefixes = [
     cnpj && cnpj.length >= 8 ? `${cnpj}/` : null,
     `${callerTenant}/`,
   ].filter(Boolean) as string[];
   const allowed = validPrefixes.some((p) => key.startsWith(p));
   if (!allowed) {
-    const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: caller.id });
+    const { data: isSuper } = await platform.rpc("is_super_admin", { _user_id: caller.id });
     if (!isSuper) return errorResponse(403, "Chave fora do tenant", requestId, log);
   }
 

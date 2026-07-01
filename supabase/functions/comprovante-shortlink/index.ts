@@ -1,12 +1,14 @@
 // Cria um link curto (codigo de 6 caracteres) que aponta para a URL
-// assinada de um comprovante PDF. O front chama esta função após fazer
-// o upload do PDF e usa o shortlink no lugar da URL gigante do Storage.
-//
-// - Requer JWT (resolução de tenant via profiles)
-// - Expiração: 24h (default; configurável por body.ttlHours até 168h)
-// - Retorna: { codigo, shortUrl, expiraEm }
+// assinada de um comprovante PDF. Slice 3: `comprovante_links` é tenant-
+// scoped → escrita via `getTenantClient`. `profiles`/`tenants` seguem no
+// control-plane.
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import {
+  getPlatformClient,
+  getTenantClient,
+  getUserClient,
+  MigrationBlockedError,
+} from "../_shared/runtime/db.ts";
 import {
   createLogger,
   errorResponse,
@@ -14,19 +16,17 @@ import {
   newRequestId,
   preflight,
 } from "../_shared/hardening.ts";
-import { checkRateLimit, extractIp } from "../_shared/rateLimit.ts";
+import { checkRateLimit } from "../_shared/rateLimit.ts";
 
 interface Body {
   url: string;
   protocolo: string;
   tipo: "pagamento" | "atendimento" | "comparecimento";
   ttlHours?: number;
-  /** Domínio custom do tenant (ex: meulab.com.br). Frontend envia se conhecer.
-   *  Sem isso, retornamos apenas o codigo e o front monta o host. */
   hostHint?: string;
 }
 
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem caracteres ambíguos
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function gerarCodigo(len = 6): string {
   const bytes = new Uint8Array(len);
@@ -46,23 +46,13 @@ Deno.serve(async (req) => {
     return errorResponse(405, "method not allowed", requestId, log);
   }
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
-    return errorResponse(500, "service unavailable", requestId, log, "missing env");
-  }
-
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return errorResponse(401, "unauthorized", requestId, log);
   }
   const token = authHeader.slice("Bearer ".length).trim();
 
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const userClient = getUserClient(authHeader);
   const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
   if (claimsErr || !claims?.claims?.sub) {
     return errorResponse(401, "unauthorized", requestId, log, claimsErr ?? "no claims");
@@ -87,17 +77,14 @@ Deno.serve(async (req) => {
   }
   const ttl = Math.min(Math.max(Number(body.ttlHours) || 24, 1), 168);
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const platform = getPlatformClient();
 
-  // P0 #3 — rate-limit por usuário autenticado
-  const rl = await checkRateLimit(admin, "comprovante-shortlink", `user:${userId}`, { windowSec: 60, max: 20 });
+  const rl = await checkRateLimit(platform, "comprovante-shortlink", `user:${userId}`, { windowSec: 60, max: 20 });
   if (!rl.allowed) {
     return errorResponse(429, "Muitas criações de link. Aguarde alguns instantes.", requestId, log);
   }
 
-  const { data: profile, error: profileErr } = await admin
+  const { data: profile, error: profileErr } = await platform
     .from("profiles")
     .select("tenant_id")
     .eq("user_id", userId)
@@ -107,19 +94,27 @@ Deno.serve(async (req) => {
   }
   const tenantId = profile.tenant_id as string;
 
-  // Resolve host: dominio_custom > slug > host hint > origin
-  const { data: tenant } = await admin
+  const { data: tenant } = await platform
     .from("tenants")
     .select("slug, dominio_custom")
     .eq("id", tenantId)
     .maybeSingle();
 
-  // Tenta gerar codigo unico (até 5 tentativas)
+  let tenantDb;
+  try {
+    tenantDb = await getTenantClient(tenantId);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return errorResponse(503, `Runtime dedicado indisponível (${e.code})`, requestId, log);
+    }
+    throw e;
+  }
+
   let codigo = "";
   const expiraEm = new Date(Date.now() + ttl * 3600_000).toISOString();
   for (let attempt = 0; attempt < 5; attempt++) {
     codigo = gerarCodigo(6);
-    const { error: insErr } = await admin.from("comprovante_links").insert({
+    const { error: insErr } = await tenantDb.from("comprovante_links").insert({
       tenant_id: tenantId,
       codigo,
       url_assinada: body.url,
@@ -135,16 +130,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Monta a shortUrl. Prioridade: domínio custom > origin enviado pelo client.
-  // O front monta /p/:codigo na rota pública.
   const origin = body.hostHint?.replace(/\/+$/, "") ?? "";
   let shortUrl = "";
   if (tenant?.dominio_custom) {
     shortUrl = `https://${tenant.dominio_custom.replace(/^https?:\/\//, "").replace(/\/+$/, "")}/p/${codigo}`;
   } else if (origin) {
     shortUrl = `${origin}/p/${codigo}`;
-  } else if (tenant?.slug) {
-    shortUrl = `https://sislac.lovable.app/p/${codigo}`;
   } else {
     shortUrl = `https://sislac.lovable.app/p/${codigo}`;
   }

@@ -1,8 +1,9 @@
 // Resolve um codigo de shortlink → retorna a URL assinada do PDF.
-// Pública (sem JWT). Incrementa contador de acessos.
-// Usada pela rota /p/:codigo no frontend para fazer o redirect.
+// Pública (sem JWT). Slice 3: permanece control-plane (shared) — não há
+// tenant conhecido no ponto de entrada. `getPlatformClient` centraliza
+// o service-role SDK; roteamento tenant-aware não se aplica aqui.
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import { getPlatformClient } from "../_shared/runtime/db.ts";
 import {
   createLogger,
   errorResponse,
@@ -27,16 +28,8 @@ Deno.serve(async (req) => {
     return errorResponse(400, "codigo invalido", requestId, log);
   }
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    return errorResponse(500, "service unavailable", requestId, log);
-  }
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const admin = getPlatformClient();
 
-  // P0 #3 — rate-limit por IP + por código (anti brute-force)
   const ip = extractIp(req);
   const rlIp = await checkRateLimit(admin, "comprovante-resolve", `ip:${ip}`, { windowSec: 60, max: 30 });
   if (!rlIp.allowed) {
@@ -60,7 +53,6 @@ Deno.serve(async (req) => {
     return errorResponse(410, "link expirado", requestId, log);
   }
 
-  // best-effort: incrementa contador
   void admin
     .from("comprovante_links")
     .update({

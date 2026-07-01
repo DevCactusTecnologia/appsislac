@@ -1,4 +1,9 @@
-import { createClient } from "../_shared/runtime/createClient.ts";
+import {
+  getPlatformClient,
+  getTenantClient,
+  getUserClient,
+  MigrationBlockedError,
+} from "../_shared/runtime/db.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface SignRequest {
@@ -13,17 +18,8 @@ Deno.serve(async (req) => {
 
   if (req.method !== "POST") return errorResponse(405, "Method not allowed", requestId, log);
 
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
-    return errorResponse(500, "Server misconfiguration", requestId, log);
-  }
-
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const userClient = getUserClient(authHeader);
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return errorResponse(401, "Não autenticado", requestId, log);
 
@@ -37,9 +33,9 @@ Deno.serve(async (req) => {
   const { resultado_id, aprovado_por } = body;
   if (!resultado_id) return errorResponse(400, "resultado_id obrigatório", requestId, log);
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-
-  const { data: userProfile } = await admin
+  // Control-plane: perfil do usuário resolve o tenant.
+  const platform = getPlatformClient();
+  const { data: userProfile } = await platform
     .from("user_profiles")
     .select("tenant_id")
     .eq("user_id", user.id)
@@ -49,7 +45,18 @@ Deno.serve(async (req) => {
     return errorResponse(403, "Sem acesso", requestId, log);
   }
 
-  const { data: resultado } = await admin
+  // Data-plane tenant-aware: roteia shared/dedicated (Fase 8 — sem fallback).
+  let tenantDb;
+  try {
+    tenantDb = await getTenantClient(userProfile.tenant_id as string);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return errorResponse(503, `Runtime dedicado indisponível (${e.code})`, requestId, log);
+    }
+    throw e;
+  }
+
+  const { data: resultado } = await tenantDb
     .from("resultados")
     .select("id, data")
     .eq("id", resultado_id)
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-    const { error: signErr } = await admin
+    const { error: signErr } = await tenantDb
       .from("resultado_assinado")
       .insert({
         resultado_id,
@@ -83,7 +90,7 @@ Deno.serve(async (req) => {
       return errorResponse(500, `Erro ao assinar: ${signErr.message}`, requestId, log);
     }
 
-    await admin.from("resultado_acesso_log").insert({
+    await tenantDb.from("resultado_acesso_log").insert({
       resultado_id,
       tenant_id: userProfile.tenant_id,
       acessado_por: user.id,
