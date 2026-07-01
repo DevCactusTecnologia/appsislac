@@ -202,8 +202,9 @@ Deno.serve(async (req) => {
 
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const authHeader = req.headers.get("Authorization") ?? "";
+    const functionUrl = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/super-admin-provision-tenant-schema-full`;
     const backgroundBody = JSON.stringify({ ...body, tenantId, async: false, sync: true });
-    const backgroundTask = fetch(req.url, {
+    const backgroundTask = fetch(functionUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
