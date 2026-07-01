@@ -1,5 +1,5 @@
 // Wizard de migração Shared → Dedicated (Fase 3).
-// 7 etapas em cards verticais, com invocação das edges do turno T1/T2.
+// Layout dashboard: timeline lateral + painel ativo com contexto operacional.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,51 +8,97 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, Circle, Loader2, XCircle, AlertTriangle } from "lucide-react";
+import {
+  ArrowLeft, CheckCircle2, Circle, Loader2, XCircle, AlertTriangle,
+  Cable, Database, Users, Boxes, HardDrive, ShieldCheck, Zap, History,
+  Lock, ArrowRight, RefreshCw, Info,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type StepKey = "prep" | "schema" | "auth" | "data" | "storage" | "smoke" | "flip" | "post";
+type StepState = "idle" | "running" | "ok" | "failed";
 
 interface StepDef {
   key: StepKey;
   index: number;
   title: string;
+  short: string;
   description: string;
+  icon: typeof Cable;
+  bullets: string[];
+  turno: "T1" | "T2" | "T3";
 }
 
 const STEPS: StepDef[] = [
-  { key: "prep", index: 1, title: "Preparação", description: "Verifica se o banco dedicado responde e os secrets estão cadastrados." },
-  { key: "schema", index: 2, title: "Provisionar schema", description: "Cria tabelas, funções e triggers no banco dedicado." },
-  { key: "auth", index: 3, title: "Migrar identidades", description: "Copia usuários preservando IDs e senhas." },
-  { key: "data", index: 4, title: "Migrar dados", description: "Executa dry-run e, em seguida, a carga na ordem correta." },
-  { key: "storage", index: 5, title: "Migrar arquivos", description: "Copia buckets do Storage do tenant." },
-  { key: "smoke", index: 6, title: "Smoke test", description: "Compara contagens críticas entre shared e dedicado." },
-  { key: "flip", index: 7, title: "Flip para dedicado", description: "Vira o runtime do tenant. Somente com smoke 100%." },
-  { key: "post", index: 8, title: "Pós-migração", description: "Rollback disponível por 30 dias. Purge após a quarentena." },
+  { key: "prep", index: 1, turno: "T1", icon: Cable, title: "Preparação", short: "Handshake",
+    description: "Confere se o projeto dedicado está acessível e todos os secrets/URLs foram cadastrados.",
+    bullets: [
+      "Testa a URL e a anon key do projeto dedicado",
+      "Valida se o secret da service role está presente",
+      "Bloqueia as próximas etapas em caso de config incompleta",
+    ]},
+  { key: "schema", index: 2, turno: "T1", icon: Database, title: "Provisionar schema", short: "DDL",
+    description: "Aplica no banco dedicado toda a estrutura do SISLAC — tabelas, funções, triggers, RLS.",
+    bullets: [
+      "Executa o dump DDL do shared no dedicado",
+      "Recria funções SECURITY DEFINER e policies",
+      "Idempotente: pode ser reexecutado com segurança",
+    ]},
+  { key: "auth", index: 3, turno: "T1", icon: Users, title: "Migrar identidades", short: "Auth",
+    description: "Copia os usuários do tenant preservando UUIDs, e-mails e hashes de senha.",
+    bullets: [
+      "Preserva auth.uid() → RLS continua funcionando após o flip",
+      "Copia profiles e user_roles com foreign keys íntegras",
+      "Sessões existentes seguem válidas no dedicado",
+    ]},
+  { key: "data", index: 4, turno: "T2", icon: Boxes, title: "Migrar dados", short: "Payload",
+    description: "Copia todo o payload operacional do tenant na ordem correta de dependência.",
+    bullets: [
+      "Rode primeiro em Dry-run para conferir volumes",
+      "Só depois execute a carga real",
+      "Respeita FKs, sequences e integridade referencial",
+    ]},
+  { key: "storage", index: 5, turno: "T2", icon: HardDrive, title: "Migrar arquivos", short: "Storage",
+    description: "Espelha os buckets do Storage do tenant (laudos, assinaturas, anexos) para o dedicado.",
+    bullets: [
+      "Copia buckets preservando paths e metadata",
+      "Requer o secret SB_SERVICE_ROLE_ do projeto dedicado",
+      "Reexecutável — só copia o que ainda não existe no destino",
+    ]},
+  { key: "smoke", index: 6, turno: "T2", icon: ShieldCheck, title: "Smoke test", short: "QA",
+    description: "Compara contagens críticas entre shared e dedicado. Portão de qualidade obrigatório.",
+    bullets: [
+      "Compara contagens por tabela e por schema",
+      "Precisa ficar 100% verde para liberar o Flip",
+      "Sucesso parcial → investigue antes de virar o runtime",
+    ]},
+  { key: "flip", index: 7, turno: "T3", icon: Zap, title: "Flip para dedicado", short: "Cutover",
+    description: "Vira o runtime do tenant. A partir daqui todo tráfego opera no banco dedicado.",
+    bullets: [
+      "Só habilita após smoke test 100% verde",
+      "Grava frozen_at e inicia janela de quarentena de 30 dias",
+      "Operação atômica e auditada em tenant_migration_runs",
+    ]},
+  { key: "post", index: 8, turno: "T3", icon: History, title: "Pós-migração", short: "Quarentena",
+    description: "Rollback disponível por 30 dias. Após a quarentena, o purge remove o tenant do shared.",
+    bullets: [
+      "Rollback devolve o runtime para shared_db imediatamente",
+      "Purge é definitivo — só disponível após 30 dias",
+      "Confirme a limpeza rodando Purge dry-run antes",
+    ]},
 ];
 
 interface RunResult { ok: boolean; error?: string; data?: unknown }
-
 interface MigrationRunRow {
   status?: string | null;
   error?: string | null;
-  stats?: {
-    failures?: Array<{ stage?: string; name?: string; error?: string }>;
-    warnings?: unknown[];
-    ms?: number;
-  } | null;
+  stats?: { failures?: Array<{ stage?: string; name?: string; error?: string }>; warnings?: unknown[]; ms?: number } | null;
   created_at?: string | null;
   finished_at?: string | null;
 }
+interface StructuredFailure { message: string; code?: string; hint?: string; stage?: string }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-interface StructuredFailure {
-  message: string;
-  code?: string;
-  hint?: string;
-  stage?: string;
-}
 
 function readInvokeFailure(data: unknown): StructuredFailure | null {
   if (!data || typeof data !== "object") return null;
@@ -67,18 +113,22 @@ function readInvokeFailure(data: unknown): StructuredFailure | null {
   return { message: "A etapa retornou falha lógica. Veja os detalhes no log.", code, hint, stage };
 }
 
-function StatusIcon({ state }: { state: "idle" | "running" | "ok" | "failed" }) {
-  if (state === "running") return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
-  if (state === "ok") return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
-  if (state === "failed") return <XCircle className="h-4 w-4 text-destructive" />;
-  return <Circle className="h-4 w-4 text-muted-foreground" />;
+function StatusDot({ state }: { state: StepState }) {
+  if (state === "running") return <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />;
+  if (state === "ok") return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />;
+  if (state === "failed") return <XCircle className="h-3.5 w-3.5 text-destructive" />;
+  return <Circle className="h-3.5 w-3.5 text-muted-foreground/60" />;
+}
+
+function stateLabel(s: StepState) {
+  return s === "running" ? "Executando" : s === "ok" ? "Concluído" : s === "failed" ? "Falhou" : "Pendente";
 }
 
 export default function SuperAdminMigration() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [tenant, setTenant] = useState<{ id: string; slug: string; name: string; runtime_mode: string | null; migration_state: string | null; frozen_at: string | null } | null>(null);
-  const [states, setStates] = useState<Record<StepKey, "idle" | "running" | "ok" | "failed">>({
+  const [states, setStates] = useState<Record<StepKey, StepState>>({
     prep: "idle", schema: "idle", auth: "idle", data: "idle", storage: "idle", smoke: "idle", flip: "idle", post: "idle",
   });
   const [logs, setLogs] = useState<Record<StepKey, string>>({
@@ -88,8 +138,9 @@ export default function SuperAdminMigration() {
     prep: null, schema: null, auth: null, data: null, storage: null, smoke: null, flip: null, post: null,
   });
   const [purgeType, setPurgeType] = useState("");
+  const [activeKey, setActiveKey] = useState<StepKey>("prep");
 
-  const setState = (k: StepKey, s: "idle" | "running" | "ok" | "failed") => setStates((p) => ({ ...p, [k]: s }));
+  const setState = (k: StepKey, s: StepState) => setStates((p) => ({ ...p, [k]: s }));
   const appendLog = (k: StepKey, line: string) => setLogs((p) => ({ ...p, [k]: `${p[k]}${p[k] ? "\n" : ""}${line}` }));
   const setFailure = (k: StepKey, f: StructuredFailure | null) => setFailures((p) => ({ ...p, [k]: f }));
 
@@ -113,11 +164,8 @@ export default function SuperAdminMigration() {
     const { data } = await supabase
       .from("tenant_migration_runs")
       .select("stats, error, status")
-      .eq("tenant_id", id)
-      .eq("phase", phase)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .eq("tenant_id", id).eq("phase", phase)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
     const row = data as { stats?: { failures?: Array<{ stage?: string; name?: string; error?: string }> }; error?: string | null; status?: string } | null;
     if (!row) return null;
     const firstFailure = row.stats?.failures?.[0];
@@ -134,12 +182,9 @@ export default function SuperAdminMigration() {
       const { data } = await supabase
         .from("tenant_migration_runs")
         .select("status, stats, error, created_at, finished_at")
-        .eq("tenant_id", id)
-        .eq("phase", phase)
+        .eq("tenant_id", id).eq("phase", phase)
         .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
       const row = data as MigrationRunRow | null;
       if (row && row.status && row.status !== "running") return row;
       await delay(attempt < 10 ? 1_000 : 2_000);
@@ -148,16 +193,13 @@ export default function SuperAdminMigration() {
   }, [id]);
 
   const invoke = useCallback(async (fn: string, body: Record<string, unknown>, key: StepKey): Promise<RunResult> => {
-    setState(key, "running");
-    setFailure(key, null);
+    setState(key, "running"); setFailure(key, null);
     appendLog(key, `→ ${fn} ${JSON.stringify(body).slice(0, 120)}`);
     const { data, error } = await supabase.functions.invoke(fn, { body });
     if (error) {
       const runMsg = await loadLastRunError(key);
       const msg = runMsg ?? (data as { error?: string } | null)?.error ?? error.message;
-      appendLog(key, `✗ ${msg}`);
-      setFailure(key, { message: msg });
-      setState(key, "failed");
+      appendLog(key, `✗ ${msg}`); setFailure(key, { message: msg }); setState(key, "failed");
       return { ok: false, error: msg };
     }
     const logicalFailure = readInvokeFailure(data);
@@ -166,37 +208,29 @@ export default function SuperAdminMigration() {
       appendLog(key, `✗ ${prefix}${logicalFailure.message}`);
       if (logicalFailure.hint) appendLog(key, `↳ ${logicalFailure.hint}`);
       appendLog(key, JSON.stringify(data).slice(0, 800));
-      setFailure(key, logicalFailure);
-      setState(key, "failed");
+      setFailure(key, logicalFailure); setState(key, "failed");
       return { ok: false, error: logicalFailure.message, data };
     }
-
     const asyncPayload = data as { async?: boolean; status?: string; startedAt?: string } | null;
     if (asyncPayload?.async && asyncPayload.status === "running") {
       appendLog(key, "↻ Execução iniciada em segundo plano; acompanhando conclusão...");
       const run = await waitPhaseCompletion(key, asyncPayload.startedAt);
       if (!run) {
         const msg = "Tempo limite aguardando conclusão da etapa. Atualize a página e consulte o último run.";
-        appendLog(key, `✗ ${msg}`);
-        setFailure(key, { message: msg });
-        setState(key, "failed");
+        appendLog(key, `✗ ${msg}`); setFailure(key, { message: msg }); setState(key, "failed");
         return { ok: false, error: msg, data };
       }
       if (run.status !== "ok") {
         const firstFailure = run.stats?.failures?.[0];
         const msg = firstFailure?.error ? `${firstFailure.stage ?? "etapa"}: ${firstFailure.error}` : run.error ?? `Etapa finalizou como ${run.status}`;
-        appendLog(key, `✗ ${msg}`);
-        appendLog(key, JSON.stringify(run).slice(0, 800));
-        setFailure(key, { message: msg, stage: firstFailure?.stage });
-        setState(key, "failed");
+        appendLog(key, `✗ ${msg}`); appendLog(key, JSON.stringify(run).slice(0, 800));
+        setFailure(key, { message: msg, stage: firstFailure?.stage }); setState(key, "failed");
         return { ok: false, error: msg, data: run };
       }
       appendLog(key, `✓ ${JSON.stringify(run).slice(0, 400)}`);
-      setState(key, "ok");
-      void loadTenant();
+      setState(key, "ok"); void loadTenant();
       return { ok: true, data: run };
     }
-
     appendLog(key, `✓ ${JSON.stringify(data).slice(0, 400)}`);
     setState(key, "ok");
     return { ok: true, data };
@@ -234,109 +268,297 @@ export default function SuperAdminMigration() {
     return Math.max(0, days);
   }, [tenant?.frozen_at]);
 
+  const completedCount = useMemo(() => STEPS.filter((s) => states[s.key] === "ok").length, [states]);
+  const progressPct = Math.round((completedCount / STEPS.length) * 100);
+
   if (!tenant) {
     return <div className="p-8"><Loader2 className="h-5 w-5 animate-spin" /></div>;
   }
 
+  const active = STEPS.find((s) => s.key === activeKey)!;
+  const activeState = states[active.key];
+  const activeFailure = failures[active.key];
+  const activeLog = logs[active.key];
+
+  const canFlip = states.smoke === "ok" && !isDedicated;
+
+  const renderActionButtons = () => {
+    const running = activeState === "running";
+    if (active.key === "prep")    return <Button size="sm" onClick={runPrep} disabled={running}><Cable className="h-3.5 w-3.5 mr-1.5" />Testar conexão</Button>;
+    if (active.key === "schema")  return <Button size="sm" onClick={runSchema} disabled={running}><Database className="h-3.5 w-3.5 mr-1.5" />Provisionar schema</Button>;
+    if (active.key === "auth")    return <Button size="sm" onClick={runAuth} disabled={running}><Users className="h-3.5 w-3.5 mr-1.5" />Migrar identidades</Button>;
+    if (active.key === "data")    return <>
+      <Button size="sm" variant="outline" onClick={runDataDry} disabled={running}>Dry-run</Button>
+      <Button size="sm" onClick={runData} disabled={running}><Boxes className="h-3.5 w-3.5 mr-1.5" />Migrar dados</Button>
+    </>;
+    if (active.key === "storage") return <Button size="sm" onClick={runStorage} disabled={running}><HardDrive className="h-3.5 w-3.5 mr-1.5" />Migrar arquivos</Button>;
+    if (active.key === "smoke")   return <Button size="sm" onClick={runSmoke} disabled={running}><ShieldCheck className="h-3.5 w-3.5 mr-1.5" />Executar smoke</Button>;
+    if (active.key === "flip")    return <Button size="sm" onClick={runFlip} disabled={!canFlip || running}><Zap className="h-3.5 w-3.5 mr-1.5" />Flip para dedicado</Button>;
+    if (active.key === "post" && isDedicated) return <>
+      <Button size="sm" variant="outline" onClick={runRollback}><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Rollback</Button>
+      <Button size="sm" variant="outline" onClick={runPurgeDry}>Purge dry-run</Button>
+    </>;
+    return null;
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/super-admin/laboratorios/${id}`)} className="mb-2 h-8 -ml-2">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-          <h1 className="text-2xl font-semibold">Migração Shared → Dedicated</h1>
-          <p className="text-sm text-muted-foreground">{tenant.name} · <code className="text-xs">{tenant.slug}</code></p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={isDedicated ? "default" : "secondary"}>{isDedicated ? "Dedicado" : "Compartilhado"}</Badge>
-          {tenant.migration_state && <Badge variant="outline">{tenant.migration_state}</Badge>}
-        </div>
-      </div>
-
-      <Card className="p-4 bg-amber-50 border-amber-200">
-        <div className="flex gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-900">
-            Execute os passos em ordem. Cada etapa é idempotente e pode ser reexecutada em caso de falha.
-            O flip só é permitido após o smoke test passar 100%. Rollback disponível por 30 dias após o flip.
-          </div>
-        </div>
-      </Card>
-
-      {STEPS.map((step) => (
-        <Card key={step.key} className="p-5 space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <StatusIcon state={states[step.key]} />
-              <div>
-                <div className="text-sm font-medium">{step.index}. {step.title}</div>
-                <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+    <div className="min-h-screen bg-muted/20">
+      {/* Header */}
+      <header className="border-b bg-background sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/super-admin/laboratorios/${id}`)} className="h-8 -ml-2">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
+            <div className="h-6 w-px bg-border" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-semibold truncate">Migração Shared → Dedicated</h1>
+                <Badge variant={isDedicated ? "default" : "secondary"} className="h-5 text-[10px]">
+                  {isDedicated ? "Dedicado" : "Compartilhado"}
+                </Badge>
+                {tenant.migration_state && <Badge variant="outline" className="h-5 text-[10px]">{tenant.migration_state}</Badge>}
               </div>
-            </div>
-            <div className="flex gap-2 flex-shrink-0">
-              {step.key === "prep" && <Button size="sm" onClick={runPrep} disabled={states.prep === "running"}>Testar conexão</Button>}
-              {step.key === "schema" && <Button size="sm" onClick={runSchema} disabled={states.schema === "running"}>Provisionar</Button>}
-              {step.key === "auth" && <Button size="sm" onClick={runAuth} disabled={states.auth === "running"}>Migrar identidades</Button>}
-              {step.key === "data" && <>
-                <Button size="sm" variant="outline" onClick={runDataDry} disabled={states.data === "running"}>Dry-run</Button>
-                <Button size="sm" onClick={runData} disabled={states.data === "running"}>Migrar dados</Button>
-              </>}
-              {step.key === "storage" && <Button size="sm" onClick={runStorage} disabled={states.storage === "running"}>Migrar arquivos</Button>}
-              {step.key === "smoke" && <Button size="sm" onClick={runSmoke} disabled={states.smoke === "running"}>Executar smoke</Button>}
-              {step.key === "flip" && <Button size="sm" onClick={runFlip} disabled={states.smoke !== "ok" || isDedicated}>Flip para dedicado</Button>}
-              {step.key === "post" && isDedicated && <>
-                <Button size="sm" variant="outline" onClick={runRollback}>Rollback</Button>
-                <Button size="sm" variant="outline" onClick={runPurgeDry}>Purge dry-run</Button>
-              </>}
+              <p className="text-xs text-muted-foreground truncate">{tenant.name} · <code>{tenant.slug}</code></p>
             </div>
           </div>
-
-          {step.key === "post" && isDedicated && (
-            <div className="pt-2 border-t space-y-3">
-              <div className="text-xs text-muted-foreground">
-                {tenant.frozen_at && <>Congelado em {new Date(tenant.frozen_at).toLocaleString("pt-BR")} · Quarentena: {quarantineDaysLeft} dias restantes</>}
-              </div>
-              <div className="flex gap-2 items-center">
-                <Input value={purgeType} onChange={(e) => setPurgeType(e.target.value)} placeholder={`Digite ${id} para habilitar purge`} className="h-8 text-xs font-mono" />
-                <Button size="sm" variant="destructive" onClick={runPurge} disabled={purgeType !== id || (quarantineDaysLeft ?? 30) > 0}>Purge definitivo</Button>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Progresso</div>
+              <div className="text-sm font-medium">{completedCount}/{STEPS.length} etapas · {progressPct}%</div>
             </div>
-          )}
+            <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
+        </div>
+      </header>
 
-          {failures[step.key] && (
-            <div className="rounded border border-destructive/40 bg-destructive/5 p-3 space-y-2">
-              <div className="flex items-start gap-2">
-                <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1 flex-1">
+      <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
+        {/* Sidebar timeline */}
+        <aside className="space-y-4">
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Roteiro da migração</div>
+              <button onClick={() => void loadTenant()} className="text-muted-foreground hover:text-foreground transition-colors">
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <ol className="space-y-1">
+              {STEPS.map((step, i) => {
+                const s = states[step.key];
+                const isActive = step.key === activeKey;
+                const Icon = step.icon;
+                const isLast = i === STEPS.length - 1;
+                return (
+                  <li key={step.key} className="relative">
+                    {!isLast && <div className="absolute left-[15px] top-8 bottom-0 w-px bg-border" />}
+                    <button
+                      type="button"
+                      onClick={() => setActiveKey(step.key)}
+                      className={`w-full flex items-start gap-3 rounded-md px-2 py-2 text-left transition-colors ${
+                        isActive ? "bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/60"
+                      }`}
+                    >
+                      <div className={`relative flex h-8 w-8 items-center justify-center rounded-full border ${
+                        s === "ok" ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
+                        s === "failed" ? "bg-destructive/10 border-destructive/30 text-destructive" :
+                        s === "running" ? "bg-primary/10 border-primary/30 text-primary" :
+                        isActive ? "bg-background border-primary/40 text-primary" :
+                        "bg-background border-border text-muted-foreground"
+                      }`}>
+                        {s === "running" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
+                         s === "ok" ? <CheckCircle2 className="h-4 w-4" /> :
+                         s === "failed" ? <XCircle className="h-4 w-4" /> :
+                         <Icon className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-muted-foreground">{String(step.index).padStart(2, "0")}</span>
+                          <span className={`text-sm truncate ${isActive ? "font-medium" : ""}`}>{step.title}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] px-1.5 py-0 rounded bg-muted text-muted-foreground font-mono">{step.turno}</span>
+                          <span className="text-[11px] text-muted-foreground">{stateLabel(s)}</span>
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </Card>
+
+          <Card className="p-3 bg-amber-50 border-amber-200">
+            <div className="flex gap-2">
+              <Info className="h-3.5 w-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                Execute na ordem. Cada etapa é <strong>idempotente</strong> — pode reexecutar em caso de falha.
+                O Flip só libera com smoke test 100% verde.
+              </p>
+            </div>
+          </Card>
+        </aside>
+
+        {/* Active panel */}
+        <main className="min-w-0">
+          <Card className="p-6 space-y-6">
+            {/* Panel header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                  <active.icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-destructive">Falha nesta etapa</span>
-                    {failures[step.key]?.code && (
-                      <code className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-mono">{failures[step.key]?.code}</code>
-                    )}
-                    {failures[step.key]?.stage && (
-                      <span className="text-[10px] text-muted-foreground">estágio: {failures[step.key]?.stage}</span>
-                    )}
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">Etapa {String(active.index).padStart(2, "0")} · Turno {active.turno}</span>
+                    <Badge variant="outline" className="h-4 text-[9px] px-1.5">{active.short}</Badge>
                   </div>
-                  <div className="text-foreground">{failures[step.key]?.message}</div>
-                  {failures[step.key]?.hint && (
-                    <div className="text-muted-foreground">💡 {failures[step.key]?.hint}</div>
-                  )}
-                  {failures[step.key]?.code?.startsWith("DEDICATED_") && (
-                    <Button size="sm" variant="outline" className="h-7 mt-2" onClick={() => navigate(`/super-admin/laboratorios/${id}?tab=database`)}>
-                      Abrir configuração do banco dedicado
-                    </Button>
-                  )}
+                  <h2 className="text-lg font-semibold mt-0.5">{active.title}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{active.description}</p>
                 </div>
               </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0 text-xs text-muted-foreground">
+                <StatusDot state={activeState} />
+                <span>{stateLabel(activeState)}</span>
+              </div>
             </div>
-          )}
 
-          {logs[step.key] && (
-            <pre className="text-[11px] bg-muted/40 border rounded p-2 overflow-x-auto whitespace-pre-wrap max-h-48">{logs[step.key]}</pre>
-          )}
-        </Card>
-      ))}
+            {/* Bullets */}
+            <div className="grid sm:grid-cols-3 gap-3">
+              {active.bullets.map((b, i) => (
+                <div key={i} className="rounded-md border bg-muted/30 p-3">
+                  <div className="text-[10px] font-mono text-muted-foreground mb-1">0{i + 1}</div>
+                  <p className="text-xs text-foreground/80 leading-relaxed">{b}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Gate warnings */}
+            {active.key === "flip" && !canFlip && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+                <Lock className="h-4 w-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900">
+                  <div className="font-medium">Flip bloqueado</div>
+                  <div>
+                    {isDedicated
+                      ? "O tenant já opera em banco dedicado. Use a etapa 8 para rollback."
+                      : "Execute e finalize o Smoke test com sucesso total antes de virar o runtime."}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-between gap-4 pt-2 border-t">
+              <div className="flex gap-2 flex-wrap">{renderActionButtons()}</div>
+              <div className="flex items-center gap-2">
+                {active.index > 1 && (
+                  <Button size="sm" variant="ghost" onClick={() => setActiveKey(STEPS[active.index - 2].key)}>
+                    <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Anterior
+                  </Button>
+                )}
+                {active.index < STEPS.length && (
+                  <Button size="sm" variant="ghost" onClick={() => setActiveKey(STEPS[active.index].key)}>
+                    Próxima <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Post-migration extras */}
+            {active.key === "post" && isDedicated && (
+              <div className="rounded-md border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-medium">Janela de quarentena</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {tenant.frozen_at
+                        ? <>Congelado em {new Date(tenant.frozen_at).toLocaleString("pt-BR")}</>
+                        : "Ainda não congelado"}
+                    </div>
+                  </div>
+                  <Badge variant={quarantineDaysLeft === 0 ? "destructive" : "outline"} className="h-6">
+                    {quarantineDaysLeft ?? 30} dias restantes
+                  </Badge>
+                </div>
+                <div className="h-px bg-border" />
+                <div>
+                  <div className="text-xs font-medium mb-1">Purge definitivo</div>
+                  <p className="text-[11px] text-muted-foreground mb-2">
+                    Remove o tenant do banco compartilhado. Só disponível após a quarentena. Digite o ID abaixo para habilitar.
+                  </p>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      value={purgeType}
+                      onChange={(e) => setPurgeType(e.target.value)}
+                      placeholder={`Digite ${id} para confirmar`}
+                      className="h-8 text-xs font-mono"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={runPurge}
+                      disabled={purgeType !== id || (quarantineDaysLeft ?? 30) > 0}
+                    >
+                      Purge
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Failure card */}
+            {activeFailure && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <div className="flex items-start gap-2">
+                  <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-destructive">Falha na etapa</span>
+                      {activeFailure.code && (
+                        <code className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-mono">{activeFailure.code}</code>
+                      )}
+                      {activeFailure.stage && (
+                        <span className="text-[10px] text-muted-foreground">estágio: {activeFailure.stage}</span>
+                      )}
+                    </div>
+                    <div className="text-foreground">{activeFailure.message}</div>
+                    {activeFailure.hint && (
+                      <div className="text-muted-foreground flex gap-1"><span>💡</span><span>{activeFailure.hint}</span></div>
+                    )}
+                    {activeFailure.code?.startsWith("DEDICATED_") && (
+                      <Button size="sm" variant="outline" className="h-7 mt-2" onClick={() => navigate(`/super-admin/laboratorios/${id}?tab=database`)}>
+                        Abrir configuração do banco dedicado
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Log terminal */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Console de execução</div>
+                {activeLog && (
+                  <button
+                    onClick={() => setLogs((p) => ({ ...p, [active.key]: "" }))}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+              <div className="h-56 rounded-md border bg-foreground/[0.03] overflow-auto">
+                <pre className="text-[11px] font-mono p-3 whitespace-pre-wrap leading-relaxed text-foreground/80">
+                  {activeLog || <span className="text-muted-foreground">Aguardando execução…</span>}
+                </pre>
+              </div>
+            </div>
+          </Card>
+        </main>
+      </div>
     </div>
   );
 }
