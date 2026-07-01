@@ -176,16 +176,134 @@ async function rebuildRuntimeContext(): Promise<void> {
   await refreshContext();
 }
 
-async function validateDedicatedLoginGate(): Promise<string | null> {
+type GateOutcome = { message: string; code: string; raw?: string } | null;
+
+async function validateDedicatedLoginGate(): Promise<GateOutcome> {
   try {
     const { data, error } = await supabase.functions.invoke("tenant-dedicated-login-gate", { body: {} });
-    if (error) return error.message || "Falha ao validar o banco dedicado.";
-    const resp = data as { ok?: boolean; error?: string; message?: string } | null;
-    if (resp?.ok === false) return resp.error || resp.message || "Banco dedicado ainda não está pronto para login.";
+    if (error) {
+      return { message: "Não foi possível validar o banco dedicado do laboratório.", code: "gate_invoke_failed", raw: error.message };
+    }
+    const resp = data as { ok?: boolean; error?: string; message?: string; code?: string } | null;
+    if (resp?.ok === false) {
+      return {
+        message: resp.error || resp.message || "Banco dedicado ainda não está pronto para login.",
+        code: resp.code || "dedicated_gate_blocked",
+        raw: resp.error || resp.message,
+      };
+    }
   } catch (e) {
-    return e instanceof Error ? e.message : "Falha ao validar o banco dedicado.";
+    const raw = e instanceof Error ? e.message : String(e);
+    return { message: "Falha de rede ao validar o banco dedicado.", code: "gate_network_error", raw };
   }
   return null;
+}
+
+/**
+ * Converte um código técnico do gate dedicado em um alerta amigável para o
+ * operador do laboratório. Nunca expõe nomes de secrets ou stacks — a mensagem
+ * bruta continua disponível na seção "detalhes técnicos" da UI.
+ */
+function buildDedicatedGateDetail(code: string, raw?: string): LoginErrorDetail {
+  const map: Record<string, { title: string; message: string; hint: string; severity: LoginErrorDetail["severity"] }> = {
+    dedicated_not_provisioned: {
+      title: "Base do laboratório ainda não importada",
+      message: "O banco dedicado deste laboratório está ativo, mas os dados reais ainda não foram provisionados.",
+      hint: "Peça ao Super Admin para concluir o provisionamento do schema antes de tentar novamente.",
+      severity: "config",
+    },
+    dedicated_project_url_invalid: {
+      title: "Configuração do banco dedicado incompleta",
+      message: "A URL do projeto dedicado deste laboratório não está configurada corretamente.",
+      hint: "O Super Admin precisa revisar a URL do projeto Supabase dedicado no painel de administração.",
+      severity: "config",
+    },
+    dedicated_anon_secret_invalid: {
+      title: "Configuração do banco dedicado incompleta",
+      message: "A chave pública do banco dedicado deste laboratório está ausente ou inválida.",
+      hint: "O Super Admin precisa vincular a anon key do projeto dedicado na configuração do laboratório.",
+      severity: "config",
+    },
+    dedicated_anon_secret_missing: {
+      title: "Chave de acesso ao banco dedicado não cadastrada",
+      message: "Este laboratório está configurado em banco dedicado, mas a chave de conexão ainda não foi cadastrada na plataforma.",
+      hint: "Contate o Super Admin para cadastrar o secret da chave pública do projeto dedicado.",
+      severity: "config",
+    },
+    dedicated_connection_metadata_incomplete: {
+      title: "Configuração do banco dedicado incompleta",
+      message: "Faltam metadados de conexão (host, porta, usuário ou senha) para o banco dedicado deste laboratório.",
+      hint: "O Super Admin deve completar a ficha de conexão no painel de administração.",
+      severity: "config",
+    },
+    invalid_secret_ref: {
+      title: "Configuração do banco dedicado incompleta",
+      message: "A referência do secret da senha do banco dedicado está inválida.",
+      hint: "O Super Admin precisa revisar o campo de secret da senha no painel do laboratório.",
+      severity: "config",
+    },
+    secret_missing: {
+      title: "Senha do banco dedicado não cadastrada",
+      message: "A senha de conexão do banco dedicado ainda não foi cadastrada na plataforma.",
+      hint: "Contate o Super Admin para cadastrar o secret da senha do banco dedicado.",
+      severity: "config",
+    },
+    dedicated_connect_failed: {
+      title: "Banco dedicado indisponível",
+      message: "Não foi possível se conectar ao banco dedicado deste laboratório neste momento.",
+      hint: "Aguarde alguns instantes e tente novamente. Se persistir, contate o suporte técnico.",
+      severity: "infra",
+    },
+    dedicated_gate_query_failed: {
+      title: "Falha ao validar o banco dedicado",
+      message: "A verificação de integridade do banco dedicado não pôde ser concluída.",
+      hint: "Tente novamente em instantes. Se o problema continuar, contate o suporte técnico.",
+      severity: "infra",
+    },
+    dedicated_profiles_table_missing: {
+      title: "Base do laboratório ainda não importada",
+      message: "O banco dedicado está online, mas ainda não recebeu as tabelas operacionais do laboratório.",
+      hint: "Peça ao Super Admin para concluir a importação da base antes de liberar o acesso.",
+      severity: "config",
+    },
+    dedicated_user_not_migrated: {
+      title: "Seu usuário ainda não está no banco dedicado",
+      message: "Sua conta existe na plataforma, mas ainda não foi migrada para o banco dedicado deste laboratório.",
+      hint: "Peça ao administrador do laboratório para importar o seu usuário no banco dedicado.",
+      severity: "config",
+    },
+    dedicated_profile_tenant_mismatch: {
+      title: "Vínculo divergente entre laboratórios",
+      message: "Sua conta no banco dedicado está vinculada a outro laboratório.",
+      hint: "Contate o administrador para corrigir o vínculo do seu usuário.",
+      severity: "config",
+    },
+    dedicated_user_inactive: {
+      title: "Conta inativa",
+      message: "Sua conta está marcada como inativa no banco dedicado deste laboratório.",
+      hint: "Contate o administrador para reativar seu acesso.",
+      severity: "auth",
+    },
+    gate_invoke_failed: {
+      title: "Não foi possível validar o laboratório",
+      message: "A plataforma não conseguiu contatar o serviço de validação do banco dedicado.",
+      hint: "Tente novamente em instantes. Se persistir, contate o suporte técnico.",
+      severity: "infra",
+    },
+    gate_network_error: {
+      title: "Falha de rede",
+      message: "Sua conexão foi interrompida durante a validação do banco dedicado.",
+      hint: "Verifique sua internet e tente novamente.",
+      severity: "infra",
+    },
+  };
+  const preset = map[code] ?? {
+    title: "Banco dedicado indisponível",
+    message: "Não foi possível liberar o acesso ao banco dedicado deste laboratório no momento.",
+    hint: "Tente novamente em instantes. Se persistir, contate o suporte.",
+    severity: "infra" as const,
+  };
+  return { code, raw, ...preset };
 }
 
 async function validateDedicatedRuntimeReachable(): Promise<string | null> {
