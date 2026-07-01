@@ -65,7 +65,12 @@ Deno.serve(async (req) => {
   const isDedicated = reg.database_strategy === "dedicated" || reg.runtime_mode === "isolated_db";
   if (!isDedicated) return jsonResponse(200, okShared("mode_shared"), requestId);
   if (!reg.runtime_dedicated_enabled) return jsonResponse(200, okShared("flag_off"), requestId);
-  if (!reg.schema_provisioned_at) return jsonResponse(200, okShared("not_provisioned"), requestId);
+  if (!reg.schema_provisioned_at) {
+    return jsonResponse(200, block(
+      "Banco dedicado ativo, mas o schema dedicado ainda não foi provisionado/importado. Login bloqueado para evitar uso do banco compartilhado.",
+      "dedicated_not_provisioned",
+    ), requestId);
+  }
 
   const secretRef = (reg.db_secret_ref ?? "").trim();
   if (!reg.db_host || !reg.db_port || !reg.db_name || !reg.db_user || !secretRef) {
