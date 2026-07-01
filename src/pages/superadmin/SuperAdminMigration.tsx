@@ -248,7 +248,7 @@ export default function SuperAdminMigration() {
   const runStorage = () => invoke("super-admin-migrate-tenant-storage", { tenantId: id }, "storage");
   const runSmoke = () => invoke("super-admin-migration-smoke-test", { tenantId: id }, "smoke");
   const runFlip = async () => {
-    if (!confirm("Confirmar FLIP para banco dedicado? O tenant passará a operar no projeto dedicado imediatamente.")) return;
+    setFlipOpen(false);
     const r = await invoke("super-admin-migration-flip", { tenantId: id, confirm: "FLIP" }, "flip");
     if (r.ok) await loadTenant();
   };
