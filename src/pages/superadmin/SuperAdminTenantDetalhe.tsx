@@ -87,8 +87,13 @@ interface Snapshot {
   registry: {
     runtime_mode?: string;
     database_strategy?: string;
-    db_provider?: string;
-    db_region?: string;
+    db_provider?: string | null;
+    db_region?: string | null;
+    db_host?: string | null;
+    db_port?: number | null;
+    db_name?: string | null;
+    db_user?: string | null;
+    db_secret_ref?: string | null;
     schema_version?: string;
     last_health_check?: string;
     last_health_result?: string;
