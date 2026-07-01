@@ -49,8 +49,17 @@ export async function loadRegistry(admin: AdminClient, tenantId: string): Promis
 /** Conecta ao banco DEDICADO do tenant a partir do tenant_registry + secret. */
 export async function connectDedicated(reg: TenantRegistryRow): Promise<Client> {
   const { db_host, db_port, db_name, db_user, db_secret_ref } = reg;
-  if (!db_host || !db_port || !db_name || !db_user || !db_secret_ref) {
-    throw new Error("Metadados de conexão do banco dedicado incompletos");
+  const missing: string[] = [];
+  if (!db_host) missing.push("db_host");
+  if (!db_port) missing.push("db_port");
+  if (!db_name) missing.push("db_name");
+  if (!db_user) missing.push("db_user");
+  if (!db_secret_ref) missing.push("db_secret_ref (senha)");
+  if (missing.length) {
+    throw new Error(
+      `Banco dedicado do tenant não configurado. Faltando: ${missing.join(", ")}. ` +
+      `Preencha em Super Admin → Laboratório → aba "Banco de Dados" antes de migrar.`,
+    );
   }
   if (!SECRET_REF_RE.test(db_secret_ref)) throw new Error("db_secret_ref inválido");
   const password = Deno.env.get(db_secret_ref);
