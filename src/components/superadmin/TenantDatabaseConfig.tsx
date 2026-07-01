@@ -90,7 +90,11 @@ const empty: DbConfig = {
   db_user: null,
   db_region: null,
   db_secret_ref: null,
+  db_project_url: null,
+  db_anon_key_secret_ref: null,
+  schema_provisioned_at: null,
 };
+
 
 export function TenantDatabaseConfig({
   tenantId,
