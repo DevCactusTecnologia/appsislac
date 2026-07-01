@@ -37,6 +37,42 @@ type DdlDump = {
 
 const SCHEMA_VERSION = "v3-full";
 
+async function getDedicatedSchemaVersion(client: { queryObject: <T>(query: string, args?: unknown[]) => Promise<{ rows: T[] }> }) {
+  try {
+    const res = await client.queryObject<{ schema_version: string }>(`
+      SELECT schema_version
+        FROM public._sislac_schema_health
+       WHERE id = 1
+       LIMIT 1
+    `);
+    return res.rows[0]?.schema_version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function markRegistrySchemaReady(admin: ReturnType<typeof createClient>, tenantId: string, log: { warn: (msg: string, data?: unknown) => void }) {
+  const { error } = await admin.from("tenant_registry").update({
+    schema_provisioned_at: new Date().toISOString(),
+    schema_version: SCHEMA_VERSION,
+    migration_state: "migrating",
+  }).eq("tenant_id", tenantId);
+  if (error) {
+    log.warn("registry update failed after schema provision", { tenantId, error: error.message });
+  }
+}
+
+async function prepareDedicatedPublicSchema(client: { queryArray: (query: string, args?: unknown[]) => Promise<unknown> }) {
+  // Evita que uma tentativa fique presa esperando lock no banco dedicado e acabe
+  // como "Edge Function returned a non-2xx status code" no wizard.
+  await client.queryArray(`SET lock_timeout TO '5s'`);
+  await client.queryArray(`SET statement_timeout TO '25s'`);
+  await client.queryArray(`SET idle_in_transaction_session_timeout TO '30s'`);
+  await client.queryArray(`CREATE SCHEMA IF NOT EXISTS public`);
+  await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
+  await client.queryArray(`GRANT ALL ON SCHEMA public TO postgres, service_role`);
+}
+
 async function finalizeDedicatedSchema(client: { queryArray: (query: string, args?: unknown[]) => Promise<unknown> }, tenantId: string) {
   // Health-check neutro para o wizard: não depende de profiles, RLS ou dados migrados.
   await client.queryArray(`
@@ -88,6 +124,7 @@ async function seedTenantSentinel(client: {
   if (!meta.rows.length) throw new Error("public.tenants não existe no schema dedicado");
 
   const short = tenantId.slice(0, 8);
+  const numericCode = tenantId.replace(/\D/g, "").padEnd(4, "0").slice(0, 6);
   const valuesByColumn: Record<string, unknown> = {
     id: tenantId,
     nome: "Tenant Dedicado",
@@ -99,7 +136,8 @@ async function seedTenantSentinel(client: {
     telefone: "",
     status: "ativo",
     plano: "dedicated",
-    lab_code: `DED-${short}`,
+    database_strategy: "dedicated",
+    lab_code: numericCode,
   };
 
   const requiredMissing = meta.rows
@@ -135,38 +173,115 @@ Deno.serve(async (req) => {
   const guard = await requireSuperAdmin(req, admin);
   if (!guard.ok) return errorResponse(guard.status, guard.msg, requestId, log);
 
-  let body: { tenantId?: string; reset?: boolean } = {};
+  let body: { tenantId?: string; reset?: boolean; async?: boolean; sync?: boolean } = {};
   try { body = await req.json(); } catch { return errorResponse(400, "JSON inválido", requestId, log); }
   const tenantId = body.tenantId;
-  const resetSchema = body.reset !== false; // default true — provisionamento é destrutivo por natureza
+  const requestedReset = body.reset === true;
   if (!tenantId) return errorResponse(400, "tenantId obrigatório", requestId, log);
 
   let reg;
   try { reg = await loadRegistry(admin, tenantId); }
   catch (e) { return errorResponse(400, e instanceof Error ? e.message : "loadRegistry", requestId, log); }
 
+  const syncExecution = body.sync === true || body.async === false;
+  if (!syncExecution) {
+    // O gateway/cliente do Supabase pode cancelar requests longas e matar a Edge
+    // Function no meio do DROP/CREATE, deixando o schema sem a sentinela health.
+    // O clique padrão apenas agenda uma segunda execução interna e responde 200;
+    // o wizard acompanha tenant_migration_runs até finalizar.
+    await admin
+      .from("tenant_migration_runs")
+      .update({
+        status: "aborted",
+        error: "Execução anterior interrompida antes de finalizar. Reexecute a etapa.",
+        finished_at: new Date().toISOString(),
+      })
+      .eq("tenant_id", tenantId)
+      .eq("phase", "schema")
+      .eq("status", "running");
+
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const backgroundBody = JSON.stringify({ ...body, tenantId, async: false, sync: true });
+    const backgroundTask = fetch(req.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
+        "x-sislac-background": "schema-provision",
+      },
+      body: backgroundBody,
+    }).then(async (res) => {
+      if (!res.ok) {
+        log.warn("background provision returned non-2xx", { tenantId, status: res.status, body: (await res.text()).slice(0, 500) });
+      }
+    }).catch((e) => {
+      log.warn("background provision failed to start", { tenantId, error: e instanceof Error ? e.message : String(e) });
+    });
+
+    const edgeRuntime = (globalThis as unknown as { EdgeRuntime?: { waitUntil: (promise: Promise<unknown>) => void } }).EdgeRuntime;
+    if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(backgroundTask);
+    else backgroundTask.catch(() => null);
+
+    return jsonResponse(200, {
+      ok: true,
+      async: true,
+      status: "running",
+      phase: "schema",
+      startedAt: new Date().toISOString(),
+      hint: "Provisionamento iniciado em segundo plano. Acompanhe o run até finalizar.",
+    });
+  }
+
+  // Runs podem ficar presos como "running" se o cliente abortar a request antes
+  // da resposta. Isso não deve bloquear novas tentativas nem esconder o erro real.
+  await admin
+    .from("tenant_migration_runs")
+    .update({
+      status: "aborted",
+      error: "Execução anterior interrompida antes de finalizar. Reexecute a etapa.",
+      finished_at: new Date().toISOString(),
+    })
+    .eq("tenant_id", tenantId)
+    .eq("phase", "schema")
+    .eq("status", "running");
+
   const runId = await beginRun(admin, tenantId, "schema", guard.user.id);
   const t0 = Date.now();
 
-  // 1) Puxa o DDL do shared — RPC exige auth.uid() (SECURITY DEFINER + is_super_admin),
-  // então usamos client com o JWT do usuário, não o service-role.
-  const userClient = createUserClientFromRequest(req);
-  const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_ddl");
-  if (dumpErr || !dump) {
-    const msg = dumpErr?.message ?? "dump vazio";
-    await finishRun(admin, runId, "failed", { stage: "dump" }, msg);
-    return errorResponse(500, `Falha ao gerar DDL: ${msg}`, requestId, log);
-  }
-  const ddl = dump as unknown as DdlDump;
-
-  // 2) Conecta ao dedicado
+  // 1) Conecta ao dedicado e permite caminho curto antes do dump DDL.
   let client;
   try { client = await connectDedicated(reg); }
   catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await finishRun(admin, runId, "failed", { stage: "connect" }, msg);
-    return errorResponse(400, msg, requestId, log);
+    return jsonResponse(200, { ok: false, runId, stage: "connect", error: msg });
   }
+
+  const currentSchemaVersion = await getDedicatedSchemaVersion(client);
+  if (!requestedReset && currentSchemaVersion === SCHEMA_VERSION) {
+    try { await client.end(); } catch { /* noop */ }
+    await markRegistrySchemaReady(admin, tenantId, log);
+    const stats = { schemaAlreadyReady: true, schemaVersion: SCHEMA_VERSION, ms: Date.now() - t0 };
+    await finishRun(admin, runId, "ok", stats);
+    return jsonResponse(200, { ok: true, runId, stats, failures: [], warnings: [], latencyMs: Date.now() - t0 });
+  }
+
+  const resetSchema = requestedReset;
+
+  // 2) Puxa o DDL do shared — RPC exige auth.uid() (SECURITY DEFINER + is_super_admin),
+  // então usamos client com o JWT do usuário, não o service-role. Só fazemos isso
+  // quando o dedicado ainda não está na versão atual.
+  const userClient = createUserClientFromRequest(req);
+  const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_ddl");
+  if (dumpErr || !dump) {
+    const msg = dumpErr?.message ?? "dump vazio";
+    try { await client.end(); } catch { /* noop */ }
+    await finishRun(admin, runId, "failed", { stage: "dump" }, msg);
+    return jsonResponse(200, { ok: false, runId, stage: "dump", error: `Falha ao gerar DDL: ${msg}` });
+  }
+  const ddl = dump as unknown as DdlDump;
 
   const stats = {
     extensions: 0, enums: 0, sequences: 0, tables: 0,
@@ -174,11 +289,13 @@ Deno.serve(async (req) => {
   };
   const failures: Array<{ stage: string; name?: string; error: string }> = [];
 
-  // Reset limpo do schema public no dedicado — garante idempotência real.
-  // Sem isso, tabelas parcialmente criadas em runs anteriores são puladas
-  // por CREATE TABLE IF NOT EXISTS e ficam permanentemente sem colunas.
+  // Reset limpo do schema public no dedicado somente quando explicitamente
+  // solicitado. O clique padrão em "Provisionar" deve ser seguro/idempotente:
+  // se o cliente abortar a request, não podemos deixar o banco sem schema health.
   if (resetSchema) {
     try {
+      await client.queryArray(`SET lock_timeout TO '5s'`);
+      await client.queryArray(`SET statement_timeout TO '25s'`);
       await client.queryArray(`DROP SCHEMA IF EXISTS public CASCADE`);
       await client.queryArray(`CREATE SCHEMA public`);
       await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
@@ -187,8 +304,17 @@ Deno.serve(async (req) => {
       const msg = e instanceof Error ? e.message : String(e);
       try { await client.end(); } catch { /* noop */ }
       await finishRun(admin, runId, "failed", { stage: "reset" }, msg);
-      return errorResponse(500, `Falha ao resetar schema public: ${msg}`, requestId, log);
+      return jsonResponse(200, { ok: false, runId, stage: "reset", error: `Falha ao resetar schema public: ${msg}` });
     }
+  }
+
+  try {
+    await prepareDedicatedPublicSchema(client);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    try { await client.end(); } catch { /* noop */ }
+    await finishRun(admin, runId, "failed", { stage: "prepare_public_schema" }, msg);
+    return jsonResponse(200, { ok: false, runId, stage: "prepare_public_schema", error: `Falha ao preparar schema public: ${msg}` });
   }
 
   const warnings: Array<{ stage: string; name?: string; error: string }> = [];
@@ -268,18 +394,21 @@ Deno.serve(async (req) => {
   });
 
   if (status === "ok") {
-    const nowIso = new Date().toISOString();
-    await admin.from("tenant_registry").update({
-      schema_provisioned_at: nowIso,
-      schema_version: SCHEMA_VERSION,
-      migration_state: "schema_ready",
-    }).eq("tenant_id", tenantId);
+    await markRegistrySchemaReady(admin, tenantId, log);
   } else {
-    await admin.from("tenant_registry").update({ migration_state: "schema_failed" }).eq("tenant_id", tenantId);
+    const { error: regUpdateErr } = await admin
+      .from("tenant_registry")
+      .update({ migration_state: "idle" })
+      .eq("tenant_id", tenantId);
+    if (regUpdateErr) {
+      log.warn("registry update failed after schema failure", { tenantId, error: regUpdateErr.message });
+    }
   }
 
   log.info("provision full done", { tenantId, stats, failures: failures.length, warnings: warnings.length, ms: Date.now() - t0 });
-  return jsonResponse(status === "ok" ? 200 : 422, {
+  // Retorna HTTP 200 mesmo em falha operacional para o wizard conseguir exibir
+  // `failures`/`warnings`. Erros de contrato/autenticação continuam usando 4xx/5xx acima.
+  return jsonResponse(200, {
     ok: status === "ok",
     runId,
     stats,

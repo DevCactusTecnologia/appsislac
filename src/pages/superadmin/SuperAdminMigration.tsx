@@ -80,12 +80,32 @@ export default function SuperAdminMigration() {
 
   useEffect(() => { void loadTenant(); }, [loadTenant]);
 
+  const loadLastRunError = useCallback(async (phase: StepKey): Promise<string | null> => {
+    if (!id) return null;
+    const { data } = await supabase
+      .from("tenant_migration_runs")
+      .select("stats, error, status")
+      .eq("tenant_id", id)
+      .eq("phase", phase)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const row = data as { stats?: { failures?: Array<{ stage?: string; name?: string; error?: string }> }; error?: string | null; status?: string } | null;
+    if (!row) return null;
+    const firstFailure = row.stats?.failures?.[0];
+    if (firstFailure?.error) return `${firstFailure.stage ?? "etapa"}: ${firstFailure.error}`;
+    if (row.error) return row.error;
+    if (row.status === "running") return "A execução ainda está em andamento no backend. Aguarde alguns segundos e atualize.";
+    return null;
+  }, [id]);
+
   const invoke = useCallback(async (fn: string, body: Record<string, unknown>, key: StepKey): Promise<RunResult> => {
     setState(key, "running");
     appendLog(key, `→ ${fn} ${JSON.stringify(body).slice(0, 120)}`);
     const { data, error } = await supabase.functions.invoke(fn, { body });
     if (error) {
-      const msg = (data as { error?: string } | null)?.error ?? error.message;
+      const runMsg = await loadLastRunError(key);
+      const msg = runMsg ?? (data as { error?: string } | null)?.error ?? error.message;
       appendLog(key, `✗ ${msg}`);
       setState(key, "failed");
       return { ok: false, error: msg };
@@ -100,7 +120,7 @@ export default function SuperAdminMigration() {
     appendLog(key, `✓ ${JSON.stringify(data).slice(0, 400)}`);
     setState(key, "ok");
     return { ok: true, data };
-  }, []);
+  }, [loadLastRunError]);
 
   const runPrep = () => invoke("super-admin-test-tenant-anon-key", { tenantId: id }, "prep");
   const runSchema = () => invoke("super-admin-provision-tenant-schema-full", { tenantId: id }, "schema");
