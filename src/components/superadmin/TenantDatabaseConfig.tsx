@@ -229,6 +229,47 @@ export function TenantDatabaseConfig({
     }
   };
 
+  const testAnonKey = async () => {
+    if (cfg.db_provider !== "supabase_project") {
+      toast.error("Teste de anon key disponível apenas para provedor Supabase dedicado.");
+      return;
+    }
+    if (!cfg.db_project_url || !cfg.db_anon_key_secret_ref) {
+      toast.error("Preencha a URL do projeto dedicado e o nome do secret da anon key.");
+      return;
+    }
+    setTestingAnon(true);
+    setAnonResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-test-tenant-anon-key", {
+      body: {
+        tenantId,
+        dbProjectUrl: cfg.db_project_url,
+        dbAnonKeySecretRef: cfg.db_anon_key_secret_ref,
+      },
+    });
+    setTestingAnon(false);
+    if (error) { setAnonResult({ ok: false, error: error.message }); toast.error(error.message); return; }
+    const r = data as any;
+    if (r?.ok) {
+      setAnonResult({
+        ok: true,
+        latencyMs: r.latencyMs,
+        status: r.status,
+        schemaReady: !!r.schemaReady,
+        profilesStatus: r.profilesStatus ?? 0,
+        hint: r.hint,
+      });
+      toast.success(
+        r.schemaReady
+          ? `Anon key OK em ${r.latencyMs}ms — schema exposto`
+          : `Anon key OK em ${r.latencyMs}ms (schema ainda pendente)`,
+      );
+    } else {
+      setAnonResult({ ok: false, error: r?.error ?? "Falha desconhecida", stage: r?.stage, status: r?.status });
+      toast.error(r?.error ?? "Falha ao validar anon key");
+    }
+  };
+
   const provisionSchema = async () => {
     if (cfg.schema_provisioned_at) {
       const confirmReprovision = window.confirm(
