@@ -64,13 +64,53 @@ Deno.serve(async (req) => {
     }
   }
 
-  if (!projectUrl) return jsonResponse(200, { ok: false, stage: "validate", error: "URL do projeto dedicado não informada" });
-  if (!PROJECT_URL_RE.test(projectUrl)) {
-    return jsonResponse(200, { ok: false, stage: "validate", error: "URL do projeto dedicado inválida (esperado https://<ref>.supabase.co)" });
+  const configHint =
+    "Abra a tela do laboratório (Super Admin → Laboratórios → este tenant → aba \"Banco de dados\") e informe a URL do projeto Supabase dedicado e os nomes dos secrets (service role e anon key) antes de rodar a migração.";
+
+  if (!projectUrl && !secretRef) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "validate",
+      code: "DEDICATED_CONFIG_MISSING",
+      error: "Este tenant ainda não tem um projeto Supabase dedicado configurado.",
+      hint: configHint,
+    });
   }
-  if (!secretRef) return jsonResponse(200, { ok: false, stage: "validate", error: "Nome do secret com a anon key não informado" });
+  if (!projectUrl) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "validate",
+      code: "DEDICATED_URL_MISSING",
+      error: "URL do projeto Supabase dedicado não foi cadastrada para este tenant.",
+      hint: configHint,
+    });
+  }
+  if (!PROJECT_URL_RE.test(projectUrl)) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "validate",
+      code: "DEDICATED_URL_INVALID",
+      error: `A URL cadastrada (\"${projectUrl}\") não tem o formato esperado.`,
+      hint: "Use o formato exato https://<project-ref>.supabase.co (sem barra final, sem /rest, sem /auth).",
+    });
+  }
+  if (!secretRef) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "validate",
+      code: "DEDICATED_ANON_SECRET_REF_MISSING",
+      error: "O nome do secret com a anon/publishable key do projeto dedicado não foi informado.",
+      hint: configHint,
+    });
+  }
   if (!SECRET_REF_RE.test(secretRef)) {
-    return jsonResponse(200, { ok: false, stage: "validate", error: "Nome do secret inválido (use UPPER_SNAKE_CASE, 3–64 chars)" });
+    return jsonResponse(200, {
+      ok: false,
+      stage: "validate",
+      code: "DEDICATED_ANON_SECRET_REF_INVALID",
+      error: `Nome de secret inválido: \"${secretRef}\".`,
+      hint: "Use UPPER_SNAKE_CASE com 3 a 64 caracteres (ex.: TENANT_ACME_ANON_KEY).",
+    });
   }
 
   const anon = Deno.env.get(secretRef)?.trim();
@@ -78,7 +118,9 @@ Deno.serve(async (req) => {
     return jsonResponse(200, {
       ok: false,
       stage: "secret",
-      error: `Secret "${secretRef}" não está cadastrado no Lovable Cloud`,
+      code: "DEDICATED_ANON_SECRET_NOT_SET",
+      error: `Secret \"${secretRef}\" não está cadastrado no Lovable Cloud.`,
+      hint: `Cadastre o secret \"${secretRef}\" com a anon/publishable key do projeto dedicado nas configurações do Lovable Cloud e execute o teste novamente.`,
       secretRef,
     });
   }
