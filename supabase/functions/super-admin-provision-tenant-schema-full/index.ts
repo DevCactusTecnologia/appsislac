@@ -75,6 +75,51 @@ async function finalizeDedicatedSchema(client: { queryArray: (query: string, arg
   try { await client.queryArray(`NOTIFY pgrst, 'reload schema'`); } catch { /* noop */ }
 }
 
+async function seedTenantSentinel(client: {
+  queryArray: (query: string, args?: unknown[]) => Promise<unknown>;
+  queryObject: <T>(query: string, args?: unknown[]) => Promise<{ rows: T[] }>;
+}, tenantId: string) {
+  const meta = await client.queryObject<{ column_name: string; is_nullable: string; column_default: string | null }>(`
+    SELECT column_name, is_nullable, column_default
+      FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'tenants'
+     ORDER BY ordinal_position
+  `);
+  if (!meta.rows.length) throw new Error("public.tenants não existe no schema dedicado");
+
+  const short = tenantId.slice(0, 8);
+  const valuesByColumn: Record<string, unknown> = {
+    id: tenantId,
+    nome: "Tenant Dedicado",
+    name: "Tenant Dedicado",
+    slug: `dedicated-${short}`,
+    cnpj: tenantId.replace(/-/g, "").padStart(14, "0").slice(0, 14),
+    email_contato: "dedicated@sislac.local",
+    email: "dedicated@sislac.local",
+    telefone: "",
+    status: "ativo",
+    plano: "dedicated",
+    lab_code: `DED-${short}`,
+  };
+
+  const requiredMissing = meta.rows
+    .filter((c) => c.is_nullable === "NO" && c.column_default === null && !(c.column_name in valuesByColumn))
+    .map((c) => c.column_name);
+  if (requiredMissing.length) {
+    throw new Error(`public.tenants tem colunas obrigatórias sem default não mapeadas: ${requiredMissing.join(", ")}`);
+  }
+
+  const cols = meta.rows.map((c) => c.column_name).filter((c) => c in valuesByColumn);
+  if (!cols.includes("id")) throw new Error("public.tenants não possui coluna id para sentinela");
+  const params = cols.map((_, i) => `$${i + 1}`).join(", ");
+  const quoted = cols.map((c) => `"${c.replace(/"/g, '""')}"`).join(", ");
+  const values = cols.map((c) => valuesByColumn[c]);
+  await client.queryArray(
+    `INSERT INTO public.tenants (${quoted}) VALUES (${params}) ON CONFLICT (id) DO NOTHING`,
+    values,
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   if (req.method !== "POST") return errorResponse(405, "Method not allowed", newRequestId(req), createLogger("provision-full", newRequestId(req)));
@@ -195,30 +240,20 @@ Deno.serve(async (req) => {
     await runBlock("triggers", ddl.triggers ?? [], { silent: true });
     await runBlock("views", ddl.views ?? [], { silent: true });
 
-    await finalizeDedicatedSchema(client, tenantId);
-
     // Sentinela em public.tenants (Opção B — mantém tenant_id fixo).
-    // Usa todas as colunas NOT NULL conhecidas para não depender de triggers do shared.
     try {
-      await client.queryArray(
-        `INSERT INTO public.tenants (id, nome, slug, cnpj, email_contato, telefone, status, plano, lab_code)
-         VALUES (
-           $1::uuid,
-           'Tenant Dedicado',
-           'dedicated-' || left($2::text,8),
-           lpad(replace($2::text, '-', ''), 14, '0'),
-           'dedicated@sislac.local',
-           '',
-           'ativo',
-           'dedicated',
-           'DED-' || left($2::text,8)
-         )
-         ON CONFLICT (id) DO NOTHING`,
-        [tenantId, tenantId],
-      );
+      await seedTenantSentinel(client, tenantId);
       stats.sentinel = true;
     } catch (e) {
       failures.push({ stage: "sentinel", error: e instanceof Error ? e.message : String(e) });
+    }
+
+    if (failures.length === 0) {
+      try {
+        await finalizeDedicatedSchema(client, tenantId);
+      } catch (e) {
+        failures.push({ stage: "finalize", error: e instanceof Error ? e.message : String(e) });
+      }
     }
   } finally {
     try { await client.end(); } catch { /* noop */ }
