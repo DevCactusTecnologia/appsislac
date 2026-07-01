@@ -159,6 +159,18 @@ async function rebuildRuntimeContext(): Promise<void> {
   await refreshContext();
 }
 
+async function validateDedicatedLoginGate(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("tenant-dedicated-login-gate", { body: {} });
+    if (error) return error.message || "Falha ao validar o banco dedicado.";
+    const resp = data as { ok?: boolean; error?: string; message?: string } | null;
+    if (resp?.ok === false) return resp.error || resp.message || "Banco dedicado ainda não está pronto para login.";
+  } catch (e) {
+    return e instanceof Error ? e.message : "Falha ao validar o banco dedicado.";
+  }
+  return null;
+}
+
 async function validateDedicatedRuntimeReachable(): Promise<string | null> {
   const ctx = await refreshContext();
   if (ctx.strategy !== "dedicated") return null;
@@ -322,6 +334,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mountedRef.current) setUser(null);
           return;
         }
+        const gateError = await validateDedicatedLoginGate();
+        if (gateError) {
+          await supabase.auth.signOut();
+          if (mountedRef.current) setUser(null);
+          return;
+        }
       }
       if (opts?.refreshRuntime && !hydrated?.isSuperAdmin) {
         await rebuildRuntimeContext();
@@ -474,6 +492,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ok: false,
               error: "Seu laboratório foi suspenso. Entre em contato com o suporte.",
             };
+          }
+
+          const gateError = await validateDedicatedLoginGate();
+          if (gateError) {
+            console.warn("⚠️  [Auth] Login bloqueado pelo gate dedicado", {
+              uid,
+              tenantId: profRow.tenant_id,
+              gateError,
+            });
+            await supabase.auth.signOut();
+            await rebuildRuntimeContext();
+            return { ok: false, error: gateError };
           }
         }
 
