@@ -149,21 +149,26 @@ export default function SuperAdminMigration() {
 
   const invoke = useCallback(async (fn: string, body: Record<string, unknown>, key: StepKey): Promise<RunResult> => {
     setState(key, "running");
+    setFailure(key, null);
     appendLog(key, `→ ${fn} ${JSON.stringify(body).slice(0, 120)}`);
     const { data, error } = await supabase.functions.invoke(fn, { body });
     if (error) {
       const runMsg = await loadLastRunError(key);
       const msg = runMsg ?? (data as { error?: string } | null)?.error ?? error.message;
       appendLog(key, `✗ ${msg}`);
+      setFailure(key, { message: msg });
       setState(key, "failed");
       return { ok: false, error: msg };
     }
     const logicalFailure = readInvokeFailure(data);
     if (logicalFailure) {
-      appendLog(key, `✗ ${logicalFailure}`);
+      const prefix = logicalFailure.code ? `[${logicalFailure.code}] ` : "";
+      appendLog(key, `✗ ${prefix}${logicalFailure.message}`);
+      if (logicalFailure.hint) appendLog(key, `↳ ${logicalFailure.hint}`);
       appendLog(key, JSON.stringify(data).slice(0, 800));
+      setFailure(key, logicalFailure);
       setState(key, "failed");
-      return { ok: false, error: logicalFailure, data };
+      return { ok: false, error: logicalFailure.message, data };
     }
 
     const asyncPayload = data as { async?: boolean; status?: string; startedAt?: string } | null;
