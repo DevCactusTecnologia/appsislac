@@ -718,9 +718,13 @@ export default function SuperAdminTenantDetalhe() {
                   db_user: snap.registry.db_user ?? null,
                   db_region: snap.registry.db_region ?? null,
                   db_secret_ref: snap.registry.db_secret_ref ?? null,
+                  db_project_url: snap.registry.db_project_url ?? null,
+                  db_anon_key_secret_ref: snap.registry.db_anon_key_secret_ref ?? null,
+                  schema_provisioned_at: snap.registry.schema_provisioned_at ?? null,
                 } : null}
                 onSaved={() => refetchSnapshot()}
               />
+
 
 
               <div className="rounded-xl border border-border bg-card p-6 space-y-4">
