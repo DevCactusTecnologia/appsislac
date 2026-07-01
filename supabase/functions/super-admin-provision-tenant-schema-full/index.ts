@@ -89,6 +89,23 @@ Deno.serve(async (req) => {
   };
   const failures: Array<{ stage: string; name?: string; error: string }> = [];
 
+  // Reset limpo do schema public no dedicado — garante idempotência real.
+  // Sem isso, tabelas parcialmente criadas em runs anteriores são puladas
+  // por CREATE TABLE IF NOT EXISTS e ficam permanentemente sem colunas.
+  if (resetSchema) {
+    try {
+      await client.queryArray(`DROP SCHEMA IF EXISTS public CASCADE`);
+      await client.queryArray(`CREATE SCHEMA public`);
+      await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
+      await client.queryArray(`GRANT ALL ON SCHEMA public TO postgres, service_role`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      try { await client.end(); } catch { /* noop */ }
+      await finishRun(admin, runId, "failed", { stage: "reset" }, msg);
+      return errorResponse(500, `Falha ao resetar schema public: ${msg}`, requestId, log);
+    }
+  }
+
   const warnings: Array<{ stage: string; name?: string; error: string }> = [];
 
   // silent = registra warning em vez de falha (usado em pré-passes e em blocos
