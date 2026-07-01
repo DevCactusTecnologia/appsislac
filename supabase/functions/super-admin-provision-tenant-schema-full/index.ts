@@ -50,9 +50,10 @@ Deno.serve(async (req) => {
   const guard = await requireSuperAdmin(req, admin);
   if (!guard.ok) return errorResponse(guard.status, guard.msg, requestId, log);
 
-  let body: { tenantId?: string } = {};
+  let body: { tenantId?: string; reset?: boolean } = {};
   try { body = await req.json(); } catch { return errorResponse(400, "JSON inválido", requestId, log); }
   const tenantId = body.tenantId;
+  const resetSchema = body.reset !== false; // default true — provisionamento é destrutivo por natureza
   if (!tenantId) return errorResponse(400, "tenantId obrigatório", requestId, log);
 
   let reg;
@@ -87,6 +88,23 @@ Deno.serve(async (req) => {
     indexes: 0, fks: 0, functions: 0, triggers: 0, views: 0, sentinel: false,
   };
   const failures: Array<{ stage: string; name?: string; error: string }> = [];
+
+  // Reset limpo do schema public no dedicado — garante idempotência real.
+  // Sem isso, tabelas parcialmente criadas em runs anteriores são puladas
+  // por CREATE TABLE IF NOT EXISTS e ficam permanentemente sem colunas.
+  if (resetSchema) {
+    try {
+      await client.queryArray(`DROP SCHEMA IF EXISTS public CASCADE`);
+      await client.queryArray(`CREATE SCHEMA public`);
+      await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
+      await client.queryArray(`GRANT ALL ON SCHEMA public TO postgres, service_role`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      try { await client.end(); } catch { /* noop */ }
+      await finishRun(admin, runId, "failed", { stage: "reset" }, msg);
+      return errorResponse(500, `Falha ao resetar schema public: ${msg}`, requestId, log);
+    }
+  }
 
   const warnings: Array<{ stage: string; name?: string; error: string }> = [];
 
