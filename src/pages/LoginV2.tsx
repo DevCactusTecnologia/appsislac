@@ -80,6 +80,7 @@ export default function LoginV2() {
   const [senha, setSenha] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<LoginErrorDetail | null>(null);
   const isMobile = useIsMobile();
 
 
