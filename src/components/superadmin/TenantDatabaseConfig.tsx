@@ -94,6 +94,7 @@ const empty: DbConfig = {
   db_project_url: null,
   db_anon_key_secret_ref: null,
   schema_provisioned_at: null,
+  runtime_dedicated_enabled: false,
 };
 
 
