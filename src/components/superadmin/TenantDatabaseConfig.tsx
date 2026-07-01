@@ -639,6 +639,56 @@ export function TenantDatabaseConfig({
         </div>
       )}
 
+      {isolated && anonResult && (
+        <div className={cn(
+          "mt-3 rounded-md border p-3 text-[12px] flex items-start gap-2",
+          anonResult.ok
+            ? (anonResult.schemaReady
+                ? "border-status-success/30 bg-status-success-bg/40"
+                : "border-status-warning/30 bg-status-warning-bg/40")
+            : "border-status-danger/30 bg-status-danger-bg/40"
+        )}>
+          {anonResult.ok
+            ? (anonResult.schemaReady
+                ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+                : <ShieldAlert className="h-4 w-4 text-status-warning shrink-0 mt-0.5" />)
+            : <XCircle className="h-4 w-4 text-status-danger shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            {anonResult.ok ? (
+              <>
+                <div className="font-semibold text-foreground">
+                  Anon key validada em {anonResult.latencyMs}ms (HTTP {anonResult.status})
+                </div>
+                <div className="text-muted-foreground mt-0.5">
+                  {anonResult.schemaReady
+                    ? "PostgREST responde e o schema mínimo (profiles) está exposto — pronto para roteamento dedicado."
+                    : (anonResult.hint ?? "Anon key aceita, mas o schema ainda não está exposto pelo PostgREST.")}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-semibold text-foreground">
+                  Falha ao validar anon key{anonResult.stage ? ` (${anonResult.stage})` : ""}
+                </div>
+                <div className="text-muted-foreground mt-0.5 break-words">{anonResult.error}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isolated && cfg.db_provider === "supabase_project" && (
+        <ReadinessChecklist
+          hasConn={!!(cfg.db_host && cfg.db_port && cfg.db_name && cfg.db_user && cfg.db_secret_ref)}
+          hasProjectUrl={!!cfg.db_project_url}
+          hasAnonSecret={!!cfg.db_anon_key_secret_ref}
+          connectionOk={testResult?.ok === true}
+          anonOk={anonResult?.ok === true}
+          schemaReady={!!cfg.schema_provisioned_at}
+          routingOn={!!cfg.runtime_dedicated_enabled}
+        />
+      )}
+
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
