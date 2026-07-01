@@ -1,20 +1,17 @@
-// Runtime 2.0 — Server helpers (Fase C + Dedicated Runtime v1.0 / Slice 1).
+// SISLAC Database Migration Core — Server helpers.
 //
-// Fachada de alto nível para edge functions. Encapsula os três padrões
-// canônicos de criação de client:
+// Fachada mínima para edge functions. Três padrões canônicos:
 //
 //   getPlatformClient()          → service-role (control plane / admin)
-//   getUserClient(authHeader)    → anon + Authorization (autenticação do usuário)
-//   getTenantClient(tenant_id)   → roteamento tenant-aware (shared OU dedicated)
+//   getUserClient(authHeader)    → anon + Authorization (JWT do usuário)
+//   getTenantClient(tenant_id)   → resolve shared OU dedicated (service-role)
+//   getUserTenantClient(auth, t) → dedicated user-scoped (JWT preservado)
 //
-// Dedicated: usa service-role do projeto dedicado (secret
-// `SB_SERVICE_ROLE_<project_ref>`, cadastrado manualmente por tenant no
-// provisionamento — D2). Cache por tenant. Nunca faz fallback silencioso
-// para shared quando o tenant está marcado como dedicated: lança
-// MigrationBlockedError (Fase 8).
+// Dedicated: usa secret `SB_SERVICE_ROLE_<project_ref>` cadastrado por tenant.
+// Nunca cai silenciosamente para shared quando o tenant está dedicated: lança
+// MigrationBlockedError.
 
 import { createClient, type SupabaseClient } from "./createClient.ts";
-import { getTenantContextProvider } from "./tenantContext.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -26,7 +23,7 @@ function assertPlatformEnv() {
   }
 }
 
-/** Erro estruturado para bloqueios do runtime dedicado (Fase 8). */
+/** Erro estruturado para bloqueios do runtime dedicado. */
 export class MigrationBlockedError extends Error {
   constructor(
     public readonly tenant_id: string,
@@ -42,7 +39,7 @@ export class MigrationBlockedError extends Error {
   }
 }
 
-/** Client service-role — usado pelo control-plane e por edge functions admin. */
+/** Client service-role — control-plane e edge functions admin. */
 export function getPlatformClient(): SupabaseClient {
   assertPlatformEnv();
   return createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -50,7 +47,7 @@ export function getPlatformClient(): SupabaseClient {
   });
 }
 
-/** Client anon com header Authorization do usuário (para `auth.getUser()`). */
+/** Client anon com Authorization do usuário (para `auth.getUser()`). */
 export function getUserClient(authHeader: string | null): SupabaseClient {
   if (!SUPABASE_URL || !ANON_KEY) {
     throw new Error("runtime/db: SUPABASE_URL / SUPABASE_ANON_KEY ausentes");
@@ -61,13 +58,9 @@ export function getUserClient(authHeader: string | null): SupabaseClient {
   });
 }
 
-/**
- * Resolve tenant_id do usuário autenticado via `profiles`.
- * Usa o platform client (service-role) para bypassar RLS na lookup.
- */
+/** Resolve tenant_id do usuário autenticado via `profiles` (bypassa RLS). */
 export async function resolveUserTenantId(userId: string): Promise<string | null> {
-  const platform = getPlatformClient();
-  const { data, error } = await platform
+  const { data, error } = await getPlatformClient()
     .from("profiles")
     .select("tenant_id")
     .eq("user_id", userId)
@@ -76,152 +69,94 @@ export async function resolveUserTenantId(userId: string): Promise<string | null
   return (data as { tenant_id?: string } | null)?.tenant_id ?? null;
 }
 
-/**
- * Client user-scoped tenant-aware: preserva o JWT do chamador (para que
- * `current_tenant_id()` e RLS funcionem) e aponta para o projeto correto
- * (shared OU dedicated). Este é o primitivo canônico para edge functions
- * de data-plane que executam RPCs autenticadas.
- *
- * Dedicated sem anon key resolvida → `MigrationBlockedError`. Nunca cai
- * silenciosamente para shared (Fase 8).
- */
-export async function getUserTenantClient(
-  authHeader: string | null,
-  tenant_id: string,
-): Promise<SupabaseClient> {
-  const provider = getTenantContextProvider();
-  const ctx = await provider.resolve(tenant_id);
+// ── Resolução de tenant (leitura direta do registry) ────────────────
+interface TenantResolution {
+  strategy: "shared" | "dedicated";
+  db_project_url: string | null;
+  db_secret_ref: string | null;
+  db_anon_key_ref: string | null;
+}
 
-  if (ctx.strategy !== "dedicated") {
-    return getUserClient(authHeader);
-  }
-
-  // Dedicated: precisa de URL + anon key do projeto dedicado.
-  const platform = getPlatformClient();
-  const { data: reg, error } = await platform
+async function resolveTenant(tenant_id: string): Promise<TenantResolution> {
+  const { data, error } = await getPlatformClient()
     .from("tenant_registry")
-    .select("db_project_url, db_anon_key_ref")
+    .select("database_strategy, runtime_mode, runtime_status, db_project_url, db_secret_ref, db_anon_key_ref")
     .eq("tenant_id", tenant_id)
     .maybeSingle();
-  if (error) {
-    throw new MigrationBlockedError(tenant_id, `registry lookup: ${error.message}`, "DEDICATED_CLIENT_FAILED");
+  if (error) throw new Error(`resolveTenant: ${error.message}`);
+  if (data?.runtime_status === "suspended") {
+    throw new MigrationBlockedError(tenant_id, "tenant suspenso", "TENANT_SUSPENDED");
   }
-  const url = (reg as { db_project_url?: string } | null)?.db_project_url;
-  const anonRef = (reg as { db_anon_key_ref?: string } | null)?.db_anon_key_ref;
-  if (!url) throw new MigrationBlockedError(tenant_id, "db_project_url ausente", "DEDICATED_URL_MISSING");
-  if (!anonRef) {
-    throw new MigrationBlockedError(tenant_id, "db_anon_key_ref ausente", "DEDICATED_SERVICE_KEY_MISSING");
-  }
-  const anonKey = Deno.env.get(anonRef);
-  if (!anonKey) {
-    throw new MigrationBlockedError(tenant_id, `secret ${anonRef} não cadastrado`, "DEDICATED_SERVICE_KEY_MISSING");
-  }
-  return createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader ?? "", "x-runtime-strategy": "dedicated" } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const isolated = data?.runtime_mode === "isolated_db" || data?.database_strategy === "dedicated";
+  return {
+    strategy: isolated ? "dedicated" : "shared",
+    db_project_url: (data as { db_project_url?: string } | null)?.db_project_url ?? null,
+    db_secret_ref: (data as { db_secret_ref?: string } | null)?.db_secret_ref ?? null,
+    db_anon_key_ref: (data as { db_anon_key_ref?: string } | null)?.db_anon_key_ref ?? null,
+  };
 }
 
 // ── Dedicated cache ─────────────────────────────────────────────────
 interface DedicatedEntry {
   client: SupabaseClient;
-  created_at: number;
   last_used_at: number;
 }
 const DEDICATED_CACHE = new Map<string, DedicatedEntry>();
-const DEDICATED_IDLE_MS = 5 * 60 * 1000; // 5min
+const DEDICATED_IDLE_MS = 5 * 60 * 1000;
 
-function pruneDedicatedCache() {
+function pruneCache() {
   const now = Date.now();
   for (const [k, v] of DEDICATED_CACHE) {
     if (now - v.last_used_at > DEDICATED_IDLE_MS) DEDICATED_CACHE.delete(k);
   }
 }
 
-function buildDedicatedClient(url: string, serviceKey: string): SupabaseClient {
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { "x-runtime-strategy": "dedicated" } },
-  });
-}
-
-/**
- * Client resolvido para o tenant — shared OU dedicated real.
- * Fase 8: sem fallback silencioso. Se dedicated não está configurado, lança.
- */
+/** Client resolvido para o tenant — shared (service-role) OU dedicated real. */
 export async function getTenantClient(tenant_id: string): Promise<SupabaseClient> {
-  const provider = getTenantContextProvider();
-  const ctx = await provider.resolve(tenant_id);
+  const ctx = await resolveTenant(tenant_id);
+  if (ctx.strategy !== "dedicated") return getPlatformClient();
 
-  if (ctx.strategy !== "dedicated") {
-    return getPlatformClient();
-  }
-
-  pruneDedicatedCache();
+  pruneCache();
   const cached = DEDICATED_CACHE.get(tenant_id);
-  if (cached) {
-    cached.last_used_at = Date.now();
-    return cached.client;
-  }
+  if (cached) { cached.last_used_at = Date.now(); return cached.client; }
 
-  // Descobre URL + secret ref via registry (control-plane).
-  const platform = getPlatformClient();
-  const { data: reg, error } = await platform
-    .from("tenant_registry")
-    .select("db_project_url, db_secret_ref")
-    .eq("tenant_id", tenant_id)
-    .maybeSingle();
-  if (error) {
-    throw new MigrationBlockedError(tenant_id, `registry lookup: ${error.message}`, "DEDICATED_CLIENT_FAILED");
-  }
-  const url = (reg as { db_project_url?: string } | null)?.db_project_url;
-  const secretRef = (reg as { db_secret_ref?: string } | null)?.db_secret_ref;
-  if (!url) throw new MigrationBlockedError(tenant_id, "db_project_url ausente", "DEDICATED_URL_MISSING");
-  if (!secretRef) throw new MigrationBlockedError(tenant_id, "db_secret_ref ausente", "DEDICATED_SERVICE_KEY_MISSING");
-  const serviceKey = Deno.env.get(secretRef);
+  if (!ctx.db_project_url) throw new MigrationBlockedError(tenant_id, "db_project_url ausente", "DEDICATED_URL_MISSING");
+  if (!ctx.db_secret_ref) throw new MigrationBlockedError(tenant_id, "db_secret_ref ausente", "DEDICATED_SERVICE_KEY_MISSING");
+  const serviceKey = Deno.env.get(ctx.db_secret_ref);
   if (!serviceKey) {
-    throw new MigrationBlockedError(
-      tenant_id,
-      `secret ${secretRef} não cadastrado no ambiente`,
-      "DEDICATED_SERVICE_KEY_MISSING",
-    );
+    throw new MigrationBlockedError(tenant_id, `secret ${ctx.db_secret_ref} não cadastrado`, "DEDICATED_SERVICE_KEY_MISSING");
   }
-
   let client: SupabaseClient;
   try {
-    client = buildDedicatedClient(url, serviceKey);
+    client = createClient(ctx.db_project_url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { "x-runtime-strategy": "dedicated" } },
+    });
   } catch (e) {
-    throw new MigrationBlockedError(
-      tenant_id,
-      e instanceof Error ? e.message : String(e),
-      "DEDICATED_CLIENT_FAILED",
-    );
+    throw new MigrationBlockedError(tenant_id, e instanceof Error ? e.message : String(e), "DEDICATED_CLIENT_FAILED");
   }
-
-  const entry: DedicatedEntry = { client, created_at: Date.now(), last_used_at: Date.now() };
-  DEDICATED_CACHE.set(tenant_id, entry);
+  DEDICATED_CACHE.set(tenant_id, { client, last_used_at: Date.now() });
   return client;
 }
 
-/** Health probe do dedicated (usado por smoke-test e monitor). */
-export async function dedicatedHealth(tenant_id: string): Promise<{ ok: boolean; latency_ms: number; error?: string }> {
-  const t0 = Date.now();
-  try {
-    const c = await getTenantClient(tenant_id);
-    const { error } = await c.from("_sislac_schema_health").select("*").limit(1);
-    if (error && !/does not exist/i.test(error.message)) {
-      return { ok: false, latency_ms: Date.now() - t0, error: error.message };
-    }
-    return { ok: true, latency_ms: Date.now() - t0 };
-  } catch (e) {
-    return { ok: false, latency_ms: Date.now() - t0, error: e instanceof Error ? e.message : String(e) };
-  }
-}
+/** Client user-scoped tenant-aware: preserva JWT e roteia para dedicated se aplicável. */
+export async function getUserTenantClient(
+  authHeader: string | null,
+  tenant_id: string,
+): Promise<SupabaseClient> {
+  const ctx = await resolveTenant(tenant_id);
+  if (ctx.strategy !== "dedicated") return getUserClient(authHeader);
 
-/** Invalida cache dedicated (usado após flip/rollback). */
-export function invalidateDedicatedCache(tenant_id?: string): void {
-  if (tenant_id) DEDICATED_CACHE.delete(tenant_id);
-  else DEDICATED_CACHE.clear();
+  if (!ctx.db_project_url) throw new MigrationBlockedError(tenant_id, "db_project_url ausente", "DEDICATED_URL_MISSING");
+  if (!ctx.db_anon_key_ref) throw new MigrationBlockedError(tenant_id, "db_anon_key_ref ausente", "DEDICATED_SERVICE_KEY_MISSING");
+  const anonKey = Deno.env.get(ctx.db_anon_key_ref);
+  if (!anonKey) {
+    throw new MigrationBlockedError(tenant_id, `secret ${ctx.db_anon_key_ref} não cadastrado`, "DEDICATED_SERVICE_KEY_MISSING");
+  }
+  return createClient(ctx.db_project_url, anonKey, {
+    global: { headers: { Authorization: authHeader ?? "", "x-runtime-strategy": "dedicated" } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export type { SupabaseClient };
