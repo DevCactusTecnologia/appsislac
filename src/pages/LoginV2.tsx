@@ -27,9 +27,14 @@ import {
   FlaskConical,
   Sparkles,
   Activity,
+  AlertTriangle,
+  ServerCrash,
+  Settings2,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type LoginErrorDetail } from "@/contexts/AuthContext";
 import { db as supabase } from "@/runtime/db";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,6 +64,107 @@ const DEFAULT_PRIMARY = "243 88% 60%"; // indigo SISLAC
 
 const LAST_CODIGO_KEY = "sislac:last-lab-code";
 
+/**
+ * Alerta institucional para erros de gate/config do banco dedicado.
+ * Substitui o toast tosco por um card acessível, com título, causa em linguagem
+ * de operador, dica de próximo passo e "detalhes técnicos" retrátil.
+ */
+function AuthErrorAlert({ detail, onDismiss }: { detail: LoginErrorDetail | null; onDismiss: () => void }) {
+  const [showRaw, setShowRaw] = useState(false);
+  if (!detail) return null;
+
+  const palette =
+    detail.severity === "config"
+      ? {
+          ring: "border-amber-500/30 bg-amber-500/[0.06]",
+          iconWrap: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+          title: "text-amber-900 dark:text-amber-200",
+          Icon: Settings2,
+          chip: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+        }
+      : detail.severity === "infra"
+        ? {
+            ring: "border-rose-500/30 bg-rose-500/[0.06]",
+            iconWrap: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+            title: "text-rose-900 dark:text-rose-200",
+            Icon: ServerCrash,
+            chip: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+          }
+        : {
+            ring: "border-primary/30 bg-primary/[0.06]",
+            iconWrap: "bg-primary/15 text-primary",
+            title: "text-foreground",
+            Icon: AlertTriangle,
+            chip: "bg-primary/15 text-primary",
+          };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      role="alert"
+      className={`relative mb-5 overflow-hidden rounded-2xl border ${palette.ring} p-4 shadow-sm`}
+    >
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Fechar alerta"
+        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/70 transition-colors hover:bg-background/60 hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+
+      <div className="flex items-start gap-3 pr-6">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${palette.iconWrap}`}>
+          <palette.Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className={`text-sm font-semibold leading-tight ${palette.title}`}>{detail.title}</h3>
+            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider ${palette.chip}`}>
+              {detail.code}
+            </span>
+          </div>
+          <p className="text-[13px] leading-5 text-foreground/80">{detail.message}</p>
+          {detail.hint && (
+            <p className="text-[12px] leading-5 text-muted-foreground">
+              <span className="font-medium text-foreground/70">Próximo passo: </span>
+              {detail.hint}
+            </p>
+          )}
+
+          {detail.raw && detail.raw !== detail.message && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowRaw((v) => !v)}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown className={`h-3 w-3 transition-transform ${showRaw ? "rotate-180" : ""}`} />
+                {showRaw ? "Ocultar detalhes técnicos" : "Ver detalhes técnicos"}
+              </button>
+              <AnimatePresence>
+                {showRaw && (
+                  <motion.pre
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border/60 bg-background/70 p-2 font-mono text-[11px] leading-4 text-muted-foreground"
+                  >
+                    {detail.raw}
+                  </motion.pre>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function LoginV2() {
   const navigate = useNavigate();
   const { signInWithPassword, isAuthenticated, user, loading: authLoading } = useAuth();
@@ -75,6 +181,7 @@ export default function LoginV2() {
   const [senha, setSenha] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<LoginErrorDetail | null>(null);
   const isMobile = useIsMobile();
 
 
@@ -147,10 +254,15 @@ export default function LoginV2() {
       return;
     }
     setSigningIn(true);
-    const { ok, error } = await signInWithPassword(mail, senha, { expectedTenantId: tenant.id });
+    setAuthError(null);
+    const { ok, error, errorDetail } = await signInWithPassword(mail, senha, { expectedTenantId: tenant.id });
     setSigningIn(false);
     if (!ok) {
-      toast.error(error ?? "E-mail ou senha inválidos.");
+      if (errorDetail) {
+        setAuthError(errorDetail);
+      } else {
+        toast.error(error ?? "E-mail ou senha inválidos.");
+      }
       return;
     }
     toast.success(`Bem-vindo a ${tenant.nome}!`);
@@ -160,6 +272,7 @@ export default function LoginV2() {
   function handleBack() {
     setStep(1);
     setSenha("");
+    setAuthError(null);
   }
 
   
@@ -485,7 +598,10 @@ export default function LoginV2() {
                         )}
                       </button>
 
+                      <AuthErrorAlert detail={authError} onDismiss={() => setAuthError(null)} />
+
                       <form onSubmit={handleSignIn} className="space-y-4">
+
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-foreground">E-mail</label>
                           <div className="group relative">
