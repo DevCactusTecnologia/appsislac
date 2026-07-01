@@ -342,7 +342,7 @@ export function TenantDatabaseConfig({
             </DbField>
 
             <DbField
-              label="Secret (senha)"
+              label="Secret (senha do banco)"
               icon={KeyRound}
               hint="Nome do secret no Lovable Cloud (UPPER_SNAKE_CASE). A senha NUNCA é salva no banco."
               className="md:col-span-2"
@@ -354,9 +354,66 @@ export function TenantDatabaseConfig({
                 className="font-mono"
               />
             </DbField>
+
+            {cfg.db_provider === "supabase_project" && (
+              <>
+                <DbField
+                  label="URL do projeto Supabase dedicado"
+                  icon={Globe}
+                  hint="Necessária para o runtime rotear queries deste laboratório para o banco dedicado."
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={cfg.db_project_url ?? ""}
+                    onChange={(e) => set("db_project_url", e.target.value || null)}
+                    placeholder="https://xbmzftoefldmcfyrgsdm.supabase.co"
+                    className="font-mono"
+                  />
+                </DbField>
+
+                <DbField
+                  label="Secret (anon key do projeto dedicado)"
+                  icon={KeyRound}
+                  hint="Nome do secret com a chave anônima (publishable) do projeto dedicado."
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={cfg.db_anon_key_secret_ref ?? ""}
+                    onChange={(e) => set("db_anon_key_secret_ref", e.target.value.toUpperCase() || null)}
+                    placeholder="TENANT_XYZ_ANON_KEY"
+                    className="font-mono"
+                  />
+                </DbField>
+              </>
+            )}
+          </div>
+
+          {/* Estado do schema no banco dedicado */}
+          <div className={cn(
+            "mt-5 rounded-md border p-3 text-[12px] flex items-start gap-2",
+            cfg.schema_provisioned_at
+              ? "border-status-success/30 bg-status-success-bg/40"
+              : "border-status-warning/30 bg-status-warning-bg/40"
+          )}>
+            {cfg.schema_provisioned_at
+              ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+              : <ShieldAlert className="h-4 w-4 text-status-warning shrink-0 mt-0.5" />}
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-foreground">
+                {cfg.schema_provisioned_at
+                  ? `Schema provisionado em ${new Date(cfg.schema_provisioned_at).toLocaleString("pt-BR")}`
+                  : "Schema ainda não provisionado no banco dedicado"}
+              </div>
+              <div className="text-muted-foreground mt-0.5">
+                {cfg.schema_provisioned_at
+                  ? "A DedicatedStrategy (Fase 2) pode rotear queries deste tenant com segurança."
+                  : "Enquanto pendente, o runtime continua usando o banco compartilhado (fail-safe)."}
+              </div>
+            </div>
           </div>
         </>
       )}
+
 
       {isolated && testResult && (
         <div className={cn(
