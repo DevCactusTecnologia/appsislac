@@ -534,7 +534,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       senha: string,
       options?: LoginOptions,
-    ): Promise<{ ok: boolean; error?: string }> => {
+    ): Promise<LoginResult> => {
       try {
         // 1. Validar entrada
         if (!email || !senha) {
