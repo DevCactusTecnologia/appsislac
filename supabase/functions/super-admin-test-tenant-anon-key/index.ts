@@ -5,7 +5,8 @@
 // funciona contra o PostgREST do projeto dedicado.
 //
 // Faz duas checagens separadas:
-//   1. `/rest/v1/` valida SOMENTE se a publishable/anon key pertence ao projeto.
+//   1. Uma tabela inexistente controlada valida SOMENTE se a publishable/anon
+//      key pertence ao projeto: key válida → 404/PGRST; key inválida → auth 401.
 //   2. `/_sislac_schema_health` valida se o schema já foi provisionado.
 //
 // Não usamos tabelas de domínio como `profiles` para validar a key, porque uma
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
   }
 
   const baseUrl = projectUrl.replace(/\/$/, "");
-  const restRootUrl = `${baseUrl}/rest/v1/`;
+  const keyProbeUrl = `${baseUrl}/rest/v1/__sislac_key_probe__?select=id&limit=1`;
   const healthUrl = `${baseUrl}/rest/v1/_sislac_schema_health?select=schema_version,provisioned_at&limit=1`;
   const apiHeaders = { apikey: anon };
 
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
   let authStatus = 0;
   let authBodyPreview = "";
   try {
-    const res = await fetch(restRootUrl, {
+    const res = await fetch(keyProbeUrl, {
       method: "GET",
       // Publishable keys (`sb_publishable_...`) are not JWTs. Sending them as
       // `Authorization: Bearer ...` makes PostgREST reject an otherwise valid key.
@@ -101,10 +102,13 @@ Deno.serve(async (req) => {
     authBodyPreview = (await res.text()).slice(0, 240);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${restRootUrl}: ${msg}`, projectUrl, secretRef });
+    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${keyProbeUrl}: ${msg}`, projectUrl, secretRef });
   }
 
-  if (authStatus === 401 || authStatus === 403) {
+  const authProbeAccepted =
+    authStatus === 404 ||
+    /PGRST|relation|schema cache|not found|permission denied|42501/i.test(authBodyPreview);
+  if ((authStatus === 401 || authStatus === 403) && !authProbeAccepted) {
     return jsonResponse(200, {
       ok: false,
       stage: "auth",
@@ -115,7 +119,7 @@ Deno.serve(async (req) => {
       bodyPreview: authBodyPreview,
     });
   }
-  if (authStatus >= 500) {
+  if (!authProbeAccepted && authStatus >= 500) {
     return jsonResponse(200, {
       ok: false,
       stage: "server",
