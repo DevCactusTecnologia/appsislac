@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
   let fanoutOk = 0, fanoutErr = 0;
   await Promise.all(sample.map(async (r) => {
     try {
-      await resolveTenantConnection(r.tenant_id);
+      await getTenantClient(r.tenant_id);
       fanoutOk++;
     } catch {
       fanoutErr++;
