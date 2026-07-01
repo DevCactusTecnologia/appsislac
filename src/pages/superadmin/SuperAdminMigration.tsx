@@ -178,6 +178,7 @@ export default function SuperAdminMigration() {
       if (!run) {
         const msg = "Tempo limite aguardando conclusão da etapa. Atualize a página e consulte o último run.";
         appendLog(key, `✗ ${msg}`);
+        setFailure(key, { message: msg });
         setState(key, "failed");
         return { ok: false, error: msg, data };
       }
@@ -186,6 +187,7 @@ export default function SuperAdminMigration() {
         const msg = firstFailure?.error ? `${firstFailure.stage ?? "etapa"}: ${firstFailure.error}` : run.error ?? `Etapa finalizou como ${run.status}`;
         appendLog(key, `✗ ${msg}`);
         appendLog(key, JSON.stringify(run).slice(0, 800));
+        setFailure(key, { message: msg, stage: firstFailure?.stage });
         setState(key, "failed");
         return { ok: false, error: msg, data: run };
       }
