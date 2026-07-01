@@ -642,9 +642,20 @@ export function TenantDatabaseConfig({
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
-          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning || checking}>
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning || checking || testingAnon}>
             {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
             {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
+        {isolated && cfg.db_provider === "supabase_project" && (
+          <Button
+            variant="outline"
+            onClick={testAnonKey}
+            disabled={testingAnon || testing || saving || provisioning || checking || !cfg.db_project_url || !cfg.db_anon_key_secret_ref}
+            title="Verifica se a anon key do projeto dedicado responde via PostgREST"
+          >
+            {testingAnon ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
+            {testingAnon ? "Testando…" : "Testar anon key"}
           </Button>
         )}
         {isolated && !isDirty && cfg.schema_provisioned_at && (
