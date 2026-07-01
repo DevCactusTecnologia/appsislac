@@ -125,7 +125,7 @@ const SCHEMA_MINIMO_V1: string[] = [
      GRANT ALL ON TABLES TO service_role`,
 ];
 
-const SCHEMA_VERSION = "v1.0.0-poc";
+const SCHEMA_VERSION = "v1.1.0-poc"; // Fase 2: grants incluem anon
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
