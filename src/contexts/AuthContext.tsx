@@ -338,6 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (gateError) {
           await supabase.auth.signOut();
           if (mountedRef.current) setUser(null);
+          showError(gateError);
           return;
         }
       }
