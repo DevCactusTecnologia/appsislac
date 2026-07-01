@@ -61,8 +61,12 @@ Deno.serve(async (req) => {
   const runId = await beginRun(admin, tenantId, "schema", guard.user.id);
   const t0 = Date.now();
 
-  // 1) Puxa o DDL do shared
-  const { data: dump, error: dumpErr } = await admin.rpc("super_admin_dump_ddl");
+  // 1) Puxa o DDL do shared — RPC exige auth.uid() (SECURITY DEFINER + is_super_admin),
+  // então usamos client com o JWT do usuário, não o service-role.
+  const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+  });
+  const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_ddl");
   if (dumpErr || !dump) {
     const msg = dumpErr?.message ?? "dump vazio";
     await finishRun(admin, runId, "failed", { stage: "dump" }, msg);
