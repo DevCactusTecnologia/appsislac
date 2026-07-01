@@ -84,10 +84,14 @@ export default function SuperAdminMigration() {
   const [logs, setLogs] = useState<Record<StepKey, string>>({
     prep: "", schema: "", auth: "", data: "", storage: "", smoke: "", flip: "", post: "",
   });
+  const [failures, setFailures] = useState<Record<StepKey, StructuredFailure | null>>({
+    prep: null, schema: null, auth: null, data: null, storage: null, smoke: null, flip: null, post: null,
+  });
   const [purgeType, setPurgeType] = useState("");
 
   const setState = (k: StepKey, s: "idle" | "running" | "ok" | "failed") => setStates((p) => ({ ...p, [k]: s }));
   const appendLog = (k: StepKey, line: string) => setLogs((p) => ({ ...p, [k]: `${p[k]}${p[k] ? "\n" : ""}${line}` }));
+  const setFailure = (k: StepKey, f: StructuredFailure | null) => setFailures((p) => ({ ...p, [k]: f }));
 
   const loadTenant = useCallback(async () => {
     if (!id) return;
