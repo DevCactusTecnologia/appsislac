@@ -703,7 +703,21 @@ export default function SuperAdminTenantDetalhe() {
 
           {activeTab === "banco" && (
             <div className="animate-in fade-in duration-300 space-y-6">
-              <TenantDatabaseConfig tenantId={tenant.id} initial={null} />
+              <TenantDatabaseConfig
+                tenantId={tenant.id}
+                initial={snap?.registry ? {
+                  runtime_mode: (snap.registry.runtime_mode === "isolated_db" || snap.registry.database_strategy === "dedicated") ? "isolated_db" : "shared_db",
+                  db_provider: snap.registry.db_provider ?? null,
+                  db_host: snap.registry.db_host ?? null,
+                  db_port: snap.registry.db_port ?? null,
+                  db_name: snap.registry.db_name ?? null,
+                  db_user: snap.registry.db_user ?? null,
+                  db_region: snap.registry.db_region ?? null,
+                  db_secret_ref: snap.registry.db_secret_ref ?? null,
+                } : null}
+                onSaved={() => refetchSnapshot()}
+              />
+
 
               <div className="rounded-xl border border-border bg-card p-6 space-y-4">
                 <div>
