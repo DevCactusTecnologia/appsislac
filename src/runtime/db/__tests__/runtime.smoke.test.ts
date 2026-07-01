@@ -17,12 +17,18 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { __mark: "shared-singleton" },
 }));
 
-vi.mock("@/lib/db/tenantResolver", () => ({
+// Fase D — tenantContext é o único ponto oficial de descoberta.
+vi.mock("@/runtime/db/tenantContext", () => ({
   getTenantContext: vi.fn(async () => ({
     tenant_id: "11111111-1111-1111-1111-111111111111",
     database_strategy: "shared",
     database_url: null,
   })),
+  clearTenantContextCache: vi.fn(),
+  installTenantAuthInvalidation: vi.fn(),
+  getCurrentTenantId: vi.fn(async () => "11111111-1111-1111-1111-111111111111"),
+  getCurrentTenantNome: vi.fn(async () => "SISLAC"),
+  getCachedTenantNome: vi.fn(() => null),
 }));
 
 import {

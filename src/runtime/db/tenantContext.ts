@@ -1,16 +1,24 @@
 /**
- * Tenant Resolver — Fonte única de verdade para contexto multi-tenant.
- * 
- * Consolidado (Fase 3: Simplificação):
- * - Unifica a descoberta do tenant_id (ex-data/_tenant.ts).
- * - Resolve a estratégia de banco (shared vs dedicated).
- * - Cache centralizado com invalidação automática em logout.
- * 
- * Fonte Única de Verdade (Governance): `tenant_registry` decide estratégia e roteamento.
+ * Runtime 2.0 — Tenant Context (Fase D).
+ *
+ * Fonte única para descoberta do tenant do usuário autenticado + estratégia
+ * de infraestrutura (`tenant_registry`). Consolidado a partir do antigo
+ * `src/lib/db/tenantResolver.ts` como parte da eliminação de duplicações
+ * arquiteturais da Fase D.
+ *
+ * Este módulo NÃO cria clients — apenas descobre metadados. A criação
+ * do transport permanece na Factory / Strategies do runtime.
  */
 
 import { db as supabase } from "@/runtime/db";
-import type { TenantContext, DBStrategy } from "./types";
+
+export type TenantDBStrategy = "shared" | "dedicated";
+
+export interface TenantContext {
+  tenant_id: string;
+  database_strategy: TenantDBStrategy;
+  database_url: string | null;
+}
 
 let _cachedContext: TenantContext | null = null;
 let _cachedTenantNome: string | null = null;
@@ -49,12 +57,10 @@ export function installTenantAuthInvalidation(): void {
 export async function getTenantContext(): Promise<TenantContext> {
   if (_cachedContext) return _cachedContext;
 
-  // 1. Identifica o usuário
   const { data: { user } } = await supabase.auth.getUser();
   let tenant_id = DEFAULT_TENANT_ID;
 
   if (user) {
-    // 2. Busca o tenant_id no profile (Fonte de verdade da identidade)
     const { data: profile } = await supabase
       .from("profiles")
       .select("tenant_id")
@@ -65,8 +71,7 @@ export async function getTenantContext(): Promise<TenantContext> {
     }
   }
 
-  // 3. Resolve estratégia via tenant_registry (Fonte de verdade da infraestrutura)
-  let strategy: DBStrategy = "shared";
+  let strategy: TenantDBStrategy = "shared";
   let url: string | null = null;
 
   try {
@@ -77,49 +82,45 @@ export async function getTenantContext(): Promise<TenantContext> {
       .maybeSingle();
 
     if (reg) {
-      strategy = (reg as any).database_strategy === "dedicated" ? "dedicated" : "shared";
-      // O registry não guarda a URL bruta (segurança). Ela é reconstruída se necessário
-      // ou lida da tabela tenants (legado).
+      strategy = (reg as { database_strategy?: string }).database_strategy === "dedicated"
+        ? "dedicated"
+        : "shared";
       const { data: t } = await supabase
         .from("tenants")
         .select("database_url")
         .eq("id", tenant_id)
         .maybeSingle();
-      url = t?.database_url ?? null;
+      url = (t as { database_url?: string | null } | null)?.database_url ?? null;
     } else {
-      // Fallback para tabela tenants (compatibilidade com backfill incompleto)
       const { data: t } = await supabase
         .from("tenants")
         .select("database_strategy, database_url")
         .eq("id", tenant_id)
         .maybeSingle();
       if (t) {
-        strategy = t.database_strategy === "dedicated" ? "dedicated" : "shared";
-        url = t.database_url ?? null;
+        const row = t as { database_strategy?: string; database_url?: string | null };
+        strategy = row.database_strategy === "dedicated" ? "dedicated" : "shared";
+        url = row.database_url ?? null;
       }
     }
   } catch (err) {
-    console.error("[tenantResolver] Erro ao resolver infraestrutura do tenant:", err);
+    console.error("[tenantContext] Erro ao resolver infraestrutura do tenant:", err);
   }
 
   _cachedContext = { tenant_id, database_strategy: strategy, database_url: url };
   return _cachedContext;
 }
 
-/** 
- * Atalho para obter apenas o ID do tenant (Backward-compatible). 
- */
+/** Atalho para obter apenas o ID do tenant. */
 export async function getCurrentTenantId(): Promise<string> {
   const context = await getTenantContext();
   return context.tenant_id;
 }
 
-/**
- * Nome legível do tenant — usado em badges e branding.
- */
+/** Nome legível do tenant — usado em badges e branding. */
 export async function getCurrentTenantNome(): Promise<string> {
   if (_cachedTenantNome) return _cachedTenantNome;
-  
+
   const tid = await getCurrentTenantId();
   try {
     const { data } = await supabase
@@ -127,7 +128,7 @@ export async function getCurrentTenantNome(): Promise<string> {
       .select("nome")
       .eq("id", tid)
       .maybeSingle();
-    _cachedTenantNome = (data?.nome ?? "SISLAC").trim() || "SISLAC";
+    _cachedTenantNome = ((data as { nome?: string } | null)?.nome ?? "SISLAC").trim() || "SISLAC";
   } catch {
     _cachedTenantNome = "SISLAC";
   }

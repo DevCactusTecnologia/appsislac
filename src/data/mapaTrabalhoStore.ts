@@ -25,7 +25,7 @@
 //      .lovable/memory/architecture/mapa-trabalho-runtime.md
 // ============================================================================
 import { db as supabase } from "@/runtime/db";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { extractPlaceholders } from "@/lib/mapaPlaceholders";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";

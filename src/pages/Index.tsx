@@ -29,7 +29,7 @@ import { useFeatureFlag } from "@/lib/featureFlags";
 import { usePaginatedAtendimentos, pageRowToLightAtendimento } from "@/hooks/usePaginatedAtendimentos";
 import { normalizeAtendimento } from "@/data/atendimentoNormalize";
 import { logger } from "@/lib/logger";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { imprimirComprovante as imprimirComprovantePure } from "@/pages/NovoAtendimento/services/imprimirComprovante";
 

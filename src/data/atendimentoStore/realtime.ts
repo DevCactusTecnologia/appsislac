@@ -3,7 +3,7 @@
 
 import { db as supabase } from "@/runtime/db";
 import { logger } from "@/lib/logger";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { reloadAtendimentoById } from "./queries";
 
 let _realtimeInstalled = false;

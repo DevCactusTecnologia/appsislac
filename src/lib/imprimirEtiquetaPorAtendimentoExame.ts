@@ -9,7 +9,7 @@
 import { db as supabase } from "@/runtime/db";
 import { imprimirEtiquetaAmostra } from "@/lib/etiquetaAmostra";
 import { formatIdadeDetalhada } from "@/lib/idade";
-import { getCurrentTenantNome, getCachedTenantNome } from "@/lib/db/tenantResolver";
+import { getCurrentTenantNome, getCachedTenantNome } from "@/runtime/db";
 import { toast } from "sonner";
 import { showError } from "@/lib/showError";
 import { resolveMaterialNome } from "@/data/materiaisAmostraStore";

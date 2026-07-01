@@ -37,7 +37,7 @@ import PermissionDenied from "@/components/PermissionDenied";
 import ExameListWithFade from "@/components/ExameListWithFade";
 import { imprimirEtiquetaPorAtendimentoExame } from "@/lib/imprimirEtiquetaPorAtendimentoExame";
 import LabBadge from "@/components/LabBadge";
-import { getCachedTenantNome } from "@/lib/db/tenantResolver";
+import { getCachedTenantNome } from "@/runtime/db";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 // UI status (vocabulário existente da tela)

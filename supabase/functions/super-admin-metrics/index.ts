@@ -5,7 +5,7 @@
 
 import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
-import { resolveTenantConnection } from "../_shared/tenantConnection.ts";
+import { getTenantClient } from "../_shared/runtime/db.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
   let fanoutOk = 0, fanoutErr = 0;
   await Promise.all(sample.map(async (r) => {
     try {
-      await resolveTenantConnection(r.tenant_id);
+      await getTenantClient(r.tenant_id);
       fanoutOk++;
     } catch {
       fanoutErr++;

@@ -1,7 +1,7 @@
 // Store centralizado do catálogo de exames — backed by Supabase com cache síncrono.
 
 import { db as supabase } from "@/runtime/db";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 import { resolveMaterialNome } from "./materiaisAmostraStore";

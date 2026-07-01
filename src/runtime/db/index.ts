@@ -23,6 +23,17 @@ export type { RuntimeClient, TenantRuntimeContext, RuntimeStrategy } from "./typ
 export { RuntimeError } from "./types";
 export { refreshContext, resetRuntime, getCurrentContext };
 
+// Fase D — Tenant context é parte oficial da API do runtime.
+export {
+  getTenantContext,
+  getCurrentTenantId,
+  getCurrentTenantNome,
+  getCachedTenantNome,
+  clearTenantContextCache,
+  installTenantAuthInvalidation,
+} from "./tenantContext";
+export type { TenantContext, TenantDBStrategy } from "./tenantContext";
+
 /**
  * Proxy que delega cada acesso ao client resolvido no momento.
  * Mantém compatibilidade 1:1 com `SupabaseClient` — qualquer chamada

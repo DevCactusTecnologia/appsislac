@@ -19,7 +19,7 @@ import { _initDocumentoTemplatesStore } from "./documentoTemplatesStore";
 import { _initRecoletasMotivosStore } from "./recoletasMotivosStore";
 import { _initRecoletasStore } from "./recoletasStore";
 import { preloadEditWindow } from "@/lib/atendimentoPolicy";
-import { getCurrentTenantNome, getCurrentTenantId, installTenantAuthInvalidation } from "@/lib/db/tenantResolver";
+import { getCurrentTenantNome, getCurrentTenantId, installTenantAuthInvalidation } from "@/runtime/db";
 import { showError } from "@/lib/showError";
 import { resetLazyStore } from "./lazyStores";
 import { db as supabase } from "@/runtime/db";
