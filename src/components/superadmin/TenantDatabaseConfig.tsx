@@ -469,12 +469,25 @@ export function TenantDatabaseConfig({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60">
+      <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
-          <Button variant="outline" onClick={testConnection} disabled={testing || saving}>
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning}>
             {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
             {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
+        {isolated && !isDirty && (
+          <Button
+            variant="outline"
+            onClick={provisionSchema}
+            disabled={provisioning || saving || testing || !cfg.db_secret_ref}
+            title={cfg.schema_provisioned_at ? "Reprovisionar schema (avançado)" : "Cria as tabelas do SISLAC no banco dedicado"}
+          >
+            {provisioning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
+            {provisioning
+              ? "Provisionando…"
+              : cfg.schema_provisioned_at ? "Reprovisionar schema" : "Provisionar schema"}
           </Button>
         )}
         <Button onClick={save} disabled={!isDirty || saving}>
@@ -482,6 +495,7 @@ export function TenantDatabaseConfig({
           {saving ? "Salvando…" : "Salvar configuração"}
         </Button>
       </div>
+
     </section>
   );
 }
