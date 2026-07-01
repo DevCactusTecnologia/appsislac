@@ -630,16 +630,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
           }
 
-          const gateError = await validateDedicatedLoginGate();
-          if (gateError) {
+          const gateOutcome = await validateDedicatedLoginGate();
+          if (gateOutcome) {
             console.warn("⚠️  [Auth] Login bloqueado pelo gate dedicado", {
               uid,
               tenantId: profRow.tenant_id,
-              gateError,
+              gateOutcome,
             });
             await supabase.auth.signOut();
             await rebuildRuntimeContext();
-            return { ok: false, error: gateError };
+            const detail = buildDedicatedGateDetail(gateOutcome.code, gateOutcome.raw);
+            return { ok: false, error: detail.message, errorDetail: detail };
           }
         }
 
