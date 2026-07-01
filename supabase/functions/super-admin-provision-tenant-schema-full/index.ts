@@ -50,9 +50,10 @@ Deno.serve(async (req) => {
   const guard = await requireSuperAdmin(req, admin);
   if (!guard.ok) return errorResponse(guard.status, guard.msg, requestId, log);
 
-  let body: { tenantId?: string } = {};
+  let body: { tenantId?: string; reset?: boolean } = {};
   try { body = await req.json(); } catch { return errorResponse(400, "JSON inválido", requestId, log); }
   const tenantId = body.tenantId;
+  const resetSchema = body.reset !== false; // default true — provisionamento é destrutivo por natureza
   if (!tenantId) return errorResponse(400, "tenantId obrigatório", requestId, log);
 
   let reg;
