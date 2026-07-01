@@ -154,7 +154,12 @@ Deno.serve(async (req) => {
   }
 
   const status = failures.length === 0 ? "ok" : "failed";
-  await finishRun(admin, runId, status, { ...stats, ms: Date.now() - t0, failures: failures.slice(0, 20) });
+  await finishRun(admin, runId, status, {
+    ...stats,
+    ms: Date.now() - t0,
+    failures: failures.slice(0, 20),
+    warnings: warnings.slice(0, 40),
+  });
 
   if (status === "ok") {
     const nowIso = new Date().toISOString();
@@ -167,12 +172,13 @@ Deno.serve(async (req) => {
     await admin.from("tenant_registry").update({ migration_state: "schema_failed" }).eq("tenant_id", tenantId);
   }
 
-  log.info("provision full done", { tenantId, stats, failures: failures.length, ms: Date.now() - t0 });
+  log.info("provision full done", { tenantId, stats, failures: failures.length, warnings: warnings.length, ms: Date.now() - t0 });
   return jsonResponse(status === "ok" ? 200 : 422, {
     ok: status === "ok",
     runId,
     stats,
     failures,
+    warnings,
     latencyMs: Date.now() - t0,
   });
 });
