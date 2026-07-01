@@ -35,6 +35,91 @@ type DdlDump = {
   generated_at: string;
 };
 
+const SCHEMA_VERSION = "v3-full";
+
+async function finalizeDedicatedSchema(client: { queryArray: (query: string, args?: unknown[]) => Promise<unknown> }, tenantId: string) {
+  // Health-check neutro para o wizard: não depende de profiles, RLS ou dados migrados.
+  await client.queryArray(`
+    CREATE TABLE IF NOT EXISTS public._sislac_schema_health (
+      id integer PRIMARY KEY DEFAULT 1,
+      schema_version text NOT NULL,
+      provisioned_at timestamptz NOT NULL DEFAULT now(),
+      tenant_id uuid,
+      CHECK (id = 1)
+    )
+  `);
+  await client.queryArray(`
+    INSERT INTO public._sislac_schema_health (id, schema_version, tenant_id, provisioned_at)
+    VALUES (1, $1::text, $2::uuid, now())
+    ON CONFLICT (id) DO UPDATE SET
+      schema_version = EXCLUDED.schema_version,
+      tenant_id = EXCLUDED.tenant_id,
+      provisioned_at = EXCLUDED.provisioned_at
+  `, [SCHEMA_VERSION, tenantId]);
+
+  // Banco é dedicado por tenant. O cliente de dados usa a publishable/anon key
+  // do projeto dedicado; portanto precisa de permissões explícitas via Data API.
+  await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
+  await client.queryArray(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated`);
+  await client.queryArray(`GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role`);
+  await client.queryArray(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated`);
+  await client.queryArray(`GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role`);
+  await client.queryArray(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO anon, authenticated`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role`);
+
+  // Pede recarga de cache do PostgREST; se não houver listener, não bloqueia.
+  try { await client.queryArray(`NOTIFY pgrst, 'reload schema'`); } catch { /* noop */ }
+}
+
+async function seedTenantSentinel(client: {
+  queryArray: (query: string, args?: unknown[]) => Promise<unknown>;
+  queryObject: <T>(query: string, args?: unknown[]) => Promise<{ rows: T[] }>;
+}, tenantId: string) {
+  const meta = await client.queryObject<{ column_name: string; is_nullable: string; column_default: string | null }>(`
+    SELECT column_name, is_nullable, column_default
+      FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'tenants'
+     ORDER BY ordinal_position
+  `);
+  if (!meta.rows.length) throw new Error("public.tenants não existe no schema dedicado");
+
+  const short = tenantId.slice(0, 8);
+  const valuesByColumn: Record<string, unknown> = {
+    id: tenantId,
+    nome: "Tenant Dedicado",
+    name: "Tenant Dedicado",
+    slug: `dedicated-${short}`,
+    cnpj: tenantId.replace(/\D/g, "").padEnd(14, "0").slice(0, 14),
+    email_contato: "dedicated@sislac.local",
+    email: "dedicated@sislac.local",
+    telefone: "",
+    status: "ativo",
+    plano: "dedicated",
+    lab_code: `DED-${short}`,
+  };
+
+  const requiredMissing = meta.rows
+    .filter((c) => c.is_nullable === "NO" && c.column_default === null && !(c.column_name in valuesByColumn))
+    .map((c) => c.column_name);
+  if (requiredMissing.length) {
+    throw new Error(`public.tenants tem colunas obrigatórias sem default não mapeadas: ${requiredMissing.join(", ")}`);
+  }
+
+  const cols = meta.rows.map((c) => c.column_name).filter((c) => c in valuesByColumn);
+  if (!cols.includes("id")) throw new Error("public.tenants não possui coluna id para sentinela");
+  const params = cols.map((_, i) => `$${i + 1}`).join(", ");
+  const quoted = cols.map((c) => `"${c.replace(/"/g, '""')}"`).join(", ");
+  const values = cols.map((c) => valuesByColumn[c]);
+  await client.queryArray(
+    `INSERT INTO public.tenants (${quoted}) VALUES (${params}) ON CONFLICT (id) DO NOTHING`,
+    values,
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   if (req.method !== "POST") return errorResponse(405, "Method not allowed", newRequestId(req), createLogger("provision-full", newRequestId(req)));
@@ -155,17 +240,20 @@ Deno.serve(async (req) => {
     await runBlock("triggers", ddl.triggers ?? [], { silent: true });
     await runBlock("views", ddl.views ?? [], { silent: true });
 
-    // Sentinela em public.tenants (Opção B — mantém tenant_id fixo)
+    // Sentinela em public.tenants (Opção B — mantém tenant_id fixo).
     try {
-      await client.queryArray(
-        `INSERT INTO public.tenants (id, nome, slug)
-         VALUES ($1::uuid, 'Tenant Dedicado', 'dedicated-' || left($2::text,8))
-         ON CONFLICT (id) DO NOTHING`,
-        [tenantId, tenantId],
-      );
+      await seedTenantSentinel(client, tenantId);
       stats.sentinel = true;
     } catch (e) {
       failures.push({ stage: "sentinel", error: e instanceof Error ? e.message : String(e) });
+    }
+
+    if (failures.length === 0) {
+      try {
+        await finalizeDedicatedSchema(client, tenantId);
+      } catch (e) {
+        failures.push({ stage: "finalize", error: e instanceof Error ? e.message : String(e) });
+      }
     }
   } finally {
     try { await client.end(); } catch { /* noop */ }
@@ -183,7 +271,7 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     await admin.from("tenant_registry").update({
       schema_provisioned_at: nowIso,
-      schema_version: "v3-full",
+      schema_version: SCHEMA_VERSION,
       migration_state: "schema_ready",
     }).eq("tenant_id", tenantId);
   } else {

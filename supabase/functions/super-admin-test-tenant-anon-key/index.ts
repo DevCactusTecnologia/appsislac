@@ -4,9 +4,13 @@
 // corretamente cadastrada como secret no Lovable Cloud e realmente
 // funciona contra o PostgREST do projeto dedicado.
 //
-// Faz um GET em `/rest/v1/profiles?select=user_id&limit=1` para validar se a
-// anon/publishable key funciona contra a Data API do projeto dedicado e se o
-// schema mínimo está exposto pelo PostgREST.
+// Faz duas checagens separadas:
+//   1. Uma tabela inexistente controlada valida SOMENTE se a publishable/anon
+//      key pertence ao projeto: key válida → 404/PGRST; key inválida → auth 401.
+//   2. `/_sislac_schema_health` valida se o schema já foi provisionado.
+//
+// Não usamos tabelas de domínio como `profiles` para validar a key, porque uma
+// tabela sem GRANT/RLS ainda não pronta gera 401/403 e cria falso negativo.
 //
 // Nunca devolve a anon key em texto — apenas o nome do secret.
 
@@ -79,82 +83,95 @@ Deno.serve(async (req) => {
     });
   }
 
-  const profilesUrl = `${projectUrl.replace(/\/$/, "")}/rest/v1/profiles?select=user_id&limit=1`;
+  const baseUrl = projectUrl.replace(/\/$/, "");
+  const keyProbeUrl = `${baseUrl}/rest/v1/__sislac_key_probe__?select=id&limit=1`;
+  const healthUrl = `${baseUrl}/rest/v1/_sislac_schema_health?select=schema_version,provisioned_at&limit=1`;
   const apiHeaders = { apikey: anon };
 
   const t0 = Date.now();
-  let profilesStatus = 0;
-  let profilesBodyPreview = "";
+  let authStatus = 0;
+  let authBodyPreview = "";
   try {
-    const res = await fetch(profilesUrl, {
+    const res = await fetch(keyProbeUrl, {
       method: "GET",
       // Publishable keys (`sb_publishable_...`) are not JWTs. Sending them as
       // `Authorization: Bearer ...` makes PostgREST reject an otherwise valid key.
       headers: { ...apiHeaders, Accept: "application/json" },
     });
-    profilesStatus = res.status;
-    profilesBodyPreview = (await res.text()).slice(0, 240);
+    authStatus = res.status;
+    authBodyPreview = (await res.text()).slice(0, 240);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${profilesUrl}: ${msg}`, projectUrl, secretRef });
+    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${keyProbeUrl}: ${msg}`, projectUrl, secretRef });
   }
 
-  // PostgREST devolve 401 quando a apikey é inválida E também quando a key é
-  // válida mas o role `anon` não tem GRANT na tabela. Diferenciamos pelo corpo:
-  // erro 42501 = permission denied = key OK, faltam GRANTs (schema incompleto).
-  const isGrantMissing = /"?code"?\s*:\s*"?42501"?|permission denied for/i.test(profilesBodyPreview);
-  if ((profilesStatus === 401 || profilesStatus === 403) && !isGrantMissing) {
+  const authProbeAccepted =
+    authStatus === 404 ||
+    /PGRST|relation|schema cache|not found|permission denied|42501/i.test(authBodyPreview);
+  if ((authStatus === 401 || authStatus === 403) && !authProbeAccepted) {
     return jsonResponse(200, {
       ok: false,
       stage: "auth",
-      error: `A Data API recusou a Publishable/Anon Key (HTTP ${profilesStatus}). Verifique se o valor cadastrado em "${secretRef}" pertence exatamente a este projeto dedicado.`,
-      status: profilesStatus,
+      error: `A Data API recusou a Publishable/Anon Key (HTTP ${authStatus}). Verifique se o valor cadastrado em "${secretRef}" pertence exatamente a este projeto dedicado.`,
+      status: authStatus,
       projectUrl,
       secretRef,
-      bodyPreview: profilesBodyPreview,
+      bodyPreview: authBodyPreview,
     });
   }
-  if (isGrantMissing) {
-    return jsonResponse(200, {
-      ok: true,
-      latencyMs: Date.now() - t0,
-      status: profilesStatus,
-      projectUrl,
-      secretRef,
-      schemaReady: false,
-      profilesStatus,
-      profilesBodyPreview,
-      hint: "Publishable/Anon Key válida — PostgREST autenticou. Falta apenas GRANT SELECT em public.profiles para `anon` (será aplicado ao provisionar o schema).",
-    });
-  }
-  if (profilesStatus >= 500) {
+  if (!authProbeAccepted && authStatus >= 500) {
     return jsonResponse(200, {
       ok: false,
       stage: "server",
-      error: `Data API do projeto dedicado respondeu HTTP ${profilesStatus}.`,
-      status: profilesStatus,
+      error: `Data API do projeto dedicado respondeu HTTP ${authStatus}.`,
+      status: authStatus,
       projectUrl,
-      bodyPreview: profilesBodyPreview,
+      bodyPreview: authBodyPreview,
+    });
+  }
+
+  let healthStatus = 0;
+  let healthBodyPreview = "";
+  try {
+    const health = await fetch(healthUrl, {
+      method: "GET",
+      headers: { ...apiHeaders, Accept: "application/json" },
+    });
+    healthStatus = health.status;
+    healthBodyPreview = (await health.text()).slice(0, 240);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return jsonResponse(200, {
+      ok: true,
+      latencyMs: Date.now() - t0,
+      status: authStatus,
+      projectUrl,
+      secretRef,
+      schemaReady: false,
+      healthStatus,
+      hint: `Publishable/Anon Key válida, mas não foi possível verificar o schema health: ${msg}`,
     });
   }
 
   const latencyMs = Date.now() - t0;
-  const schemaReady = profilesStatus === 200;
-  const schemaMissing = profilesStatus === 404 || /PGRST|relation|schema cache|not found/i.test(profilesBodyPreview);
+  const schemaReady = healthStatus === 200;
+  const schemaMissing = healthStatus === 404 || /PGRST|relation|schema cache|not found/i.test(healthBodyPreview);
+  const schemaPermissionMissing = (healthStatus === 401 || healthStatus === 403) && /"?code"?\s*:\s*"?42501"?|permission denied for/i.test(healthBodyPreview);
 
   return jsonResponse(200, {
     ok: true,
     latencyMs,
-    status: profilesStatus,
+    status: authStatus,
     projectUrl,
     secretRef,
     schemaReady,
-    profilesStatus,
-    profilesBodyPreview: schemaReady ? undefined : profilesBodyPreview,
+    authStatus,
+    healthStatus,
+    healthBodyPreview: schemaReady ? undefined : healthBodyPreview,
     hint: schemaReady
       ? undefined
-      : schemaMissing
-        ? "Publishable/Anon Key válida, mas a tabela `profiles` ainda não está exposta pela Data API — provisione o schema antes de ativar o roteamento."
-        : "Publishable/Anon Key aceita, mas a checagem do schema retornou um status inesperado. Verifique permissões e exposição da tabela `profiles`.",
+      : schemaMissing || schemaPermissionMissing
+        ? "Publishable/Anon Key válida. O schema dedicado ainda não está provisionado/pronto — execute Provisionar schema."
+        : "Publishable/Anon Key válida, mas a checagem do schema health retornou status inesperado. Rode Provisionar schema para recriar grants e sentinela.",
   });
 });
