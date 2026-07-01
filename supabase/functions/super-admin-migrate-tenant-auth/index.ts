@@ -93,10 +93,10 @@ Deno.serve(async (req) => {
     for (const r of roles) {
       try {
         await client.queryArray(
-          `INSERT INTO public.user_roles (user_id, role, tenant_id)
-           VALUES ($1, $2::app_role, $3)
+          `INSERT INTO public.user_roles (user_id, role)
+           VALUES ($1, $2::app_role)
            ON CONFLICT DO NOTHING`,
-          [r.user_id, r.role, r.tenant_id],
+          [r.user_id, r.role],
         );
         insertedRoles++;
       } catch (e) {
