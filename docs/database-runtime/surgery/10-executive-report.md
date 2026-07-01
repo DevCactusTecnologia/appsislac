@@ -36,3 +36,5 @@ Nada além disso permanece no runtime.
 **VERSÃO 1.0 — ARQUITETURA SIMPLIFICADA — CORE CONGELADO**
 
 A partir deste ponto, qualquer nova funcionalidade relacionada à migração deve reutilizar a arquitetura existente. Nenhuma nova abstração poderá ser criada sem necessidade técnica comprovada.
+
+**Regras de disciplina pós-freeze:** ver [`11-core-freeze-rules.md`](./11-core-freeze-rules.md) — governança de `src/runtime/db.ts` (baseline 157 linhas) e `_shared/runtime/db.ts` (baseline 162 linhas) para evitar drift de "God Class".
