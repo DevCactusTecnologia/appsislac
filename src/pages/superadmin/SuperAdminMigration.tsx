@@ -310,7 +310,7 @@ export default function SuperAdminMigration() {
             <Button variant="ghost" size="sm" onClick={() => navigate(`/super-admin/laboratorios/${id}`)} className="h-8 -ml-2">
               <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
             </Button>
-            <Separator orientation="vertical" className="h-6" />
+            <div className="h-6 w-px bg-border" />
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-semibold truncate">Migração Shared → Dedicated</h1>
@@ -482,7 +482,7 @@ export default function SuperAdminMigration() {
                     {quarantineDaysLeft ?? 30} dias restantes
                   </Badge>
                 </div>
-                <Separator />
+                <div className="h-px bg-border" />
                 <div>
                   <div className="text-xs font-medium mb-1">Purge definitivo</div>
                   <p className="text-[11px] text-muted-foreground mb-2">
@@ -550,11 +550,11 @@ export default function SuperAdminMigration() {
                   </button>
                 )}
               </div>
-              <ScrollArea className="h-56 rounded-md border bg-foreground/[0.03]">
+              <div className="h-56 rounded-md border bg-foreground/[0.03] overflow-auto">
                 <pre className="text-[11px] font-mono p-3 whitespace-pre-wrap leading-relaxed text-foreground/80">
                   {activeLog || <span className="text-muted-foreground">Aguardando execução…</span>}
                 </pre>
-              </ScrollArea>
+              </div>
             </div>
           </Card>
         </main>
