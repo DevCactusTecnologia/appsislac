@@ -147,7 +147,7 @@ export default function LoginV2() {
       return;
     }
     setSigningIn(true);
-    const { ok, error } = await signInWithPassword(mail, senha);
+    const { ok, error } = await signInWithPassword(mail, senha, { expectedTenantId: tenant.id });
     setSigningIn(false);
     if (!ok) {
       toast.error(error ?? "E-mail ou senha inválidos.");

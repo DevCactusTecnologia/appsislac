@@ -1,7 +1,12 @@
 // AuthContext
 // Fonte única de autenticação operacional: 100% Supabase Auth real.
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
-import { db as supabase } from "@/runtime/db";
+import {
+  db as supabase,
+  clearTenantContextCache,
+  refreshContext,
+  resetRuntime,
+} from "@/runtime/db";
 import type { Session } from "@supabase/supabase-js";
 import { showError } from "@/lib/showError";
 import { withTtlCache } from "@/lib/ttlCache";
@@ -28,8 +33,8 @@ interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, senha: string) => Promise<{ ok: boolean; error?: string }>;
-  signInWithPassword: (email: string, senha: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, senha: string, options?: LoginOptions) => Promise<{ ok: boolean; error?: string }>;
+  signInWithPassword: (email: string, senha: string, options?: LoginOptions) => Promise<{ ok: boolean; error?: string }>;
   signUpWithPassword: (
     email: string,
     senha: string,
@@ -42,6 +47,11 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+interface LoginOptions {
+  /** Tenant selecionado na etapa 1 do Login V2. Impede login cruzado entre laboratórios. */
+  expectedTenantId?: string;
+}
 
 // Defaults espelham public.has_permission no banco e DEFAULTS_POR_PERFIL em usuariosStore.
 // IMPORTANTE: chaves devem ser as permissões finas (ex: "visualizar_atendimentos"),
@@ -141,6 +151,37 @@ async function isTenantActive(tenantId: string | null | undefined): Promise<bool
 
 async function hydrateFromSupabase(session: Session): Promise<UserProfile | null> {
   return _hydrateDedup(session);
+}
+
+async function rebuildRuntimeContext(): Promise<void> {
+  clearTenantContextCache();
+  await resetRuntime();
+  await refreshContext();
+}
+
+async function validateDedicatedLoginGate(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("tenant-dedicated-login-gate", { body: {} });
+    if (error) return error.message || "Falha ao validar o banco dedicado.";
+    const resp = data as { ok?: boolean; error?: string; message?: string } | null;
+    if (resp?.ok === false) return resp.error || resp.message || "Banco dedicado ainda não está pronto para login.";
+  } catch (e) {
+    return e instanceof Error ? e.message : "Falha ao validar o banco dedicado.";
+  }
+  return null;
+}
+
+async function validateDedicatedRuntimeReachable(): Promise<string | null> {
+  const ctx = await refreshContext();
+  if (ctx.strategy !== "dedicated") return null;
+
+  const { error } = await supabase
+    .from("pacientes" as never)
+    .select("id")
+    .limit(1);
+
+  if (!error) return null;
+  return `Banco dedicado configurado, mas ainda não está acessível para o runtime (${error.message}).`;
 }
 
 // Dedup: se duas chamadas chegarem em <250ms para o mesmo usuário, reusa a
@@ -283,7 +324,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .subscribe();
     };
 
-    const guardAndSet = async (session: Session) => {
+    const guardAndSet = async (session: Session, opts?: { refreshRuntime?: boolean }) => {
       const hydrated = await hydrateFromSupabase(session);
       if (!mountedRef.current) return;
       if (hydrated?.tenantId && !hydrated.isSuperAdmin) {
@@ -293,15 +334,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mountedRef.current) setUser(null);
           return;
         }
+        const gateError = await validateDedicatedLoginGate();
+        if (gateError) {
+          await supabase.auth.signOut();
+          if (mountedRef.current) setUser(null);
+          showError(gateError, { scope: "AuthContext", userMessage: gateError });
+          return;
+        }
+      }
+      if (opts?.refreshRuntime && !hydrated?.isSuperAdmin) {
+        await rebuildRuntimeContext();
       }
       if (mountedRef.current) setUser(hydrated);
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mountedRef.current) return;
       if (session) {
         setTimeout(async () => {
-          await guardAndSet(session);
+          await guardAndSet(session, { refreshRuntime: event === "SIGNED_IN" || event === "INITIAL_SESSION" });
           subscribeProfileChanges(session.user.id, session);
         }, 0);
       } else {
@@ -318,7 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!mountedRef.current) return;
       if (session) {
-        await guardAndSet(session);
+        await guardAndSet(session, { refreshRuntime: true });
         if (mountedRef.current) {
           setLoading(false);
           subscribeProfileChanges(session.user.id, session);
@@ -345,7 +396,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (
       email: string,
-      senha: string
+      senha: string,
+      options?: LoginOptions,
     ): Promise<{ ok: boolean; error?: string }> => {
       try {
         // 1. Validar entrada
@@ -404,6 +456,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           | { status?: string; tenant_id?: string }
           | null;
 
+        if (options?.expectedTenantId && profRow?.tenant_id !== options.expectedTenantId) {
+          console.warn("⚠️  [Auth] Login em tenant divergente bloqueado", {
+            uid,
+            expectedTenantId: options.expectedTenantId,
+            profileTenantId: profRow?.tenant_id,
+          });
+          await supabase.auth.signOut();
+          await rebuildRuntimeContext();
+          return {
+            ok: false,
+            error: "Esta conta não pertence ao laboratório selecionado.",
+          };
+        }
+
         // 4. Validar se conta está ativa
         if (profRow?.status === "Inativo") {
           console.warn("⚠️  [Auth] Conta inativa", { uid });
@@ -428,6 +494,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               error: "Seu laboratório foi suspenso. Entre em contato com o suporte.",
             };
           }
+
+          const gateError = await validateDedicatedLoginGate();
+          if (gateError) {
+            console.warn("⚠️  [Auth] Login bloqueado pelo gate dedicado", {
+              uid,
+              tenantId: profRow.tenant_id,
+              gateError,
+            });
+            await supabase.auth.signOut();
+            await rebuildRuntimeContext();
+            return { ok: false, error: gateError };
+          }
+        }
+
+        await rebuildRuntimeContext();
+        const dedicatedError = await validateDedicatedRuntimeReachable();
+        if (dedicatedError) {
+          console.warn("⚠️  [Auth] Runtime dedicado inacessível", { uid, tenantId: profRow?.tenant_id, dedicatedError });
+          await supabase.auth.signOut();
+          await rebuildRuntimeContext();
+          return { ok: false, error: dedicatedError };
         }
 
         return { ok: true };
@@ -485,6 +572,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 2) Encerra a sessão Supabase.
     await supabase.auth.signOut();
+
+    // 2.b) Volta o roteamento para o bootstrap shared e limpa metadados do tenant.
+    try {
+      clearTenantContextCache();
+      await resetRuntime();
+    } catch (e) {
+      console.warn("[runtime] erro ao resetar runtime no logout", e);
+    }
 
     // 3) Limpa estado em memória.
     setUser(null);
