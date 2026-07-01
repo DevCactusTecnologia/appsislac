@@ -109,11 +109,13 @@ export function TenantDatabaseConfig({
   const [cfg, setCfg] = useState<DbConfig>(baseline);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const [testResult, setTestResult] = useState<
     | { ok: true; latencyMs: number; serverVersion: string | null; database: string; user: string }
     | { ok: false; error: string; stage?: string }
     | null
   >(null);
+
 
   useEffect(() => { setCfg(baseline); setTestResult(null); }, [baseline]);
 
