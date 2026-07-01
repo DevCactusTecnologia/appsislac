@@ -10,7 +10,7 @@
 // (`loadLabConfigFromDb`) e atualizado em cada `saveLabConfig`.
 
 import { db as supabase } from "@/runtime/db";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { DEFAULT_WATERMARK, normalizeWatermark, type WatermarkConfig } from "@/lib/watermark";
 
 const STORAGE_KEY = "sislac:labConfig";

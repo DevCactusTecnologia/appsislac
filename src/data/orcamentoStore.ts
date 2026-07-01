@@ -3,7 +3,7 @@
 // markAsConverted, subscribeOrcamentos.
 
 import { db as supabase } from "@/runtime/db";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { persistOneOrThrow, persistOrThrow } from "@/lib/persist";
 import { showError } from "@/lib/showError";
 import { formatDateTimeBR } from "@/lib/dateBR";

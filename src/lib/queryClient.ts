@@ -14,7 +14,7 @@
 
 import { QueryClient, keepPreviousData } from "@tanstack/react-query";
 import { db as supabase } from "@/runtime/db";
-import { clearTenantContextCache as clearTenantCache } from "@/lib/db/tenantResolver";
+import { clearTenantContextCache as clearTenantCache } from "@/runtime/db";
 
 export const queryClient = new QueryClient({
   defaultOptions: {

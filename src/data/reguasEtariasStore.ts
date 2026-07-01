@@ -14,7 +14,7 @@
  */
 
 import { db as supabase } from "@/runtime/db";
-import { getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCurrentTenantId } from "@/runtime/db";
 import { getExamesCatalogo, getExameCatalogoById } from "@/data/exameCatalogoStore";
 import { FaixaEtaria, MAX_DIAS, toDias } from "@/lib/idadeFaixas";
 

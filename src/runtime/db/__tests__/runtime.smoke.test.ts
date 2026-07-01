@@ -17,7 +17,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: { __mark: "shared-singleton" },
 }));
 
-vi.mock("@/lib/db/tenantResolver", () => ({
+vi.mock("@/runtime/db", () => ({
   getTenantContext: vi.fn(async () => ({
     tenant_id: "11111111-1111-1111-1111-111111111111",
     database_strategy: "shared",

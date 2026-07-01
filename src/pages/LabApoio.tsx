@@ -15,7 +15,7 @@ import {
   type StatusExterno,
 } from "@/data/atendimentoStore";
 import { getLabsApoio, _initLabsApoioStore } from "@/data/labApoioStore";
-import { getCachedTenantNome, getCurrentTenantId } from "@/lib/db/tenantResolver";
+import { getCachedTenantNome, getCurrentTenantId } from "@/runtime/db";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import LabBadge from "@/components/LabBadge";
 import IntegrationStatusBadge from "@/components/IntegrationStatusBadge";
