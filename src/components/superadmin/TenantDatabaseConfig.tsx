@@ -119,7 +119,7 @@ export function TenantDatabaseConfig({
   >(null);
   const [testingAnon, setTestingAnon] = useState(false);
   const [anonResult, setAnonResult] = useState<
-    | { ok: true; latencyMs: number; status: number; schemaReady: boolean; profilesStatus: number; hint?: string }
+    | { ok: true; latencyMs: number; status: number; schemaReady: boolean; healthStatus: number; hint?: string }
     | { ok: false; error: string; stage?: string; status?: number }
     | null
   >(null);
@@ -256,7 +256,7 @@ export function TenantDatabaseConfig({
         latencyMs: r.latencyMs,
         status: r.status,
         schemaReady: !!r.schemaReady,
-        profilesStatus: r.profilesStatus ?? 0,
+        healthStatus: r.healthStatus ?? 0,
         hint: r.hint,
       });
       toast.success(
@@ -661,8 +661,8 @@ export function TenantDatabaseConfig({
                 </div>
                 <div className="text-muted-foreground mt-0.5">
                   {anonResult.schemaReady
-                    ? "PostgREST responde e o schema mínimo (profiles) está exposto — pronto para roteamento dedicado."
-                    : (anonResult.hint ?? "Anon key aceita, mas o schema ainda não está exposto pelo PostgREST.")}
+                    ? "Data API responde e o schema health dedicado está exposto — pronto para roteamento dedicado."
+                    : (anonResult.hint ?? "Anon key aceita, mas o schema dedicado ainda não está exposto pela Data API.")}
                 </div>
               </>
             ) : (
