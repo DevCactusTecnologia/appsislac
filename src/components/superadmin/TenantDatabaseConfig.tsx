@@ -175,7 +175,7 @@ export function TenantDatabaseConfig({
     const { data, error } = await supabase.functions.invoke("super-admin-update-tenant-db-config", {
       body: {
         tenantId,
-        runtimeMode: cfg.runtime_mode,
+        // runtimeMode NÃO é enviado aqui: só muda via super-admin-migration-flip/rollback.
         dbProvider: cfg.db_provider,
         dbHost: cfg.db_host,
         dbPort: cfg.db_port,
