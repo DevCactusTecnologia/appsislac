@@ -11,8 +11,20 @@
 set -euo pipefail
 
 EDGE_DATA_PLANE_ALLOWLIST=(
+  # Slice 2 — Atendimento
   "supabase/functions/create-atendimento/index.ts"
   "supabase/functions/update-atendimento/index.ts"
+  # Slice 3 — Resultado + PDF
+  "supabase/functions/sign-resultado/index.ts"
+  "supabase/functions/assinatura-url/index.ts"
+  "supabase/functions/comprovante-shortlink/index.ts"
+  "supabase/functions/image-url/index.ts"
+  "supabase/functions/integration-pdf-resolve/index.ts"
+  "supabase/functions/integration-pdf-url/index.ts"
+  "supabase/functions/lab-apoio-upload-pdf/index.ts"
+  "supabase/functions/upload-assinatura/index.ts"
+  "supabase/functions/upload-image/index.ts"
+  "supabase/functions/upload-pdf/index.ts"
 )
 
 fail=0
