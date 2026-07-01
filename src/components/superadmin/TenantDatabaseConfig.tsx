@@ -478,6 +478,44 @@ export function TenantDatabaseConfig({
               </div>
             </div>
           </div>
+
+          {/* Toggle: roteamento dedicado do runtime (Fase 2) */}
+          <div className={cn(
+            "mt-3 rounded-md border p-3",
+            cfg.runtime_dedicated_enabled
+              ? "border-primary/30 bg-primary/5"
+              : "border-border bg-muted/30"
+          )}>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cfg.runtime_dedicated_enabled}
+                disabled={!cfg.schema_provisioned_at}
+                onChange={(e) => set("runtime_dedicated_enabled", e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary shrink-0 disabled:opacity-40"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-semibold text-foreground">
+                  Ativar roteamento dedicado (runtime)
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  {cfg.schema_provisioned_at
+                    ? "Ao ativar, este laboratório passa a ler/gravar pacientes, atendimentos, exames e pagamentos no banco dedicado. Demais tabelas (dicionários, financeiro, VR, storage, auth) continuam no compartilhado. Requer salvar após marcar."
+                    : "Disponível somente após provisionar o schema no banco dedicado."}
+                </div>
+                {cfg.runtime_dedicated_enabled && !cfg.schema_provisioned_at && (
+                  <div className="text-[11px] text-status-danger mt-1 font-medium">
+                    Atenção: flag marcada sem schema provisionado — o runtime vai continuar no compartilhado (fail-safe).
+                  </div>
+                )}
+                {cfg.runtime_dedicated_enabled && cfg.schema_provisioned_at && (
+                  <div className="text-[11px] text-status-warning mt-1 font-medium">
+                    Banco dedicado começa vazio — os dados existentes ficarão no compartilhado até a Fase 3 (migração).
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
         </>
       )}
 
