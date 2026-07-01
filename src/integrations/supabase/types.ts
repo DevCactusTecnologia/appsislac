@@ -6468,9 +6468,11 @@ export type Database = {
           billing_status: string
           created_at: string
           database_strategy: string
+          db_anon_key_secret_ref: string | null
           db_host: string | null
           db_name: string | null
           db_port: number | null
+          db_project_url: string | null
           db_provider: string | null
           db_region: string | null
           db_secret_ref: string | null
@@ -6487,6 +6489,7 @@ export type Database = {
           provisioning_status: string
           runtime_mode: string
           runtime_status: string
+          schema_provisioned_at: string | null
           schema_version: string
           slug: string
           storage_namespace: string | null
@@ -6498,9 +6501,11 @@ export type Database = {
           billing_status?: string
           created_at?: string
           database_strategy?: string
+          db_anon_key_secret_ref?: string | null
           db_host?: string | null
           db_name?: string | null
           db_port?: number | null
+          db_project_url?: string | null
           db_provider?: string | null
           db_region?: string | null
           db_secret_ref?: string | null
@@ -6517,6 +6522,7 @@ export type Database = {
           provisioning_status?: string
           runtime_mode?: string
           runtime_status?: string
+          schema_provisioned_at?: string | null
           schema_version?: string
           slug: string
           storage_namespace?: string | null
@@ -6528,9 +6534,11 @@ export type Database = {
           billing_status?: string
           created_at?: string
           database_strategy?: string
+          db_anon_key_secret_ref?: string | null
           db_host?: string | null
           db_name?: string | null
           db_port?: number | null
+          db_project_url?: string | null
           db_provider?: string | null
           db_region?: string | null
           db_secret_ref?: string | null
@@ -6547,6 +6555,7 @@ export type Database = {
           provisioning_status?: string
           runtime_mode?: string
           runtime_status?: string
+          schema_provisioned_at?: string | null
           schema_version?: string
           slug?: string
           storage_namespace?: string | null
