@@ -29,12 +29,29 @@ export interface UserProfile {
   tenantId?: string;
 }
 
+export type LoginErrorDetail = {
+  /** Machine code returned by the backend (e.g. dedicated_anon_secret_missing). */
+  code: string;
+  /** Short human title shown as the alert heading. */
+  title: string;
+  /** Friendly explanation for the operator, safe to show without technical jargon. */
+  message: string;
+  /** Optional next-step guidance (what the operator or super-admin should do). */
+  hint?: string;
+  /** Raw backend message — surfaced only in the collapsible "technical details" section. */
+  raw?: string;
+  /** UI variant. `config` = platform/tenant config issue, `infra` = transient, `auth` = credential. */
+  severity: "config" | "infra" | "auth";
+};
+
+type LoginResult = { ok: boolean; error?: string; errorDetail?: LoginErrorDetail };
+
 interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (email: string, senha: string, options?: LoginOptions) => Promise<{ ok: boolean; error?: string }>;
-  signInWithPassword: (email: string, senha: string, options?: LoginOptions) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, senha: string, options?: LoginOptions) => Promise<LoginResult>;
+  signInWithPassword: (email: string, senha: string, options?: LoginOptions) => Promise<LoginResult>;
   signUpWithPassword: (
     email: string,
     senha: string,
