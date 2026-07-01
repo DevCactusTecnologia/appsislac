@@ -27,15 +27,23 @@ Deno.serve(async (req) => {
   const runId = await beginRun(admin, tenantId, "storage", guard.user.id);
   const t0 = Date.now();
 
-  // Cliente destino via URL/anon key dedicada (upload via signed policy service não é possível
-  // sem service role dedicada — se o secret estiver cadastrado, usamos).
-  const destUrl = (reg as unknown as { db_project_url?: string }).db_project_url;
-  const destServiceSecretRef = `SB_SERVICE_ROLE_${(reg as unknown as { db_project_ref?: string }).db_project_ref ?? ""}`;
-  const destServiceKey = Deno.env.get(destServiceSecretRef);
+  // Cliente destino via URL + service role dedicada (nome do secret vem do registry em db_secret_ref).
+  const regTyped = reg as unknown as { db_project_url?: string; db_secret_ref?: string };
+  const destUrl = regTyped.db_project_url;
+  const destServiceSecretRef = regTyped.db_secret_ref?.trim();
 
-  if (!destUrl || !destServiceKey) {
+  if (!destUrl) {
+    await finishRun(admin, runId, "failed", { stage: "config" }, "db_project_url ausente");
+    return errorResponse(400, "URL do projeto dedicado não configurada no registry.", requestId, log);
+  }
+  if (!destServiceSecretRef) {
+    await finishRun(admin, runId, "failed", { stage: "config" }, "db_secret_ref ausente no registry");
+    return errorResponse(400, "Cadastre o nome do secret da service role (db_secret_ref) na aba Banco de dados do laboratório.", requestId, log);
+  }
+  const destServiceKey = Deno.env.get(destServiceSecretRef);
+  if (!destServiceKey) {
     await finishRun(admin, runId, "failed", { stage: "config" }, `Secret ${destServiceSecretRef} ausente`);
-    return errorResponse(400, `Cadastre o secret ${destServiceSecretRef} (service role do projeto dedicado) para migrar Storage.`, requestId, log);
+    return errorResponse(400, `Cadastre o secret ${destServiceSecretRef} (service role do projeto dedicado) nos Secrets do Lovable Cloud para migrar Storage.`, requestId, log);
   }
   const dest = createClient(destUrl, destServiceKey);
 
