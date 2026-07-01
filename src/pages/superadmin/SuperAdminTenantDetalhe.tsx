@@ -100,6 +100,7 @@ interface Snapshot {
     schema_version?: string;
     last_health_check?: string;
     last_health_result?: string;
+    runtime_dedicated_enabled?: boolean | null;
   } | null;
 }
 
