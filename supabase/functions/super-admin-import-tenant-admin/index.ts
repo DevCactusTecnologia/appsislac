@@ -2,7 +2,7 @@
 // Importa (ou cria) o usuário admin de um tenant a partir de dados de backup:
 // cria o usuário no Auth via service role e insere/atualiza a linha em profiles
 // com perfil 'admin'. Restrito a super admins.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface Body {

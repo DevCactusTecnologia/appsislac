@@ -1,6 +1,6 @@
 // Bootstrap único do Assistente: CORS, JWT, tenant, permissões.
 // Usado exclusivamente pela edge ai-chat. Nenhuma outra função pode duplicar.
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, type SupabaseClient } from "../_shared/runtime/createClient.ts";
 import { CAPABILITIES, type CapabilityMeta } from "./registry.ts";
 
 export const aiCorsHeaders: Record<string, string> = {

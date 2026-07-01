@@ -1,7 +1,7 @@
 // Edge function super-admin-update-tenant
 // Atualiza status (ativo/suspenso), plano ou metadados de um tenant.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface Body {

@@ -3,7 +3,7 @@
 // NÃO aplica nada — apenas retorna o plano; a aplicação é client-side via RPC mover_amostra.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

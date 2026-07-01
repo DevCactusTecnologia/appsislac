@@ -4,7 +4,7 @@
 // integration_credentials. Valida JWT + RLS via cliente do usuário antes
 // de usar service-role para o insert/update.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { encryptSecret } from "../_shared/crypto.ts";
 
 const corsHeaders = {

@@ -4,7 +4,7 @@
 // - Valida JWT do usuário
 // - Tenant validado dentro da RPC via current_tenant_id()
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -2,7 +2,7 @@
 // Gera signed URL temporária para um PDF salvo em integration-assets.
 // Valida que o usuário pode ver o integration_pdfs (via RLS).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { loadS3Config, recordStorageAudit, s3PresignGet } from "../_shared/s3.ts";
 
 const corsHeaders = {

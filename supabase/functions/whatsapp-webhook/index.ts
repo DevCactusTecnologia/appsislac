@@ -9,7 +9,7 @@
 // - POST body assinado por x-hub-signature-256 (HMAC SHA256 com
 //   WHATSAPP_META_APP_SECRET).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

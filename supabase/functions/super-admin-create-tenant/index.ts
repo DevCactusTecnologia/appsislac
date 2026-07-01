@@ -4,7 +4,7 @@
 // O admin convidado já entra com profile vinculado ao tenant + role 'admin'.
 // Caller DEVE ser super_admin.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   jsonResponse,
   errorResponse,

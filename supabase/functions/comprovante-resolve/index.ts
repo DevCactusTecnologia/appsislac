@@ -2,7 +2,7 @@
 // Pública (sem JWT). Incrementa contador de acessos.
 // Usada pela rota /p/:codigo no frontend para fazer o redirect.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createLogger,
   errorResponse,

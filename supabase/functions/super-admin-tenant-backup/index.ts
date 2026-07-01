@@ -6,7 +6,7 @@
 // Para isolated_db retorna 409 — backup é gerenciado pelo provider externo.
 // Acesso: apenas super_admin.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 import { errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 

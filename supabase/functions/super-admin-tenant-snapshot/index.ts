@@ -1,6 +1,6 @@
 // Edge function: super-admin-tenant-snapshot
 // Retorna métricas reais de um tenant + dados do admin + billing.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 Deno.serve(async (req) => {

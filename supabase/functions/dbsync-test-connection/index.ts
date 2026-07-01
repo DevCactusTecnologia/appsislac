@@ -5,7 +5,7 @@
 // orientando o operador (transporte HTTP/SOAP real ainda não disponível).
 // Não persiste job, não envia ordem real, não toca em outros providers.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createDBSyncTransport,
   envelopeRecebeAtendimento,

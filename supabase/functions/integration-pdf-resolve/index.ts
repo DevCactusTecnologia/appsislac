@@ -10,7 +10,7 @@
 // Multi-tenant: lê via RLS do usuário; signed URL gerado server-side com service-role.
 // Bucket privado, URL expira em 5 min.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
