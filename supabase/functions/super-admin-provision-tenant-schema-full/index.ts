@@ -159,9 +159,9 @@ Deno.serve(async (req) => {
     try {
       await client.queryArray(
         `INSERT INTO public.tenants (id, nome, slug)
-         VALUES ($1, 'Tenant Dedicado', 'dedicated-' || left($1::text,8))
+         VALUES ($1::uuid, 'Tenant Dedicado', 'dedicated-' || left($2::text,8))
          ON CONFLICT (id) DO NOTHING`,
-        [tenantId],
+        [tenantId, tenantId],
       );
       stats.sentinel = true;
     } catch (e) {
