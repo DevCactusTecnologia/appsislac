@@ -35,6 +35,46 @@ type DdlDump = {
   generated_at: string;
 };
 
+const SCHEMA_VERSION = "v3-full";
+
+async function finalizeDedicatedSchema(client: { queryArray: (query: string, args?: unknown[]) => Promise<unknown> }, tenantId: string) {
+  // Health-check neutro para o wizard: não depende de profiles, RLS ou dados migrados.
+  await client.queryArray(`
+    CREATE TABLE IF NOT EXISTS public._sislac_schema_health (
+      id integer PRIMARY KEY DEFAULT 1,
+      schema_version text NOT NULL,
+      provisioned_at timestamptz NOT NULL DEFAULT now(),
+      tenant_id uuid,
+      CHECK (id = 1)
+    )
+  `);
+  await client.queryArray(`
+    INSERT INTO public._sislac_schema_health (id, schema_version, tenant_id, provisioned_at)
+    VALUES (1, $1::text, $2::uuid, now())
+    ON CONFLICT (id) DO UPDATE SET
+      schema_version = EXCLUDED.schema_version,
+      tenant_id = EXCLUDED.tenant_id,
+      provisioned_at = EXCLUDED.provisioned_at
+  `, [SCHEMA_VERSION, tenantId]);
+
+  // Banco é dedicado por tenant. O cliente de dados usa a publishable/anon key
+  // do projeto dedicado; portanto precisa de permissões explícitas via Data API.
+  await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
+  await client.queryArray(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated`);
+  await client.queryArray(`GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role`);
+  await client.queryArray(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated`);
+  await client.queryArray(`GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role`);
+  await client.queryArray(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO anon, authenticated`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role`);
+  await client.queryArray(`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO anon, authenticated, service_role`);
+
+  // Pede recarga de cache do PostgREST; se não houver listener, não bloqueia.
+  try { await client.queryArray(`NOTIFY pgrst, 'reload schema'`); } catch { /* noop */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   if (req.method !== "POST") return errorResponse(405, "Method not allowed", newRequestId(req), createLogger("provision-full", newRequestId(req)));
@@ -155,11 +195,24 @@ Deno.serve(async (req) => {
     await runBlock("triggers", ddl.triggers ?? [], { silent: true });
     await runBlock("views", ddl.views ?? [], { silent: true });
 
-    // Sentinela em public.tenants (Opção B — mantém tenant_id fixo)
+    await finalizeDedicatedSchema(client, tenantId);
+
+    // Sentinela em public.tenants (Opção B — mantém tenant_id fixo).
+    // Usa todas as colunas NOT NULL conhecidas para não depender de triggers do shared.
     try {
       await client.queryArray(
-        `INSERT INTO public.tenants (id, nome, slug)
-         VALUES ($1::uuid, 'Tenant Dedicado', 'dedicated-' || left($2::text,8))
+        `INSERT INTO public.tenants (id, nome, slug, cnpj, email_contato, telefone, status, plano, lab_code)
+         VALUES (
+           $1::uuid,
+           'Tenant Dedicado',
+           'dedicated-' || left($2::text,8),
+           lpad(replace($2::text, '-', ''), 14, '0'),
+           'dedicated@sislac.local',
+           '',
+           'ativo',
+           'dedicated',
+           'DED-' || left($2::text,8)
+         )
          ON CONFLICT (id) DO NOTHING`,
         [tenantId, tenantId],
       );
@@ -183,7 +236,7 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
     await admin.from("tenant_registry").update({
       schema_provisioned_at: nowIso,
-      schema_version: "v3-full",
+      schema_version: SCHEMA_VERSION,
       migration_state: "schema_ready",
     }).eq("tenant_id", tenantId);
   } else {
