@@ -25,6 +25,7 @@ interface DbConfig {
   db_project_url: string | null;
   db_anon_key_secret_ref: string | null;
   schema_provisioned_at: string | null;
+  runtime_dedicated_enabled: boolean;
 }
 
 
