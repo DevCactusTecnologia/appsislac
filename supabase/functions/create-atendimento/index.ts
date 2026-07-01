@@ -4,7 +4,7 @@
 // - Valida JWT do usuário
 // - Tenant validado dentro da RPC via current_tenant_id()
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import { getUserClient, getUserTenantClient, resolveUserTenantId, MigrationBlockedError } from "../_shared/runtime/db.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
