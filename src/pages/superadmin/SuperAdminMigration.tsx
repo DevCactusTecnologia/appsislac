@@ -57,14 +57,14 @@ export default function SuperAdminMigration() {
 
   const loadTenant = useCallback(async () => {
     if (!id) return;
-    const { data, error } = await supabase.from("tenants").select("id, slug, name").eq("id", id).maybeSingle();
+    const { data, error } = await supabase.from("tenants").select("id, slug, nome").eq("id", id).maybeSingle();
     if (error || !data) { toast.error("Laboratório não encontrado"); return; }
     const { data: reg } = await supabase.from("tenant_registry").select("runtime_mode, migration_state, frozen_at").eq("tenant_id", id).maybeSingle();
     setTenant({
-      id: data.id, slug: data.slug, name: data.name,
+      id: data.id, slug: data.slug, name: data.nome,
       runtime_mode: reg?.runtime_mode ?? null,
-      migration_state: reg?.migration_state ?? null,
-      frozen_at: reg?.frozen_at ?? null,
+      migration_state: (reg as { migration_state?: string } | null)?.migration_state ?? null,
+      frozen_at: (reg as { frozen_at?: string } | null)?.frozen_at ?? null,
     });
   }, [id]);
 
