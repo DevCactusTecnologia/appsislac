@@ -7,7 +7,7 @@ import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2, Globe, Rocket } from "lucide-react";
+import { Database, Save, ShieldAlert, ShieldCheck, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2, Globe, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +113,20 @@ export function TenantDatabaseConfig({
   const [testResult, setTestResult] = useState<
     | { ok: true; latencyMs: number; serverVersion: string | null; database: string; user: string }
     | { ok: false; error: string; stage?: string }
+    | null
+  >(null);
+  const [checking, setChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<
+    | {
+        ok: boolean;
+        tables_expected?: string[];
+        tables_found?: string[];
+        tables_missing?: string[];
+        counts?: Record<string, number | null>;
+        last_health?: { schema_version: string; provisioned_at: string; note: string | null } | null;
+        stage?: string;
+        error?: string;
+      }
     | null
   >(null);
 
@@ -228,6 +242,30 @@ export function TenantDatabaseConfig({
       toast.error(r?.error ?? "Falha ao provisionar schema");
     }
   };
+
+  const checkSchema = async () => {
+    setChecking(true);
+    setCheckResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-check-tenant-schema", {
+      body: { tenantId },
+    });
+    setChecking(false);
+    if (error) {
+      setCheckResult({ ok: false, error: error.message });
+      toast.error(error.message);
+      return;
+    }
+    const r = data as NonNullable<typeof checkResult>;
+    setCheckResult(r);
+    if (r.ok) {
+      toast.success(`Schema íntegro (${r.tables_found?.length ?? 0} tabelas)`);
+    } else if (r.tables_missing?.length) {
+      toast.error(`Faltam ${r.tables_missing.length} tabela(s): ${r.tables_missing.join(", ")}`);
+    } else {
+      toast.error(r.error ?? "Verificação falhou");
+    }
+  };
+
 
 
   return (
@@ -469,19 +507,74 @@ export function TenantDatabaseConfig({
         </div>
       )}
 
+      {isolated && checkResult && (
+        <div className={cn(
+          "mt-3 rounded-md border p-3 text-[12px]",
+          checkResult.ok
+            ? "border-status-success/30 bg-status-success-bg/40"
+            : "border-status-warning/30 bg-status-warning-bg/40"
+        )}>
+          <div className="flex items-start gap-2">
+            {checkResult.ok
+              ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+              : <ShieldAlert className="h-4 w-4 text-status-warning shrink-0 mt-0.5" />}
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-foreground">
+                {checkResult.ok
+                  ? "Schema íntegro no banco dedicado"
+                  : checkResult.tables_missing?.length
+                    ? `Faltam ${checkResult.tables_missing.length} tabela(s)`
+                    : `Falha ${checkResult.stage ? `(${checkResult.stage})` : ""}`}
+              </div>
+              {checkResult.error && (
+                <div className="text-muted-foreground mt-0.5 break-words">{checkResult.error}</div>
+              )}
+              {checkResult.last_health && (
+                <div className="text-muted-foreground mt-0.5 font-mono text-[11px]">
+                  {checkResult.last_health.schema_version} · {new Date(checkResult.last_health.provisioned_at).toLocaleString("pt-BR")}
+                </div>
+              )}
+              {checkResult.counts && (
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                  {Object.entries(checkResult.counts).map(([t, n]) => (
+                    <div key={t} className="rounded border border-border/60 bg-background/40 px-2 py-1 flex items-center justify-between gap-2">
+                      <span className="font-mono text-[10.5px] truncate text-muted-foreground">{t}</span>
+                      <span className="font-mono text-[11px] text-foreground">
+                        {n === null ? "—" : n.toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
-          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning}>
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning || checking}>
             {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
             {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
+        {isolated && !isDirty && cfg.schema_provisioned_at && (
+          <Button
+            variant="outline"
+            onClick={checkSchema}
+            disabled={checking || saving || testing || provisioning}
+            title="Verifica se as tabelas do SISLAC existem no banco dedicado"
+          >
+            {checking ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+            {checking ? "Verificando…" : "Verificar schema"}
           </Button>
         )}
         {isolated && !isDirty && (
           <Button
             variant="outline"
             onClick={provisionSchema}
-            disabled={provisioning || saving || testing || !cfg.db_secret_ref}
+            disabled={provisioning || saving || testing || checking || !cfg.db_secret_ref}
             title={cfg.schema_provisioned_at ? "Reprovisionar schema (avançado)" : "Cria as tabelas do SISLAC no banco dedicado"}
           >
             {provisioning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
@@ -495,6 +588,7 @@ export function TenantDatabaseConfig({
           {saving ? "Salvando…" : "Salvar configuração"}
         </Button>
       </div>
+
 
     </section>
   );
