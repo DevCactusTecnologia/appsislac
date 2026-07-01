@@ -10,7 +10,7 @@
 //    a pedido do operador (super admin tem responsabilidade total).
 //  - E-mail (se enviado) precisa ser válido e único
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   jsonResponse,
   errorResponse,

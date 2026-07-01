@@ -6,7 +6,7 @@
 // - Expiração: 24h (default; configurável por body.ttlHours até 168h)
 // - Retorna: { codigo, shortUrl, expiraEm }
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createLogger,
   errorResponse,

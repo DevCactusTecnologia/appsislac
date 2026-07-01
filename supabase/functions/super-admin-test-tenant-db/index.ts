@@ -5,7 +5,7 @@
 // Retorna: ok, latencyMs, serverVersion, database, user, host, port.
 // Nunca devolve a senha em texto.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 

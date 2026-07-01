@@ -2,7 +2,7 @@
 // Apaga permanentemente um tenant e todos os dados vinculados (cascata via FKs).
 // Também remove os usuários do Supabase Auth associados ao tenant (profiles).
 // Exige confirmação via campo `confirmName` que deve bater com tenants.nome.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface Body { tenantId?: unknown; confirmName?: unknown; }

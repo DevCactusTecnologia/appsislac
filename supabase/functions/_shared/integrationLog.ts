@@ -3,7 +3,7 @@
 // - Auditoria de request/response em integration_requests / integration_responses
 
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 export type AdminClient = ReturnType<typeof createClient>;
 

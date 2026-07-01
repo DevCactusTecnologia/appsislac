@@ -9,7 +9,7 @@
 //   - O caller DEVE ter role 'admin' (validado via has_role no banco).
 //   - Usa SUPABASE_SERVICE_ROLE_KEY apenas internamente.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   corsHeaders,
   jsonResponse,

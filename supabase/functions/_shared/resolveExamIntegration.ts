@@ -9,7 +9,7 @@
 // a lógica em outros lugares — qualquer ajuste futuro de precedência deve
 // passar por aqui.
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "../_shared/runtime/createClient.ts";
 
 export type ExamResolutionSource = "MAP_OVERRIDE" | "CATALOG_DEFAULT" | "NONE";
 

@@ -3,7 +3,7 @@
 // Exclui DEFINITIVAMENTE um usuário (auth.users + profile + roles via cascade).
 // Apenas admins podem chamar. Não pode excluir a si mesmo.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   jsonResponse,
   errorResponse,

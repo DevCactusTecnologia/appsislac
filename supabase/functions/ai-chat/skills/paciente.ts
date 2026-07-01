@@ -1,7 +1,7 @@
 // PacienteSkill — Tools com schema Zod, validação, RLS via cliente do usuário.
 import { tool } from "npm:ai@5.0.206";
 import { z } from "npm:zod@3.23.8";
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import type { SupabaseClient } from "../../_shared/runtime/createClient.ts";
 
 const SEARCH_LIMIT = 10;
 

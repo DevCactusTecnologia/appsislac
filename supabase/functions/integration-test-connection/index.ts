@@ -3,7 +3,7 @@
 // (MOCK/HOMOLOG/PROD) para validar credenciais/endpoint sem persistir job.
 // Aceita override opcional de username/password para testar antes de salvar.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createTransport,
   envelopeVerificarRecebimento,

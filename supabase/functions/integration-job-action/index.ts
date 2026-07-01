@@ -4,7 +4,7 @@
 //   - cancel: marca CANCELLED
 //   - enqueue: cria novo job (kind/payload) — útil para FETCH_PDF/PENDING/TRACE
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

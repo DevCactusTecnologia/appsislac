@@ -3,7 +3,7 @@
 // MRR/ARR e distribuição por plano vêm de tenant_subscriptions_billing
 // + subscription_plans (catálogo real).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 import { resolveTenantConnection } from "../_shared/tenantConnection.ts";
 

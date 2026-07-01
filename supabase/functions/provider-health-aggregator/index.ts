@@ -6,7 +6,7 @@
 //    força next_probe_at = now() para liberar HALF_OPEN imediatamente.
 // Auth: cron secret obrigatório.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { safeEq } from "../_shared/integrationLog.ts";
 import { withCronHealth } from "../_shared/cronHealth.ts";
 

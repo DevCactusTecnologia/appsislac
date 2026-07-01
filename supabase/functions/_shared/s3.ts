@@ -10,7 +10,7 @@
 //  - paciente_ref  = CPF (11 dígitos) ou, na ausência, "id-{patient_id}"
 //  - categoria     = comprovantes | documentos | laudos | auditoria
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 export interface S3Config {
   accessKeyId: string;

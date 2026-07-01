@@ -2,7 +2,7 @@
 // Troca o plano vigente (upgrade/downgrade) de um tenant.
 // Atualiza tenant_subscriptions_billing e registra mudança em subscription_changes_log.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface Body {

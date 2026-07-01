@@ -1,7 +1,7 @@
 // Edge function super-admin-list-tenants
 // Retorna a lista de todos os tenants com métricas básicas.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 Deno.serve(async (req) => {

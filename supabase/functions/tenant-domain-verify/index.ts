@@ -4,7 +4,7 @@
 // alvo esperado. Apenas o admin do próprio tenant ou super_admin podem
 // disparar a verificação.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   corsHeaders,
   createLogger,

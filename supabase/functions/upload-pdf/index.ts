@@ -6,7 +6,7 @@
 //  - Validates filename, size, magic bytes, base64 integrity
 //  - Returns short-lived signed URL (1h)
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createLogger,
   errorResponse,

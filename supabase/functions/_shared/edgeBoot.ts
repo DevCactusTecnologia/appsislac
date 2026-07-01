@@ -19,7 +19,7 @@
 // Edge functions LEGADAS continuam funcionando — esta migração é OPT-IN.
 
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { logIntegration, type AdminClient } from "./integrationLog.ts";
 
 export const corsHeaders: Record<string, string> = {

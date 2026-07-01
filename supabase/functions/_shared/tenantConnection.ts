@@ -12,7 +12,7 @@
 //   - super_admin não tem tenant_id operacional — usa client global.
 // ════════════════════════════════════════════════════════════════════════
 
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, type SupabaseClient } from "../_shared/runtime/createClient.ts";
 
 export type TenantStrategy = "shared" | "dedicated";
 

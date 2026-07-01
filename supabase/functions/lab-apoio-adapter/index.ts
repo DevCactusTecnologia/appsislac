@@ -9,7 +9,7 @@
 //  4) dispara integration-dispatch best-effort (o runner também processa);
 //  5) devolve o estado atual do exame para compatibilidade com o frontend.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

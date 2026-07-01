@@ -9,7 +9,7 @@
 // cadastra a senha como secret no Lovable Cloud e informa apenas o NOME
 // do secret aqui (db_secret_ref). O runtime resolverá via Secrets em runtime.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface Body {

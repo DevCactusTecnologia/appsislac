@@ -12,7 +12,7 @@
 //      Supabase já garante a disponibilidade do laudo.
 //   4. Atualiza a linha em `atendimento_exames` (coluna correta + auditoria).
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import {
   createLogger,
   errorResponse,

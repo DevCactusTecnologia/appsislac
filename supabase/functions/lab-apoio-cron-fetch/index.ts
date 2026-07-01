@@ -10,7 +10,7 @@
 //  - Validação por header `x-cron-secret` que deve bater com o secret CRON_SECRET.
 //  - Usa service-role para escrever, mantendo isolamento via filtros explícitos.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "../_shared/runtime/createClient.ts";
 import { withCronHealth } from "../_shared/cronHealth.ts";
 
 const corsHeaders = {

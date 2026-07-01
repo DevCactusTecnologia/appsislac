@@ -6,7 +6,7 @@
 //   const guard = await assertSameTenantOrSuperAdmin(admin, callerId, targetId);
 //   if (!guard.ok) return errorResponse(guard.status, guard.message, requestId, log);
 
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import type { SupabaseClient } from "../_shared/runtime/createClient.ts";
 
 export interface TenantGuardOk {
   ok: true;

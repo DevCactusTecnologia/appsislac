@@ -3,7 +3,7 @@
 // (WABA) e atualizar a tabela `whatsapp_templates_cache`. A Meta é a única
 // fonte de verdade. Sem CRUD manual.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
+import { createClient } from "../_shared/runtime/createClient.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
