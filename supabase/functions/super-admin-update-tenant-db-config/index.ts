@@ -21,6 +21,8 @@ interface Body {
   dbUser?: unknown;
   dbRegion?: unknown;
   dbSecretRef?: unknown;
+  dbProjectUrl?: unknown;
+  dbAnonKeySecretRef?: unknown;
   runtimeMode?: unknown;
   databaseStrategy?: unknown;
 }
@@ -29,6 +31,8 @@ const ALLOWED_PROVIDERS = ["shared_supabase", "neon", "supabase_project", "exter
 const ALLOWED_MODES = ["shared_db", "isolated_db"];
 const ALLOWED_STRATEGIES = ["shared", "dedicated"];
 const SECRET_REF_RE = /^[A-Z][A-Z0-9_]{2,63}$/;
+const PROJECT_URL_RE = /^https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)$/i;
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
