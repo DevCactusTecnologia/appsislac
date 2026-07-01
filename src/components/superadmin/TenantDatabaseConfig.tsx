@@ -135,7 +135,12 @@ export function TenantDatabaseConfig({
     if (!cfg.db_name) return "Informe o nome do banco.";
     if (!cfg.db_user) return "Informe o usuário do banco.";
     if (!cfg.db_secret_ref) return "Informe o nome do secret com a senha (db_secret_ref).";
-    if (!SECRET_REF_RE.test(cfg.db_secret_ref)) return "Secret deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    if (!SECRET_REF_RE.test(cfg.db_secret_ref)) return "Secret (senha) deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    if (cfg.db_provider === "supabase_project") {
+      if (!cfg.db_project_url) return "Informe a URL do projeto Supabase dedicado (necessária para o roteamento do runtime).";
+      if (!cfg.db_anon_key_secret_ref) return "Informe o nome do secret com a anon key do projeto dedicado.";
+      if (!SECRET_REF_RE.test(cfg.db_anon_key_secret_ref)) return "Secret (anon key) deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    }
     return null;
   };
 
@@ -154,6 +159,8 @@ export function TenantDatabaseConfig({
         dbUser: cfg.db_user,
         dbRegion: cfg.db_region,
         dbSecretRef: cfg.db_secret_ref,
+        dbProjectUrl: cfg.db_project_url,
+        dbAnonKeySecretRef: cfg.db_anon_key_secret_ref,
       },
     });
     setSaving(false);
@@ -166,6 +173,7 @@ export function TenantDatabaseConfig({
     }
     toast.success("Configuração de banco salva");
   };
+
 
   const reset = () => { setCfg(baseline); setTestResult(null); };
 
