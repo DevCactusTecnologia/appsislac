@@ -763,3 +763,65 @@ function DbField({
     </div>
   );
 }
+
+function ReadinessChecklist({
+  hasConn, hasProjectUrl, hasAnonSecret, connectionOk, anonOk, schemaReady, routingOn,
+}: {
+  hasConn: boolean;
+  hasProjectUrl: boolean;
+  hasAnonSecret: boolean;
+  connectionOk: boolean;
+  anonOk: boolean;
+  schemaReady: boolean;
+  routingOn: boolean;
+}) {
+  const items: { label: string; done: boolean; hint?: string }[] = [
+    { label: "Metadados de conexão Postgres preenchidos", done: hasConn },
+    { label: "URL do projeto Supabase dedicado informada", done: hasProjectUrl },
+    { label: "Secret da anon key informado", done: hasAnonSecret },
+    { label: "Teste de conexão Postgres bem-sucedido", done: connectionOk, hint: "Clique em “Testar conexão”." },
+    { label: "Teste de anon key bem-sucedido", done: anonOk, hint: "Clique em “Testar anon key”." },
+    { label: "Schema provisionado no banco dedicado", done: schemaReady, hint: "Use “Provisionar schema”." },
+    { label: "Roteamento dedicado ativado e salvo", done: routingOn, hint: "Marque a caixa e salve a configuração." },
+  ];
+  const doneCount = items.filter((i) => i.done).length;
+  const total = items.length;
+  const pct = Math.round((doneCount / total) * 100);
+  const allDone = doneCount === total;
+
+  return (
+    <div className={cn(
+      "mt-4 rounded-md border p-3",
+      allDone ? "border-status-success/30 bg-status-success-bg/30" : "border-border bg-muted/30"
+    )}>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          Prontidão do laboratório dedicado
+        </div>
+        <div className={cn(
+          "text-[10.5px] font-semibold px-2 py-0.5 rounded-full border",
+          allDone
+            ? "bg-status-success/10 text-status-success border-status-success/30"
+            : "bg-background text-muted-foreground border-border"
+        )}>
+          {doneCount}/{total} · {pct}%
+        </div>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((it) => (
+          <li key={it.label} className="flex items-start gap-2 text-[12px]">
+            {it.done
+              ? <CheckCircle2 className="h-3.5 w-3.5 text-status-success shrink-0 mt-0.5" />
+              : <XCircle className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />}
+            <div className="min-w-0 flex-1">
+              <div className={cn(it.done ? "text-foreground" : "text-muted-foreground")}>{it.label}</div>
+              {!it.done && it.hint && (
+                <div className="text-[10.5px] text-muted-foreground/80 mt-0.5">{it.hint}</div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
