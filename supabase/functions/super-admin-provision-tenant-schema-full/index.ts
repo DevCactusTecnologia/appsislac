@@ -62,11 +62,18 @@ async function markRegistrySchemaReady(admin: ReturnType<typeof createClient>, t
   }
 }
 
+async function markRunProgress(admin: ReturnType<typeof createClient>, runId: string, stage: string, extra: Record<string, unknown> = {}) {
+  await admin
+    .from("tenant_migration_runs")
+    .update({ stats: { stage, updatedAt: new Date().toISOString(), ...extra } })
+    .eq("id", runId);
+}
+
 async function prepareDedicatedPublicSchema(client: { queryArray: (query: string, args?: unknown[]) => Promise<unknown> }) {
   // Evita que uma tentativa fique presa esperando lock no banco dedicado e acabe
   // como "Edge Function returned a non-2xx status code" no wizard.
-  await client.queryArray(`SET lock_timeout TO '5s'`);
-  await client.queryArray(`SET statement_timeout TO '25s'`);
+  await client.queryArray(`SET lock_timeout TO '3s'`);
+  await client.queryArray(`SET statement_timeout TO '12s'`);
   await client.queryArray(`SET idle_in_transaction_session_timeout TO '30s'`);
   await client.queryArray(`CREATE SCHEMA IF NOT EXISTS public`);
   await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
@@ -295,8 +302,9 @@ Deno.serve(async (req) => {
   // se o cliente abortar a request, não podemos deixar o banco sem schema health.
   if (resetSchema) {
     try {
-      await client.queryArray(`SET lock_timeout TO '5s'`);
-      await client.queryArray(`SET statement_timeout TO '25s'`);
+      await markRunProgress(admin, runId, "reset_public_schema");
+      await client.queryArray(`SET lock_timeout TO '3s'`);
+      await client.queryArray(`SET statement_timeout TO '12s'`);
       await client.queryArray(`DROP SCHEMA IF EXISTS public CASCADE`);
       await client.queryArray(`CREATE SCHEMA public`);
       await client.queryArray(`GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role`);
@@ -310,6 +318,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await markRunProgress(admin, runId, "prepare_public_schema");
     await prepareDedicatedPublicSchema(client);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -350,25 +359,36 @@ Deno.serve(async (req) => {
   };
 
   try {
+    await markRunProgress(admin, runId, "extensions");
     await runBlock("extensions", ddl.extensions ?? []);
+    await markRunProgress(admin, runId, "enums", { extensions: stats.extensions });
     await runBlock("enums", ddl.enums ?? []);
+    await markRunProgress(admin, runId, "sequences", { extensions: stats.extensions, enums: stats.enums });
     await runBlock("sequences", ddl.sequences ?? []);
     // PASS 1 (tolerante): cria funções que não dependem de tabelas — em especial
     // current_tenant_id(), is_super_admin(), has_role() — usadas em DEFAULTs e RLS.
+    await markRunProgress(admin, runId, "functions_pass1", { sequences: stats.sequences });
     const fnPending = await runBlock("functions", ddl.functions ?? [], { silent: true });
     // reset contador para não contar duas vezes na pass2
     stats.functions = 0;
+    await markRunProgress(admin, runId, "tables", { fnPending: fnPending.length });
     await runBlock("tables", ddl.tables ?? []);
     // PASS 2 (real): agora que tabelas existem, refaz funções.
     // Legados do shared que referenciam colunas removidas viram warning.
+    await markRunProgress(admin, runId, "functions_pass2", { tables: stats.tables });
     await runBlock("functions", fnPending, { silent: true });
+    await markRunProgress(admin, runId, "indexes", { functions: stats.functions });
     await runBlock("indexes", ddl.indexes ?? [], { silent: true });
+    await markRunProgress(admin, runId, "fks", { indexes: stats.indexes });
     await runBlock("fks", ddl.fks ?? [], { silent: true });
+    await markRunProgress(admin, runId, "triggers", { fks: stats.fks });
     await runBlock("triggers", ddl.triggers ?? [], { silent: true });
+    await markRunProgress(admin, runId, "views", { triggers: stats.triggers });
     await runBlock("views", ddl.views ?? [], { silent: true });
 
     // Sentinela em public.tenants (Opção B — mantém tenant_id fixo).
     try {
+      await markRunProgress(admin, runId, "sentinel", { views: stats.views });
       await seedTenantSentinel(client, tenantId);
       stats.sentinel = true;
     } catch (e) {
@@ -377,6 +397,7 @@ Deno.serve(async (req) => {
 
     if (failures.length === 0) {
       try {
+        await markRunProgress(admin, runId, "finalize", { sentinel: stats.sentinel });
         await finalizeDedicatedSchema(client, tenantId);
       } catch (e) {
         failures.push({ stage: "finalize", error: e instanceof Error ? e.message : String(e) });
