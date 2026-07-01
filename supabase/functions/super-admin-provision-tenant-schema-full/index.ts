@@ -93,7 +93,7 @@ async function seedTenantSentinel(client: {
     nome: "Tenant Dedicado",
     name: "Tenant Dedicado",
     slug: `dedicated-${short}`,
-    cnpj: tenantId.replace(/-/g, "").padStart(14, "0").slice(0, 14),
+    cnpj: tenantId.replace(/\D/g, "").padEnd(14, "0").slice(0, 14),
     email_contato: "dedicated@sislac.local",
     email: "dedicated@sislac.local",
     telefone: "",
