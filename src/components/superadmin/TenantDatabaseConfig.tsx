@@ -7,7 +7,7 @@ import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2, Globe, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,11 @@ interface DbConfig {
   db_user: string | null;
   db_region: string | null;
   db_secret_ref: string | null;
+  db_project_url: string | null;
+  db_anon_key_secret_ref: string | null;
+  schema_provisioned_at: string | null;
 }
+
 
 const PROVIDERS = [
   { value: "shared_supabase", label: "Shared Supabase" },
@@ -86,7 +90,11 @@ const empty: DbConfig = {
   db_user: null,
   db_region: null,
   db_secret_ref: null,
+  db_project_url: null,
+  db_anon_key_secret_ref: null,
+  schema_provisioned_at: null,
 };
+
 
 export function TenantDatabaseConfig({
   tenantId,
@@ -101,11 +109,13 @@ export function TenantDatabaseConfig({
   const [cfg, setCfg] = useState<DbConfig>(baseline);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const [testResult, setTestResult] = useState<
     | { ok: true; latencyMs: number; serverVersion: string | null; database: string; user: string }
     | { ok: false; error: string; stage?: string }
     | null
   >(null);
+
 
   useEffect(() => { setCfg(baseline); setTestResult(null); }, [baseline]);
 
@@ -127,7 +137,12 @@ export function TenantDatabaseConfig({
     if (!cfg.db_name) return "Informe o nome do banco.";
     if (!cfg.db_user) return "Informe o usuário do banco.";
     if (!cfg.db_secret_ref) return "Informe o nome do secret com a senha (db_secret_ref).";
-    if (!SECRET_REF_RE.test(cfg.db_secret_ref)) return "Secret deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    if (!SECRET_REF_RE.test(cfg.db_secret_ref)) return "Secret (senha) deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    if (cfg.db_provider === "supabase_project") {
+      if (!cfg.db_project_url) return "Informe a URL do projeto Supabase dedicado (necessária para o roteamento do runtime).";
+      if (!cfg.db_anon_key_secret_ref) return "Informe o nome do secret com a anon key do projeto dedicado.";
+      if (!SECRET_REF_RE.test(cfg.db_anon_key_secret_ref)) return "Secret (anon key) deve estar em UPPER_SNAKE_CASE (3–64 chars).";
+    }
     return null;
   };
 
@@ -146,6 +161,8 @@ export function TenantDatabaseConfig({
         dbUser: cfg.db_user,
         dbRegion: cfg.db_region,
         dbSecretRef: cfg.db_secret_ref,
+        dbProjectUrl: cfg.db_project_url,
+        dbAnonKeySecretRef: cfg.db_anon_key_secret_ref,
       },
     });
     setSaving(false);
@@ -158,6 +175,7 @@ export function TenantDatabaseConfig({
     }
     toast.success("Configuração de banco salva");
   };
+
 
   const reset = () => { setCfg(baseline); setTestResult(null); };
 
@@ -187,6 +205,30 @@ export function TenantDatabaseConfig({
       toast.error(r?.error ?? "Falha na conexão");
     }
   };
+
+  const provisionSchema = async () => {
+    if (cfg.schema_provisioned_at) {
+      const confirmReprovision = window.confirm(
+        "O schema já foi provisionado neste banco. Reprovisionar pode falhar se objetos já existirem. Continuar?"
+      );
+      if (!confirmReprovision) return;
+    }
+    setProvisioning(true);
+    const { data, error } = await supabase.functions.invoke("super-admin-provision-tenant-schema", {
+      body: { tenantId },
+    });
+    setProvisioning(false);
+    if (error) { toast.error(error.message); return; }
+    const r = data as { ok?: boolean; error?: string; schema_provisioned_at?: string; statements?: number };
+    if (r?.ok && r.schema_provisioned_at) {
+      setCfg((p) => ({ ...p, schema_provisioned_at: r.schema_provisioned_at! }));
+      toast.success(`Schema provisionado (${r.statements ?? 0} statements)`);
+      onSaved?.({ ...cfg, schema_provisioned_at: r.schema_provisioned_at! });
+    } else {
+      toast.error(r?.error ?? "Falha ao provisionar schema");
+    }
+  };
+
 
   return (
     <section className="rounded-xl border border-border bg-card p-6">
@@ -326,7 +368,7 @@ export function TenantDatabaseConfig({
             </DbField>
 
             <DbField
-              label="Secret (senha)"
+              label="Secret (senha do banco)"
               icon={KeyRound}
               hint="Nome do secret no Lovable Cloud (UPPER_SNAKE_CASE). A senha NUNCA é salva no banco."
               className="md:col-span-2"
@@ -338,9 +380,66 @@ export function TenantDatabaseConfig({
                 className="font-mono"
               />
             </DbField>
+
+            {cfg.db_provider === "supabase_project" && (
+              <>
+                <DbField
+                  label="URL do projeto Supabase dedicado"
+                  icon={Globe}
+                  hint="Necessária para o runtime rotear queries deste laboratório para o banco dedicado."
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={cfg.db_project_url ?? ""}
+                    onChange={(e) => set("db_project_url", e.target.value || null)}
+                    placeholder="https://xbmzftoefldmcfyrgsdm.supabase.co"
+                    className="font-mono"
+                  />
+                </DbField>
+
+                <DbField
+                  label="Secret (anon key do projeto dedicado)"
+                  icon={KeyRound}
+                  hint="Nome do secret com a chave anônima (publishable) do projeto dedicado."
+                  className="md:col-span-2"
+                >
+                  <Input
+                    value={cfg.db_anon_key_secret_ref ?? ""}
+                    onChange={(e) => set("db_anon_key_secret_ref", e.target.value.toUpperCase() || null)}
+                    placeholder="TENANT_XYZ_ANON_KEY"
+                    className="font-mono"
+                  />
+                </DbField>
+              </>
+            )}
+          </div>
+
+          {/* Estado do schema no banco dedicado */}
+          <div className={cn(
+            "mt-5 rounded-md border p-3 text-[12px] flex items-start gap-2",
+            cfg.schema_provisioned_at
+              ? "border-status-success/30 bg-status-success-bg/40"
+              : "border-status-warning/30 bg-status-warning-bg/40"
+          )}>
+            {cfg.schema_provisioned_at
+              ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+              : <ShieldAlert className="h-4 w-4 text-status-warning shrink-0 mt-0.5" />}
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-foreground">
+                {cfg.schema_provisioned_at
+                  ? `Schema provisionado em ${new Date(cfg.schema_provisioned_at).toLocaleString("pt-BR")}`
+                  : "Schema ainda não provisionado no banco dedicado"}
+              </div>
+              <div className="text-muted-foreground mt-0.5">
+                {cfg.schema_provisioned_at
+                  ? "A DedicatedStrategy (Fase 2) pode rotear queries deste tenant com segurança."
+                  : "Enquanto pendente, o runtime continua usando o banco compartilhado (fail-safe)."}
+              </div>
+            </div>
           </div>
         </>
       )}
+
 
       {isolated && testResult && (
         <div className={cn(
@@ -370,12 +469,25 @@ export function TenantDatabaseConfig({
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60">
+      <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
-          <Button variant="outline" onClick={testConnection} disabled={testing || saving}>
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning}>
             {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
             {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
+        {isolated && !isDirty && (
+          <Button
+            variant="outline"
+            onClick={provisionSchema}
+            disabled={provisioning || saving || testing || !cfg.db_secret_ref}
+            title={cfg.schema_provisioned_at ? "Reprovisionar schema (avançado)" : "Cria as tabelas do SISLAC no banco dedicado"}
+          >
+            {provisioning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
+            {provisioning
+              ? "Provisionando…"
+              : cfg.schema_provisioned_at ? "Reprovisionar schema" : "Provisionar schema"}
           </Button>
         )}
         <Button onClick={save} disabled={!isDirty || saving}>
@@ -383,6 +495,7 @@ export function TenantDatabaseConfig({
           {saving ? "Salvando…" : "Salvar configuração"}
         </Button>
       </div>
+
     </section>
   );
 }

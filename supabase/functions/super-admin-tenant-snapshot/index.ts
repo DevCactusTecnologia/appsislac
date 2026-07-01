@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     admin.from("profiles").select("perfil").eq("tenant_id", tenantId),
     admin.from("tenant_subscriptions_billing").select("*").eq("tenant_id", tenantId).maybeSingle(),
     admin.from("subscription_plans").select("*"),
-    admin.from("tenant_registry").select("runtime_mode, database_strategy, db_provider, db_region, db_host, db_port, db_name, db_user, db_secret_ref, schema_version, last_health_check, last_health_result").eq("tenant_id", tenantId).maybeSingle(),
+    admin.from("tenant_registry").select("runtime_mode, database_strategy, db_provider, db_region, db_host, db_port, db_name, db_user, db_secret_ref, db_project_url, db_anon_key_secret_ref, schema_provisioned_at, schema_version, last_health_check, last_health_result").eq("tenant_id", tenantId).maybeSingle(),
   ]);
 
   let receita = 0;

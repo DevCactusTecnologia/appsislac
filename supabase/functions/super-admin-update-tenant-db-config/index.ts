@@ -21,6 +21,8 @@ interface Body {
   dbUser?: unknown;
   dbRegion?: unknown;
   dbSecretRef?: unknown;
+  dbProjectUrl?: unknown;
+  dbAnonKeySecretRef?: unknown;
   runtimeMode?: unknown;
   databaseStrategy?: unknown;
 }
@@ -29,6 +31,8 @@ const ALLOWED_PROVIDERS = ["shared_supabase", "neon", "supabase_project", "exter
 const ALLOWED_MODES = ["shared_db", "isolated_db"];
 const ALLOWED_STRATEGIES = ["shared", "dedicated"];
 const SECRET_REF_RE = /^[A-Z][A-Z0-9_]{2,63}$/;
+const PROJECT_URL_RE = /^https:\/\/[a-z0-9-]+\.supabase\.(co|in|net)$/i;
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
@@ -108,6 +112,25 @@ Deno.serve(async (req) => {
       return errorResponse(400, "dbSecretRef inválido (use UPPER_SNAKE_CASE)", requestId, log);
     }
   }
+  if (body.dbProjectUrl !== undefined) {
+    if (body.dbProjectUrl === null || body.dbProjectUrl === "") {
+      updates.db_project_url = null;
+    } else if (typeof body.dbProjectUrl === "string" && PROJECT_URL_RE.test(body.dbProjectUrl.trim())) {
+      updates.db_project_url = body.dbProjectUrl.trim();
+    } else {
+      return errorResponse(400, "dbProjectUrl inválido (esperado https://<ref>.supabase.co)", requestId, log);
+    }
+  }
+  if (body.dbAnonKeySecretRef !== undefined) {
+    if (body.dbAnonKeySecretRef === null || body.dbAnonKeySecretRef === "") {
+      updates.db_anon_key_secret_ref = null;
+    } else if (typeof body.dbAnonKeySecretRef === "string" && SECRET_REF_RE.test(body.dbAnonKeySecretRef)) {
+      updates.db_anon_key_secret_ref = body.dbAnonKeySecretRef;
+    } else {
+      return errorResponse(400, "dbAnonKeySecretRef inválido (use UPPER_SNAKE_CASE)", requestId, log);
+    }
+  }
+
   if (body.runtimeMode !== undefined) {
     if (typeof body.runtimeMode === "string" && ALLOWED_MODES.includes(body.runtimeMode)) {
       updates.runtime_mode = body.runtimeMode;
