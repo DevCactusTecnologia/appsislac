@@ -49,3 +49,24 @@ export class RuntimeError extends Error {
     this.name = "RuntimeError";
   }
 }
+
+/**
+ * Dedicated Runtime v1.0 (Fase 8) — bloqueio explícito de failover.
+ * Lançado quando o tenant está marcado como dedicated mas o runtime não
+ * pode conectar. Nunca cai silenciosamente para shared.
+ */
+export class MigrationBlockedError extends RuntimeError {
+  constructor(
+    public readonly tenant_id: string,
+    reason: string,
+    code:
+      | "DEDICATED_URL_MISSING"
+      | "DEDICATED_ANON_KEY_MISSING"
+      | "DEDICATED_CLIENT_FAILED"
+      | "TENANT_SUSPENDED"
+      | "IDENTITY_MISMATCH",
+  ) {
+    super(`Tenant ${tenant_id} bloqueado: ${reason}`, code);
+    this.name = "MigrationBlockedError";
+  }
+}
