@@ -144,6 +144,15 @@ Deno.serve(async (req) => {
     .single();
   if (error) return errorResponse(500, "Erro ao atualizar configuração de banco", requestId, log, error);
 
+  // Espelha database_strategy na tabela legada `tenants` para evitar divergência.
+  if (updates.database_strategy !== undefined) {
+    const { error: mirrorErr } = await admin
+      .from("tenants")
+      .update({ database_strategy: updates.database_strategy })
+      .eq("id", tenantId);
+    if (mirrorErr) log.warn("Falha ao espelhar database_strategy em tenants", { tenantId, error: mirrorErr.message });
+  }
+
   log.info("tenant_registry db config atualizado", { tenantId, fields: Object.keys(updates) });
   return jsonResponse(200, { ok: true, registry: data }, requestId);
 });
