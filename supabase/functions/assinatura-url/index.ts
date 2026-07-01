@@ -1,13 +1,16 @@
 // Edge function: assinatura-url
 // ----------------------------------------------------------------------------
 // Retorna URL pré-assinada (1h) para a imagem de assinatura de um usuário.
-// O caller precisa estar autenticado e pertencer ao mesmo tenant do alvo
-// (ou ser super_admin / admin global). Usado pelo modal de edição e pelo
-// renderizador de laudo no frontend.
-//
-// Body: { userId: string }
+// Slice 3: `profiles` e Storage permanecem no control-plane (shared).
+// O `getTenantClient` é usado como probe do tenant do alvo para preparar
+// futuras auditorias tenant-locais (idempotente em shared).
 
-import { createClient } from "../_shared/runtime/createClient.ts";
+import {
+  getPlatformClient,
+  getTenantClient,
+  getUserClient,
+  MigrationBlockedError,
+} from "../_shared/runtime/db.ts";
 import {
   jsonResponse,
   errorResponse,
@@ -25,15 +28,12 @@ Deno.serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
     return errorResponse(500, "Server misconfiguration", requestId, log);
   }
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
+  const userClient = getUserClient(authHeader);
   const { data: { user: caller }, error: callerErr } = await userClient.auth.getUser();
   if (callerErr || !caller) return errorResponse(401, "Não autenticado", requestId, log);
 
@@ -42,10 +42,9 @@ Deno.serve(async (req) => {
   const userId = typeof body.userId === "string" ? body.userId : "";
   if (!userId) return errorResponse(400, "userId obrigatório", requestId, log);
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const platform = getPlatformClient();
 
-  // Carrega perfil alvo + caller para validar tenant
-  const { data: target } = await admin
+  const { data: target } = await platform
     .from("profiles")
     .select("tenant_id, assinatura_imagem_key")
     .eq("user_id", userId)
@@ -56,13 +55,22 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: true, url: null }, requestId);
   }
 
-  const { data: callerProfile } = await admin
+  const { data: callerProfile } = await platform
     .from("profiles").select("tenant_id").eq("user_id", caller.id).maybeSingle();
   const callerTenant = (callerProfile as { tenant_id?: string } | null)?.tenant_id;
   if (callerTenant !== t.tenant_id) {
-    // Permite super_admin
-    const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: caller.id });
+    const { data: isSuper } = await platform.rpc("is_super_admin", { _user_id: caller.id });
     if (!isSuper) return errorResponse(403, "Sem permissão", requestId, log);
+  }
+
+  // Probe de rota tenant (garante que dedicated está acessível quando aplicável).
+  try {
+    await getTenantClient(t.tenant_id);
+  } catch (e) {
+    if (e instanceof MigrationBlockedError) {
+      return errorResponse(503, `Runtime dedicado indisponível (${e.code})`, requestId, log);
+    }
+    throw e;
   }
 
   let url: string;
@@ -70,14 +78,13 @@ Deno.serve(async (req) => {
   let bucketLabel = "";
 
   if (t.assinatura_imagem_key.startsWith("storage://")) {
-    // Formato: storage://<bucket>/<path>
     const rest = t.assinatura_imagem_key.slice("storage://".length);
     const slash = rest.indexOf("/");
     const bucket = slash >= 0 ? rest.slice(0, slash) : rest;
     const path = slash >= 0 ? rest.slice(slash + 1) : "";
     backend = "storage";
     bucketLabel = bucket;
-    const { data: signed, error: sErr } = await admin.storage
+    const { data: signed, error: sErr } = await platform.storage
       .from(bucket).createSignedUrl(path, 3600);
     if (sErr || !signed?.signedUrl) {
       log.error("storage sign failed", { err: sErr?.message });
