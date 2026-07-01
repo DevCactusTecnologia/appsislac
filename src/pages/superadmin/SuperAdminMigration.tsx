@@ -304,6 +304,34 @@ export default function SuperAdminMigration() {
             </div>
           )}
 
+          {failures[step.key] && (
+            <div className="rounded border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-destructive">Falha nesta etapa</span>
+                    {failures[step.key]?.code && (
+                      <code className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-mono">{failures[step.key]?.code}</code>
+                    )}
+                    {failures[step.key]?.stage && (
+                      <span className="text-[10px] text-muted-foreground">estágio: {failures[step.key]?.stage}</span>
+                    )}
+                  </div>
+                  <div className="text-foreground">{failures[step.key]?.message}</div>
+                  {failures[step.key]?.hint && (
+                    <div className="text-muted-foreground">💡 {failures[step.key]?.hint}</div>
+                  )}
+                  {failures[step.key]?.code?.startsWith("DEDICATED_") && (
+                    <Button size="sm" variant="outline" className="h-7 mt-2" onClick={() => navigate(`/super-admin/laboratorios/${id}?tab=database`)}>
+                      Abrir configuração do banco dedicado
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {logs[step.key] && (
             <pre className="text-[11px] bg-muted/40 border rounded p-2 overflow-x-auto whitespace-pre-wrap max-h-48">{logs[step.key]}</pre>
           )}
