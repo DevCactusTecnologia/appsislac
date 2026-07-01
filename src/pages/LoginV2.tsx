@@ -72,6 +72,8 @@ const LAST_CODIGO_KEY = "sislac:last-lab-code";
 function AuthErrorAlert({ detail, onDismiss }: { detail: LoginErrorDetail | null; onDismiss: () => void }) {
   const [showRaw, setShowRaw] = useState(false);
   if (!detail) return null;
+  // Suprime cards de "Base do laboratório ainda não importada" a pedido do operador.
+  if (detail.code === "dedicated_not_provisioned" || detail.code === "dedicated_profiles_table_missing") return null;
 
   const palette =
     detail.severity === "config"
