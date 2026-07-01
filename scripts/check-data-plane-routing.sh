@@ -46,7 +46,7 @@ done
 
 if [ "$fail" -ne 0 ]; then
   echo ""
-  echo "Data-plane routing violado. Consulte docs/database-runtime/dedicated-runtime/03-edge-functions.md" >&2
+  echo "Data-plane routing violado. Consulte docs/database-runtime/surgery/03-runtime-final.md" >&2
   exit 1
 fi
 echo "guardrail: data-plane routing OK (${#EDGE_DATA_PLANE_ALLOWLIST[@]} functions)"
