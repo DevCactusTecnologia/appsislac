@@ -112,18 +112,20 @@ const SCHEMA_MINIMO_V1: string[] = [
   `CREATE TRIGGER trg_atend_exames_updated_at BEFORE UPDATE ON public.atendimento_exames
      FOR EACH ROW EXECUTE FUNCTION public.sislac_set_updated_at()`,
 
-  // GRANTs: banco é dedicado ao tenant, então authenticated pode tudo.
-  // (Auth cross-project via JWT do shared — validado pela Fase 2.)
+  // GRANTs: banco é dedicado ao tenant. Como o Auth continua no projeto
+  // SHARED (JWT diferente), as requisições do runtime frontend chegam
+  // ao dedicado no role `anon` — precisamos conceder DML a anon também.
+  // Isolamento continua garantido: cada tenant tem seu próprio projeto.
   `GRANT USAGE ON SCHEMA public TO anon, authenticated`,
-  `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated`,
+  `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated`,
   `GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role`,
   `ALTER DEFAULT PRIVILEGES IN SCHEMA public
-     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated`,
+     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated`,
   `ALTER DEFAULT PRIVILEGES IN SCHEMA public
      GRANT ALL ON TABLES TO service_role`,
 ];
 
-const SCHEMA_VERSION = "v1.0.0-poc";
+const SCHEMA_VERSION = "v1.1.0-poc"; // Fase 2: grants incluem anon
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();

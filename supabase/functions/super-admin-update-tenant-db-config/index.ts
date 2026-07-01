@@ -25,6 +25,7 @@ interface Body {
   dbAnonKeySecretRef?: unknown;
   runtimeMode?: unknown;
   databaseStrategy?: unknown;
+  runtimeDedicatedEnabled?: unknown;
 }
 
 const ALLOWED_PROVIDERS = ["shared_supabase", "neon", "supabase_project", "external_postgres"];
@@ -145,6 +146,13 @@ Deno.serve(async (req) => {
       updates.database_strategy = body.databaseStrategy;
     } else {
       return errorResponse(400, "databaseStrategy inválido", requestId, log);
+    }
+  }
+  if (body.runtimeDedicatedEnabled !== undefined) {
+    if (typeof body.runtimeDedicatedEnabled === "boolean") {
+      updates.runtime_dedicated_enabled = body.runtimeDedicatedEnabled;
+    } else {
+      return errorResponse(400, "runtimeDedicatedEnabled inválido", requestId, log);
     }
   }
 

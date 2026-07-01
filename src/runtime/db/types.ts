@@ -20,6 +20,14 @@ export interface TenantRuntimeContext {
   project_ref: string;
   /** URL bruta opcional (apenas para `dedicated`). */
   database_url: string | null;
+  /** Anon key do projeto dedicado (publishable). Só definido em `dedicated`. */
+  anon_key?: string | null;
+  /**
+   * Fase 2 — allowlist de tabelas que devem ir para o dedicado.
+   * Tabelas fora desta lista continuam roteando para o shared, mesmo
+   * quando `strategy === "dedicated"`.
+   */
+  allowed_tables?: string[];
 }
 
 /** Cliente runtime — hoje 1:1 com SupabaseClient, mas tipado pela fronteira. */

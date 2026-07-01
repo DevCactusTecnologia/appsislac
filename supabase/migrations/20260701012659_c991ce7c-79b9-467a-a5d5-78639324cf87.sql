@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_registry ADD COLUMN IF NOT EXISTS runtime_dedicated_enabled boolean NOT NULL DEFAULT false;

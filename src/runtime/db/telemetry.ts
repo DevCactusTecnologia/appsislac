@@ -12,6 +12,8 @@ type RuntimeEvent =
   | { type: "runtime.client.created"; tenant_id: string; project_ref: string; strategy: string }
   | { type: "runtime.client.cache_hit"; tenant_id: string; project_ref: string }
   | { type: "runtime.client.disposed"; tenant_id: string; project_ref: string }
+  | { type: "runtime.route.dedicated"; tenant_id: string; table: string }
+  | { type: "runtime.route.shared_fallback"; tenant_id: string; table: string; reason: string }
   | { type: "runtime.failure"; tenant_id: string; code: string; message: string };
 
 const isDev = typeof import.meta !== "undefined" && (import.meta as { env?: { DEV?: boolean } }).env?.DEV;

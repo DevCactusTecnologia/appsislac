@@ -1,108 +1,80 @@
 
-# SISLAC Database Runtime 2.0 — Plano de Execução
+# Fase 2 — Roteamento do Runtime para Banco Dedicado
 
-## Contexto
+Objetivo: fazer o laboratório 1001, ao logar, executar queries de domínio (`pacientes`, `atendimentos`, `atendimento_exames`, `atendimento_pagamentos`) no **projeto Supabase dedicado** já provisionado, mantendo o restante (Auth, Storage, tabelas ainda não migradas) no shared. Sem migrar dados nesta fase — o dedicado vai começar vazio.
 
-A auditoria anterior (`docs/database-per-tenant-audit/`) comprovou que **121 arquivos do front + ~70 edge functions** importam `@/integrations/supabase/client` diretamente. O objetivo do Runtime 2.0 é **desacoplar 100% desse import**, sem alterar UI, fluxos ou regras de negócio.
+---
 
-**Princípio Zero (não-negociável):** o restante do SISLAC deixa de saber qual banco está sendo usado. Toda conexão passa pela `ConnectionFactory`.
+## Decisões arquiteturais (fixas nesta fase)
 
-## Escopo
+1. **Auth continua 100% no shared.** JWT do dedicado é diferente e não há federação viável hoje. Confirmado em `docs/database-per-tenant-audit/06-auth.md`.
+2. **Consequência:** o cliente que aponta para o dedicado envia requisições com a **anon key do dedicado** — cai no role `anon` do PostgREST dele. Não temos `auth.uid()` no dedicado.
+3. **Modelo do dedicado:** banco é 100% do tenant, sem `tenant_id` em coluna. Isolamento é o próprio projeto. RLS fica desligada nas tabelas provisionadas; as GRANTs precisam **incluir `anon`** para leitura/escrita (ajuste no schema provisionado da Fase 1).
+4. **Gate obrigatório:** só roteia para dedicado quando **todas** as condições forem verdadeiras:
+   - `tenant_registry.database_strategy = 'dedicated'`
+   - `tenant_registry.schema_provisioned_at IS NOT NULL`
+   - `tenant_registry.db_project_url` e `db_anon_key_secret_ref` preenchidos
+   - Feature flag `runtime_dedicated_enabled` (nova coluna booleana em `tenant_registry`, default `false`) explicitamente `true`
+   - Se qualquer uma falhar → fallback silencioso para shared. Nunca quebra login.
 
-| Inclui | NÃO inclui |
-|---|---|
-| Refator de imports em 121 arquivos do front | Mudanças de UI, fluxos, regras de negócio |
-| Refator de ~70 edge functions para Runtime Resolver server-side | Implementação real do driver Postgres (Dedicated) |
-| Auth/Storage roteados via Factory | Migration Runner (só contrato + interface) |
-| Cache de clientes por (tenant, project, runtime) | Quebra de compatibilidade do client API |
-| 10 relatórios em `docs/database-runtime/` | Reescrita de RLS sem ganho real |
+5. **Escopo do roteamento — allowlist de tabelas:** apenas as 4 tabelas provisionadas (`pacientes`, `atendimentos`, `atendimento_exames`, `atendimento_pagamentos`) roteiam para o dedicado. Qualquer outra tabela / `auth` / `storage` / `functions.invoke` continua no shared. Isso permite ligar a Fase 2 sem esperar migração de dicionários, financeiro, VR etc.
 
-## Arquitetura alvo
+---
 
-```text
-        ┌─────────────────────────────────────────┐
-        │   UI / Hooks / Stores / Services        │
-        │   import { db } from "@/runtime/db"     │  ← única entrada
-        └────────────────────┬────────────────────┘
-                             ▼
-        ┌─────────────────────────────────────────┐
-        │   ConnectionFactory (singleton)         │
-        │   getClient(tenantCtx) → SupabaseClient │
-        └────────────────────┬────────────────────┘
-                             ▼
-        ┌─────────────────────────────────────────┐
-        │   RuntimeResolver                       │
-        │   tenant_id → {strategy, project, key}  │
-        └────────────────────┬────────────────────┘
-              ┌──────────────┴──────────────┐
-              ▼                             ▼
-      SharedStrategy                 DedicatedStrategy
-      (client compartilhado)         (client por tenant)
-```
+## Entregas
 
-Cache: `Map<cacheKey, SupabaseClient>` indexado por `(tenant_id, project_ref, runtime_mode)`. Invalidação em logout / troca de tenant via `auth.onAuthStateChange`.
+### 1. Banco (migration)
+- `ALTER TABLE public.tenant_registry ADD COLUMN runtime_dedicated_enabled boolean NOT NULL DEFAULT false`
+- Setar `runtime_dedicated_enabled = true` para o tenant 1001 (feito manualmente pelo super admin depois via UI, não no migration).
 
-## Fases
+### 2. Edge Function nova — `tenant-runtime-config`
+- Autenticada (JWT do shared). Retorna, para o usuário chamador:
+  ```json
+  {
+    "mode": "dedicated" | "shared",
+    "dedicated": { "url": "...", "anon_key": "..." } | null,
+    "allowed_tables": ["pacientes","atendimentos","atendimento_exames","atendimento_pagamentos"]
+  }
+  ```
+- Lê `tenant_registry` do tenant do caller, valida o gate, resolve o `db_anon_key_secret_ref` no `Deno.env`. Se qualquer condição falhar → devolve `mode: "shared"`.
+- Anon key é publishable — pode ir para o frontend.
 
-### Fase A — Núcleo Runtime (Front)
-1. Criar `src/runtime/db/` com:
-   - `types.ts` (interfaces: `TenantRuntimeContext`, `Strategy`, `RuntimeClient`)
-   - `resolver.ts` (encapsula `tenantResolver.ts` atual)
-   - `strategies/shared.ts` e `strategies/dedicated.ts` (stub)
-   - `factory.ts` (cache + escolha de strategy)
-   - `index.ts` (export `db()` → retorna client pronto; `auth()`, `storage()`, `functions()`, `realtime()` proxies)
-2. **Não apagar** `src/integrations/supabase/client.ts` (gerado). A `SharedStrategy` continua usando-o como transport — mas só ela.
-3. Adicionar **ESLint rule** `no-restricted-imports` proibindo `@/integrations/supabase/client` fora de `src/runtime/db/strategies/shared.ts`.
+### 3. Ajuste no provisionamento (edge `super-admin-provision-tenant-schema`)
+- Trocar `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated` para incluir `anon`.
+- Adicionar re-execução idempotente: novo botão / re-run atualiza grants em bancos já provisionados.
 
-### Fase B — Codemod no Front (121 arquivos)
-- Script `scripts/runtime-codemod.ts` (ts-morph) reescreve:
-  - `import { supabase } from "@/integrations/supabase/client"` → `import { db } from "@/runtime/db"`
-  - Usos `supabase.from(...)` → `db().from(...)`, `supabase.auth` → `db().auth`, etc.
-- Rodar em lotes (stores → hooks → pages → components), commits intermediários, build/typecheck após cada lote.
+### 4. Runtime (frontend) — arquivos afetados
+- `src/runtime/db/strategies/dedicated.ts` — deixar de lançar. Recebe `TenantRuntimeContext` com `database_url` + `anon_key` e cria `createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })`. Sem sessão — é um transport puro de dados.
+- `src/runtime/db/types.ts` — adicionar campo opcional `anon_key: string | null` ao `TenantRuntimeContext` + `allowed_tables: string[]`.
+- `src/runtime/db/tenantContext.ts` — passa a invocar `tenant-runtime-config` (uma vez, cacheado por sessão) para preencher `anon_key` e `allowed_tables` quando `mode === "dedicated"`.
+- `src/runtime/db/factory.ts` — cache passa a manter DOIS clientes por tenant dedicado: `sharedClient` (para auth/storage/tabelas fora do allowlist) e `dedicatedClient` (para tabelas do allowlist).
+- `src/runtime/db/index.ts` — o Proxy `db` ganha interceptação em `.from(table)`: se `table` estiver no `allowed_tables` do contexto atual E o modo for dedicated, delega ao `dedicatedClient`; caso contrário, ao `sharedClient`. Todo o resto (`db.auth`, `db.storage`, `db.functions`, `db.rpc`) continua no shared.
 
-### Fase C — Edge Functions Runtime
-- Criar `supabase/functions/_shared/runtime/factory.ts` (versão server). Reusa `tenantConnection.ts` como `SharedStrategy`.
-- Codemod equivalente para ~70 funções. SERVICE_ROLE permanece só nas funções `super-admin-*` (justificativa documentada).
+### 5. UI Super Admin
+- `src/components/superadmin/TenantDatabaseConfig.tsx` — novo toggle **"Ativar roteamento dedicado (runtime)"** ligado a `runtime_dedicated_enabled`. Desabilitado até `schema_provisioned_at` estar preenchido. Aviso claro: "Ao ativar, este tenant passa a ler/gravar pacientes e atendimentos do banco dedicado (vazio até a Fase 3 de migração)".
+- Edge function `super-admin-update-tenant-db-config` — aceitar o novo campo.
 
-### Fase D — Storage & Auth Roteados
-- `db().storage.from(bucket)` → `BucketResolver` (futuro per-tenant); hoje devolve bucket atual. Remove strings hardcoded de `tenant-assets` / `integration-assets` para constantes em `src/runtime/storage/buckets.ts`.
-- `db().auth` continua Shared; estrutura preparada para Auth dedicado (interface `AuthStrategy`).
+### 6. Telemetria
+- `src/runtime/db/telemetry.ts` — novos eventos `runtime.route.dedicated` e `runtime.route.shared_fallback` com nome da tabela. Ajuda a monitorar o POC.
 
-### Fase E — Observabilidade & Métricas
-- `src/runtime/db/telemetry.ts` emite eventos: `runtime.resolve.start/end`, `runtime.client.created`, `runtime.client.cache_hit`, `runtime.failure`. Plug em console em dev, no-op em prod (até decidir sink).
+---
 
-### Fase F — Smoke Test
-- `e2e/runtime-smoke.spec.ts`: simula 4 tenants (2 shared / 2 dedicated-stub) e valida factory devolve clientes distintos, sem cross-cache, e que dedicated lança erro controlado (`NotImplementedYet`) — não silencioso.
+## Roteiro de validação (tenant 1001)
 
-### Fase G — Relatórios
-Criar `docs/database-runtime/01..10-*.md` conforme spec, incluindo métricas antes/depois (n° de `createClient`, n° de imports diretos, etc.).
+1. Deploy do migration + edge functions.
+2. Super Admin re-executa "Provisionar schema" (aplica GRANTs em `anon`).
+3. Super Admin liga o toggle `runtime_dedicated_enabled` no 1001.
+4. Login no 1001 → abrir `/pacientes`: lista **vazia** (dedicado sem dados). Console mostra `runtime.route.dedicated` para `pacientes`.
+5. Cadastrar 1 paciente de teste → persiste no dedicado (visível ao consultar `_sislac_health_check` + `pacientes` do dedicado).
+6. Confirmar que `/configuracoes`, `/exames-catalogo`, `/convenios` continuam funcionando normalmente (roteados no shared).
+7. Desligar toggle → sistema volta ao shared instantaneamente, sem impacto.
 
-## Critérios de aprovação (auto-check final)
+---
 
-- `rg "@/integrations/supabase/client" src | wc -l` = **1** (apenas `strategies/shared.ts`).
-- `rg "createClient\(" src | wc -l` = **1**.
-- ESLint passa com a nova regra ativa.
-- Build + typecheck verdes.
-- `docs/database-runtime/10-executive-report.md` com tabela antes/depois.
+## Fora de escopo (fica para Fase 3 / Fase 4)
 
-## Riscos e mitigação
-
-| Risco | Mitigação |
-|---|---|
-| Codemod quebra usos exóticos (destructuring, re-exports) | Lotes pequenos + typecheck por lote + revisão manual de falhas |
-| `db()` async vs `supabase` síncrono | `db()` retorna client síncrono já cacheado; bootstrap inicial em `main.tsx` aguarda primeiro resolve |
-| Realtime channels já abertos no client antigo | Migrados via mesma estratégia; canais reaplicados após troca |
-| Edge functions com 70 arquivos | Codemod server separado, deploy em ondas |
-
-## Tamanho estimado
-
-- ~125 arquivos do front editados (codemod).
-- ~70 edge functions editadas (codemod).
-- ~8 arquivos novos em `src/runtime/db/` + `_shared/runtime/`.
-- 10 documentos em `docs/database-runtime/`.
-
-## Confirmação necessária
-
-Esta é uma refatoração estrutural de larga escala que **toca praticamente todos os arquivos do projeto**. Conforme regra de memória (`confirmacao-mudancas-estruturais`), preciso confirmação explícita antes de iniciar.
-
-**Você aprova executar as Fases A–G em sequência, com commits intermediários por lote?** Se sim, começo pela Fase A (núcleo Runtime + ESLint rule) e paro para validação antes do codemod massivo.
+- Migração de dados shared → dedicated
+- Roteamento de tabelas além da allowlist
+- Federação real de Auth
+- Cutover definitivo (shared read-only)
+- Storage per-tenant
