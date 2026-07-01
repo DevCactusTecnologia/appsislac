@@ -144,7 +144,15 @@ Deno.serve(async (req) => {
     authBodyPreview = (await res.text()).slice(0, 240);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${keyProbeUrl}: ${msg}`, projectUrl, secretRef });
+    return jsonResponse(200, {
+      ok: false,
+      stage: "fetch",
+      code: "DEDICATED_UNREACHABLE",
+      error: `Não foi possível contactar o projeto dedicado (${keyProbeUrl}).`,
+      hint: `Confirme que a URL está correta e que o projeto Supabase está ativo. Detalhe técnico: ${msg}`,
+      projectUrl,
+      secretRef,
+    });
   }
 
   const authProbeAccepted =
@@ -154,7 +162,9 @@ Deno.serve(async (req) => {
     return jsonResponse(200, {
       ok: false,
       stage: "auth",
-      error: `A Data API recusou a Publishable/Anon Key (HTTP ${authStatus}). Verifique se o valor cadastrado em "${secretRef}" pertence exatamente a este projeto dedicado.`,
+      code: "DEDICATED_ANON_KEY_REJECTED",
+      error: `A Data API do projeto dedicado recusou a chave (HTTP ${authStatus}).`,
+      hint: `Verifique se o valor cadastrado no secret \"${secretRef}\" é exatamente a anon/publishable key deste projeto dedicado (não a service_role, e não de outro projeto).`,
       status: authStatus,
       projectUrl,
       secretRef,
@@ -165,7 +175,9 @@ Deno.serve(async (req) => {
     return jsonResponse(200, {
       ok: false,
       stage: "server",
-      error: `Data API do projeto dedicado respondeu HTTP ${authStatus}.`,
+      code: "DEDICATED_DATA_API_ERROR",
+      error: `A Data API do projeto dedicado respondeu HTTP ${authStatus}.`,
+      hint: "O projeto dedicado pode estar reiniciando ou com incidente. Aguarde alguns minutos e tente novamente.",
       status: authStatus,
       projectUrl,
       bodyPreview: authBodyPreview,
