@@ -47,14 +47,24 @@ interface MigrationRunRow {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function readInvokeFailure(data: unknown): string | null {
+interface StructuredFailure {
+  message: string;
+  code?: string;
+  hint?: string;
+  stage?: string;
+}
+
+function readInvokeFailure(data: unknown): StructuredFailure | null {
   if (!data || typeof data !== "object") return null;
-  const payload = data as { ok?: boolean; error?: unknown; errors?: unknown; failures?: unknown };
+  const payload = data as { ok?: boolean; error?: unknown; code?: unknown; hint?: unknown; stage?: unknown; errors?: unknown; failures?: unknown };
   if (payload.ok !== false) return null;
-  if (typeof payload.error === "string") return payload.error;
-  if (Array.isArray(payload.errors) && payload.errors.length) return payload.errors.slice(0, 3).join(" | ");
-  if (Array.isArray(payload.failures) && payload.failures.length) return JSON.stringify(payload.failures.slice(0, 3));
-  return "A etapa retornou falha lógica. Veja os detalhes no log.";
+  const code = typeof payload.code === "string" ? payload.code : undefined;
+  const hint = typeof payload.hint === "string" ? payload.hint : undefined;
+  const stage = typeof payload.stage === "string" ? payload.stage : undefined;
+  if (typeof payload.error === "string") return { message: payload.error, code, hint, stage };
+  if (Array.isArray(payload.errors) && payload.errors.length) return { message: payload.errors.slice(0, 3).join(" | "), code, hint, stage };
+  if (Array.isArray(payload.failures) && payload.failures.length) return { message: JSON.stringify(payload.failures.slice(0, 3)), code, hint, stage };
+  return { message: "A etapa retornou falha lógica. Veja os detalhes no log.", code, hint, stage };
 }
 
 function StatusIcon({ state }: { state: "idle" | "running" | "ok" | "failed" }) {
