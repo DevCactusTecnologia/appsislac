@@ -47,14 +47,24 @@ interface MigrationRunRow {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function readInvokeFailure(data: unknown): string | null {
+interface StructuredFailure {
+  message: string;
+  code?: string;
+  hint?: string;
+  stage?: string;
+}
+
+function readInvokeFailure(data: unknown): StructuredFailure | null {
   if (!data || typeof data !== "object") return null;
-  const payload = data as { ok?: boolean; error?: unknown; errors?: unknown; failures?: unknown };
+  const payload = data as { ok?: boolean; error?: unknown; code?: unknown; hint?: unknown; stage?: unknown; errors?: unknown; failures?: unknown };
   if (payload.ok !== false) return null;
-  if (typeof payload.error === "string") return payload.error;
-  if (Array.isArray(payload.errors) && payload.errors.length) return payload.errors.slice(0, 3).join(" | ");
-  if (Array.isArray(payload.failures) && payload.failures.length) return JSON.stringify(payload.failures.slice(0, 3));
-  return "A etapa retornou falha lógica. Veja os detalhes no log.";
+  const code = typeof payload.code === "string" ? payload.code : undefined;
+  const hint = typeof payload.hint === "string" ? payload.hint : undefined;
+  const stage = typeof payload.stage === "string" ? payload.stage : undefined;
+  if (typeof payload.error === "string") return { message: payload.error, code, hint, stage };
+  if (Array.isArray(payload.errors) && payload.errors.length) return { message: payload.errors.slice(0, 3).join(" | "), code, hint, stage };
+  if (Array.isArray(payload.failures) && payload.failures.length) return { message: JSON.stringify(payload.failures.slice(0, 3)), code, hint, stage };
+  return { message: "A etapa retornou falha lógica. Veja os detalhes no log.", code, hint, stage };
 }
 
 function StatusIcon({ state }: { state: "idle" | "running" | "ok" | "failed" }) {
@@ -74,10 +84,14 @@ export default function SuperAdminMigration() {
   const [logs, setLogs] = useState<Record<StepKey, string>>({
     prep: "", schema: "", auth: "", data: "", storage: "", smoke: "", flip: "", post: "",
   });
+  const [failures, setFailures] = useState<Record<StepKey, StructuredFailure | null>>({
+    prep: null, schema: null, auth: null, data: null, storage: null, smoke: null, flip: null, post: null,
+  });
   const [purgeType, setPurgeType] = useState("");
 
   const setState = (k: StepKey, s: "idle" | "running" | "ok" | "failed") => setStates((p) => ({ ...p, [k]: s }));
   const appendLog = (k: StepKey, line: string) => setLogs((p) => ({ ...p, [k]: `${p[k]}${p[k] ? "\n" : ""}${line}` }));
+  const setFailure = (k: StepKey, f: StructuredFailure | null) => setFailures((p) => ({ ...p, [k]: f }));
 
   const loadTenant = useCallback(async () => {
     if (!id) return;
@@ -135,21 +149,26 @@ export default function SuperAdminMigration() {
 
   const invoke = useCallback(async (fn: string, body: Record<string, unknown>, key: StepKey): Promise<RunResult> => {
     setState(key, "running");
+    setFailure(key, null);
     appendLog(key, `→ ${fn} ${JSON.stringify(body).slice(0, 120)}`);
     const { data, error } = await supabase.functions.invoke(fn, { body });
     if (error) {
       const runMsg = await loadLastRunError(key);
       const msg = runMsg ?? (data as { error?: string } | null)?.error ?? error.message;
       appendLog(key, `✗ ${msg}`);
+      setFailure(key, { message: msg });
       setState(key, "failed");
       return { ok: false, error: msg };
     }
     const logicalFailure = readInvokeFailure(data);
     if (logicalFailure) {
-      appendLog(key, `✗ ${logicalFailure}`);
+      const prefix = logicalFailure.code ? `[${logicalFailure.code}] ` : "";
+      appendLog(key, `✗ ${prefix}${logicalFailure.message}`);
+      if (logicalFailure.hint) appendLog(key, `↳ ${logicalFailure.hint}`);
       appendLog(key, JSON.stringify(data).slice(0, 800));
+      setFailure(key, logicalFailure);
       setState(key, "failed");
-      return { ok: false, error: logicalFailure, data };
+      return { ok: false, error: logicalFailure.message, data };
     }
 
     const asyncPayload = data as { async?: boolean; status?: string; startedAt?: string } | null;
@@ -159,6 +178,7 @@ export default function SuperAdminMigration() {
       if (!run) {
         const msg = "Tempo limite aguardando conclusão da etapa. Atualize a página e consulte o último run.";
         appendLog(key, `✗ ${msg}`);
+        setFailure(key, { message: msg });
         setState(key, "failed");
         return { ok: false, error: msg, data };
       }
@@ -167,6 +187,7 @@ export default function SuperAdminMigration() {
         const msg = firstFailure?.error ? `${firstFailure.stage ?? "etapa"}: ${firstFailure.error}` : run.error ?? `Etapa finalizou como ${run.status}`;
         appendLog(key, `✗ ${msg}`);
         appendLog(key, JSON.stringify(run).slice(0, 800));
+        setFailure(key, { message: msg, stage: firstFailure?.stage });
         setState(key, "failed");
         return { ok: false, error: msg, data: run };
       }
@@ -279,6 +300,34 @@ export default function SuperAdminMigration() {
               <div className="flex gap-2 items-center">
                 <Input value={purgeType} onChange={(e) => setPurgeType(e.target.value)} placeholder={`Digite ${id} para habilitar purge`} className="h-8 text-xs font-mono" />
                 <Button size="sm" variant="destructive" onClick={runPurge} disabled={purgeType !== id || (quarantineDaysLeft ?? 30) > 0}>Purge definitivo</Button>
+              </div>
+            </div>
+          )}
+
+          {failures[step.key] && (
+            <div className="rounded border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-destructive">Falha nesta etapa</span>
+                    {failures[step.key]?.code && (
+                      <code className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-mono">{failures[step.key]?.code}</code>
+                    )}
+                    {failures[step.key]?.stage && (
+                      <span className="text-[10px] text-muted-foreground">estágio: {failures[step.key]?.stage}</span>
+                    )}
+                  </div>
+                  <div className="text-foreground">{failures[step.key]?.message}</div>
+                  {failures[step.key]?.hint && (
+                    <div className="text-muted-foreground">💡 {failures[step.key]?.hint}</div>
+                  )}
+                  {failures[step.key]?.code?.startsWith("DEDICATED_") && (
+                    <Button size="sm" variant="outline" className="h-7 mt-2" onClick={() => navigate(`/super-admin/laboratorios/${id}?tab=database`)}>
+                      Abrir configuração do banco dedicado
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
