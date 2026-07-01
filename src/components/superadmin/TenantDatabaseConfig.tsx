@@ -243,6 +243,30 @@ export function TenantDatabaseConfig({
     }
   };
 
+  const checkSchema = async () => {
+    setChecking(true);
+    setCheckResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-check-tenant-schema", {
+      body: { tenantId },
+    });
+    setChecking(false);
+    if (error) {
+      setCheckResult({ ok: false, error: error.message });
+      toast.error(error.message);
+      return;
+    }
+    const r = data as NonNullable<typeof checkResult>;
+    setCheckResult(r);
+    if (r.ok) {
+      toast.success(`Schema íntegro (${r.tables_found?.length ?? 0} tabelas)`);
+    } else if (r.tables_missing?.length) {
+      toast.error(`Faltam ${r.tables_missing.length} tabela(s): ${r.tables_missing.join(", ")}`);
+    } else {
+      toast.error(r.error ?? "Verificação falhou");
+    }
+  };
+
+
 
   return (
     <section className="rounded-xl border border-border bg-card p-6">
