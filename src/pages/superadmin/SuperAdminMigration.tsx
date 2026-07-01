@@ -14,6 +14,10 @@ import {
   Lock, ArrowRight, RefreshCw, Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type StepKey = "prep" | "schema" | "auth" | "data" | "storage" | "smoke" | "flip" | "post";
 type StepState = "idle" | "running" | "ok" | "failed";
