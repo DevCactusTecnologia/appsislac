@@ -17,17 +17,24 @@ export interface TenantRegistryRow {
   db_name: string | null;
   db_user: string | null;
   db_secret_ref: string | null;
+  db_project_url: string | null;
+  db_anon_key_secret_ref: string | null;
+  schema_provisioned_at: string | null;
   runtime_mode: string | null;
   database_strategy: string | null;
   migration_state: string | null;
 }
 
-export async function requireSuperAdmin(req: Request, admin: AdminClient) {
+export function createUserClientFromRequest(req: Request): AdminClient {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+  return createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
   });
+}
+
+export async function requireSuperAdmin(req: Request, admin: AdminClient) {
+  const userClient = createUserClientFromRequest(req);
   const { data: { user }, error } = await userClient.auth.getUser();
   if (error || !user) return { ok: false as const, status: 401, msg: "Não autenticado" };
   const { data: isSuper } = await admin.rpc("is_super_admin", { _user_id: user.id });
@@ -38,7 +45,7 @@ export async function requireSuperAdmin(req: Request, admin: AdminClient) {
 export async function loadRegistry(admin: AdminClient, tenantId: string): Promise<TenantRegistryRow> {
   const { data, error } = await admin
     .from("tenant_registry")
-    .select("tenant_id, db_host, db_port, db_name, db_user, db_secret_ref, runtime_mode, database_strategy, migration_state")
+    .select("tenant_id, db_host, db_port, db_name, db_user, db_secret_ref, db_project_url, db_anon_key_secret_ref, schema_provisioned_at, runtime_mode, database_strategy, migration_state")
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (error) throw new Error(`tenant_registry: ${error.message}`);
@@ -46,8 +53,25 @@ export async function loadRegistry(admin: AdminClient, tenantId: string): Promis
   return data as TenantRegistryRow;
 }
 
+export function isDedicatedRegistry(reg: TenantRegistryRow): boolean {
+  return reg.runtime_mode === "isolated_db" || reg.database_strategy === "dedicated";
+}
+
+export function assertDedicatedRegistry(reg: TenantRegistryRow) {
+  if (!isDedicatedRegistry(reg)) {
+    throw new Error("Tenant ainda está em modo Compartilhado. Configure como banco dedicado antes de migrar.");
+  }
+}
+
+export function assertSchemaProvisioned(reg: TenantRegistryRow) {
+  if (!reg.schema_provisioned_at) {
+    throw new Error("Schema dedicado ainda não foi provisionado com sucesso. Execute a etapa Provisionar schema antes desta fase.");
+  }
+}
+
 /** Conecta ao banco DEDICADO do tenant a partir do tenant_registry + secret. */
 export async function connectDedicated(reg: TenantRegistryRow): Promise<Client> {
+  assertDedicatedRegistry(reg);
   const { db_host, db_port, db_name, db_user, db_secret_ref } = reg;
   const missing: string[] = [];
   if (!db_host) missing.push("db_host");

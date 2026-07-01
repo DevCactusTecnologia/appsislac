@@ -33,6 +33,16 @@ const STEPS: StepDef[] = [
 
 interface RunResult { ok: boolean; error?: string; data?: unknown }
 
+function readInvokeFailure(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const payload = data as { ok?: boolean; error?: unknown; errors?: unknown; failures?: unknown };
+  if (payload.ok !== false) return null;
+  if (typeof payload.error === "string") return payload.error;
+  if (Array.isArray(payload.errors) && payload.errors.length) return payload.errors.slice(0, 3).join(" | ");
+  if (Array.isArray(payload.failures) && payload.failures.length) return JSON.stringify(payload.failures.slice(0, 3));
+  return "A etapa retornou falha lógica. Veja os detalhes no log.";
+}
+
 function StatusIcon({ state }: { state: "idle" | "running" | "ok" | "failed" }) {
   if (state === "running") return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
   if (state === "ok") return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
@@ -79,6 +89,13 @@ export default function SuperAdminMigration() {
       appendLog(key, `✗ ${msg}`);
       setState(key, "failed");
       return { ok: false, error: msg };
+    }
+    const logicalFailure = readInvokeFailure(data);
+    if (logicalFailure) {
+      appendLog(key, `✗ ${logicalFailure}`);
+      appendLog(key, JSON.stringify(data).slice(0, 800));
+      setState(key, "failed");
+      return { ok: false, error: logicalFailure, data };
     }
     appendLog(key, `✓ ${JSON.stringify(data).slice(0, 400)}`);
     setState(key, "ok");

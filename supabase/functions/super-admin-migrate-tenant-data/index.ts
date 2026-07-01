@@ -10,7 +10,7 @@
 // Chunking: 500 linhas por página, INSERT ... ON CONFLICT (id) DO NOTHING.
 
 import { createClient } from "../_shared/runtime/createClient.ts";
-import { connectDedicated, loadRegistry, requireSuperAdmin, beginRun, finishRun } from "../_shared/migration/connect.ts";
+import { connectDedicated, loadRegistry, requireSuperAdmin, beginRun, finishRun, createUserClientFromRequest, assertSchemaProvisioned } from "../_shared/migration/connect.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 const PAGE_SIZE = 500;
@@ -18,21 +18,9 @@ const AUDIT_SUFFIX = /_audit$/;
 
 interface TableInfo { table_name: string; level: number; has_tenant_id: boolean; rowcount: number }
 
-function sqlLiteralArray(rows: Array<Record<string, unknown>>, cols: string[]): { placeholders: string; values: unknown[] } {
-  const values: unknown[] = [];
-  const groups: string[] = [];
-  let i = 1;
-  for (const r of rows) {
-    const parts: string[] = [];
-    for (const c of cols) {
-      const v = r[c];
-      if (v === null || v === undefined) parts.push("NULL");
-      else if (typeof v === "object") { values.push(JSON.stringify(v)); parts.push(`$${i++}::jsonb`); }
-      else { values.push(v); parts.push(`$${i++}`); }
-    }
-    groups.push("(" + parts.join(",") + ")");
-  }
-  return { placeholders: groups.join(","), values };
+function quoteIdent(name: string): string {
+  if (!/^[a-z_][a-z0-9_]*$/i.test(name)) throw new Error(`Identificador inválido: ${name}`);
+  return `"${name.replaceAll('"', '""')}"`;
 }
 
 Deno.serve(async (req) => {
@@ -55,7 +43,14 @@ Deno.serve(async (req) => {
   const runId = await beginRun(admin, tenantId, dryRun ? "dryrun" : "data", guard.user.id);
   const t0 = Date.now();
 
-  const { data: rawList, error: listErr } = await admin.rpc("super_admin_list_migration_tables", { _tenant_id: tenantId });
+  try { assertSchemaProvisioned(reg); } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await finishRun(admin, runId, "failed", { stage: "precheck" }, msg);
+    return errorResponse(400, msg, requestId, log);
+  }
+
+  const userClient = createUserClientFromRequest(req);
+  const { data: rawList, error: listErr } = await userClient.rpc("super_admin_list_migration_tables", { _tenant_id: tenantId });
   if (listErr || !rawList) {
     await finishRun(admin, runId, "failed", {}, listErr?.message ?? "empty list");
     return errorResponse(500, `Falha ao listar tabelas: ${listErr?.message}`, requestId, log);
@@ -88,22 +83,37 @@ Deno.serve(async (req) => {
       if (t.rowcount === 0) continue;
       let offset = 0;
       while (offset < t.rowcount) {
-        const { data: page, error: pageErr } = await admin.rpc("super_admin_dump_table_page", {
+        const { data: page, error: pageErr } = await userClient.rpc("super_admin_dump_table_page", {
           _table: t.table_name, _tenant_id: tenantId, _limit: PAGE_SIZE, _offset: offset,
         });
         if (pageErr) { summary[t.table_name].error = pageErr.message; break; }
         const rows = ((page as { rows: Array<Record<string, unknown>> })?.rows) ?? [];
         if (rows.length === 0) break;
 
-        const cols = Object.keys(rows[0]);
-        const { placeholders, values } = sqlLiteralArray(rows, cols);
-        const colList = cols.map((c) => `"${c}"`).join(",");
+        const { rows: colRows } = await client.queryObject<{ column_name: string }>(
+          `SELECT column_name
+             FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = $1
+              AND coalesce(is_generated, 'NEVER') = 'NEVER'
+            ORDER BY ordinal_position`,
+          [t.table_name],
+        );
+        const allowed = new Set(colRows.map((c) => c.column_name));
+        const cols = Object.keys(rows[0]).filter((c) => allowed.has(c));
+        if (cols.length === 0) { summary[t.table_name].error = "Tabela sem colunas inseríveis"; break; }
+        const tableIdent = `public.${quoteIdent(t.table_name)}`;
+        const colList = cols.map(quoteIdent).join(",");
+        const selectList = cols.map(quoteIdent).join(",");
         try {
           await client.queryArray(
-            `INSERT INTO public.${JSON.stringify(t.table_name).replaceAll('"','')} (${colList})
-             VALUES ${placeholders}
+            `WITH payload AS (
+               SELECT * FROM jsonb_populate_recordset(NULL::${tableIdent}, $1::jsonb)
+             )
+             INSERT INTO ${tableIdent} (${colList})
+             SELECT ${selectList} FROM payload
              ON CONFLICT DO NOTHING`,
-            values,
+            [JSON.stringify(rows)],
           );
           summary[t.table_name].copied += rows.length;
         } catch (e) {
@@ -121,8 +131,8 @@ Deno.serve(async (req) => {
   const failed = Object.values(summary).some((s) => s.error);
   const status = failed ? "failed" : "ok";
   await finishRun(admin, runId, status, { tables: summary, ms: Date.now() - t0 });
-  await admin.from("tenant_registry").update({ migration_state: status === "ok" ? "migrating" : "provisioning" }).eq("tenant_id", tenantId);
+  await admin.from("tenant_registry").update({ migration_state: status === "ok" ? "data_ready" : "data_failed" }).eq("tenant_id", tenantId);
 
   log.info("data migration done", { tenantId, status, ms: Date.now() - t0 });
-  return jsonResponse(200, { ok: status === "ok", runId, tables: summary, latencyMs: Date.now() - t0 });
+  return jsonResponse(status === "ok" ? 200 : 422, { ok: status === "ok", runId, tables: summary, latencyMs: Date.now() - t0 });
 });

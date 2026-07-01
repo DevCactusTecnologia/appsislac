@@ -17,6 +17,7 @@ import {
   requireSuperAdmin,
   beginRun,
   finishRun,
+  createUserClientFromRequest,
 } from "../_shared/migration/connect.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
@@ -63,9 +64,7 @@ Deno.serve(async (req) => {
 
   // 1) Puxa o DDL do shared — RPC exige auth.uid() (SECURITY DEFINER + is_super_admin),
   // então usamos client com o JWT do usuário, não o service-role.
-  const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-  });
+  const userClient = createUserClientFromRequest(req);
   const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_ddl");
   if (dumpErr || !dump) {
     const msg = dumpErr?.message ?? "dump vazio";
@@ -99,8 +98,8 @@ Deno.serve(async (req) => {
         if (typeof stats[stage] === "number") (stats[stage] as number)++;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        // Idempotência: ignoramos "already exists" / "duplicate"
-        if (/already exists|duplicate|does not exist/i.test(msg) && stage !== "tables") continue;
+        // Idempotência real: ignora apenas duplicidade; dependência ausente deve falhar.
+        if (/already exists|duplicate/i.test(msg) && stage !== "tables") continue;
         failures.push({ stage: String(stage), name: label, error: msg });
       }
     }
@@ -110,8 +109,8 @@ Deno.serve(async (req) => {
     await runBlock("extensions", ddl.extensions ?? []);
     await runBlock("enums", ddl.enums ?? []);
     await runBlock("sequences", ddl.sequences ?? []);
-    await runBlock("functions", ddl.functions ?? []); // funções antes das tabelas (defaults / generated)
     await runBlock("tables", ddl.tables ?? []);
+    await runBlock("functions", ddl.functions ?? []); // funções depois das tabelas: has_role/current_tenant_id dependem de user_roles/profiles
     await runBlock("indexes", ddl.indexes ?? []);
     await runBlock("fks", ddl.fks ?? []);
     await runBlock("triggers", ddl.triggers ?? []);
@@ -133,18 +132,22 @@ Deno.serve(async (req) => {
     try { await client.end(); } catch { /* noop */ }
   }
 
-  const nowIso = new Date().toISOString();
-  await admin.from("tenant_registry").update({
-    schema_provisioned_at: nowIso,
-    schema_version: "v3-full",
-    migration_state: "provisioning",
-  }).eq("tenant_id", tenantId);
-
   const status = failures.length === 0 ? "ok" : "failed";
   await finishRun(admin, runId, status, { ...stats, ms: Date.now() - t0, failures: failures.slice(0, 20) });
 
+  if (status === "ok") {
+    const nowIso = new Date().toISOString();
+    await admin.from("tenant_registry").update({
+      schema_provisioned_at: nowIso,
+      schema_version: "v3-full",
+      migration_state: "schema_ready",
+    }).eq("tenant_id", tenantId);
+  } else {
+    await admin.from("tenant_registry").update({ migration_state: "schema_failed" }).eq("tenant_id", tenantId);
+  }
+
   log.info("provision full done", { tenantId, stats, failures: failures.length, ms: Date.now() - t0 });
-  return jsonResponse(200, {
+  return jsonResponse(status === "ok" ? 200 : 422, {
     ok: status === "ok",
     runId,
     stats,
