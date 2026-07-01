@@ -176,6 +176,8 @@ export function TenantDatabaseConfig({
       body: {
         tenantId,
         // runtimeMode NÃO é enviado aqui: só muda via super-admin-migration-flip/rollback.
+        // databaseStrategy persiste a INTENÇÃO (shared/dedicated) sem flipar o runtime efetivo.
+        databaseStrategy: isolated ? "dedicated" : "shared",
         dbProvider: cfg.db_provider,
         dbHost: cfg.db_host,
         dbPort: cfg.db_port,
@@ -190,13 +192,17 @@ export function TenantDatabaseConfig({
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    const next = (data as { registry?: Partial<DbConfig> } | null)?.registry;
+    const next = (data as { registry?: Partial<DbConfig> & { database_strategy?: string } } | null)?.registry;
     if (next) {
-      const merged: DbConfig = { ...empty, ...next };
+      // Preserva a intenção local do toggle (runtime_mode efetivo só muda no Flip).
+      const intendedMode: RuntimeMode = isolated ? "isolated_db" : "shared_db";
+      const merged: DbConfig = { ...empty, ...next, runtime_mode: intendedMode };
       setCfg(merged);
       onSaved?.(merged);
     }
-    toast.success("Configuração de banco salva");
+    toast.success(isolated
+      ? "Configuração salva como Dedicado (intenção). O runtime efetivo só muda após o Flip."
+      : "Configuração de banco salva");
   };
 
 
