@@ -99,7 +99,11 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${profilesUrl}: ${msg}`, projectUrl, secretRef });
   }
 
-  if (profilesStatus === 401 || profilesStatus === 403) {
+  // PostgREST devolve 401 quando a apikey é inválida E também quando a key é
+  // válida mas o role `anon` não tem GRANT na tabela. Diferenciamos pelo corpo:
+  // erro 42501 = permission denied = key OK, faltam GRANTs (schema incompleto).
+  const isGrantMissing = /"?code"?\s*:\s*"?42501"?|permission denied for/i.test(profilesBodyPreview);
+  if ((profilesStatus === 401 || profilesStatus === 403) && !isGrantMissing) {
     return jsonResponse(200, {
       ok: false,
       stage: "auth",
@@ -108,6 +112,19 @@ Deno.serve(async (req) => {
       projectUrl,
       secretRef,
       bodyPreview: profilesBodyPreview,
+    });
+  }
+  if (isGrantMissing) {
+    return jsonResponse(200, {
+      ok: true,
+      latencyMs: Date.now() - t0,
+      status: profilesStatus,
+      projectUrl,
+      secretRef,
+      schemaReady: false,
+      profilesStatus,
+      profilesBodyPreview,
+      hint: "Publishable/Anon Key válida — PostgREST autenticou. Falta apenas GRANT SELECT em public.profiles para `anon` (será aplicado ao provisionar o schema).",
     });
   }
   if (profilesStatus >= 500) {
