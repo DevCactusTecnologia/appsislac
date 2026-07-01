@@ -5,7 +5,7 @@
 // funciona contra o PostgREST do projeto dedicado.
 //
 // Faz um GET em `${db_project_url}/rest/v1/` (endpoint público que exige
-// apenas o header `apikey`). Se retornar 200, a anon key está válida.
+// apenas o header `apikey`). Se retornar 200, a anon/publishable key está válida.
 // Também tenta `/rest/v1/profiles?select=user_id&limit=1` para validar
 // que o schema mínimo está exposto pelo PostgREST.
 //
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: false, stage: "validate", error: "Nome do secret inválido (use UPPER_SNAKE_CASE, 3–64 chars)" });
   }
 
-  const anon = Deno.env.get(secretRef);
+  const anon = Deno.env.get(secretRef)?.trim();
   if (!anon) {
     return jsonResponse(200, {
       ok: false,
@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
 
   const rootUrl = `${projectUrl.replace(/\/$/, "")}/rest/v1/`;
   const profilesUrl = `${projectUrl.replace(/\/$/, "")}/rest/v1/profiles?select=user_id&limit=1`;
+  const apiHeaders = { apikey: anon };
 
   const t0 = Date.now();
   let rootStatus = 0;
@@ -89,7 +90,9 @@ Deno.serve(async (req) => {
   try {
     const res = await fetch(rootUrl, {
       method: "GET",
-      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+      // Publishable keys (`sb_publishable_...`) are not JWTs. Sending them as
+      // `Authorization: Bearer ...` makes PostgREST reject an otherwise valid key.
+      headers: apiHeaders,
     });
     rootStatus = res.status;
     rootBodyPreview = (await res.text()).slice(0, 240);
@@ -126,7 +129,7 @@ Deno.serve(async (req) => {
   try {
     const res = await fetch(profilesUrl, {
       method: "GET",
-      headers: { apikey: anon, Authorization: `Bearer ${anon}`, Accept: "application/json" },
+      headers: { ...apiHeaders, Accept: "application/json" },
     });
     profilesStatus = res.status;
     profilesBodyPreview = (await res.text()).slice(0, 240);
