@@ -727,6 +727,23 @@ export default function SuperAdminTenantDetalhe() {
                 onSaved={() => refetchSnapshot()}
               />
 
+              <div className="rounded-xl border border-border bg-card p-6 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold">Migração Shared → Dedicated</h3>
+                  <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
+                    Wizard cirúrgico em 7 etapas: provisionar schema, migrar identidades, dados e Storage, smoke test, flip com rollback de 30 dias e purge final.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate(`/super-admin/laboratorios/${tenant.id}/migrar`)}
+                  className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90"
+                >
+                  Abrir wizard
+                </button>
+              </div>
+
+
+
 
 
               <div className="rounded-xl border border-border bg-card p-6 space-y-4">

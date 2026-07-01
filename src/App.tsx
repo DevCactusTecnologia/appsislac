@@ -73,6 +73,7 @@ const RequireSuperAdmin = lazy(() => import("./components/RequireSuperAdmin"));
 const SuperAdminDashboard = lazy(() => import("./pages/superadmin/SuperAdminDashboard"));
 const SuperAdminTenants = lazy(() => import("./pages/superadmin/SuperAdminTenants"));
 const SuperAdminTenantDetalhe = lazy(() => import("./pages/superadmin/SuperAdminTenantDetalhe"));
+const SuperAdminMigration = lazy(() => import("./pages/superadmin/SuperAdminMigration"));
 const SuperAdminNovoLab = lazy(() => import("./pages/superadmin/SuperAdminNovoLab"));
 const SuperAdminInscricoes = lazy(() => import("./pages/superadmin/SuperAdminInscricoes"));
 const SuperAdminAuditoria = lazy(() => import("./pages/superadmin/SuperAdminAuditoria"));
@@ -332,6 +333,7 @@ function AppRoutes() {
                 <Route path="/super-admin/laboratorios" element={<SuperAdminTenants />} />
                 <Route path="/super-admin/laboratorios/novo" element={<SuperAdminNovoLab />} />
                 <Route path="/super-admin/laboratorios/:id" element={<SuperAdminTenantDetalhe />} />
+                <Route path="/super-admin/laboratorios/:id/migrar" element={<SuperAdminMigration />} />
                 <Route path="/super-admin/tenants" element={<Navigate to="/super-admin/laboratorios" replace />} />
                 <Route path="/super-admin/tenants/*" element={<Navigate to="/super-admin/laboratorios" replace />} />
                 <Route path="/super-admin/inscricoes" element={<SuperAdminInscricoes />} />
