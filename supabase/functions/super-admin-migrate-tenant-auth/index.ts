@@ -8,7 +8,7 @@
 // Idempotente: usa ON CONFLICT(id) DO NOTHING.
 
 import { createClient } from "../_shared/runtime/createClient.ts";
-import { connectDedicated, loadRegistry, requireSuperAdmin, beginRun, finishRun } from "../_shared/migration/connect.ts";
+import { connectDedicated, loadRegistry, requireSuperAdmin, beginRun, finishRun, createUserClientFromRequest, assertSchemaProvisioned } from "../_shared/migration/connect.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 interface AuthUser {
@@ -38,8 +38,14 @@ Deno.serve(async (req) => {
   const reg = await loadRegistry(admin, tenantId).catch((e) => { throw e; });
   const runId = await beginRun(admin, tenantId, "auth", guard.user.id);
   const t0 = Date.now();
+  try { assertSchemaProvisioned(reg); } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await finishRun(admin, runId, "failed", { stage: "precheck" }, msg);
+    return errorResponse(400, msg, requestId, log);
+  }
 
-  const { data: dump, error: dumpErr } = await admin.rpc("super_admin_dump_auth_users", { _tenant_id: tenantId });
+  const userClient = createUserClientFromRequest(req);
+  const { data: dump, error: dumpErr } = await userClient.rpc("super_admin_dump_auth_users", { _tenant_id: tenantId });
   if (dumpErr) {
     await finishRun(admin, runId, "failed", {}, dumpErr.message);
     return errorResponse(500, `Falha ao dumpar auth: ${dumpErr.message}`, requestId, log);
