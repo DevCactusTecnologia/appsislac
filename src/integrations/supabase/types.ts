@@ -8567,6 +8567,29 @@ export type Database = {
       }
       set_audit_justificativa: { Args: { _text: string }; Returns: undefined }
       soroteca_caminho_posicao: { Args: { p_posicao: string }; Returns: string }
+      super_admin_dump_auth_users: {
+        Args: { _tenant_id: string }
+        Returns: Json
+      }
+      super_admin_dump_ddl: { Args: never; Returns: Json }
+      super_admin_dump_table_page: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _table: string
+          _tenant_id: string
+        }
+        Returns: Json
+      }
+      super_admin_list_migration_tables: {
+        Args: { _tenant_id: string }
+        Returns: {
+          has_tenant_id: boolean
+          level: number
+          rowcount: number
+          table_name: string
+        }[]
+      }
       super_admin_tenants_metrics: {
         Args: never
         Returns: {
