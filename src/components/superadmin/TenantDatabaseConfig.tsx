@@ -117,6 +117,12 @@ export function TenantDatabaseConfig({
     | { ok: false; error: string; stage?: string }
     | null
   >(null);
+  const [testingAnon, setTestingAnon] = useState(false);
+  const [anonResult, setAnonResult] = useState<
+    | { ok: true; latencyMs: number; status: number; schemaReady: boolean; profilesStatus: number; hint?: string }
+    | { ok: false; error: string; stage?: string; status?: number }
+    | null
+  >(null);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<
     | {
