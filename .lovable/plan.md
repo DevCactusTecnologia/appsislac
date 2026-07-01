@@ -1,80 +1,108 @@
 
-# Fase 2 — Roteamento do Runtime para Banco Dedicado
+# Fase 3 — Migração Cirúrgica Shared → Dedicated
 
-Objetivo: fazer o laboratório 1001, ao logar, executar queries de domínio (`pacientes`, `atendimentos`, `atendimento_exames`, `atendimento_pagamentos`) no **projeto Supabase dedicado** já provisionado, mantendo o restante (Auth, Storage, tabelas ainda não migradas) no shared. Sem migrar dados nesta fase — o dedicado vai começar vazio.
+Escopo: permitir migrar um tenant específico (ex.: Lab 0004) do banco compartilhado para um projeto Supabase dedicado, com janela curta, rollback e quarentena de 30 dias. Nenhum outro lab é afetado.
 
----
+## Decisões aprovadas (Etapa 2)
+- Opção B (espelho com `tenant_id` fixo no dedicado).
+- Auditoria truncada no destino.
+- `pg_cron` não replicado (fica no shared/plataforma).
+- Cutover com janela ~5 min + rollback via toggle.
 
-## Decisões arquiteturais (fixas nesta fase)
+## Entregas (nesta ordem)
 
-1. **Auth continua 100% no shared.** JWT do dedicado é diferente e não há federação viável hoje. Confirmado em `docs/database-per-tenant-audit/06-auth.md`.
-2. **Consequência:** o cliente que aponta para o dedicado envia requisições com a **anon key do dedicado** — cai no role `anon` do PostgREST dele. Não temos `auth.uid()` no dedicado.
-3. **Modelo do dedicado:** banco é 100% do tenant, sem `tenant_id` em coluna. Isolamento é o próprio projeto. RLS fica desligada nas tabelas provisionadas; as GRANTs precisam **incluir `anon`** para leitura/escrita (ajuste no schema provisionado da Fase 1).
-4. **Gate obrigatório:** só roteia para dedicado quando **todas** as condições forem verdadeiras:
-   - `tenant_registry.database_strategy = 'dedicated'`
-   - `tenant_registry.schema_provisioned_at IS NOT NULL`
-   - `tenant_registry.db_project_url` e `db_anon_key_secret_ref` preenchidos
-   - Feature flag `runtime_dedicated_enabled` (nova coluna booleana em `tenant_registry`, default `false`) explicitamente `true`
-   - Se qualquer uma falhar → fallback silencioso para shared. Nunca quebra login.
+### 1. Migração de banco (control plane)
+Tabela `tenant_migration_runs` para rastrear cada migração:
+- `id`, `tenant_id`, `phase` (schema|dryrun|auth|data|storage|smoke|flip|purge), `status` (running|ok|failed|aborted), `started_at`, `finished_at`, `stats jsonb`, `error text`, `initiated_by`.
+- RLS: só super_admin lê/escreve.
 
-5. **Escopo do roteamento — allowlist de tabelas:** apenas as 4 tabelas provisionadas (`pacientes`, `atendimentos`, `atendimento_exames`, `atendimento_pagamentos`) roteiam para o dedicado. Qualquer outra tabela / `auth` / `storage` / `functions.invoke` continua no shared. Isso permite ligar a Fase 2 sem esperar migração de dicionários, financeiro, VR etc.
+Colunas novas em `tenant_registry`:
+- `frozen_at timestamptz` — marca shared como somente-leitura para esse tenant.
+- `migration_state text` — `idle|provisioning|migrating|dedicated|frozen_shared`.
 
----
+### 2. Edge Functions (Deno, service-role, revalidam `is_super_admin`)
 
-## Entregas
+Todas seguem o padrão já usado (`_shared/hardening.ts`, logger, requestId, CORS).
 
-### 1. Banco (migration)
-- `ALTER TABLE public.tenant_registry ADD COLUMN runtime_dedicated_enabled boolean NOT NULL DEFAULT false`
-- Setar `runtime_dedicated_enabled = true` para o tenant 1001 (feito manualmente pelo super admin depois via UI, não no migration).
+**a) `super-admin-provision-tenant-schema-full`**
+- Introspecta o shared via `pg_catalog` (extensões, enums, tabelas, colunas, PKs, FKs, índices, triggers, funções, views, sequences).
+- Gera DDL na ordem correta e executa no dedicado via `pg-meta`/SQL endpoint do projeto dedicado usando o service role dedicado.
+- Idempotente: verifica objetos existentes antes de criar.
+- Insere linha sentinela em `tenants` no dedicado com o UUID do tenant.
+- Grava linha em `tenant_migration_runs` com stats (n objetos criados).
 
-### 2. Edge Function nova — `tenant-runtime-config`
-- Autenticada (JWT do shared). Retorna, para o usuário chamador:
-  ```json
-  {
-    "mode": "dedicated" | "shared",
-    "dedicated": { "url": "...", "anon_key": "..." } | null,
-    "allowed_tables": ["pacientes","atendimentos","atendimento_exames","atendimento_pagamentos"]
-  }
-  ```
-- Lê `tenant_registry` do tenant do caller, valida o gate, resolve o `db_anon_key_secret_ref` no `Deno.env`. Se qualquer condição falhar → devolve `mode: "shared"`.
-- Anon key é publishable — pode ir para o frontend.
+**b) `super-admin-migrate-tenant-auth`**
+- Lê `profiles` do shared filtrado por `tenant_id`.
+- Para cada user_id: usa admin API do shared para pegar dados; copia via SQL direto no `auth.users` do dedicado preservando `id`, `email`, `encrypted_password`, `raw_user_meta_data`, `raw_app_meta_data`, `email_confirmed_at`.
+- Replica `user_roles` correspondentes.
 
-### 3. Ajuste no provisionamento (edge `super-admin-provision-tenant-schema`)
-- Trocar `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated` para incluir `anon`.
-- Adicionar re-execução idempotente: novo botão / re-run atualiza grants em bancos já provisionados.
+**c) `super-admin-migrate-tenant-data`**
+- Aceita `dryRun: boolean`.
+- Percorre tabelas na ordem topológica (6 níveis definidos em `02-entender.md`).
+- Para cada tabela: `SELECT ... WHERE tenant_id = $1` no shared → `INSERT` no dedicado com `session_replication_role = replica`.
+- Auto-FK (unidades.parent_id): 2 passos (INSERT com NULL → UPDATE).
+- Auditoria: pulada por padrão (truncar no destino).
+- Checkpoint por tabela; erros abortam com log.
 
-### 4. Runtime (frontend) — arquivos afetados
-- `src/runtime/db/strategies/dedicated.ts` — deixar de lançar. Recebe `TenantRuntimeContext` com `database_url` + `anon_key` e cria `createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } })`. Sem sessão — é um transport puro de dados.
-- `src/runtime/db/types.ts` — adicionar campo opcional `anon_key: string | null` ao `TenantRuntimeContext` + `allowed_tables: string[]`.
-- `src/runtime/db/tenantContext.ts` — passa a invocar `tenant-runtime-config` (uma vez, cacheado por sessão) para preencher `anon_key` e `allowed_tables` quando `mode === "dedicated"`.
-- `src/runtime/db/factory.ts` — cache passa a manter DOIS clientes por tenant dedicado: `sharedClient` (para auth/storage/tabelas fora do allowlist) e `dedicatedClient` (para tabelas do allowlist).
-- `src/runtime/db/index.ts` — o Proxy `db` ganha interceptação em `.from(table)`: se `table` estiver no `allowed_tables` do contexto atual E o modo for dedicated, delega ao `dedicatedClient`; caso contrário, ao `sharedClient`. Todo o resto (`db.auth`, `db.storage`, `db.functions`, `db.rpc`) continua no shared.
+**d) `super-admin-migrate-tenant-storage`**
+- Cria buckets no dedicado com mesma visibilidade.
+- Lista `storage.objects` filtrados por caminhos com UUID do tenant / users migrados.
+- Baixa via signed URL do shared, faz upload no dedicado.
 
-### 5. UI Super Admin
-- `src/components/superadmin/TenantDatabaseConfig.tsx` — novo toggle **"Ativar roteamento dedicado (runtime)"** ligado a `runtime_dedicated_enabled`. Desabilitado até `schema_provisioned_at` estar preenchido. Aviso claro: "Ao ativar, este tenant passa a ler/gravar pacientes e atendimentos do banco dedicado (vazio até a Fase 3 de migração)".
-- Edge function `super-admin-update-tenant-db-config` — aceitar o novo campo.
+**e) `super-admin-migration-smoke-test`**
+- Valida no dedicado: profiles > 0, pacientes count == shared, atendimentos count == shared, tabela `select_options` presente.
+- Retorna pass/fail por check.
 
-### 6. Telemetria
-- `src/runtime/db/telemetry.ts` — novos eventos `runtime.route.dedicated` e `runtime.route.shared_fallback` com nome da tabela. Ajuda a monitorar o POC.
+**f) `super-admin-migration-flip`**
+- Só executa se última smoke passou.
+- Atualiza `tenant_registry`: `runtime_mode='isolated_db'`, `migration_state='dedicated'`, `frozen_at=now()`.
 
----
+**g) `super-admin-migration-rollback`**
+- Reverte `runtime_mode='shared_db'`, `frozen_at=null`.
+- Loga em `tenant_migration_runs`.
 
-## Roteiro de validação (tenant 1001)
+**h) `super-admin-purge-tenant-from-shared`** (só após 30 dias)
+- Verifica `frozen_at < now() - 30 days`.
+- Gera backup .sql.gz completo antes.
+- DELETE em ordem reversa de FK filtrado por tenant_id.
+- Auditoria detalhada.
 
-1. Deploy do migration + edge functions.
-2. Super Admin re-executa "Provisionar schema" (aplica GRANTs em `anon`).
-3. Super Admin liga o toggle `runtime_dedicated_enabled` no 1001.
-4. Login no 1001 → abrir `/pacientes`: lista **vazia** (dedicado sem dados). Console mostra `runtime.route.dedicated` para `pacientes`.
-5. Cadastrar 1 paciente de teste → persiste no dedicado (visível ao consultar `_sislac_health_check` + `pacientes` do dedicado).
-6. Confirmar que `/configuracoes`, `/exames-catalogo`, `/convenios` continuam funcionando normalmente (roteados no shared).
-7. Desligar toggle → sistema volta ao shared instantaneamente, sem impacto.
+### 3. UI — Wizard de migração
 
----
+Rota: `/super-admin/laboratorios/:id/migrar` (`src/pages/superadmin/SuperAdminMigration.tsx`).
 
-## Fora de escopo (fica para Fase 3 / Fase 4)
+7 etapas em Tabs verticais com estado persistido:
 
-- Migração de dados shared → dedicated
-- Roteamento de tabelas além da allowlist
-- Federação real de Auth
-- Cutover definitivo (shared read-only)
-- Storage per-tenant
+1. **Preparação** — checklist do secret + teste de conexão (reusa `super-admin-test-tenant-anon-key`).
+2. **Schema** — botão "Provisionar", progress via polling em `tenant_migration_runs`.
+3. **Dry-run** — mostra contagens esperadas por tabela.
+4. **Cutover** — botão "Iniciar janela" com confirmação dupla; contador 5min; logs em Realtime.
+5. **Smoke test** — checklist verde/vermelho.
+6. **Flip** — só habilita se smoke 100%.
+7. **Pós-migração** — mostra `frozen_at`, botão "Rollback" (30 dias), botão "Purge" (após 30 dias).
+
+Cada etapa: card com título, descrição em linguagem clara, botão único de ação, log em `<pre>` colapsável.
+
+## Estilo e segurança
+- Sem gradientes/sombras (SISLAC minimalist).
+- Todas as edges revalidam `is_super_admin` server-side.
+- Confirmação dupla nos botões destrutivos (cutover, flip, purge).
+- Logs anonimizados (nunca imprimir hash de senha, service role, etc.).
+
+## Fora de escopo (fica para depois)
+- Migração delta contínua (usaremos janela curta).
+- Auditoria histórica no dedicado (fica no shared).
+- Cross-project queries de auditoria.
+
+## Ordem de execução das entregas (nesta task)
+1. Migração SQL (tabela `tenant_migration_runs` + colunas em `tenant_registry`).
+2. Edges na ordem: schema-full → auth → data → storage → smoke → flip → rollback → purge.
+3. Wizard UI + rota no router.
+4. Link "Migrar para dedicado" em `SuperAdminTenants` / detalhe do lab.
+
+Devido ao tamanho, entrego em 3 turnos:
+- **T1 (agora):** migração SQL + edges `provision-schema-full`, `migrate-auth`, `migrate-data`.
+- **T2:** edges `storage`, `smoke`, `flip`, `rollback`, `purge`.
+- **T3:** wizard UI + rota + links no admin.
+
+Ao final de cada turno: teste rápido via `curl_edge_functions` e commit lógico.

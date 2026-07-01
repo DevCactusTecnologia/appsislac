@@ -6243,6 +6243,60 @@ export type Database = {
           },
         ]
       }
+      tenant_migration_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          initiated_by: string | null
+          phase: string
+          started_at: string
+          stats: Json
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          phase: string
+          started_at?: string
+          stats?: Json
+          status: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          phase?: string
+          started_at?: string
+          stats?: Json
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_migration_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_migration_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_notification_settings: {
         Row: {
           agendamento_mode: Database["public"]["Enums"]["notification_mode"]
@@ -6477,6 +6531,7 @@ export type Database = {
           db_region: string | null
           db_secret_ref: string | null
           db_user: string | null
+          frozen_at: string | null
           lab_code: string
           laboratorio: string
           last_error: string | null
@@ -6485,6 +6540,7 @@ export type Database = {
           last_health_duration_ms: number | null
           last_health_failure: string | null
           last_health_result: string | null
+          migration_state: string
           onboarding_version: string
           provisioning_status: string
           runtime_dedicated_enabled: boolean
@@ -6511,6 +6567,7 @@ export type Database = {
           db_region?: string | null
           db_secret_ref?: string | null
           db_user?: string | null
+          frozen_at?: string | null
           lab_code: string
           laboratorio: string
           last_error?: string | null
@@ -6519,6 +6576,7 @@ export type Database = {
           last_health_duration_ms?: number | null
           last_health_failure?: string | null
           last_health_result?: string | null
+          migration_state?: string
           onboarding_version?: string
           provisioning_status?: string
           runtime_dedicated_enabled?: boolean
@@ -6545,6 +6603,7 @@ export type Database = {
           db_region?: string | null
           db_secret_ref?: string | null
           db_user?: string | null
+          frozen_at?: string | null
           lab_code?: string
           laboratorio?: string
           last_error?: string | null
@@ -6553,6 +6612,7 @@ export type Database = {
           last_health_duration_ms?: number | null
           last_health_failure?: string | null
           last_health_result?: string | null
+          migration_state?: string
           onboarding_version?: string
           provisioning_status?: string
           runtime_dedicated_enabled?: boolean
