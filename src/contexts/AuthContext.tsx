@@ -469,11 +469,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mountedRef.current) setUser(null);
           return;
         }
-        const gateError = await validateDedicatedLoginGate();
-        if (gateError) {
+        const gateOutcome = await validateDedicatedLoginGate();
+        if (gateOutcome) {
           await supabase.auth.signOut();
           if (mountedRef.current) setUser(null);
-          showError(gateError, { scope: "AuthContext", userMessage: gateError });
+          const detail = buildDedicatedGateDetail(gateOutcome.code, gateOutcome.raw);
+          showError(detail.raw ?? detail.message, { scope: "AuthContext", userMessage: detail.message });
           return;
         }
       }
