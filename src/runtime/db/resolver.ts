@@ -10,7 +10,7 @@
  */
 
 import { supabase as sharedClient } from "@/integrations/supabase/client";
-import { getTenantContext } from "@/lib/db/tenantResolver";
+import { getTenantContext } from "./tenantContext";
 import type { TenantRuntimeContext } from "./types";
 import { emit } from "./telemetry";
 
