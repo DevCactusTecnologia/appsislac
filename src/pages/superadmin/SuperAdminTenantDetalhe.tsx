@@ -100,6 +100,7 @@ interface Snapshot {
     schema_version?: string;
     last_health_check?: string;
     last_health_result?: string;
+    runtime_dedicated_enabled?: boolean | null;
   } | null;
 }
 
@@ -721,6 +722,7 @@ export default function SuperAdminTenantDetalhe() {
                   db_project_url: snap.registry.db_project_url ?? null,
                   db_anon_key_secret_ref: snap.registry.db_anon_key_secret_ref ?? null,
                   schema_provisioned_at: snap.registry.schema_provisioned_at ?? null,
+                  runtime_dedicated_enabled: snap.registry.runtime_dedicated_enabled ?? false,
                 } : null}
                 onSaved={() => refetchSnapshot()}
               />
