@@ -564,6 +564,52 @@ export default function SuperAdminMigration() {
           </Card>
         </main>
       </div>
+
+      <AlertDialog open={flipOpen} onOpenChange={setFlipOpen}>
+        <AlertDialogContent className="max-w-md p-0 overflow-hidden gap-0">
+          <div className="relative border-b bg-gradient-to-br from-amber-500/10 via-background to-background px-6 pt-6 pb-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                <Zap className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <AlertDialogHeader className="space-y-1 text-left">
+                  <AlertDialogTitle className="text-base font-semibold tracking-tight">
+                    Confirmar cutover para banco dedicado
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs text-muted-foreground">
+                    Ação de alto impacto — leia antes de prosseguir.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-3 text-sm">
+            <p className="text-foreground/90 leading-relaxed">
+              O tenant <span className="font-medium text-foreground">{tenant?.name ?? "—"}</span> passará a operar
+              <span className="font-medium text-foreground"> imediatamente</span> no projeto dedicado. O banco compartilhado
+              será marcado como <span className="font-medium">somente-leitura lógico</span> (frozen).
+            </p>
+            <ul className="space-y-1.5 rounded-md border bg-muted/40 p-3 text-xs">
+              <li className="flex gap-2"><CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-500" /><span>Smoke test verde nos últimos 60 min é obrigatório.</span></li>
+              <li className="flex gap-2"><History className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Janela de rollback: 30 dias após o flip.</span></li>
+              <li className="flex gap-2"><Lock className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Sessões ativas do tenant precisarão reautenticar.</span></li>
+            </ul>
+          </div>
+
+          <AlertDialogFooter className="border-t bg-muted/30 px-6 py-3">
+            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={runFlip}
+              className="bg-amber-600 hover:bg-amber-600/90 text-white focus-visible:ring-amber-500"
+            >
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
+              Executar flip
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
