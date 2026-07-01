@@ -153,10 +153,15 @@ export default function LoginV2() {
       return;
     }
     setSigningIn(true);
-    const { ok, error } = await signInWithPassword(mail, senha, { expectedTenantId: tenant.id });
+    setAuthError(null);
+    const { ok, error, errorDetail } = await signInWithPassword(mail, senha, { expectedTenantId: tenant.id });
     setSigningIn(false);
     if (!ok) {
-      toast.error(error ?? "E-mail ou senha inválidos.");
+      if (errorDetail) {
+        setAuthError(errorDetail);
+      } else {
+        toast.error(error ?? "E-mail ou senha inválidos.");
+      }
       return;
     }
     toast.success(`Bem-vindo a ${tenant.nome}!`);
@@ -166,6 +171,7 @@ export default function LoginV2() {
   function handleBack() {
     setStep(1);
     setSenha("");
+    setAuthError(null);
   }
 
   
