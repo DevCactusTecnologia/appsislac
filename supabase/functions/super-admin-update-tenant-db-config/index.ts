@@ -133,13 +133,14 @@ Deno.serve(async (req) => {
   }
 
   if (body.runtimeMode !== undefined) {
-    if (typeof body.runtimeMode === "string" && ALLOWED_MODES.includes(body.runtimeMode)) {
-      updates.runtime_mode = body.runtimeMode;
-      // mantém database_strategy coerente
-      updates.database_strategy = body.runtimeMode === "isolated_db" ? "dedicated" : "shared";
-    } else {
-      return errorResponse(400, "runtimeMode inválido", requestId, log);
-    }
+    // Governança: runtime_mode só pode ser alterado via super-admin-migration-flip/rollback.
+    // Salvar config NÃO flipa o tenant — evita "Flip" ficar desabilitado por engano.
+    return errorResponse(
+      400,
+      "runtime_mode não pode ser alterado por esta função. Use super-admin-migration-flip (ou rollback) após o smoke test.",
+      requestId,
+      log,
+    );
   }
   if (body.databaseStrategy !== undefined) {
     if (typeof body.databaseStrategy === "string" && ALLOWED_STRATEGIES.includes(body.databaseStrategy)) {
