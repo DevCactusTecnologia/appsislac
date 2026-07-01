@@ -497,7 +497,10 @@ export default function LoginV2() {
                         )}
                       </button>
 
+                      <AuthErrorAlert detail={authError} onDismiss={() => setAuthError(null)} />
+
                       <form onSubmit={handleSignIn} className="space-y-4">
+
                         <div className="space-y-1.5">
                           <label className="text-xs font-semibold text-foreground">E-mail</label>
                           <div className="group relative">
