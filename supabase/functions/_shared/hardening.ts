@@ -178,7 +178,7 @@ export function errorResponse(
 export function jsonResponse(
   status: number,
   body: unknown,
-  requestId: string,
+  requestId = crypto.randomUUID(),
 ): Response {
   return new Response(JSON.stringify({ ...(body as object), request_id: requestId }), {
     status,
