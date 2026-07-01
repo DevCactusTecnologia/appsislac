@@ -6487,6 +6487,7 @@ export type Database = {
           last_health_result: string | null
           onboarding_version: string
           provisioning_status: string
+          runtime_dedicated_enabled: boolean
           runtime_mode: string
           runtime_status: string
           schema_provisioned_at: string | null
@@ -6520,6 +6521,7 @@ export type Database = {
           last_health_result?: string | null
           onboarding_version?: string
           provisioning_status?: string
+          runtime_dedicated_enabled?: boolean
           runtime_mode?: string
           runtime_status?: string
           schema_provisioned_at?: string | null
@@ -6553,6 +6555,7 @@ export type Database = {
           last_health_result?: string | null
           onboarding_version?: string
           provisioning_status?: string
+          runtime_dedicated_enabled?: boolean
           runtime_mode?: string
           runtime_status?: string
           schema_provisioned_at?: string | null
