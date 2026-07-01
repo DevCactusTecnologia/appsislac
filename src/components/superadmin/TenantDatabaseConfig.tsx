@@ -7,7 +7,7 @@ import { db as supabase } from "@/runtime/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Database, Save, ShieldAlert, KeyRound, Server, MapPin, User, Hash, Plug, CheckCircle2, XCircle, Loader2, Globe, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,11 @@ interface DbConfig {
   db_user: string | null;
   db_region: string | null;
   db_secret_ref: string | null;
+  db_project_url: string | null;
+  db_anon_key_secret_ref: string | null;
+  schema_provisioned_at: string | null;
 }
+
 
 const PROVIDERS = [
   { value: "shared_supabase", label: "Shared Supabase" },
