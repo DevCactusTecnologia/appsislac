@@ -25,6 +25,7 @@ interface Body {
   dbAnonKeySecretRef?: unknown;
   runtimeMode?: unknown;
   databaseStrategy?: unknown;
+  runtimeDedicatedEnabled?: unknown;
 }
 
 const ALLOWED_PROVIDERS = ["shared_supabase", "neon", "supabase_project", "external_postgres"];
