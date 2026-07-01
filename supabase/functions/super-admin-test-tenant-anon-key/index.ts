@@ -4,10 +4,9 @@
 // corretamente cadastrada como secret no Lovable Cloud e realmente
 // funciona contra o PostgREST do projeto dedicado.
 //
-// Faz um GET em `${db_project_url}/rest/v1/` (endpoint público que exige
-// apenas o header `apikey`). Se retornar 200, a anon key está válida.
-// Também tenta `/rest/v1/profiles?select=user_id&limit=1` para validar
-// que o schema mínimo está exposto pelo PostgREST.
+// Faz um GET em `/rest/v1/profiles?select=user_id&limit=1` para validar se a
+// anon/publishable key funciona contra a Data API do projeto dedicado e se o
+// schema mínimo está exposto pelo PostgREST.
 //
 // Nunca devolve a anon key em texto — apenas o nome do secret.
 
@@ -70,7 +69,7 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: false, stage: "validate", error: "Nome do secret inválido (use UPPER_SNAKE_CASE, 3–64 chars)" });
   }
 
-  const anon = Deno.env.get(secretRef);
+  const anon = Deno.env.get(secretRef)?.trim();
   if (!anon) {
     return jsonResponse(200, {
       ok: false,
@@ -80,67 +79,56 @@ Deno.serve(async (req) => {
     });
   }
 
-  const rootUrl = `${projectUrl.replace(/\/$/, "")}/rest/v1/`;
   const profilesUrl = `${projectUrl.replace(/\/$/, "")}/rest/v1/profiles?select=user_id&limit=1`;
+  const apiHeaders = { apikey: anon };
 
   const t0 = Date.now();
-  let rootStatus = 0;
-  let rootBodyPreview = "";
-  try {
-    const res = await fetch(rootUrl, {
-      method: "GET",
-      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
-    });
-    rootStatus = res.status;
-    rootBodyPreview = (await res.text()).slice(0, 240);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${rootUrl}: ${msg}`, projectUrl, secretRef });
-  }
-
-  if (rootStatus === 401 || rootStatus === 403) {
-    return jsonResponse(200, {
-      ok: false,
-      stage: "auth",
-      error: `PostgREST recusou a anon key (HTTP ${rootStatus}). Verifique se o valor cadastrado em "${secretRef}" é a Publishable/Anon Key deste projeto.`,
-      status: rootStatus,
-      projectUrl,
-      secretRef,
-      bodyPreview: rootBodyPreview,
-    });
-  }
-  if (rootStatus >= 500) {
-    return jsonResponse(200, {
-      ok: false,
-      stage: "server",
-      error: `PostgREST do projeto dedicado respondeu HTTP ${rootStatus}.`,
-      status: rootStatus,
-      projectUrl,
-      bodyPreview: rootBodyPreview,
-    });
-  }
-
-  // Segunda checagem: acessar profiles (schema mínimo).
   let profilesStatus = 0;
   let profilesBodyPreview = "";
   try {
     const res = await fetch(profilesUrl, {
       method: "GET",
-      headers: { apikey: anon, Authorization: `Bearer ${anon}`, Accept: "application/json" },
+      // Publishable keys (`sb_publishable_...`) are not JWTs. Sending them as
+      // `Authorization: Bearer ...` makes PostgREST reject an otherwise valid key.
+      headers: { ...apiHeaders, Accept: "application/json" },
     });
     profilesStatus = res.status;
     profilesBodyPreview = (await res.text()).slice(0, 240);
-  } catch {
-    // A checagem principal já passou; profiles é apenas informativa.
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return jsonResponse(200, { ok: false, stage: "fetch", error: `Falha ao contactar ${profilesUrl}: ${msg}`, projectUrl, secretRef });
+  }
+
+  if (profilesStatus === 401 || profilesStatus === 403) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "auth",
+      error: `A Data API recusou a Publishable/Anon Key (HTTP ${profilesStatus}). Verifique se o valor cadastrado em "${secretRef}" pertence exatamente a este projeto dedicado.`,
+      status: profilesStatus,
+      projectUrl,
+      secretRef,
+      bodyPreview: profilesBodyPreview,
+    });
+  }
+  if (profilesStatus >= 500) {
+    return jsonResponse(200, {
+      ok: false,
+      stage: "server",
+      error: `Data API do projeto dedicado respondeu HTTP ${profilesStatus}.`,
+      status: profilesStatus,
+      projectUrl,
+      bodyPreview: profilesBodyPreview,
+    });
   }
 
   const latencyMs = Date.now() - t0;
   const schemaReady = profilesStatus === 200;
+  const schemaMissing = profilesStatus === 404 || /PGRST|relation|schema cache|not found/i.test(profilesBodyPreview);
 
   return jsonResponse(200, {
     ok: true,
     latencyMs,
-    status: rootStatus,
+    status: profilesStatus,
     projectUrl,
     secretRef,
     schemaReady,
@@ -148,6 +136,8 @@ Deno.serve(async (req) => {
     profilesBodyPreview: schemaReady ? undefined : profilesBodyPreview,
     hint: schemaReady
       ? undefined
-      : "Anon key válida, mas a tabela `profiles` ainda não está exposta pelo PostgREST — provisione o schema antes de ativar o roteamento.",
+      : schemaMissing
+        ? "Publishable/Anon Key válida, mas a tabela `profiles` ainda não está exposta pela Data API — provisione o schema antes de ativar o roteamento."
+        : "Publishable/Anon Key aceita, mas a checagem do schema retornou um status inesperado. Verifique permissões e exposição da tabela `profiles`.",
   });
 });
