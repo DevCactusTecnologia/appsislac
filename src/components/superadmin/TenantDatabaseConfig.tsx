@@ -117,6 +117,12 @@ export function TenantDatabaseConfig({
     | { ok: false; error: string; stage?: string }
     | null
   >(null);
+  const [testingAnon, setTestingAnon] = useState(false);
+  const [anonResult, setAnonResult] = useState<
+    | { ok: true; latencyMs: number; status: number; schemaReady: boolean; profilesStatus: number; hint?: string }
+    | { ok: false; error: string; stage?: string; status?: number }
+    | null
+  >(null);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<
     | {
@@ -220,6 +226,47 @@ export function TenantDatabaseConfig({
     } else {
       setTestResult({ ok: false, error: r?.error ?? "Falha desconhecida", stage: r?.stage });
       toast.error(r?.error ?? "Falha na conexão");
+    }
+  };
+
+  const testAnonKey = async () => {
+    if (cfg.db_provider !== "supabase_project") {
+      toast.error("Teste de anon key disponível apenas para provedor Supabase dedicado.");
+      return;
+    }
+    if (!cfg.db_project_url || !cfg.db_anon_key_secret_ref) {
+      toast.error("Preencha a URL do projeto dedicado e o nome do secret da anon key.");
+      return;
+    }
+    setTestingAnon(true);
+    setAnonResult(null);
+    const { data, error } = await supabase.functions.invoke("super-admin-test-tenant-anon-key", {
+      body: {
+        tenantId,
+        dbProjectUrl: cfg.db_project_url,
+        dbAnonKeySecretRef: cfg.db_anon_key_secret_ref,
+      },
+    });
+    setTestingAnon(false);
+    if (error) { setAnonResult({ ok: false, error: error.message }); toast.error(error.message); return; }
+    const r = data as any;
+    if (r?.ok) {
+      setAnonResult({
+        ok: true,
+        latencyMs: r.latencyMs,
+        status: r.status,
+        schemaReady: !!r.schemaReady,
+        profilesStatus: r.profilesStatus ?? 0,
+        hint: r.hint,
+      });
+      toast.success(
+        r.schemaReady
+          ? `Anon key OK em ${r.latencyMs}ms — schema exposto`
+          : `Anon key OK em ${r.latencyMs}ms (schema ainda pendente)`,
+      );
+    } else {
+      setAnonResult({ ok: false, error: r?.error ?? "Falha desconhecida", stage: r?.stage, status: r?.status });
+      toast.error(r?.error ?? "Falha ao validar anon key");
     }
   };
 
@@ -592,12 +639,73 @@ export function TenantDatabaseConfig({
         </div>
       )}
 
+      {isolated && anonResult && (
+        <div className={cn(
+          "mt-3 rounded-md border p-3 text-[12px] flex items-start gap-2",
+          anonResult.ok
+            ? (anonResult.schemaReady
+                ? "border-status-success/30 bg-status-success-bg/40"
+                : "border-status-warning/30 bg-status-warning-bg/40")
+            : "border-status-danger/30 bg-status-danger-bg/40"
+        )}>
+          {anonResult.ok
+            ? (anonResult.schemaReady
+                ? <CheckCircle2 className="h-4 w-4 text-status-success shrink-0 mt-0.5" />
+                : <ShieldAlert className="h-4 w-4 text-status-warning shrink-0 mt-0.5" />)
+            : <XCircle className="h-4 w-4 text-status-danger shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            {anonResult.ok ? (
+              <>
+                <div className="font-semibold text-foreground">
+                  Anon key validada em {anonResult.latencyMs}ms (HTTP {anonResult.status})
+                </div>
+                <div className="text-muted-foreground mt-0.5">
+                  {anonResult.schemaReady
+                    ? "PostgREST responde e o schema mínimo (profiles) está exposto — pronto para roteamento dedicado."
+                    : (anonResult.hint ?? "Anon key aceita, mas o schema ainda não está exposto pelo PostgREST.")}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-semibold text-foreground">
+                  Falha ao validar anon key{anonResult.stage ? ` (${anonResult.stage})` : ""}
+                </div>
+                <div className="text-muted-foreground mt-0.5 break-words">{anonResult.error}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isolated && cfg.db_provider === "supabase_project" && (
+        <ReadinessChecklist
+          hasConn={!!(cfg.db_host && cfg.db_port && cfg.db_name && cfg.db_user && cfg.db_secret_ref)}
+          hasProjectUrl={!!cfg.db_project_url}
+          hasAnonSecret={!!cfg.db_anon_key_secret_ref}
+          connectionOk={testResult?.ok === true}
+          anonOk={anonResult?.ok === true}
+          schemaReady={!!cfg.schema_provisioned_at}
+          routingOn={!!cfg.runtime_dedicated_enabled}
+        />
+      )}
+
       <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/60 flex-wrap">
         <Button variant="ghost" onClick={reset} disabled={!isDirty || saving}>Descartar</Button>
         {isolated && (
-          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning || checking}>
+          <Button variant="outline" onClick={testConnection} disabled={testing || saving || provisioning || checking || testingAnon}>
             {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
             {testing ? "Testando…" : "Testar conexão"}
+          </Button>
+        )}
+        {isolated && cfg.db_provider === "supabase_project" && (
+          <Button
+            variant="outline"
+            onClick={testAnonKey}
+            disabled={testingAnon || testing || saving || provisioning || checking || !cfg.db_project_url || !cfg.db_anon_key_secret_ref}
+            title="Verifica se a anon key do projeto dedicado responde via PostgREST"
+          >
+            {testingAnon ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
+            {testingAnon ? "Testando…" : "Testar anon key"}
           </Button>
         )}
         {isolated && !isDirty && cfg.schema_provisioned_at && (
@@ -652,6 +760,68 @@ function DbField({
       </Label>
       {children}
       {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+function ReadinessChecklist({
+  hasConn, hasProjectUrl, hasAnonSecret, connectionOk, anonOk, schemaReady, routingOn,
+}: {
+  hasConn: boolean;
+  hasProjectUrl: boolean;
+  hasAnonSecret: boolean;
+  connectionOk: boolean;
+  anonOk: boolean;
+  schemaReady: boolean;
+  routingOn: boolean;
+}) {
+  const items: { label: string; done: boolean; hint?: string }[] = [
+    { label: "Metadados de conexão Postgres preenchidos", done: hasConn },
+    { label: "URL do projeto Supabase dedicado informada", done: hasProjectUrl },
+    { label: "Secret da anon key informado", done: hasAnonSecret },
+    { label: "Teste de conexão Postgres bem-sucedido", done: connectionOk, hint: "Clique em “Testar conexão”." },
+    { label: "Teste de anon key bem-sucedido", done: anonOk, hint: "Clique em “Testar anon key”." },
+    { label: "Schema provisionado no banco dedicado", done: schemaReady, hint: "Use “Provisionar schema”." },
+    { label: "Roteamento dedicado ativado e salvo", done: routingOn, hint: "Marque a caixa e salve a configuração." },
+  ];
+  const doneCount = items.filter((i) => i.done).length;
+  const total = items.length;
+  const pct = Math.round((doneCount / total) * 100);
+  const allDone = doneCount === total;
+
+  return (
+    <div className={cn(
+      "mt-4 rounded-md border p-3",
+      allDone ? "border-status-success/30 bg-status-success-bg/30" : "border-border bg-muted/30"
+    )}>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          Prontidão do laboratório dedicado
+        </div>
+        <div className={cn(
+          "text-[10.5px] font-semibold px-2 py-0.5 rounded-full border",
+          allDone
+            ? "bg-status-success/10 text-status-success border-status-success/30"
+            : "bg-background text-muted-foreground border-border"
+        )}>
+          {doneCount}/{total} · {pct}%
+        </div>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((it) => (
+          <li key={it.label} className="flex items-start gap-2 text-[12px]">
+            {it.done
+              ? <CheckCircle2 className="h-3.5 w-3.5 text-status-success shrink-0 mt-0.5" />
+              : <XCircle className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />}
+            <div className="min-w-0 flex-1">
+              <div className={cn(it.done ? "text-foreground" : "text-muted-foreground")}>{it.label}</div>
+              {!it.done && it.hint && (
+                <div className="text-[10.5px] text-muted-foreground/80 mt-0.5">{it.hint}</div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
