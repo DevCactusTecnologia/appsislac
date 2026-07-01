@@ -115,6 +115,20 @@ export function TenantDatabaseConfig({
     | { ok: false; error: string; stage?: string }
     | null
   >(null);
+  const [checking, setChecking] = useState(false);
+  const [checkResult, setCheckResult] = useState<
+    | {
+        ok: boolean;
+        tables_expected?: string[];
+        tables_found?: string[];
+        tables_missing?: string[];
+        counts?: Record<string, number | null>;
+        last_health?: { schema_version: string; provisioned_at: string; note: string | null } | null;
+        stage?: string;
+        error?: string;
+      }
+    | null
+  >(null);
 
 
   useEffect(() => { setCfg(baseline); setTestResult(null); }, [baseline]);
