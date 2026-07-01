@@ -262,7 +262,7 @@ function buildDedicatedGateDetail(code: string, raw?: string): LoginErrorDetail 
     },
     dedicated_profiles_table_missing: {
       title: "Base do laboratório ainda não importada",
-      message: "O banco dedicado está online, mas ainda não recebeu as tabelas operacionais do laboratório.",
+      message: "Seu laboratório está sendo configurado.",
       hint: "Peça ao Super Admin para concluir a importação da base antes de liberar o acesso.",
       severity: "config",
     },
