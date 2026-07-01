@@ -148,6 +148,13 @@ Deno.serve(async (req) => {
       return errorResponse(400, "databaseStrategy inválido", requestId, log);
     }
   }
+  if (body.runtimeDedicatedEnabled !== undefined) {
+    if (typeof body.runtimeDedicatedEnabled === "boolean") {
+      updates.runtime_dedicated_enabled = body.runtimeDedicatedEnabled;
+    } else {
+      return errorResponse(400, "runtimeDedicatedEnabled inválido", requestId, log);
+    }
+  }
 
   if (Object.keys(updates).length === 0) return errorResponse(400, "Nada para atualizar", requestId, log);
 
