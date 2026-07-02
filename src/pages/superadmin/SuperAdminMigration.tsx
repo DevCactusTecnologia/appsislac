@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle2, Circle, Loader2, XCircle, AlertTriangle,
   Cable, Database, Users, Boxes, HardDrive, ShieldCheck, Zap, History,
-  Lock, ArrowRight, RefreshCw, Info,
+  Lock, ArrowRight, RefreshCw, Info, Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -144,6 +144,7 @@ export default function SuperAdminMigration() {
   const [purgeType, setPurgeType] = useState("");
   const [activeKey, setActiveKey] = useState<StepKey>("prep");
   const [flipOpen, setFlipOpen] = useState(false);
+  const [rollbackOpen, setRollbackOpen] = useState(false);
 
   const setState = (k: StepKey, s: StepState) => setStates((p) => ({ ...p, [k]: s }));
   const appendLog = (k: StepKey, line: string) => setLogs((p) => ({ ...p, [k]: `${p[k]}${p[k] ? "\n" : ""}${line}` }));
@@ -278,7 +279,7 @@ export default function SuperAdminMigration() {
     if (r.ok) await loadTenant();
   };
   const runRollback = async () => {
-    if (!confirm("Reverter para o banco compartilhado?")) return;
+    setRollbackOpen(false);
     const r = await invoke("super-admin-migration-rollback", { tenantId: id, confirm: "ROLLBACK" }, "post");
     if (r.ok) await loadTenant();
   };
@@ -324,7 +325,7 @@ export default function SuperAdminMigration() {
     if (active.key === "smoke")   return <Button size="sm" onClick={runSmoke} disabled={running}><ShieldCheck className="h-3.5 w-3.5 mr-1.5" />Executar smoke</Button>;
     if (active.key === "flip")    return <Button size="sm" onClick={() => setFlipOpen(true)} disabled={!canFlip || running}><Zap className="h-3.5 w-3.5 mr-1.5" />Flip para dedicado</Button>;
     if (active.key === "post" && isDedicated) return <>
-      <Button size="sm" variant="outline" onClick={runRollback}><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Rollback</Button>
+      <Button size="sm" variant="outline" onClick={() => setRollbackOpen(true)}><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Rollback</Button>
       <Button size="sm" variant="outline" onClick={runPurgeDry}>Purge dry-run</Button>
     </>;
     return null;
@@ -630,6 +631,54 @@ export default function SuperAdminMigration() {
             >
               <Zap className="h-3.5 w-3.5 mr-1.5" />
               Executar flip
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={rollbackOpen} onOpenChange={setRollbackOpen}>
+        <AlertDialogContent className="max-w-md p-0 overflow-hidden gap-0">
+          <div className="relative border-b bg-gradient-to-br from-sky-500/10 via-background to-background px-6 pt-6 pb-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400">
+                <Undo2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <AlertDialogHeader className="space-y-1 text-left">
+                  <AlertDialogTitle className="text-base font-semibold tracking-tight">
+                    Reverter para o banco compartilhado
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs text-muted-foreground">
+                    Rollback controlado — o runtime volta para shared_db imediatamente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-5 space-y-3 text-sm">
+            <p className="text-foreground/90 leading-relaxed">
+              O tenant <span className="font-medium text-foreground">{tenant?.name ?? "—"}</span> voltará a operar
+              no banco <span className="font-medium text-foreground">compartilhado</span>. As gravações feitas no
+              projeto dedicado após o flip <span className="font-medium">não serão trazidas de volta</span>
+              automaticamente.
+            </p>
+            <ul className="space-y-1.5 rounded-md border bg-muted/40 p-3 text-xs">
+              <li className="flex gap-2"><RefreshCw className="h-3.5 w-3.5 shrink-0 mt-0.5 text-sky-600" /><span>Runtime muda para <span className="font-medium">shared_db</span> ao confirmar.</span></li>
+              <li className="flex gap-2"><History className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Só disponível dentro da janela de quarentena de 30 dias.</span></li>
+              <li className="flex gap-2"><Lock className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Sessões ativas precisarão reautenticar após a reversão.</span></li>
+              <li className="flex gap-2"><AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" /><span>Divergências gravadas no dedicado ficam órfãs — revise antes de confirmar.</span></li>
+            </ul>
+          </div>
+
+          <AlertDialogFooter className="border-t bg-muted/30 px-6 py-3">
+            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={runRollback}
+              className="bg-sky-600 hover:bg-sky-600/90 text-white focus-visible:ring-sky-500"
+            >
+              <Undo2 className="h-3.5 w-3.5 mr-1.5" />
+              Executar rollback
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
