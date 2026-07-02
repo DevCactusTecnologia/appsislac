@@ -144,6 +144,7 @@ export default function SuperAdminMigration() {
   const [purgeType, setPurgeType] = useState("");
   const [activeKey, setActiveKey] = useState<StepKey>("prep");
   const [flipOpen, setFlipOpen] = useState(false);
+  const [rollbackOpen, setRollbackOpen] = useState(false);
 
   const setState = (k: StepKey, s: StepState) => setStates((p) => ({ ...p, [k]: s }));
   const appendLog = (k: StepKey, line: string) => setLogs((p) => ({ ...p, [k]: `${p[k]}${p[k] ? "\n" : ""}${line}` }));
