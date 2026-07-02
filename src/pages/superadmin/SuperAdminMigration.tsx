@@ -164,6 +164,30 @@ export default function SuperAdminMigration() {
 
   useEffect(() => { void loadTenant(); }, [loadTenant]);
 
+  // Hidrata estado das etapas a partir do histórico do backend (evita perder progresso ao recarregar a página).
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const phases: StepKey[] = ["prep", "schema", "auth", "data", "storage", "smoke"];
+      const { data } = await supabase
+        .from("tenant_migration_runs")
+        .select("phase, status, finished_at")
+        .eq("tenant_id", id)
+        .in("phase", phases)
+        .order("finished_at", { ascending: false });
+      if (!data) return;
+      const seen = new Set<string>();
+      const next: Partial<Record<StepKey, StepState>> = {};
+      for (const row of data as Array<{ phase: string; status: string; finished_at: string | null }>) {
+        if (seen.has(row.phase)) continue;
+        seen.add(row.phase);
+        if (row.status === "ok") next[row.phase as StepKey] = "ok";
+        else if (row.status === "failed") next[row.phase as StepKey] = "failed";
+      }
+      if (Object.keys(next).length) setStates((p) => ({ ...p, ...next }));
+    })();
+  }, [id]);
+
   const loadLastRunError = useCallback(async (phase: StepKey): Promise<string | null> => {
     if (!id) return null;
     const { data } = await supabase
