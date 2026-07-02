@@ -279,7 +279,7 @@ export default function SuperAdminMigration() {
     if (r.ok) await loadTenant();
   };
   const runRollback = async () => {
-    if (!confirm("Reverter para o banco compartilhado?")) return;
+    setRollbackOpen(false);
     const r = await invoke("super-admin-migration-rollback", { tenantId: id, confirm: "ROLLBACK" }, "post");
     if (r.ok) await loadTenant();
   };
