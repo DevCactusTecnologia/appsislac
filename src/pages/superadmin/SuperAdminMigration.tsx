@@ -325,7 +325,7 @@ export default function SuperAdminMigration() {
     if (active.key === "smoke")   return <Button size="sm" onClick={runSmoke} disabled={running}><ShieldCheck className="h-3.5 w-3.5 mr-1.5" />Executar smoke</Button>;
     if (active.key === "flip")    return <Button size="sm" onClick={() => setFlipOpen(true)} disabled={!canFlip || running}><Zap className="h-3.5 w-3.5 mr-1.5" />Flip para dedicado</Button>;
     if (active.key === "post" && isDedicated) return <>
-      <Button size="sm" variant="outline" onClick={runRollback}><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Rollback</Button>
+      <Button size="sm" variant="outline" onClick={() => setRollbackOpen(true)}><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Rollback</Button>
       <Button size="sm" variant="outline" onClick={runPurgeDry}>Purge dry-run</Button>
     </>;
     return null;
