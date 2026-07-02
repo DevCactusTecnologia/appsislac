@@ -91,10 +91,7 @@ function SidebarInner({ collapsed, isMobile, onToggle, onNavigate, onLogout, use
             compact ? "h-10 w-10 mx-auto justify-center" : "flex-1",
           )}
         >
-          <div className={cn(
-            "relative rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-lg shadow-foreground/10",
-            compact ? "h-10 w-10" : "h-8 w-8",
-          )}>
+          <div className="relative h-8 w-8 rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-lg shadow-foreground/10">
             <Shield className="h-4 w-4 text-background" strokeWidth={2.5} />
             <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
