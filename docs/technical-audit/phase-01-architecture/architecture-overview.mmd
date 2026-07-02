@@ -1,0 +1,54 @@
+graph TD
+  U[Usuário / Navegador]
+  subgraph Frontend[Frontend React 18 + Vite]
+    RT[React Router 6<br/>src/App.tsx]
+    CTX[Contextos<br/>Auth / MenuLayout / SuperAdminPrefs]
+    PG[Pages ~114]
+    CMP[Components ~160]
+    HK[Hooks 20 + useEnsureStore]
+    ST[Stores 39<br/>src/data/*Store.ts]
+    LIB[lib/ services + adapters]
+    RQ[TanStack Query<br/>queryClient]
+  end
+  subgraph Runtime[Runtime Layer]
+    DBR[src/runtime/db.ts<br/>getUserTenantClient]
+    IDN[Identity resolver<br/>tenant_registry]
+  end
+  subgraph Integrations[Integrations]
+    SBC[Supabase JS Client<br/>src/integrations/supabase/client.ts]
+    PROV[Providers dbsync / hermes-pardini]
+    CONTR[contracts/*]
+  end
+  subgraph Backend[Lovable Cloud — Supabase]
+    PG_DB[(PostgreSQL<br/>355 migrations)]
+    RLS[RLS + has_role + current_tenant_id]
+    EDGE[Edge Functions 74]
+    STO[Storage buckets]
+    AUTH[Supabase Auth]
+    RLT[Realtime]
+  end
+  subgraph External[Serviços externos]
+    AI[Lovable AI Gateway<br/>Gemini]
+    PIX[PIX QR/Webhook]
+    APOIO[Labs de apoio]
+    S3[S3-compat via s3.ts]
+  end
+
+  U --> RT --> PG --> CMP
+  PG --> HK --> ST
+  ST --> LIB
+  ST --> RQ
+  LIB --> SBC
+  RQ --> SBC
+  SBC --> DBR --> IDN --> PG_DB
+  SBC --> AUTH
+  SBC --> RLT
+  SBC --> EDGE
+  EDGE --> PG_DB
+  EDGE --> STO
+  EDGE --> AI
+  EDGE --> APOIO
+  EDGE --> S3
+  PG_DB --> RLS
+  PROV --> EDGE
+  CONTR --> PROV
