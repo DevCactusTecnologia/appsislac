@@ -638,9 +638,9 @@ export default function SuperAdminMigration() {
 
       <AlertDialog open={rollbackOpen} onOpenChange={setRollbackOpen}>
         <AlertDialogContent className="max-w-md p-0 overflow-hidden gap-0">
-          <div className="relative border-b bg-gradient-to-br from-sky-500/10 via-background to-background px-6 pt-6 pb-5">
+          <div className="relative border-b bg-gradient-to-br from-rose-500/10 via-background to-background px-6 pt-6 pb-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400">
                 <Undo2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -664,7 +664,7 @@ export default function SuperAdminMigration() {
               automaticamente.
             </p>
             <ul className="space-y-1.5 rounded-md border bg-muted/40 p-3 text-xs">
-              <li className="flex gap-2"><RefreshCw className="h-3.5 w-3.5 shrink-0 mt-0.5 text-sky-600" /><span>Runtime muda para <span className="font-medium">shared_db</span> ao confirmar.</span></li>
+              <li className="flex gap-2"><RefreshCw className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" /><span>Runtime muda para <span className="font-medium">shared_db</span> ao confirmar.</span></li>
               <li className="flex gap-2"><History className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Só disponível dentro da janela de quarentena de 30 dias.</span></li>
               <li className="flex gap-2"><Lock className="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" /><span>Sessões ativas precisarão reautenticar após a reversão.</span></li>
               <li className="flex gap-2"><AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" /><span>Divergências gravadas no dedicado ficam órfãs — revise antes de confirmar.</span></li>
@@ -675,7 +675,7 @@ export default function SuperAdminMigration() {
             <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={runRollback}
-              className="bg-sky-600 hover:bg-sky-600/90 text-white focus-visible:ring-sky-500"
+              className="bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500 shadow-sm"
             >
               <Undo2 className="h-3.5 w-3.5 mr-1.5" />
               Executar rollback
