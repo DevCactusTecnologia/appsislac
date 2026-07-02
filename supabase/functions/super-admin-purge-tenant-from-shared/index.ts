@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
   }
 
   const runId = await beginRun(admin, tenantId, "purge", guard.user.id);
-  const { data: rawList, error: listErr } = await admin.rpc("super_admin_list_migration_tables", { _tenant_id: tenantId });
+  const userClient = createUserClientFromRequest(req);
+  const { data: rawList, error: listErr } = await userClient.rpc("super_admin_list_migration_tables", { _tenant_id: tenantId });
   if (listErr || !rawList) {
     await finishRun(admin, runId, "failed", {}, listErr?.message ?? "empty list");
     return errorResponse(500, `Falha ao listar tabelas: ${listErr?.message}`, requestId, log);
