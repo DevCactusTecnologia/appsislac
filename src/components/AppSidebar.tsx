@@ -394,8 +394,8 @@ const AppSidebar = ({ collapsed, onToggle, onNavigate, onLogout, isMobile, extra
       )}
     >
       {/* Brand — espelha SuperAdmin (h-12, ícone preto invertido) */}
-      <div className={cn("flex items-center h-12 border-b border-border", collapsed ? "justify-center px-0" : "gap-2.5 px-3")}>
-        <div className={cn("flex items-center gap-3 min-w-0", collapsed ? "justify-center" : "flex-1")}>
+      <div className={cn("flex items-center h-12 border-b border-border", collapsed ? "px-2 justify-center" : "gap-2.5 px-3")}>
+        <div className={cn("flex items-center gap-3 min-w-0", collapsed ? "h-10 w-10 mx-auto justify-center" : "flex-1")}>
           <div className="relative h-8 w-8 rounded-xl bg-foreground flex items-center justify-center shrink-0 shadow-lg shadow-foreground/10">
             <Building2 className="h-4 w-4 text-background" strokeWidth={2.5} />
             <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2">
