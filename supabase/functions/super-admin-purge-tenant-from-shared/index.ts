@@ -33,8 +33,10 @@ Deno.serve(async (req) => {
     .eq("tenant_id", tenantId).maybeSingle();
   if (rErr || !reg) return errorResponse(404, "tenant_registry não encontrado", requestId, log);
   const r = reg as { migration_state: string | null; frozen_at: string | null; runtime_mode: string | null };
-  if (r.migration_state !== "dedicated" || r.runtime_mode !== "isolated_db") {
-    return errorResponse(412, "Tenant precisa estar em modo 'dedicated' para purge.", requestId, log);
+  // runtime_mode é a fonte da verdade — só ele decide se o tenant já vive no dedicado.
+  // migration_state é auditoria e pode ficar defasado em rows migradas antes do flip idempotente.
+  if (r.runtime_mode !== "isolated_db") {
+    return errorResponse(412, "Tenant precisa estar operando no banco dedicado (runtime_mode=isolated_db) para purge.", requestId, log);
   }
   const frozenAt = r.frozen_at ? new Date(r.frozen_at).getTime() : 0;
   const ageDays = (Date.now() - frozenAt) / 86400000;
