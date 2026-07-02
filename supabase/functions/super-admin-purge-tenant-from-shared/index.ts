@@ -3,7 +3,7 @@
 // de quarentena. Requer confirmação dupla e state='dedicated'.
 
 import { createClient } from "../_shared/runtime/createClient.ts";
-import { requireSuperAdmin, beginRun, finishRun } from "../_shared/migration/connect.ts";
+import { requireSuperAdmin, beginRun, finishRun, createUserClientFromRequest } from "../_shared/migration/connect.ts";
 import { jsonResponse, errorResponse, preflight, newRequestId, createLogger } from "../_shared/hardening.ts";
 
 const QUARANTINE_DAYS = 30;
