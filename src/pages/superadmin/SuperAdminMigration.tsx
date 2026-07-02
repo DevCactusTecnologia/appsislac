@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, CheckCircle2, Circle, Loader2, XCircle, AlertTriangle,
   Cable, Database, Users, Boxes, HardDrive, ShieldCheck, Zap, History,
-  Lock, ArrowRight, RefreshCw, Info,
+  Lock, ArrowRight, RefreshCw, Info, Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
