@@ -1372,49 +1372,24 @@ const ResultadoDetalhe = () => {
         <div className="lg:hidden">
           {/* Patient header — compartilhado, à prova de overflow */}
           <div className="mb-4">
-            <PacienteHeaderCard
-              nome={paciente.nome}
-              sexo={paciente.sexo}
+            <ResultadoPacienteHeader
+              paciente={paciente}
               nascimentoBR={isoToBR(paciente.nascimento)}
-              idade={paciente.idade}
-              protocolo={paciente.protocolo}
-              statusLabel={paciente.statusGeral}
               statusType={statusGeralType(paciente.statusGeral)}
-              actionsInline={modoConsulta}
-              actions={([
-                {
-                  key: "imprimir",
-                  label: "Imprimir todos",
-                  icon: <Printer className="h-4 w-4" />,
-                  onClick: () => handleImprimir(paciente.exames),
-                  variant: "primary",
-                  title: modoConsulta ? "Imprime apenas exames Assinados e Liberados" : undefined,
-                  disabled: !podeImprimirTodos,
-                },
-              ]) as PacienteHeaderAction[]}
-              actionsExtraLeft={
-                <>
-                  <PacienteFlagsChips jejum={pacienteJejum} prioridade={pacientePrioridade} />
-                  {!modoConsulta && todosLiberados && (
-                    <WhatsappActionButton
-                      onClick={handleEnviarResultadoWhatsapp}
-                      title="Enviar mensagem pelo WhatsApp"
-                    />
-                  )}
-                </>
-              }
-              actionsExtraRight={
-                <MaisAcoesMenu
-                  modoConsulta={modoConsulta}
-                  semExameSelecionado={!selectedExame}
-                  onAuditoria={() => setShowAuditoria(true)}
-                  onCritico={() => setShowCriticoDialog(true)}
-                  onEntrega={() => setShowEntregaDialog(true)}
-                />
-              }
-
+              modoConsulta={modoConsulta}
+              podeImprimirTodos={podeImprimirTodos}
+              onImprimirTodos={handleImprimir}
+              pacienteJejum={pacienteJejum}
+              pacientePrioridade={pacientePrioridade}
+              todosLiberados={todosLiberados}
+              onEnviarWhatsapp={handleEnviarResultadoWhatsapp}
+              temExameSelecionado={!!selectedExame}
+              onAuditoria={() => setShowAuditoria(true)}
+              onCritico={() => setShowCriticoDialog(true)}
+              onEntrega={() => setShowEntregaDialog(true)}
             />
           </div>
+
 
           {/* Search */}
           <div className="relative mb-3">
