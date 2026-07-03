@@ -18,16 +18,16 @@ export function computeIniciais(nome: string): string {
 export function useAnalistaAtual(nomeUsuarioLogado: string | number | null | undefined) {
   const nomeStr = nomeUsuarioLogado != null ? String(nomeUsuarioLogado) : "";
   const [analistaAtual, setAnalistaAtual] = useState<AnalistaAtual>(() => {
-    const nome = nomeUsuarioLogado || "Analista";
+    const nome = nomeStr || "Analista";
     return { nome, iniciais: computeIniciais(nome) };
   });
   const analistaTrocadoRef = useRef(false);
 
   useEffect(() => {
     if (analistaTrocadoRef.current) return;
-    if (!nomeUsuarioLogado) return;
-    setAnalistaAtual({ nome: nomeUsuarioLogado, iniciais: computeIniciais(nomeUsuarioLogado) });
-  }, [nomeUsuarioLogado]);
+    if (!nomeStr) return;
+    setAnalistaAtual({ nome: nomeStr, iniciais: computeIniciais(nomeStr) });
+  }, [nomeStr]);
 
   return { analistaAtual, setAnalistaAtual, analistaTrocadoRef } as const;
 }
