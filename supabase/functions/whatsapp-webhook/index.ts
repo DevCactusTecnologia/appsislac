@@ -11,12 +11,7 @@
 
 import { createClient } from "../_shared/runtime/createClient.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 async function verifyMetaSignature(
   rawBody: string,
   signatureHeader: string | null,

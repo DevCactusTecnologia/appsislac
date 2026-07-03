@@ -13,12 +13,7 @@ import { createClient } from "../_shared/runtime/createClient.ts";
 // @ts-ignore deno
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 type Row = Record<string, unknown>;
 
 interface ParsedExam {

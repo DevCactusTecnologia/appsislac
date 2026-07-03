@@ -10,12 +10,7 @@ import { createClient } from "../_shared/runtime/createClient.ts";
 import { safeEq } from "../_shared/integrationLog.ts";
 import { withCronHealth } from "../_shared/cronHealth.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 type Bucket = {
   tenant_id: string;
   provider: string;

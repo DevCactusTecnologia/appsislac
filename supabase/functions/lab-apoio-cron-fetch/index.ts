@@ -13,13 +13,7 @@
 import { createClient } from "../_shared/runtime/createClient.ts";
 import { withCronHealth } from "../_shared/cronHealth.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-cron-secret",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 // Limite por execução para não estourar o tempo do edge runtime
 const BATCH_LIMIT = 50;
 

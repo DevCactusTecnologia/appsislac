@@ -6,13 +6,7 @@
 
 import { getUserClient, getUserTenantClient, resolveUserTenantId, MigrationBlockedError } from "../_shared/runtime/db.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 interface ExamePayload {
   nome_exame: string;
   exame_id?: string | null;
