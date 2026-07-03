@@ -42,8 +42,6 @@ import {
 import { getLayouts } from "@/data/exameLayoutsStore";
 import LayoutScientificFormRenderer from "./ResultadoDetalhe/LayoutScientificFormRenderer";
 import ExamesTerceirizadosPanel from "@/components/ExamesTerceirizadosPanel";
-import LabBadge from "@/components/LabBadge";
-import IntegrationStatusBadge from "@/components/IntegrationStatusBadge";
 import IntegrationWarningsList from "@/components/IntegrationWarningsList";
 import { resolveIntegrationWarnings } from "@/lib/integration/integrationStatus";
 import SolicitarRecoletaDialog from "@/components/SolicitarRecoletaDialog";
