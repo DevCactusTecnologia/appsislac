@@ -152,40 +152,8 @@ const ResultadoDetalhe = () => {
   const [analistaErro, setAnalistaErro] = useState("");
   const [analistaValidando, setAnalistaValidando] = useState(false);
   const computeIniciais = computeIniciaisShared;
-  const [analistaAtual, setAnalistaAtual] = useState(() => {
-    const nome = authUser?.nome || "Analista";
-    return { nome, iniciais: computeIniciais(nome) };
-  });
-  // Mantém o analista atual sincronizado com o usuário logado enquanto o
-  // operador não confirmar credenciais de outro analista pelo diálogo.
-  const analistaTrocadoRef = useRef(false);
-  useEffect(() => {
-    if (analistaTrocadoRef.current) return;
-    const nome = authUser?.nome;
-    if (!nome) return;
-    setAnalistaAtual({ nome, iniciais: computeIniciais(nome) });
-  }, [authUser?.nome]);
-  const [assinaturaLaudo, setAssinaturaLaudo] = useState<{ tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null }>({ tipo: "carimbo", conselho: null, url: null });
-  useEffect(() => {
-    const uid = authUser?.id;
-    if (!uid || typeof uid !== "string") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.from("profiles")
-        .select("assinatura_tipo,assinatura_imagem_key,assinatura_conselho")
-        .eq("user_id", uid).maybeSingle();
-      if (cancelled || !data) return;
-      const p = data as { assinatura_tipo?: string; assinatura_imagem_key?: string | null; assinatura_conselho?: string | null };
-      const tipo: "carimbo" | "imagem" = p.assinatura_tipo === "imagem" ? "imagem" : "carimbo";
-      let url: string | null = null;
-      if (tipo === "imagem" && p.assinatura_imagem_key) {
-        const r = await supabase.functions.invoke("assinatura-url", { body: { userId: uid } });
-        url = (r.data as { url?: string | null } | null)?.url ?? null;
-      }
-      if (!cancelled) setAssinaturaLaudo({ tipo, conselho: p.assinatura_conselho ?? null, url });
-    })();
-    return () => { cancelled = true; };
-  }, [authUser?.id]);
+  const { analistaAtual, setAnalistaAtual, analistaTrocadoRef } = useAnalistaAtual(authUser?.nome);
+  const assinaturaLaudo = useAssinaturaLaudo(authUser?.id);
   const [retificados, setRetificados] = useState<Set<number>>(new Set());
   // Snapshot dos valores ANTES da retificação — usado para detectar se houve
   // alteração efetiva ao salvar. Se o usuário entrar em modo de retificação e
@@ -194,17 +162,7 @@ const ResultadoDetalhe = () => {
     Record<number, Array<{ chave: string; rotulo: string; valor: string }>>
   >({});
   // Re-render quando o store de valores de referência hidratar (assíncrono).
-  // Sem isso, o primeiro render acontece com VR vazio e nunca recalcula a
-  // resolução por sexo/idade — mesmo após o store popular.
-  const [vrTick, setVrTick] = useState(0);
-  useEffect(() => {
-    if (getValoresReferencia().length === 0) {
-      void _initValoresReferenciaStore();
-    } else {
-      setVrTick((t) => t + 1);
-    }
-    return subscribeValoresReferencia(() => setVrTick((t) => t + 1));
-  }, []);
+  const vrTick = useValoresReferenciaHydration();
   const [statusAnterior, setStatusAnterior] = useState<Record<number, ExameStatus>>({});
   const [auditLog, setAuditLog] = useState<Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]>>({});
   // Rastreia QUEM analisou (salvou) e QUEM liberou cada exame — podem ser
