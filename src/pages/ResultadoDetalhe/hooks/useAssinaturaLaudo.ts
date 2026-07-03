@@ -13,7 +13,8 @@ export type AssinaturaLaudo = {
  * `assinatura-url`. Mantém o formato original consumido por
  * `ResultadoDetalhe.tsx` — comportamento idêntico ao inline anterior.
  */
-export function useAssinaturaLaudo(userId: string | undefined | null): AssinaturaLaudo {
+export function useAssinaturaLaudo(userIdInput: string | number | undefined | null): AssinaturaLaudo {
+  const userId = typeof userIdInput === "string" ? userIdInput : null;
   const [assinatura, setAssinatura] = useState<AssinaturaLaudo>({
     tipo: "carimbo",
     conselho: null,
