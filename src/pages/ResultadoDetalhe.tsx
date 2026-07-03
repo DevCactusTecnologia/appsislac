@@ -190,7 +190,7 @@ const ResultadoDetalhe = () => {
 
   // ── Resultados Críticos (Fase 2/3) ──
   // Cache de parâmetros configurados (com critico_min/max) por nome de exame.
-  const [parametrosConfigPorExame, setParametrosConfigPorExame] = useState<Record<string, ExameParametro[]>>({});
+  const parametrosConfigPorExame = useParametrosCriticosCache(paciente.exames.map((e) => e.nome));
   // Modal de confirmação obrigatória ao liberar resultado crítico
   const [showCriticoConfirm, setShowCriticoConfirm] = useState(false);
   const [criticoConfirmDados, setCriticoConfirmDados] = useState<{
