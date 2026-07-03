@@ -29,7 +29,7 @@ import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getLabConfig } from "@/data/labConfigStore";
 import { getLabsApoio } from "@/data/labApoioStore";
-import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, subscribe as subscribeAtendimentos, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { getAtendimentoExamesDB, updateAtendimentoExame, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
 import type { MockAtendimento } from "@/data/types";
 import { loadParametros, getParametros, type ExameParametro } from "@/data/exameParametrosStore";
