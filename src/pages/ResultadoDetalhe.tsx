@@ -1,4 +1,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from "react";
+import { useAssinaturaLaudo } from "./ResultadoDetalhe/hooks/useAssinaturaLaudo";
+import { useValoresReferenciaHydration } from "./ResultadoDetalhe/hooks/useValoresReferenciaHydration";
+import { useJejumPrioridadeRealtime } from "./ResultadoDetalhe/hooks/useJejumPrioridadeRealtime";
+import { useAnalistaAtual, computeIniciais as computeIniciaisShared } from "./ResultadoDetalhe/hooks/useAnalistaAtual";
+import { useParametrosCriticosCache } from "./ResultadoDetalhe/hooks/useParametrosCriticosCache";
 import { searchNormalize } from "@/lib/utils";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
@@ -18,13 +23,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { db as supabase } from "@/runtime/db";
 import { useAuth } from "@/contexts/AuthContext";
-import { resolverReferencia, getValoresReferencia, subscribeValoresReferencia, _initValoresReferenciaStore } from "@/data/valoresReferenciaStore";
+import { resolverReferencia } from "@/data/valoresReferenciaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
 import { getLabConfig } from "@/data/labConfigStore";
 import { getLabsApoio } from "@/data/labApoioStore";
-import { getAtendimentoExamesDB, updateAtendimentoExame, getAtendimentos, fetchAtendimentoByProtocolo, subscribe as subscribeAtendimentos, type AtendimentoExameRow } from "@/data/atendimentoStore";
+import { getAtendimentoExamesDB, updateAtendimentoExame, fetchAtendimentoByProtocolo, type AtendimentoExameRow } from "@/data/atendimentoStore";
 import { isFeatureEnabled } from "@/lib/featureFlags";
 import type { MockAtendimento } from "@/data/types";
 import { loadParametros, getParametros, type ExameParametro } from "@/data/exameParametrosStore";
@@ -113,8 +118,12 @@ const ResultadoDetalhe = () => {
   const canAnalisar = hasPermission("analisar_amostra") || hasPermission("editar_atendimento");
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
-  const [pacienteJejum, setPacienteJejum] = useState<boolean>(false);
-  const [pacientePrioridade, setPacientePrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
+  const {
+    jejum: pacienteJejum,
+    setJejum: setPacienteJejum,
+    prioridade: pacientePrioridade,
+    setPrioridade: setPacientePrioridade,
+  } = useJejumPrioridadeRealtime(id);
   // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
   // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
   // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
@@ -142,46 +151,9 @@ const ResultadoDetalhe = () => {
   const [analistaSenha, setAnalistaSenha] = useState("");
   const [analistaErro, setAnalistaErro] = useState("");
   const [analistaValidando, setAnalistaValidando] = useState(false);
-  const computeIniciais = (nome: string): string => {
-    const parts = (nome || "").trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return "?";
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-  const [analistaAtual, setAnalistaAtual] = useState(() => {
-    const nome = authUser?.nome || "Analista";
-    return { nome, iniciais: computeIniciais(nome) };
-  });
-  // Mantém o analista atual sincronizado com o usuário logado enquanto o
-  // operador não confirmar credenciais de outro analista pelo diálogo.
-  const analistaTrocadoRef = useRef(false);
-  useEffect(() => {
-    if (analistaTrocadoRef.current) return;
-    const nome = authUser?.nome;
-    if (!nome) return;
-    setAnalistaAtual({ nome, iniciais: computeIniciais(nome) });
-  }, [authUser?.nome]);
-  const [assinaturaLaudo, setAssinaturaLaudo] = useState<{ tipo: "carimbo" | "imagem"; conselho: string | null; url: string | null }>({ tipo: "carimbo", conselho: null, url: null });
-  useEffect(() => {
-    const uid = authUser?.id;
-    if (!uid || typeof uid !== "string") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.from("profiles")
-        .select("assinatura_tipo,assinatura_imagem_key,assinatura_conselho")
-        .eq("user_id", uid).maybeSingle();
-      if (cancelled || !data) return;
-      const p = data as { assinatura_tipo?: string; assinatura_imagem_key?: string | null; assinatura_conselho?: string | null };
-      const tipo: "carimbo" | "imagem" = p.assinatura_tipo === "imagem" ? "imagem" : "carimbo";
-      let url: string | null = null;
-      if (tipo === "imagem" && p.assinatura_imagem_key) {
-        const r = await supabase.functions.invoke("assinatura-url", { body: { userId: uid } });
-        url = (r.data as { url?: string | null } | null)?.url ?? null;
-      }
-      if (!cancelled) setAssinaturaLaudo({ tipo, conselho: p.assinatura_conselho ?? null, url });
-    })();
-    return () => { cancelled = true; };
-  }, [authUser?.id]);
+  const computeIniciais = computeIniciaisShared;
+  const { analistaAtual, setAnalistaAtual, analistaTrocadoRef } = useAnalistaAtual(authUser?.nome);
+  const assinaturaLaudo = useAssinaturaLaudo(authUser?.id);
   const [retificados, setRetificados] = useState<Set<number>>(new Set());
   // Snapshot dos valores ANTES da retificação — usado para detectar se houve
   // alteração efetiva ao salvar. Se o usuário entrar em modo de retificação e
@@ -190,17 +162,7 @@ const ResultadoDetalhe = () => {
     Record<number, Array<{ chave: string; rotulo: string; valor: string }>>
   >({});
   // Re-render quando o store de valores de referência hidratar (assíncrono).
-  // Sem isso, o primeiro render acontece com VR vazio e nunca recalcula a
-  // resolução por sexo/idade — mesmo após o store popular.
-  const [vrTick, setVrTick] = useState(0);
-  useEffect(() => {
-    if (getValoresReferencia().length === 0) {
-      void _initValoresReferenciaStore();
-    } else {
-      setVrTick((t) => t + 1);
-    }
-    return subscribeValoresReferencia(() => setVrTick((t) => t + 1));
-  }, []);
+  const vrTick = useValoresReferenciaHydration();
   const [statusAnterior, setStatusAnterior] = useState<Record<number, ExameStatus>>({});
   const [auditLog, setAuditLog] = useState<Record<number, { acao: string; dataHora: string; usuario: string; iniciais: string; dados?: string }[]>>({});
   // Rastreia QUEM analisou (salvou) e QUEM liberou cada exame — podem ser
@@ -228,7 +190,7 @@ const ResultadoDetalhe = () => {
 
   // ── Resultados Críticos (Fase 2/3) ──
   // Cache de parâmetros configurados (com critico_min/max) por nome de exame.
-  const [parametrosConfigPorExame, setParametrosConfigPorExame] = useState<Record<string, ExameParametro[]>>({});
+  const parametrosConfigPorExame = useParametrosCriticosCache(paciente.exames.map((e) => e.nome));
   // Modal de confirmação obrigatória ao liberar resultado crítico
   const [showCriticoConfirm, setShowCriticoConfirm] = useState(false);
   const [criticoConfirmDados, setCriticoConfirmDados] = useState<{
@@ -365,45 +327,14 @@ const ResultadoDetalhe = () => {
     reloadExames();
   }, [reloadExames]);
 
-  // Sincroniza jejum/prioridade clínica em tempo real com o store de atendimentos.
-  // Quando o atendimento é editado em outra aba/dispositivo, o realtime do
-  // atendimentoStore atualiza o cache; refletimos aqui imediatamente.
-  useEffect(() => {
-    if (!id) return;
-    const unsub = subscribeAtendimentos(() => {
-      const at = getAtendimentos().find((a) => a.protocolo === id);
-      if (!at) return;
-      setPacienteJejum(!!at.jejum);
-      setPacientePrioridade((at.prioridadeClinica ?? "normal") as "normal" | "urgencia" | "emergencia");
-    });
-    return unsub;
-  }, [id]);
+  // jejum/prioridade clínica em tempo real: gerenciado por useJejumPrioridadeRealtime (acima).
+
 
   // Hidrata motivos de cancelamento via dicionário unificado (`select_options`).
   const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
-  /**
-   * Carrega os parâmetros configurados (com critico_min/max) de cada exame
-   * presente na lista. Necessário para o motor de detecção crítica.
-   */
-  useEffect(() => {
-    if (paciente.exames.length === 0) return;
-    const catalogo = getExamesCatalogo();
-    const nomes = Array.from(new Set(paciente.exames.map(e => e.nome)));
-    let cancel = false;
-    (async () => {
-      const map: Record<string, ExameParametro[]> = {};
-      for (const nome of nomes) {
-        const cat = catalogo.find(c => c.nome === nome);
-        if (!cat) continue;
-        const cached = getParametros(cat.id);
-        const params = cached.length > 0 ? cached : await loadParametros(cat.id);
-        map[nome] = params;
-      }
-      if (!cancel) setParametrosConfigPorExame(map);
-    })();
-    return () => { cancel = true; };
-  }, [paciente.exames]);
+  // Parâmetros críticos por exame — hidratados via useParametrosCriticosCache (acima).
+
 
   // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts.
   // Fase 1 — Críticos por sexo/idade: passa override que consulta valores_referencia
