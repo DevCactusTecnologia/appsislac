@@ -344,28 +344,8 @@ const ResultadoDetalhe = () => {
   // Hidrata motivos de cancelamento via dicionário unificado (`select_options`).
   const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
 
-  /**
-   * Carrega os parâmetros configurados (com critico_min/max) de cada exame
-   * presente na lista. Necessário para o motor de detecção crítica.
-   */
-  useEffect(() => {
-    if (paciente.exames.length === 0) return;
-    const catalogo = getExamesCatalogo();
-    const nomes = Array.from(new Set(paciente.exames.map(e => e.nome)));
-    let cancel = false;
-    (async () => {
-      const map: Record<string, ExameParametro[]> = {};
-      for (const nome of nomes) {
-        const cat = catalogo.find(c => c.nome === nome);
-        if (!cat) continue;
-        const cached = getParametros(cat.id);
-        const params = cached.length > 0 ? cached : await loadParametros(cat.id);
-        map[nome] = params;
-      }
-      if (!cancel) setParametrosConfigPorExame(map);
-    })();
-    return () => { cancel = true; };
-  }, [paciente.exames]);
+  // Parâmetros críticos por exame — hidratados via useParametrosCriticosCache (acima).
+
 
   // Avaliação de críticos — pipeline puro extraído para services/criticoPipeline.ts.
   // Fase 1 — Críticos por sexo/idade: passa override que consulta valores_referencia
