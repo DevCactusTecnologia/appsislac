@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { db as supabase } from "@/runtime/db";
 import { useAuth } from "@/contexts/AuthContext";
-import { resolverReferencia, getValoresReferencia, subscribeValoresReferencia, _initValoresReferenciaStore } from "@/data/valoresReferenciaStore";
+import { resolverReferencia } from "@/data/valoresReferenciaStore";
 import { getExamesCatalogo } from "@/data/exameCatalogoStore";
 import { sanitizeHtmlForPrint } from "@/lib/sanitizeHtml";
 import { printHtmlInHiddenFrame } from "@/lib/printHtml";
