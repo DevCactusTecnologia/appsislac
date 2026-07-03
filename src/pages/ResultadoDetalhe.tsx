@@ -118,8 +118,12 @@ const ResultadoDetalhe = () => {
   const canAnalisar = hasPermission("analisar_amostra") || hasPermission("editar_atendimento");
   const canCancelarExame = hasPermission("cancelar_atendimento") || hasPermission("editar_atendimento");
   const [paciente, setPaciente] = useState<Paciente>(getEmptyPaciente);
-  const [pacienteJejum, setPacienteJejum] = useState<boolean>(false);
-  const [pacientePrioridade, setPacientePrioridade] = useState<"normal" | "urgencia" | "emergencia">("normal");
+  const {
+    jejum: pacienteJejum,
+    setJejum: setPacienteJejum,
+    prioridade: pacientePrioridade,
+    setPrioridade: setPacientePrioridade,
+  } = useJejumPrioridadeRealtime(id);
   // `isHydrating` cobre o intervalo entre o mount e a primeira hidratação
   // do atendimento vindo do banco. Sem ele a tela exibia momentaneamente o
   // estado vazio ("Nenhum exame nesse filtro" / "Selecione um exame na lista").
