@@ -327,19 +327,8 @@ const ResultadoDetalhe = () => {
     reloadExames();
   }, [reloadExames]);
 
-  // Sincroniza jejum/prioridade clínica em tempo real com o store de atendimentos.
-  // Quando o atendimento é editado em outra aba/dispositivo, o realtime do
-  // atendimentoStore atualiza o cache; refletimos aqui imediatamente.
-  useEffect(() => {
-    if (!id) return;
-    const unsub = subscribeAtendimentos(() => {
-      const at = getAtendimentos().find((a) => a.protocolo === id);
-      if (!at) return;
-      setPacienteJejum(!!at.jejum);
-      setPacientePrioridade((at.prioridadeClinica ?? "normal") as "normal" | "urgencia" | "emergencia");
-    });
-    return unsub;
-  }, [id]);
+  // jejum/prioridade clínica em tempo real: gerenciado por useJejumPrioridadeRealtime (acima).
+
 
   // Hidrata motivos de cancelamento via dicionário unificado (`select_options`).
   const { data: motivosCancelamentoOpts = [] } = useDicionario("motivo_cancelamento", { ativosOnly: true });
