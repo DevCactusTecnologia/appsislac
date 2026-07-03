@@ -6,18 +6,9 @@
 // - Exponential backoff retry for transient errors only
 // - Sanitized error responder (never leak internals)
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-request-id",
-  "Access-Control-Max-Age": "3600",
-};
+import { corsHeaders, jsonHeaders } from "./cors.ts";
 
-export const jsonHeaders = {
-  ...corsHeaders,
-  "Content-Type": "application/json",
-};
+export { corsHeaders, jsonHeaders };
 
 export function newRequestId(req: Request): string {
   const incoming = req.headers.get("x-request-id");
