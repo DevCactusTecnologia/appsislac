@@ -55,7 +55,7 @@ import { renderCabecalhoPadrao, renderRodapePadrao } from "@/lib/documentoRender
 import { showError } from "@/lib/showError";
 import { fireSuccessConfetti } from "@/lib/confetti";
 import { notifyResultadoPronto } from "@/lib/whatsapp/notifyResultadoPronto";
-import WhatsappActionButton from "@/components/whatsapp/WhatsappActionButton";
+
 import { validarCredenciaisAnalista } from "@/lib/validarCredenciaisAnalista";
 import { useDicionario } from "@/hooks/useDicionario";
 
