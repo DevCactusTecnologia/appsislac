@@ -15,7 +15,8 @@ export function computeIniciais(nome: string): string {
  * "Alterar Analista". Uma vez trocado, permanece congelado até o próximo
  * mount.
  */
-export function useAnalistaAtual(nomeUsuarioLogado: string | undefined | null) {
+export function useAnalistaAtual(nomeUsuarioLogado: string | number | null | undefined) {
+  const nomeStr = nomeUsuarioLogado != null ? String(nomeUsuarioLogado) : "";
   const [analistaAtual, setAnalistaAtual] = useState<AnalistaAtual>(() => {
     const nome = nomeUsuarioLogado || "Analista";
     return { nome, iniciais: computeIniciais(nome) };
