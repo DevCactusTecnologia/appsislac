@@ -5,13 +5,7 @@
 
 import { createClient } from "../_shared/runtime/createClient.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

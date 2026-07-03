@@ -5,11 +5,7 @@
 
 import { createClient } from "../_shared/runtime/createClient.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 const WABA_ID = Deno.env.get("WHATSAPP_META_BUSINESS_ACCOUNT_ID") ?? "";
 const META_TOKEN = Deno.env.get("WHATSAPP_META_ACCESS_TOKEN") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";

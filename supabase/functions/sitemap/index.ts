@@ -4,11 +4,7 @@
 // Endpoint público (sem JWT). Cache de 1h no edge.
 import { createClient } from "../_shared/runtime/createClient.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
+import { corsHeaders } from "../_shared/cors.ts";
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
