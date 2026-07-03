@@ -1,4 +1,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef, Fragment } from "react";
+import { useAssinaturaLaudo } from "./ResultadoDetalhe/hooks/useAssinaturaLaudo";
+import { useValoresReferenciaHydration } from "./ResultadoDetalhe/hooks/useValoresReferenciaHydration";
+import { useJejumPrioridadeRealtime } from "./ResultadoDetalhe/hooks/useJejumPrioridadeRealtime";
+import { useAnalistaAtual, computeIniciais as computeIniciaisShared } from "./ResultadoDetalhe/hooks/useAnalistaAtual";
+import { useParametrosCriticosCache } from "./ResultadoDetalhe/hooks/useParametrosCriticosCache";
 import { searchNormalize } from "@/lib/utils";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Search, Printer, Edit, Calendar, ClipboardList, CheckCircle2, AlertCircle, Download, User, ChevronRight, FlaskConical, ArrowLeft, AlertOctagon, AlertTriangle, ArrowDown, ArrowUp, Save, ShieldCheck, Lock } from "lucide-react";
